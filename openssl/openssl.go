@@ -141,6 +141,25 @@ func NewOpenSSLError(msg string) error {
 	return errors.New(message)
 }
 
+// Unreachable marks code that should be unreachable
+// when BoringCrypto is in use. It panics only when
+// the system is in FIPS mode.
+func Unreachable() {
+	if Enabled() {
+		panic("openssl: invalid code execution")
+	}
+}
+
+// UnreachableExceptTests marks code that should be unreachable
+// when BoringCrypto is in use. It panics.
+func UnreachableExceptTests() {
+	name := os.Args[0]
+	if Enabled() && !hasSuffix(name, "_test") && !hasSuffix(name, ".test") {
+		println("openssl: unexpected code execution in", name)
+		panic("openssl: invalid code execution")
+	}
+}
+
 type fail string
 
 func (e fail) Error() string { return "boringcrypto: " + string(e) + " failed" }
