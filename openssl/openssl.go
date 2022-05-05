@@ -142,7 +142,7 @@ func NewOpenSSLError(msg string) error {
 }
 
 // Unreachable marks code that should be unreachable
-// when BoringCrypto is in use. It panics only when
+// when FIPS mode. It panics only when
 // the system is in FIPS mode.
 func Unreachable() {
 	if Enabled() {
@@ -151,7 +151,7 @@ func Unreachable() {
 }
 
 // UnreachableExceptTests marks code that should be unreachable
-// when BoringCrypto is in use. It panics.
+// when FIPS mode is active. It panics.
 func UnreachableExceptTests() {
 	name := os.Args[0]
 	if Enabled() && !hasSuffix(name, "_test") && !hasSuffix(name, ".test") {
