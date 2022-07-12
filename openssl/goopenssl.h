@@ -380,8 +380,10 @@ typedef EC_KEY GO_EC_KEY;
 
 DEFINEFUNC(GO_EC_KEY *, EC_KEY_new, (void), ())
 DEFINEFUNC(GO_EC_KEY *, EC_KEY_new_by_curve_name, (int arg0), (arg0))
+DEFINEFUNC(int, EC_KEY_oct2key, (GO_EC_KEY *arg0, const unsigned char *arg1, size_t arg2, BN_CTX *arg3), (arg0, arg1, arg2, arg3))
 DEFINEFUNC(void, EC_KEY_free, (GO_EC_KEY * arg0), (arg0))
 DEFINEFUNC(const GO_EC_GROUP *, EC_KEY_get0_group, (const GO_EC_KEY *arg0), (arg0))
+DEFINEFUNC(int, EC_KEY_set_group, (GO_EC_KEY *arg0, const EC_GROUP *arg1), (arg0, arg1))
 DEFINEFUNC(int, EC_KEY_generate_key, (GO_EC_KEY * arg0), (arg0))
 DEFINEFUNC(int, EC_KEY_set_private_key, (GO_EC_KEY * arg0, const GO_BIGNUM *arg1), (arg0, arg1))
 DEFINEFUNC(int, EC_KEY_set_public_key, (GO_EC_KEY * arg0, const GO_EC_POINT *arg1), (arg0, arg1))
@@ -786,3 +788,38 @@ DEFINEFUNC(int, EVP_PKEY_verify_init, (GO_EVP_PKEY_CTX * arg0), (arg0))
 DEFINEFUNC(int, EVP_PKEY_sign,
 		   (GO_EVP_PKEY_CTX * arg0, uint8_t *arg1, size_t *arg2, const uint8_t *arg3, size_t arg4),
 		   (arg0, arg1, arg2, arg3, arg4))
+
+DEFINEFUNC(int, EVP_PKEY_derive_init, (GO_EVP_PKEY_CTX *arg0), (arg0))
+DEFINEFUNC(int, EVP_PKEY_derive, (GO_EVP_PKEY_CTX *arg0, unsigned char *arg1, size_t *arg2), (arg0, arg1, arg2))
+#if OPENSSL_VERSION_NUMBER >= 0x30000000L
+DEFINEFUNC(int, EVP_PKEY_derive_set_peer_ex, (GO_EVP_PKEY_CTX *arg0, GO_EVP_PKEY *arg1, int arg2), (arg0, arg1, arg2))
+#else
+DEFINEFUNC(int, EVP_PKEY_derive_set_peer, (GO_EVP_PKEY_CTX *arg0, GO_EVP_PKEY *arg1), (arg0, arg1))
+
+# if OPENSSL_VERSION_NUMBER >= 0x10100000L
+DEFINEFUNC(int, EVP_PKEY_public_check, (EVP_PKEY_CTX *arg0), (arg0))
+
+static inline int
+_goboringcrypto_EVP_PKEY_derive_set_peer_ex(GO_EVP_PKEY_CTX *ctx, GO_EVP_PKEY *key, int validate)
+{
+        EVP_PKEY_CTX *check_ctx = _goboringcrypto_EVP_PKEY_CTX_new(key, NULL);
+        if (check_ctx == NULL) {
+		return -1;
+	}
+        int ok = _goboringcrypto_EVP_PKEY_public_check(check_ctx);
+        _goboringcrypto_EVP_PKEY_CTX_free(check_ctx);
+        if (ok != 1) {
+		return -1;
+	}
+	return _goboringcrypto_EVP_PKEY_derive_set_peer(ctx, key);
+}
+# else
+static inline int
+_goboringcrypto_EVP_PKEY_derive_set_peer_ex(GO_EVP_PKEY_CTX *ctx, GO_EVP_PKEY *key, int validate)
+{
+	/* No way to validate public key in OpenSSL 1.0.2 */
+	(void)validate;
+	return _goboringcrypto_EVP_PKEY_derive_set_peer(ctx, key);
+}
+# endif
+#endif
