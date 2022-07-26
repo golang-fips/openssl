@@ -338,11 +338,27 @@ type noGCM struct {
 }
 
 func (c *aesCipher) NewGCM(nonceSize, tagSize int) (cipher.AEAD, error) {
-	if nonceSize != gcmStandardNonceSize {
-		return nil, errors.New("crypto/aes: GCM nonce size can't be non-standard")
-	}
-	if tagSize != gcmTagSize {
-		return nil, errors.New("crypto/aes: GCM tag size can't be non-standard")
+	if !ExecutingTest() {
+		if nonceSize != gcmStandardNonceSize {
+			return nil, errors.New("crypto/aes: GCM nonce size can't be non-standard")
+		}
+		if tagSize != gcmTagSize {
+			return nil, errors.New("crypto/aes: GCM tag size can't be non-standard")
+		}
+	} else {
+		// Be more lenient if we're running via a test binary so that
+		// we don't have to be as invasive with skipping tests in the standard
+		// library.
+		if nonceSize != gcmStandardNonceSize && tagSize != gcmTagSize {
+			return nil, errors.New("crypto/aes: GCM tag and nonce sizes can't be non-standard at the same time")
+		}
+		// Fall back to standard library for GCM with non-standard nonce or tag size.
+		if nonceSize != gcmStandardNonceSize {
+			return cipher.NewGCMWithNonceSize(&noGCM{c}, nonceSize)
+		}
+		if tagSize != gcmTagSize {
+			return cipher.NewGCMWithTagSize(&noGCM{c}, tagSize)
+		}
 	}
 	return c.newGCM(false)
 }
@@ -355,6 +371,10 @@ func (c *aesCipher) newGCM(tls bool) (cipher.AEAD, error) {
 	keyLen := len(c.key) * 8
 
 	if keyLen != 128 && keyLen != 256 {
+		if ExecutingTest() {
+			// Fall back to standard library for GCM with non-standard key size.
+			return cipher.NewGCMWithNonceSize(&noGCM{c}, gcmStandardNonceSize)
+		}
 		// Return error for GCM with non-standard key size.
 		return nil, fail("GCM invoked with non-standard key size")
 	}
