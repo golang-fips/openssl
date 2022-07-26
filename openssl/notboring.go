@@ -30,6 +30,8 @@ func Unreachable() {
 // when BoringCrypto is in use. It is a no-op without BoringCrypto.
 func UnreachableExceptTests() {}
 
+func ExecutingTest() bool { return false }
+
 // This is a noop withotu BoringCrytpo.
 func PanicIfStrictFIPS(v interface{}) {}
 

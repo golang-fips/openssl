@@ -215,6 +215,7 @@ DEFINEFUNC(const GO_EVP_MD *, EVP_sha224, (void), ())
 DEFINEFUNC(const GO_EVP_MD *, EVP_sha256, (void), ())
 DEFINEFUNC(const GO_EVP_MD *, EVP_sha384, (void), ())
 DEFINEFUNC(const GO_EVP_MD *, EVP_sha512, (void), ())
+DEFINEFUNC(const GO_EVP_MD *, EVP_md_null, (void), ())
 #if OPENSSL_VERSION_NUMBER < 0x30000000L
 DEFINEFUNCINTERNAL(int, EVP_MD_type, (const GO_EVP_MD *arg0), (arg0))
 #else
@@ -468,8 +469,16 @@ DEFINEFUNC(int, EVP_DigestVerifyFinal,
 	(EVP_MD_CTX* ctx, const uint8_t *sig, unsigned int siglen),
 	(ctx, sig, siglen))
 
+typedef RSA GO_RSA;
 int _goboringcrypto_EVP_sign(EVP_MD* md, EVP_PKEY_CTX *ctx, const uint8_t *msg, size_t msgLen, uint8_t *sig, unsigned int *slen, EVP_PKEY *eckey);
+int _goboringcrypto_EVP_sign_raw(EVP_MD *md, EVP_PKEY_CTX *ctx, const uint8_t *msg,
+                                                              size_t msgLen, uint8_t *sig, size_t *slen,
+                                                              GO_RSA *key);
+
 int _goboringcrypto_EVP_verify(EVP_MD* md, EVP_PKEY_CTX *ctx, const uint8_t *msg, size_t msgLen, const uint8_t *sig, unsigned int slen, EVP_PKEY *key);
+int _goboringcrypto_EVP_verify_raw(const uint8_t *msg, size_t msgLen,
+                               const uint8_t *sig, unsigned int slen,
+                               GO_RSA *key);
 
 #if OPENSSL_VERSION_NUMBER < 0x10100000L
 DEFINEFUNC(void, EVP_MD_CTX_destroy, (EVP_MD_CTX *ctx), (ctx))
@@ -486,7 +495,6 @@ int _goboringcrypto_ECDSA_verify(EVP_MD *md, const uint8_t *arg1, size_t arg2, c
 #include <openssl/rsa.h>
 
 // Note: order of struct fields here is unchecked.
-typedef RSA GO_RSA;
 typedef BN_GENCB GO_BN_GENCB;
 
 int _goboringcrypto_EVP_RSA_sign(EVP_MD* md, const uint8_t *msg, unsigned int msgLen, uint8_t *sig, unsigned int *slen, RSA *rsa);
@@ -742,6 +750,7 @@ DEFINEFUNCINTERNAL(int, RSA_pkey_ctx_ctrl,
 		   (EVP_PKEY_CTX *ctx, int optype, int cmd, int p1, void *p2),
 		   (ctx, optype, cmd, p1, p2))
 
+    #include <openssl/rsa.h>
 static inline int
 _goboringcrypto_EVP_PKEY_CTX_set_rsa_padding(GO_EVP_PKEY_CTX* ctx, int pad) {
 #if OPENSSL_VERSION_NUMBER < 0x10100000L

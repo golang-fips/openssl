@@ -137,6 +137,7 @@ func NewOpenSSLError(msg string) error {
 		message = fmt.Sprintf(
 			"%v\nfile: %v\nline: %v\nfunction: %v\nflags: %v\nerror string: %s\n",
 			message, C.GoString(file), line, C.GoString(fnc), flags, C.GoString(&(buf[0])))
+
 	}
 	return errors.New(message)
 }
@@ -154,10 +155,17 @@ func Unreachable() {
 // when FIPS mode is active. It panics.
 func UnreachableExceptTests() {
 	name := os.Args[0]
-	if Enabled() && !hasSuffix(name, "_test") && !hasSuffix(name, ".test") {
+	if Enabled() && !ExecutingTest() {
 		println("openssl: unexpected code execution in", name)
 		panic("openssl: invalid code execution")
 	}
+}
+
+// ExecutingTest returns a boolean indicating if we're
+// executing under a test binary or not.
+func ExecutingTest() bool {
+	name := os.Args[0]
+	return hasSuffix(name, "_test") || hasSuffix(name, ".test")
 }
 
 type fail string
