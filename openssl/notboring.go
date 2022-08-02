@@ -12,6 +12,7 @@ import (
 	"crypto/cipher"
 	"crypto/internal/boring/sig"
 	"hash"
+	"io"
 	"math/big"
 )
 
@@ -125,5 +126,13 @@ func VerifyRSAPKCS1v15(pub *PublicKeyRSA, h crypto.Hash, hashed, sig []byte, msg
 	panic("boringcrypto: not available")
 }
 func VerifyRSAPSS(pub *PublicKeyRSA, h crypto.Hash, hashed, sig []byte, saltLen int) error {
+	panic("boringcrypto: not available")
+}
+
+func ExtractHKDF(h func() hash.Hash, secret, salt []byte) []byte {
+	panic("boringcrypto: not available")
+}
+
+func ExpandHKDF(h func() hash.Hash, pseudorandomKey, info []byte) io.Reader {
 	panic("boringcrypto: not available")
 }

@@ -823,3 +823,24 @@ _goboringcrypto_EVP_PKEY_derive_set_peer_ex(GO_EVP_PKEY_CTX *ctx, GO_EVP_PKEY *k
 }
 # endif
 #endif
+
+#if OPENSSL_VERSION_NUMBER >= 0x10101000L
+#include <openssl/kdf.h>
+
+enum {
+	GO_EVP_PKEY_HKDF = EVP_PKEY_HKDF,
+};
+
+DEFINEFUNC(GO_EVP_PKEY_CTX *, EVP_PKEY_CTX_new_id, (int arg0, ENGINE *arg1), (arg0, arg1))
+
+enum {
+	GO_EVP_PKEY_HKDEF_MODE_EXTRACT_ONLY = EVP_PKEY_HKDEF_MODE_EXTRACT_ONLY,
+	GO_EVP_PKEY_HKDEF_MODE_EXPAND_ONLY = EVP_PKEY_HKDEF_MODE_EXPAND_ONLY,
+};
+
+DEFINEFUNC(int, EVP_PKEY_CTX_set_hkdf_mode, (GO_EVP_PKEY_CTX *arg0, int arg1), (arg0, arg1))
+DEFINEFUNC(int, EVP_PKEY_CTX_set_hkdf_md, (GO_EVP_PKEY_CTX *arg0, const GO_EVP_MD *arg1), (arg0, arg1))
+DEFINEFUNC(int, EVP_PKEY_CTX_set1_hkdf_salt, (GO_EVP_PKEY_CTX *arg0, unsigned char *arg1, int arg2), (arg0, arg1, arg2))
+DEFINEFUNC(int, EVP_PKEY_CTX_set1_hkdf_key, (GO_EVP_PKEY_CTX *arg0, unsigned char *arg1, int arg2), (arg0, arg1, arg2))
+DEFINEFUNC(int, EVP_PKEY_CTX_add1_hkdf_info, (GO_EVP_PKEY_CTX *arg0, unsigned char *arg1, int arg2), (arg0, arg1, arg2))
+#endif
