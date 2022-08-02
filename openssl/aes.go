@@ -338,7 +338,7 @@ type noGCM struct {
 }
 
 func (c *aesCipher) NewGCM(nonceSize, tagSize int) (cipher.AEAD, error) {
-	if !ExecutingTest() {
+	if !ExecutingTest() || IsStrictFips() {
 		if nonceSize != gcmStandardNonceSize {
 			return nil, errors.New("crypto/aes: GCM nonce size can't be non-standard")
 		}

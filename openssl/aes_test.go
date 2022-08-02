@@ -6,10 +6,14 @@ package openssl
 import (
 	"bytes"
 	"crypto/cipher"
+	"os"
 	"testing"
 )
 
 func TestNewGCMNonce(t *testing.T) {
+	os.Setenv(GoStrictFipsEnv, "1")
+	defer os.Setenv(GoStrictFipsEnv, "0")
+
 	// Should return an error for non-standard nonce size.
 	key := []byte("D249BF6DEC97B1EBD69BC4D6B3A3C49D")
 	ci, err := NewAESCipher(key)
