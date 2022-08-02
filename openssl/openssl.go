@@ -27,6 +27,8 @@ const (
 	fipsOff = C.int(0)
 )
 
+const GoStrictFipsEnv = "GOLANG_STRICT_FIPS"
+
 const (
 	OPENSSL_VERSION_1_1_0 = uint64(C.ulong(0x10100000))
 	OPENSSL_VERSION_3_0_0 = uint64(C.ulong(0x30000000))
@@ -37,8 +39,8 @@ var enabled = false
 
 // When this variable is true, the go crypto API will panic when a caller
 // tries to use the API in a non-compliant manner.  When this is false, the
-// go crytpo API will allow existing go crypto APIs to be used even
-// if they aren't FIPS compliant.  However, all the unerlying crypto operations
+// go crypto API will allow existing go crypto APIs to be used even
+// if they aren't FIPS compliant.  However, all the underlying crypto operations
 // will still be done by OpenSSL.
 var strictFIPS = false
 
@@ -67,6 +69,10 @@ func openSSLVersion() uint64 {
 
 func enableBoringFIPSMode() {
 	enabled = true
+
+	if os.Getenv(GoStrictFipsEnv) == "1" {
+		strictFIPS = true
+	}
 
 	if C._goboringcrypto_OPENSSL_thread_setup() != 1 {
 		panic("boringcrypto: OpenSSL thread setup failed")
@@ -116,9 +122,13 @@ func hasSuffix(s, t string) bool {
 }
 
 func PanicIfStrictFIPS(msg string) {
-	if os.Getenv("GOLANG_STRICT_FIPS") == "1" || strictFIPS {
+	if IsStrictFips() {
 		panic(msg)
 	}
+}
+
+func IsStrictFips() bool {
+	return os.Getenv(GoStrictFipsEnv) == "1" || strictFIPS
 }
 
 func NewOpenSSLError(msg string) error {
