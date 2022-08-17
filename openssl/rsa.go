@@ -344,6 +344,7 @@ func signRSAPKCS1v15Raw(priv *PrivateKeyRSA, msg []byte, md *C.GO_EVP_MD) ([]byt
 
 	if priv.withKey(func(key *C.GO_RSA) C.int {
 		out = make([]byte, C._goboringcrypto_RSA_size(key))
+		outLen = C.size_t(len(out))
 		return C._goboringcrypto_EVP_sign_raw(md, nil, base(msg),
 			C.size_t(len(msg)), base(out), &outLen, key)
 	}) == 0 {
