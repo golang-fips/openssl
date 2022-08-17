@@ -750,7 +750,6 @@ DEFINEFUNCINTERNAL(int, RSA_pkey_ctx_ctrl,
 		   (EVP_PKEY_CTX *ctx, int optype, int cmd, int p1, void *p2),
 		   (ctx, optype, cmd, p1, p2))
 
-    #include <openssl/rsa.h>
 static inline int
 _goboringcrypto_EVP_PKEY_CTX_set_rsa_padding(GO_EVP_PKEY_CTX* ctx, int pad) {
 #if OPENSSL_VERSION_NUMBER < 0x10100000L
