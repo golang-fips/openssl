@@ -162,7 +162,8 @@ func Unreachable() {
 }
 
 // UnreachableExceptTests marks code that should be unreachable
-// when FIPS mode is active. It panics.
+// when FIPS mode is active. It panics only when the system is in FIPS mode
+// and not executing under tests.
 func UnreachableExceptTests() {
 	name := os.Args[0]
 	if Enabled() && !ExecutingTest() {

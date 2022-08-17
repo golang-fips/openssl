@@ -11,8 +11,9 @@ import (
 )
 
 func TestNewGCMNonce(t *testing.T) {
+	origStrictFIPS := os.Getenv(GoStrictFipsEnv)
 	os.Setenv(GoStrictFipsEnv, "1")
-	defer os.Setenv(GoStrictFipsEnv, "0")
+	defer os.Setenv(GoStrictFipsEnv, origStrictFIPS)
 
 	// Should return an error for non-standard nonce size.
 	key := []byte("D249BF6DEC97B1EBD69BC4D6B3A3C49D")

@@ -54,9 +54,6 @@ int _goboringcrypto_EVP_sign_raw(EVP_MD *md, EVP_PKEY_CTX *ctx, const uint8_t *m
   if (_goboringcrypto_EVP_PKEY_CTX_set_rsa_padding(ctx, RSA_PKCS1_PADDING) <= 0)
     goto err;
 
-  if (1 != _goboringcrypto_EVP_PKEY_sign(ctx, NULL, slen, msg, msgLen))
-    goto err;
-
   if (1 != _goboringcrypto_EVP_PKEY_sign(ctx, sig, slen, msg, msgLen))
     goto err;
 
