@@ -7,13 +7,101 @@
 
 package openssl
 
-// #include "goopenssl.h"
+/*
+#include "goopenssl.h"
+
+int
+_goboringcrypto_gosha1(void *p, size_t n, void *out)
+{
+	GO_SHA_CTX ctx;
+	_goboringcrypto_SHA1_Init(&ctx);
+	return _goboringcrypto_SHA1_Update(&ctx, p, n) &&
+		_goboringcrypto_SHA1_Final(out, &ctx);
+}
+int
+_goboringcrypto_gosha224(void *p, size_t n, void *out)
+{
+	GO_SHA256_CTX ctx;
+	_goboringcrypto_SHA224_Init(&ctx);
+	return _goboringcrypto_SHA224_Update(&ctx, p, n) &&
+		_goboringcrypto_SHA224_Final(out, &ctx);
+}
+int
+_goboringcrypto_gosha256(void *p, size_t n, void *out)
+{
+	GO_SHA256_CTX ctx;
+	_goboringcrypto_SHA256_Init(&ctx);
+	return _goboringcrypto_SHA256_Update(&ctx, p, n) &&
+		_goboringcrypto_SHA256_Final(out, &ctx);
+}
+int
+_goboringcrypto_gosha384(void *p, size_t n, void *out)
+{
+	GO_SHA512_CTX ctx;
+	_goboringcrypto_SHA384_Init(&ctx);
+	return _goboringcrypto_SHA384_Update(&ctx, p, n) &&
+		_goboringcrypto_SHA384_Final(out, &ctx);
+}
+int
+_goboringcrypto_gosha512(void *p, size_t n, void *out)
+{
+	GO_SHA512_CTX ctx;
+	_goboringcrypto_SHA512_Init(&ctx);
+	return _goboringcrypto_SHA512_Update(&ctx, p, n) &&
+		_goboringcrypto_SHA512_Final(out, &ctx);
+}
+*/
 import "C"
 import (
 	"errors"
 	"hash"
 	"unsafe"
 )
+
+// NOTE: The cgo calls in this file are arranged to avoid marking the parameters as escaping.
+// To do that, we call noescape (including via addr).
+// We must also make sure that the data pointer arguments have the form unsafe.Pointer(&...)
+// so that cgo does not annotate them with cgoCheckPointer calls. If it did that, it might look
+// beyond the byte slice and find Go pointers in unprocessed parts of a larger allocation.
+// To do both of these simultaneously, the idiom is unsafe.Pointer(&*addr(p)),
+// where addr returns the base pointer of p, substituting a non-nil pointer for nil,
+// and applying a noescape along the way.
+// This is all to preserve compatibility with the allocation behavior of the non-boring implementations.
+
+func SHA1(p []byte) (sum [20]byte) {
+	if C._goboringcrypto_gosha1(unsafe.Pointer(&*addr(p)), C.size_t(len(p)), unsafe.Pointer(&*addr(sum[:]))) == 0 {
+		panic("boringcrypto: SHA1 failed")
+	}
+	return
+}
+
+func SHA224(p []byte) (sum [28]byte) {
+	if C._goboringcrypto_gosha224(unsafe.Pointer(&*addr(p)), C.size_t(len(p)), unsafe.Pointer(&*addr(sum[:]))) == 0 {
+		panic("boringcrypto: SHA224 failed")
+	}
+	return
+}
+
+func SHA256(p []byte) (sum [32]byte) {
+	if C._goboringcrypto_gosha256(unsafe.Pointer(&*addr(p)), C.size_t(len(p)), unsafe.Pointer(&*addr(sum[:]))) == 0 {
+		panic("boringcrypto: SHA256 failed")
+	}
+	return
+}
+
+func SHA384(p []byte) (sum [48]byte) {
+	if C._goboringcrypto_gosha384(unsafe.Pointer(&*addr(p)), C.size_t(len(p)), unsafe.Pointer(&*addr(sum[:]))) == 0 {
+		panic("boringcrypto: SHA384 failed")
+	}
+	return
+}
+
+func SHA512(p []byte) (sum [64]byte) {
+	if C._goboringcrypto_gosha512(unsafe.Pointer(&*addr(p)), C.size_t(len(p)), unsafe.Pointer(&*addr(sum[:]))) == 0 {
+		panic("boringcrypto: SHA512 failed")
+	}
+	return
+}
 
 // NewSHA1 returns a new SHA1 hash.
 func NewSHA1() hash.Hash {
@@ -337,8 +425,6 @@ const (
 	magic512         = "sha\x07"
 	marshaledSize512 = len(magic512) + 8*8 + 128 + 8
 )
-
-var zero [128]byte
 
 func (h *sha384Hash) MarshalBinary() ([]byte, error) {
 	d := (*sha512Ctx)(unsafe.Pointer(&h.ctx))
