@@ -1,13 +1,15 @@
-package openssl
+package openssl_test
 
 import (
 	"bytes"
+	"github.com/golang-fips/openssl-fips/openssl"
+	"github.com/golang-fips/openssl-fips/openssl/bbig"
 	"math/big"
 	"testing"
 )
 
 func TestSharedKeyECDH(t *testing.T) {
-	if !Enabled() {
+	if !openssl.Enabled() {
 		t.Skip("boringcrypto: skipping test, FIPS not enabled")
 	}
 	// Test vector from CAVS
@@ -53,12 +55,14 @@ func TestSharedKeyECDH(t *testing.T) {
 		0x04, 0x0d, 0xd7, 0x77, 0x89, 0x97, 0xbd, 0x7b,
 	}
 
-	priv, err := NewPrivateKeyECDH("P-256", x, y, k)
+	bx, by, bk := bbig.Enc(x), bbig.Enc(y), bbig.Enc(k)
+
+	priv, err := openssl.NewPrivateKeyECDH("P-256", bx, by, bk)
 	if err != nil {
 		t.Log("NewPrivateKeyECDH failed", err)
 		t.Fail()
 	}
-	derived, err := SharedKeyECDH(priv, peerPublicKey)
+	derived, err := openssl.SharedKeyECDH(priv, peerPublicKey)
 	if err != nil {
 		t.Log("SharedKeyECDH failed", err)
 		t.Fail()

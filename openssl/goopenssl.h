@@ -369,6 +369,8 @@ DEFINEFUNC(int, BN_set_word, (BIGNUM *a, BN_ULONG w), (a, w))
 DEFINEFUNC(unsigned int, BN_num_bits, (const GO_BIGNUM *arg0), (arg0))
 DEFINEFUNC(int, BN_is_negative, (const GO_BIGNUM *arg0), (arg0))
 DEFINEFUNC(GO_BIGNUM *, BN_bin2bn, (const uint8_t *arg0, size_t arg1, GO_BIGNUM *arg2), (arg0, arg1, arg2))
+DEFINEFUNC(int, BN_bn2le_padded, (uint8_t *out, size_t len, const BIGNUM *in), (out, len, in))
+DEFINEFUNC(GO_BIGNUM *, BN_le2bn, (const uint8_t *in, size_t len, BIGNUM *ret), (in, len, ret))
 DEFINEFUNC(size_t, BN_bn2bin, (const GO_BIGNUM *arg0, uint8_t *arg1), (arg0, arg1))
 
 static inline unsigned int
