@@ -1,0 +1,189 @@
+diff openssl/aes.go v2/openssl/aes.go
+365a366,371
+> // NewGCMTLS returns a GCM cipher specific to TLS
+> // and should not be used for non-TLS purposes.
+> func NewGCMTLS(c cipher.Block) (cipher.AEAD, error) {
+> 	return c.(*aesCipher).NewGCMTLS()
+> }
+> 
+Only in v2/openssl: bbig
+diff openssl/ecdh_test.go v2/openssl/ecdh_test.go
+1c1
+< package openssl
+---
+> package openssl_test
+4a5,6
+> 	"github.com/golang-fips/openssl-fips/v2/openssl"
+> 	"github.com/golang-fips/openssl-fips/v2/openssl/bbig"
+10c12
+< 	if !Enabled() {
+---
+> 	if !openssl.Enabled() {
+56c58,60
+< 	priv, err := NewPrivateKeyECDH("P-256", x, y, k)
+---
+> 	bx, by, bk := bbig.Enc(x), bbig.Enc(y), bbig.Enc(k)
+> 
+> 	priv, err := openssl.NewPrivateKeyECDH("P-256", bx, by, bk)
+61c65
+< 	derived, err := SharedKeyECDH(priv, peerPublicKey)
+---
+> 	derived, err := openssl.SharedKeyECDH(priv, peerPublicKey)
+diff openssl/ecdsa.go v2/openssl/ecdsa.go
+13,14d12
+< 	"crypto"
+< 	"encoding/asn1"
+16d13
+< 	"math/big"
+22c19
+< 	R, S *big.Int
+---
+> 	R, S BigInt
+61c58
+< func NewPublicKeyECDSA(curve string, X, Y *big.Int) (*PublicKeyECDSA, error) {
+---
+> func NewPublicKeyECDSA(curve string, X, Y BigInt) (*PublicKeyECDSA, error) {
+75c72
+< func newECKey(curve string, X, Y *big.Int) (*C.GO_EC_KEY, error) {
+---
+> func newECKey(curve string, X, Y BigInt) (*C.GO_EC_KEY, error) {
+108c105
+< func NewPrivateKeyECDSA(curve string, X, Y *big.Int, D *big.Int) (*PrivateKeyECDSA, error) {
+---
+> func NewPrivateKeyECDSA(curve string, X, Y BigInt, D BigInt) (*PrivateKeyECDSA, error) {
+131,147c128
+< func SignECDSA(priv *PrivateKeyECDSA, hash []byte, h crypto.Hash) (r, s *big.Int, err error) {
+< 	// We could use ECDSA_do_sign instead but would need to convert
+< 	// the resulting BIGNUMs to *big.Int form. If we're going to do a
+< 	// conversion, converting the ASN.1 form is more convenient and
+< 	// likely not much more expensive.
+< 	sig, err := SignMarshalECDSA(priv, hash, h)
+< 	if err != nil {
+< 		return nil, nil, err
+< 	}
+< 	var esig ecdsaSignature
+< 	if _, err := asn1.Unmarshal(sig, &esig); err != nil {
+< 		return nil, nil, err
+< 	}
+< 	return esig.R, esig.S, nil
+< }
+< 
+< func SignMarshalECDSA(priv *PrivateKeyECDSA, hash []byte, h crypto.Hash) ([]byte, error) {
+---
+> func SignMarshalECDSA(priv *PrivateKeyECDSA, hash []byte) ([]byte, error) {
+151,163c132,134
+< 	if h == crypto.Hash(0) {
+< 		ok := C._goboringcrypto_internal_ECDSA_sign(0, base(hash), C.size_t(len(hash)), (*C.uint8_t)(unsafe.Pointer(&sig[0])), &sigLen, priv.key) > 0
+< 		if !ok {
+< 			return nil, NewOpenSSLError(("ECDSA_sign failed"))
+< 		}
+< 	} else {
+< 		md := cryptoHashToMD(h)
+< 		if md == nil {
+< 			panic("boring: invalid hash")
+< 		}
+< 		if C._goboringcrypto_ECDSA_sign(md, base(hash), C.size_t(len(hash)), (*C.uint8_t)(unsafe.Pointer(&sig[0])), &sigLen, priv.key) == 0 {
+< 			return nil, NewOpenSSLError("ECDSA_sign failed")
+< 		}
+---
+> 	ok := C._goboringcrypto_internal_ECDSA_sign(0, base(hash), C.size_t(len(hash)), (*C.uint8_t)(unsafe.Pointer(&sig[0])), &sigLen, priv.key) > 0
+> 	if !ok {
+> 		return nil, NewOpenSSLError(("ECDSA_sign failed"))
+164a136
+> 
+168,186c140,141
+< 
+< func VerifyECDSA(pub *PublicKeyECDSA, msg []byte, r, s *big.Int, h crypto.Hash) bool {
+< 	// We could use ECDSA_do_verify instead but would need to convert
+< 	// r and s to BIGNUM form. If we're going to do a conversion, marshaling
+< 	// to ASN.1 is more convenient and likely not much more expensive.
+< 	sig, err := asn1.Marshal(ecdsaSignature{r, s})
+< 	if err != nil {
+< 		return false
+< 	}
+< 	if h == crypto.Hash(0) {
+< 		ok := C._goboringcrypto_internal_ECDSA_verify(0, base(msg), C.size_t(len(msg)), (*C.uint8_t)(unsafe.Pointer(&sig[0])), C.uint(len(sig)), pub.key) > 0
+< 		runtime.KeepAlive(pub)
+< 		return ok
+< 	}
+< 	md := cryptoHashToMD(h)
+< 	if md == nil {
+< 		panic("boring: invalid hash")
+< 	}
+< 	ok := C._goboringcrypto_ECDSA_verify(md, base(msg), C.size_t(len(msg)), (*C.uint8_t)(unsafe.Pointer(&sig[0])), C.uint(len(sig)), pub.key) > 0
+---
+> func VerifyECDSA(pub *PublicKeyECDSA, hash []byte, sig []byte) bool {
+> 	ok := C._goboringcrypto_internal_ECDSA_verify(0, base(hash), C.size_t(len(hash)), (*C.uint8_t)(unsafe.Pointer(&sig[0])), C.uint(len(sig)), pub.key) > 0
+191c146
+< func GenerateKeyECDSA(curve string) (X, Y, D *big.Int, err error) {
+---
+> func GenerateKeyECDSA(curve string) (X, Y, D BigInt, err error) {
+diff openssl/goopenssl.h v2/openssl/goopenssl.h
+371a372,373
+> DEFINEFUNC(int, BN_bn2le_padded, (uint8_t *out, size_t len, const BIGNUM *in), (out, len, in))
+> DEFINEFUNC(GO_BIGNUM *, BN_le2bn, (const uint8_t *in, size_t len, BIGNUM *ret), (in, len, ret))
+diff openssl/openssl.go v2/openssl/openssl.go
+19c19
+< 	"math/big"
+---
+> 	"math/bits"
+39a40,44
+> // A BigInt is the raw words from a BigInt.
+> // This definition allows us to avoid importing math/big.
+> // Conversion between BigInt and *big.Int is in crypto/internal/boring/bbig.
+> type BigInt []uint
+> 
+186,188c191,201
+< func bigToBN(x *big.Int) *C.GO_BIGNUM {
+< 	raw := x.Bytes()
+< 	return C._goboringcrypto_BN_bin2bn(base(raw), C.size_t(len(raw)), nil)
+---
+> func wbase(b BigInt) *C.uint8_t {
+> 	if len(b) == 0 {
+> 		return nil
+> 	}
+> 	return (*C.uint8_t)(unsafe.Pointer(&b[0]))
+> }
+> 
+> const wordBytes = bits.UintSize / 8
+> 
+> func bigToBN(x BigInt) *C.GO_BIGNUM {
+> 	return C._goboringcrypto_BN_le2bn(wbase(x), C.size_t(len(x)*wordBytes), nil)
+191,194c204,209
+< func bnToBig(bn *C.GO_BIGNUM) *big.Int {
+< 	raw := make([]byte, C._goboringcrypto_BN_num_bytes(bn))
+< 	n := C._goboringcrypto_BN_bn2bin(bn, base(raw))
+< 	return new(big.Int).SetBytes(raw[:n])
+---
+> func bnToBig(bn *C.GO_BIGNUM) BigInt {
+> 	x := make(BigInt, (C._goboringcrypto_BN_num_bytes(bn)+wordBytes-1)/wordBytes)
+> 	if C._goboringcrypto_BN_bn2le_padded(wbase(x), C.size_t(len(x)*wordBytes), bn) == 0 {
+> 		panic("boringcrypto: bignum conversion failed")
+> 	}
+> 	return x
+197c212
+< func bigToBn(bnp **C.GO_BIGNUM, b *big.Int) bool {
+---
+> func bigToBn(bnp **C.GO_BIGNUM, b BigInt) bool {
+205,206c220
+< 	raw := b.Bytes()
+< 	bn := C._goboringcrypto_BN_bin2bn(base(raw), C.size_t(len(raw)), nil)
+---
+> 	bn := bigToBN(b)
+diff openssl/rsa.go v2/openssl/rsa.go
+16d15
+< 	"math/big"
+22,23c21,22
+< func GenerateKeyRSA(bits int) (N, E, D, P, Q, Dp, Dq, Qinv *big.Int, err error) {
+< 	bad := func(e error) (N, E, D, P, Q, Dp, Dq, Qinv *big.Int, err error) {
+---
+> func GenerateKeyRSA(bits int) (N, E, D, P, Q, Dp, Dq, Qinv BigInt, err error) {
+> 	bad := func(e error) (N, E, D, P, Q, Dp, Dq, Qinv BigInt, err error) {
+49c48
+< func NewPublicKeyRSA(N, E *big.Int) (*PublicKeyRSA, error) {
+---
+> func NewPublicKeyRSA(N, E BigInt) (*PublicKeyRSA, error) {
+80c79
+< func NewPrivateKeyRSA(N, E, D, P, Q, Dp, Dq, Qinv *big.Int) (*PrivateKeyRSA, error) {
+---
+> func NewPrivateKeyRSA(N, E, D, P, Q, Dp, Dq, Qinv BigInt) (*PrivateKeyRSA, error) {
