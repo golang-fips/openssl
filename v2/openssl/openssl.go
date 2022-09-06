@@ -37,11 +37,6 @@ const (
 // Enabled controls whether FIPS crypto is enabled.
 var enabled = false
 
-// A BigInt is the raw words from a BigInt.
-// This definition allows us to avoid importing math/big.
-// Conversion between BigInt and *big.Int is in crypto/internal/boring/bbig.
-type BigInt []uint
-
 // When this variable is true, the go crypto API will panic when a caller
 // tries to use the API in a non-compliant manner.  When this is false, the
 // go crypto API will allow existing go crypto APIs to be used even
