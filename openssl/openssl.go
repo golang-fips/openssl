@@ -193,12 +193,12 @@ func wbase(b BigInt) *C.uint8_t {
 const wordBytes = bits.UintSize / 8
 
 func bigToBN(x BigInt) *C.GO_BIGNUM {
-	return C._goboringcrypto_BN_le2bn(wbase(x), C.size_t(len(x)*wordBytes), nil)
+	return C._goboringcrypto_BN_lebin2bn(wbase(x), C.size_t(len(x)*wordBytes), nil)
 }
 
 func bnToBig(bn *C.GO_BIGNUM) BigInt {
 	x := make(BigInt, (C._goboringcrypto_BN_num_bytes(bn)+wordBytes-1)/wordBytes)
-	if C._goboringcrypto_BN_bn2le_padded(wbase(x), C.size_t(len(x)*wordBytes), bn) == 0 {
+	if C._goboringcrypto_BN_bn2lebinpad(bn, wbase(x), C.size_t(len(x)*wordBytes)) == 0 {
 		panic("boringcrypto: bignum conversion failed")
 	}
 	return x
