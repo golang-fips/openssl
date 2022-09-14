@@ -369,7 +369,8 @@ DEFINEFUNC(int, BN_set_word, (BIGNUM *a, BN_ULONG w), (a, w))
 DEFINEFUNC(unsigned int, BN_num_bits, (const GO_BIGNUM *arg0), (arg0))
 DEFINEFUNC(int, BN_is_negative, (const GO_BIGNUM *arg0), (arg0))
 DEFINEFUNC(GO_BIGNUM *, BN_bin2bn, (const uint8_t *arg0, size_t arg1, GO_BIGNUM *arg2), (arg0, arg1, arg2))
-DEFINEFUNC(size_t, BN_bn2bin, (const GO_BIGNUM *arg0, uint8_t *arg1), (arg0, arg1))
+DEFINEFUNC(GO_BIGNUM *, BN_lebin2bn, (const unsigned char *s, size_t len, BIGNUM *ret), (s, len, ret))
+DEFINEFUNC(int, BN_bn2lebinpad, (const BIGNUM *a, unsigned char *to, size_t tolen), (a, to, tolen))
 
 static inline unsigned int
 _goboringcrypto_BN_num_bytes(const GO_BIGNUM* a) {

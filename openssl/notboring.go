@@ -10,10 +10,8 @@ package openssl
 import (
 	"crypto"
 	"crypto/cipher"
-	"crypto/internal/boring/sig"
 	"hash"
 	"io"
-	"math/big"
 )
 
 var enabled = false
@@ -21,10 +19,6 @@ var enabled = false
 // Unreachable marks code that should be unreachable
 // when BoringCrypto is in use. It is a no-op without BoringCrypto.
 func Unreachable() {
-	// Code that's unreachable when using BoringCrypto
-	// is exactly the code we want to detect for reporting
-	// standard Go crypto.
-	sig.StandardCrypto()
 }
 
 // UnreachableExceptTests marks code that should be unreachable
@@ -55,35 +49,35 @@ func NewAESCipher(key []byte) (cipher.Block, error) { panic("boringcrypto: not a
 type PublicKeyECDSA struct{ _ int }
 type PrivateKeyECDSA struct{ _ int }
 
-func GenerateKeyECDSA(curve string) (X, Y, D *big.Int, err error) {
+func GenerateKeyECDSA(curve string) (X, Y, D BigInt, err error) {
 	panic("boringcrypto: not available")
 }
-func NewPrivateKeyECDSA(curve string, X, Y, D *big.Int) (*PrivateKeyECDSA, error) {
+func NewPrivateKeyECDSA(curve string, X, Y, D BigInt) (*PrivateKeyECDSA, error) {
 	panic("boringcrypto: not available")
 }
-func NewPublicKeyECDSA(curve string, X, Y *big.Int) (*PublicKeyECDSA, error) {
+func NewPublicKeyECDSA(curve string, X, Y BigInt) (*PublicKeyECDSA, error) {
 	panic("boringcrypto: not available")
 }
-func SignECDSA(priv *PrivateKeyECDSA, hash []byte, h crypto.Hash) (r, s *big.Int, err error) {
+func SignECDSA(priv *PrivateKeyECDSA, hash []byte, h crypto.Hash) (r, s BigInt, err error) {
 	panic("boringcrypto: not available")
 }
 func SignMarshalECDSA(priv *PrivateKeyECDSA, hash []byte, h crypto.Hash) ([]byte, error) {
 	panic("boringcrypto: not available")
 }
-func VerifyECDSA(pub *PublicKeyECDSA, hash []byte, r, s *big.Int, h crypto.Hash) bool {
+func VerifyECDSA(pub *PublicKeyECDSA, hash []byte, r, s BigInt, h crypto.Hash) bool {
 	panic("boringcrypto: not available")
 }
 
 type PublicKeyECDH struct{ _ int }
 type PrivateKeyECDH struct{ _ int }
 
-func GenerateKeyECDH(curve string) (X, Y, D *big.Int, err error) {
+func GenerateKeyECDH(curve string) (X, Y, D BigInt, err error) {
 	panic("boringcrypto: not available")
 }
-func NewPrivateKeyECDH(curve string, X, Y, D *big.Int) (*PrivateKeyECDH, error) {
+func NewPrivateKeyECDH(curve string, X, Y, D BigInt) (*PrivateKeyECDH, error) {
 	panic("boringcrypto: not available")
 }
-func NewPublicKeyECDH(curve string, X, Y *big.Int) (*PublicKeyECDH, error) {
+func NewPublicKeyECDH(curve string, X, Y BigInt) (*PublicKeyECDH, error) {
 	panic("boringcrypto: not available")
 }
 func SharedKeyECDH(priv *PrivateKeyECDH, peerPublicKey []byte) ([]byte, error) {
@@ -111,13 +105,13 @@ func EncryptRSAPKCS1(pub *PublicKeyRSA, msg []byte) ([]byte, error) {
 func EncryptRSANoPadding(pub *PublicKeyRSA, msg []byte) ([]byte, error) {
 	panic("boringcrypto: not available")
 }
-func GenerateKeyRSA(bits int) (N, E, D, P, Q, Dp, Dq, Qinv *big.Int, err error) {
+func GenerateKeyRSA(bits int) (N, E, D, P, Q, Dp, Dq, Qinv BigInt, err error) {
 	panic("boringcrypto: not available")
 }
-func NewPrivateKeyRSA(N, E, D, P, Q, Dp, Dq, Qinv *big.Int) (*PrivateKeyRSA, error) {
+func NewPrivateKeyRSA(N, E, D, P, Q, Dp, Dq, Qinv BigInt) (*PrivateKeyRSA, error) {
 	panic("boringcrypto: not available")
 }
-func NewPublicKeyRSA(N, E *big.Int) (*PublicKeyRSA, error) { panic("boringcrypto: not available") }
+func NewPublicKeyRSA(N, E BigInt) (*PublicKeyRSA, error) { panic("boringcrypto: not available") }
 func SignRSAPKCS1v15(priv *PrivateKeyRSA, h crypto.Hash, hashed []byte, msgHashed bool) ([]byte, error) {
 	panic("boringcrypto: not available")
 }

@@ -363,6 +363,12 @@ func (c *aesCipher) NewGCM(nonceSize, tagSize int) (cipher.AEAD, error) {
 	return c.newGCM(false)
 }
 
+// NewGCMTLS returns a GCM cipher specific to TLS
+// and should not be used for non-TLS purposes.
+func NewGCMTLS(c cipher.Block) (cipher.AEAD, error) {
+	return c.(*aesCipher).NewGCMTLS()
+}
+
 func (c *aesCipher) NewGCMTLS() (cipher.AEAD, error) {
 	return c.newGCM(true)
 }

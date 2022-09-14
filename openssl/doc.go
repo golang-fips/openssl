@@ -10,3 +10,8 @@ package openssl
 func Enabled() bool {
 	return enabled
 }
+
+// A BigInt is the raw words from a BigInt.
+// This definition allows us to avoid importing math/big.
+// Conversion between BigInt and *big.Int is in crypto/internal/boring/bbig.
+type BigInt []uint
