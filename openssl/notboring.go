@@ -10,8 +10,8 @@ package openssl
 import (
 	"crypto"
 	"crypto/cipher"
-	"crypto/internal/boring/sig"
 	"hash"
+	"io"
 )
 
 var enabled = false
@@ -19,10 +19,6 @@ var enabled = false
 // Unreachable marks code that should be unreachable
 // when BoringCrypto is in use. It is a no-op without BoringCrypto.
 func Unreachable() {
-	// Code that's unreachable when using BoringCrypto
-	// is exactly the code we want to detect for reporting
-	// standard Go crypto.
-	sig.StandardCrypto()
 }
 
 // UnreachableExceptTests marks code that should be unreachable
