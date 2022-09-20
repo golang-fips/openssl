@@ -102,12 +102,12 @@ int
 go_openssl_version_minor(void* handle)
 {
     unsigned int (*fn)(void);
-    // OPENSSL_version_major is supported since OpenSSL 3.
+    // OPENSSL_version_minor is supported since OpenSSL 3.
     fn = (unsigned int (*)(void))dlsym(handle, "OPENSSL_version_minor");
     if (fn != NULL)
         return (int)fn();
 
-    // If OPENSSL_version_major is not defined, try with OpenSSL 1 functions.
+    // If OPENSSL_version_minor is not defined, try with OpenSSL 1 functions.
     unsigned long num = version_num(handle);
     // OpenSSL version number follows this schema:
     // MNNFFPPS: major minor fix patch status.

@@ -27,10 +27,16 @@ var knownVersions = [...]string{"3", "1.1", "11", "111", "1.0.2", "1.0.0", "10"}
 //
 // See Init() for details about version.
 func opensslInit(version string) (major int, minor int, err error) {
+	// Load the OpenSSL shareed library using dlopen.
 	handle, err := loadLibrary(version)
 	if err != nil {
 		return 0, 0, err
 	}
+
+	// Retrieve the loaded OpenSSL version and check if it is supported.
+	// Notice that major and minor could not match with the version parameter
+	// in case the name of the shared library file differs from the OpenSSL
+	// version it contains.
 	major = int(C.go_openssl_version_major(handle))
 	minor = int(C.go_openssl_version_minor(handle))
 	if major == -1 || minor == -1 {
@@ -47,7 +53,11 @@ func opensslInit(version string) (major int, minor int, err error) {
 		return 0, 0, errUnsuportedVersion()
 	}
 
+	// Load the OpenSSL functions.
+	// See shims.go for the complete list of supported functions.
 	C.go_openssl_load_functions(handle, C.int(major), C.int(minor))
+
+	// Initialize OpenSSL.
 	C.go_openssl_OPENSSL_init()
 	if major == 1 && minor == 0 {
 		if C.go_openssl_thread_setup() != 1 {
@@ -84,9 +94,10 @@ func loadLibrary(version string) (unsafe.Pointer, error) {
 	// of well known versions.
 	for _, v := range knownVersions {
 		handle := dlopen(v)
-		if handle != nil {
-			return handle, nil
+		if handle == nil {
+			continue
 		}
+		return handle, nil
 	}
 	return nil, errors.New("openssl: can't load libcrypto.so using any known version suffix")
 }
