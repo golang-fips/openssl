@@ -4,6 +4,18 @@
 // Package openssl provides access to OpenSSL cryptographic functions.
 package openssl
 
+// #include "goopenssl.h"
+// #include <dlfcn.h>
+// #cgo LDFLAGS: -ldl
+import "C"
+import (
+	"errors"
+	"strconv"
+	"sync"
+	"syscall"
+	"unsafe"
+)
+
 var (
 	initOnce sync.Once
 	// errInit is set when first calling Init().

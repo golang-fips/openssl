@@ -1,5 +1,3 @@
-package openssl
-
 //go:build linux && !android
 // +build linux,!android
 

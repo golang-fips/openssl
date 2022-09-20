@@ -1,8 +1,15 @@
 #include <stdlib.h> // size_t
 #include <stdint.h> // uint64_t
 
-typedef void* GO_OPENSSL_INIT_SETTINGS_PTR;
+// #include <openssl/crypto.h>
+enum {
+    GO_OPENSSL_INIT_LOAD_CRYPTO_STRINGS = 0x00000002L,
+    GO_OPENSSL_INIT_ADD_ALL_CIPHERS = 0x00000004L,
+    GO_OPENSSL_INIT_ADD_ALL_DIGESTS = 0x00000008L,
+    GO_OPENSSL_INIT_LOAD_CONFIG = 0x00000040L
+};
 
+typedef void* GO_OPENSSL_INIT_SETTINGS_PTR;
 
 // FOR_ALL_OPENSSL_FUNCTIONS is the list of all functions from libcrypto that are used in this package.
 // Forgetting to add a function here results in build failure with message reporting the function

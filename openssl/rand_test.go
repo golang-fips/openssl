@@ -1,14 +1,16 @@
 //go:build linux && !android
 // +build linux,!android
 
-package openssl
+package openssl_test
 
 import (
 	"testing"
+
+	"github.com/golang-fips/openssl-fips/openssl"
 )
 
 func TestRand(t *testing.T) {
-	_, err := RandReader.Read(make([]byte, 5))
+	_, err := openssl.RandReader.Read(make([]byte, 5))
 	if err != nil {
 		t.Fatal(err)
 	}

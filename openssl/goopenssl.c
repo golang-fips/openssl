@@ -3,7 +3,8 @@
 
 #include "goopenssl.h"
 
-#include <dlfcn.h>
+#include <dlfcn.h> // dlsym
+#include <stdio.h> // fprintf
 
 // Approach taken from .Net System.Security.Cryptography.Native
 // https://github.com/dotnet/runtime/blob/f64246ce08fb7a58221b2b7c8e68f69c02522b0d/src/libraries/Native/Unix/System.Security.Cryptography.Native/opensslshim.c
