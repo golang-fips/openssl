@@ -25,7 +25,11 @@ typedef void* GO_OPENSSL_INIT_SETTINGS_PTR;
 //
 // DEFINEFUNC_1_1 acts like DEFINEFUNC but only aborts the process if function can't be loaded
 // when using 1.1.0 or higher.
+//
+// DEFINEFUNC_RENAMED_1_1 acts like DEFINEFUNC but tries to load the function using the new name when using >= 1.1.x
+// and the old name when using 1.0.2. In both cases the function will have the new name.
 #define FOR_ALL_OPENSSL_FUNCTIONS \
+DEFINEFUNC_RENAMED_1_1(const char *, OpenSSL_version, SSLeay_version, (int type), (type)) \
 DEFINEFUNC(void, OPENSSL_init, (void), ()) \
 DEFINEFUNC_LEGACY_1_0(void, ERR_load_crypto_strings, (void), ()) \
 DEFINEFUNC_LEGACY_1_0(int, CRYPTO_num_locks, (void), ()) \

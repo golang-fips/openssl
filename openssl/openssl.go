@@ -115,3 +115,8 @@ func loadLibrary(version string) (unsafe.Pointer, error) {
 type fail string
 
 func (e fail) Error() string { return "openssl: " + string(e) + " failed" }
+
+// VersionText returns the version text of the OpenSSL currently loaded.
+func VersionText() string {
+	return C.GoString(C.go_openssl_OpenSSL_version(0))
+}
