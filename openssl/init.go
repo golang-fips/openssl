@@ -22,12 +22,12 @@ import (
 var knownVersions = [...]string{"3", "1.1", "11", "111", "1.0.2", "1.0.0", "10"}
 
 // opensslInit loads and initialize OpenSSL.
-// If succeed, it returns the major and minor OpenSSL version
+// If successful, it returns the major and minor OpenSSL version
 // as reported by the OpenSSL API.
 //
 // See Init() for details about version.
 func opensslInit(version string) (major int, minor int, err error) {
-	// Load the OpenSSL shareed library using dlopen.
+	// Load the OpenSSL shared library using dlopen.
 	handle, err := loadLibrary(version)
 	if err != nil {
 		return 0, 0, err
