@@ -1,0 +1,197 @@
+name: "Test Go"
+
+on:
+  workflow_dispatch:
+    inputs:
+      composes:
+        description: 'compose names'
+        required: true
+        default: 'ubi7,ubi8,ubi9,c8s,c9s'
+      go_openssl_ref:
+        description: 'golang-fips/go-openssl ref'
+        required: true
+        default: 'main'
+      go_fips_ref:
+        description: 'golang-fips/go ref'
+        required: true
+        default: 'main'
+      go_ref:
+        description: 'golang/go ref'
+        required: true
+        default: 'release-branch.go1.19'
+  workflow_call:
+    inputs:
+      composes:
+        description: 'compose names'
+        required: true
+        default: 'ubi7,ubi8,ubi9,c8s,c9s'
+        type: string
+      go_openssl_ref:
+        description: 'golang-fips/go-openssl ref'
+        required: true
+        default: 'main'
+        type: string
+      go_fips_ref:
+        description: 'golang-fips/go ref'
+        required: true
+        default: 'main'
+        type: string
+      go_ref:
+        description: 'golang/go ref'
+        required: true
+        default: 'release-branch.go1.19'
+        type: string
+
+# https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#permissions
+permissions:
+  actions: none
+  checks: read
+  contents: none
+  deployments: none
+  id-token: none
+  issues: read
+  discussions: read
+  packages: none
+  pages: none
+  pull-requests: read
+  repository-projects: none
+  security-events: none
+  statuses: none
+
+jobs:
+  select-composes:
+    name: "Select Compose Images"
+    uses: ./.github/workflows/select-composes.yml
+    with:
+      composes: ${{ inputs.composes }}
+
+  test:
+    name: "Test Go"
+    runs-on: ubuntu-latest
+    needs: select-composes
+    strategy:
+      fail-fast: false
+      matrix:
+        compose: ${{fromJson(needs.select-composes.outputs.composes)}}
+    container:
+      image: ${{ matrix.compose }}
+      options: --user root
+    steps:
+      - name: "Install dependencies"
+        shell: bash
+        run: yum install git golang golang-bin openssl openssl-devel -y
+
+      - name: "Print OS version"
+        shell: bash
+        run: cat /etc/os-release
+
+      - name: "Print Go version (host)"
+        shell: bash
+        run: go version
+
+      - name: "Print OpenSSL version"
+        shell: bash
+        run: openssl version
+
+      - name: "Configure golang-fips ci git user"
+        shell: bash
+        run: | 
+          git config --global user.name "golang-fips ci"
+          git config --global user.email "<>"
+
+      - name: "Checkout golang-fips/openssl-fips"
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ inputs.go_openssl_ref }}
+
+      - name: "Clone golang-fips/go"
+        shell: bash
+        run: | 
+          cd $GITHUB_WORKSPACE/..
+          git clone https://github.com/golang-fips/go
+          cd go
+          git checkout ${{ inputs.go_fips_ref }}
+          git config user.name "golang-fips ci"
+          git config user.email "<>"
+
+      - name: "Setup initial fips patches"
+        shell: bash
+        run: |
+          cd $GITHUB_WORKSPACE/..
+          pwd
+          ls -Al *
+          pushd go
+          # lower the go build version to 1.16
+          sed -i "s/go mod tidy/go mod tidy -go=1.16/g" scripts/create-secondary-patch.sh
+          ./scripts/setup-initial-patch.sh -r $(realpath ../openssl-fips) ${{ inputs.go_ref }}
+
+      - name: "Apply FIPS patches"
+        shell: bash
+        run: |
+          cd $GITHUB_WORKSPACE/..
+          pwd
+          ls -Al *
+          pushd go/go
+          for patch in $(ls ../patches); do
+            git apply ../patches/$patch
+            git commit -am $patch
+          done
+
+      - name: "Build Go"
+        shell: bash
+        run: |
+          cd $GITHUB_WORKSPACE/..
+          pwd
+          ls -Al *
+          pushd go/go/src
+          # we test openssl-fips via a replace directive
+          # so we have to disable this check for the
+          # openssl-fips module
+          sed -i 's|if module.CheckPath(r.Replacement.Path) != nil|\0 \&\& !strings.HasSuffix(line, "openssl-fips")|' \
+                  cmd/internal/moddeps/moddeps_test.go
+          sed -i 's|if len(versions) > 1|\0 \&\& !strings.HasSuffix(path, "openssl-fips")|' \
+                  cmd/internal/moddeps/moddeps_test.go
+          ./make.bash -v
+
+      - name: "Run Go Tests"
+        shell: bash
+        run: |
+          cd $GITHUB_WORKSPACE/..
+          pwd
+          ls -Al *
+          pushd go/go/src
+          # Skip version dependency check, which will fail due to the
+          # module replacement via -require
+          ./run.bash -v -v -v -k
+
+      - name: "Run FIPS Tests"
+        shell: bash
+        run: |
+          cd $GITHUB_WORKSPACE/..
+          pwd
+          ls -Al *
+
+          pushd go/go
+          export GO=$(pwd)/bin/go
+          export GOCACHE=/tmp/go-cache
+          export GOLANG_FIPS=1
+          export OPENSSL_FORCE_FIPS_MODE=1
+
+          pushd src
+          
+          pushd crypto
+          echo "Running crypto tests in FIPS mode"
+          $GO test -count=1 $($GO list ./... | grep -v tls) -v
+          echo "Checking signature function parity"
+          CGO_ENABLED=0 $GO test -count=1 $($GO list ./... | grep -v tls) -v
+          popd
+
+          pushd vendor/github.com/golang-fips
+          echo "Running golang-fips tests in FIPS mode"
+          $GO test -count=1 $($GO list ./... | grep -v tls) -v
+          popd
+
+          pushd crypto/tls
+          echo "Running TLS tests in FIPS mode"
+          $GO test -count=1 $($GO list ./...) -run "^TestBoring"
+          popd

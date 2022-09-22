@@ -1,0 +1,73 @@
+# based on alexsaezm/go-fips
+
+name: "parse-test-command"
+
+on:
+  workflow_call:
+    inputs:
+      command:
+        description: 'test command'
+        required: true
+        type: string
+        default: "/test -o ubi7 ubi8 ubi9 c8s c9s"
+    outputs:
+      composes:
+        description: "composes to run on"
+        value: ${{ jobs.select-composes.outputs.composes }}
+  workflow_dispatch:
+    inputs:
+      command:
+        description: 'test command'
+        required: true
+        type: string
+        default: "./test -o ubi7 ubi8 ubi9 c8s c9s"
+
+# https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#permissions
+permissions:
+  actions: none
+  checks: read
+  contents: none
+  deployments: none
+  id-token: none
+  issues: read
+  discussions: read
+  packages: none
+  pages: none
+  pull-requests: read
+  repository-projects: none
+  security-events: none
+  statuses: none
+
+jobs:
+  ack:
+    name: "Parse composes from command invocation"
+    runs-on: ubuntu-latest
+    outputs:
+      composes: ${{ steps.set-compose.outputs.composes }}
+    steps:
+      - name: "Set the targets"
+        id: set-compose
+        shell: python
+        env:
+          COMMAND: ${{ inputs.command }}
+        run: |
+          import os
+          import re
+          import argparse
+          parser = argparse.ArgumentParser(prog="ack")
+          parser.add_argument('-o', '--os', nargs='+', default=[])
+          try:
+              comment = re.search('/test (.*)', os.environ['COMMAND']).group(1)
+          except:
+              comment = ""
+          options = parser.parse_args(comment.split())
+          result = ','.join(options.os)
+          print(f"Parsed result: {result}")
+          print(f"::set-output name=composes::{result}")
+
+  select-composes:
+    name: "select-composes"
+    needs: ack
+    uses: ./.github/workflows/select-composes.yml
+    with:
+      composes: ${{ needs.ack.outputs.composes }}

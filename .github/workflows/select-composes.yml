@@ -1,0 +1,72 @@
+name: "select-composes"
+
+on:
+  workflow_dispatch:
+    inputs:
+      composes:
+        description: 'compose names'
+        required: true
+        default: 'ubi7,ubi8,ubi9,c8s,c9s'
+  workflow_call:
+    inputs:
+      composes:
+        description: 'compose names'
+        required: true
+        default: 'ubi7,ubi8,ubi9,c8s,c9s'
+        type: string
+    outputs:
+      composes:
+        description: "composes to run on"
+        value: ${{ jobs.select-composes.outputs.composes }}
+
+# https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#permissions
+permissions:
+  actions: none
+  checks: read
+  contents: none
+  deployments: none
+  id-token: none
+  issues: read
+  discussions: read
+  packages: none
+  pages: none
+  pull-requests: read
+  repository-projects: none
+  security-events: none
+  statuses: none
+
+jobs:
+  select-composes:
+    name: "select composes"
+    runs-on: ubuntu-latest
+    outputs:
+      composes: ${{ steps.set-compose.outputs.composes }}
+    steps:
+      - name: "select target images"
+        id: set-compose
+        shell: python
+        env:
+          COMPOSES: ${{ inputs.composes }}
+        run: |
+          import os
+          import sys
+          import re
+          def exit_err(msg):
+            sys.stderr.write(f"{msg}\n")
+            sys.exit(1)
+          compose_map = {
+              'ubi7': 'registry.access.redhat.com/ubi7/go-toolset:latest',
+              'ubi8': 'registry.access.redhat.com/ubi8/go-toolset:latest',
+              'ubi9': 'registry.access.redhat.com/ubi9/go-toolset:latest',
+              'c8s': 'quay.io/centos/centos:stream8',
+              'c9s': 'quay.io/centos/centos:stream9',
+          }
+          inputs = re.split(r"\s*,\s*|\s+", os.environ["COMPOSES"].strip())
+          if inputs:
+            composes = [compose_map[i] if i in compose_map \
+                       else exit_err(f"no such compose: '{i}'") \
+                       for i in inputs]
+          else:
+            composes = compose_map.values()
+          sys.stderr.write(f"Selected Images: {composes}\n")
+          print(f"::set-output name=composes::{composes}")
