@@ -42,7 +42,7 @@ func Init(version string) error {
 	return initErr
 }
 
-func errUnsuportedVersion() error {
+func errUnsupportedVersion() error {
 	return errors.New("openssl: OpenSSL version: " + strconv.Itoa(vMajor) + "." + strconv.Itoa(vMinor))
 }
 

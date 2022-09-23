@@ -50,7 +50,7 @@ func opensslInit(version string) (major int, minor int, err error) {
 		supported = true
 	}
 	if !supported {
-		return 0, 0, errUnsuportedVersion()
+		return 0, 0, errUnsupportedVersion()
 	}
 
 	// Load the OpenSSL functions.
