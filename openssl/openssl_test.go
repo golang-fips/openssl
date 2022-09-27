@@ -12,7 +12,8 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	err := openssl.Init("")
+	v := os.Getenv("GO_OPENSSL_VERSION_OVERRIDE")
+	err := openssl.Init(v)
 	if err != nil {
 		// An error here could mean that this Linux distro does not have a supported OpenSSL version
 		// or that there is a bug in the Init code.
