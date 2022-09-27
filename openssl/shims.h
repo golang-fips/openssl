@@ -45,6 +45,17 @@ typedef void* GO_EVP_MD_PTR;
 //
 // DEFINEFUNC_RENAMED_1_1 acts like DEFINEFUNC but tries to load the function using the new name when using >= 1.1.x
 // and the old name when using 1.0.2. In both cases the function will have the new name.
+//
+// #include <openssl/crypto.h>
+// #include <openssl/err.h>
+// #include <openssl/rsa.h>
+// #include <openssl/hmac.h>
+// #include <openssl/ec.h>
+// #include <openssl/rand.h>
+// #include <openssl/evp.h>
+// #if OPENSSL_VERSION_NUMBER >= 0x30000000L
+// #include <openssl/provider.h>
+// #endif
 #define FOR_ALL_OPENSSL_FUNCTIONS \
 DEFINEFUNC(int, ERR_set_mark, (void), ()) \
 DEFINEFUNC(int, ERR_pop_to_mark, (void), ()) \
