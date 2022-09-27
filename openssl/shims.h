@@ -10,6 +10,9 @@ enum {
 };
 
 typedef void* GO_OPENSSL_INIT_SETTINGS_PTR;
+typedef void* GO_OSSL_LIB_CTX_PTR;
+typedef void* GO_OSSL_PROVIDER_PTR;
+typedef void* GO_EVP_MD_PTR;
 
 // FOR_ALL_OPENSSL_FUNCTIONS is the list of all functions from libcrypto that are used in this package.
 // Forgetting to add a function here results in build failure with message reporting the function
@@ -30,12 +33,21 @@ typedef void* GO_OPENSSL_INIT_SETTINGS_PTR;
 // when using 1.0.x. This indicates the function is required when using 1.0.x, but is unused when using later versions.
 // It also might not exist in later versions.
 //
+// DEFINEFUNC_LEGACY_1 acts like DEFINEFUNC but only aborts the process if the function can't be loaded
+// when using 1.x. This indicates the function is required when using 1.x, but is unused when using later versions.
+// It also might not exist in later versions.
+//
 // DEFINEFUNC_1_1 acts like DEFINEFUNC but only aborts the process if function can't be loaded
 // when using 1.1.0 or higher.
+//
+// DEFINEFUNC_3_0 acts like DEFINEFUNC but only aborts the process if function can't be loaded
+// when using 3.0.0 or higher.
 //
 // DEFINEFUNC_RENAMED_1_1 acts like DEFINEFUNC but tries to load the function using the new name when using >= 1.1.x
 // and the old name when using 1.0.2. In both cases the function will have the new name.
 #define FOR_ALL_OPENSSL_FUNCTIONS \
+DEFINEFUNC(int, ERR_set_mark, (void), ()) \
+DEFINEFUNC(int, ERR_pop_to_mark, (void), ()) \
 DEFINEFUNC_RENAMED_1_1(const char *, OpenSSL_version, SSLeay_version, (int type), (type)) \
 DEFINEFUNC(void, OPENSSL_init, (void), ()) \
 DEFINEFUNC_LEGACY_1_0(void, ERR_load_crypto_strings, (void), ()) \
@@ -44,4 +56,11 @@ DEFINEFUNC_LEGACY_1_0(void, CRYPTO_set_id_callback, (unsigned long (*id_function
 DEFINEFUNC_LEGACY_1_0(void, CRYPTO_set_locking_callback, (void (*locking_function)(int mode, int n, const char *file, int line)), (locking_function)) \
 DEFINEFUNC_LEGACY_1_0(void, OPENSSL_add_all_algorithms_conf, (void), ()) \
 DEFINEFUNC_1_1(int, OPENSSL_init_crypto, (uint64_t ops, const GO_OPENSSL_INIT_SETTINGS_PTR settings), (ops, settings)) \
+DEFINEFUNC_LEGACY_1(int, FIPS_mode, (void), ()) \
+DEFINEFUNC_LEGACY_1(int, FIPS_mode_set, (int r), (r)) \
+DEFINEFUNC_3_0(int, EVP_default_properties_is_fips_enabled, (GO_OSSL_LIB_CTX_PTR libctx), (libctx)) \
+DEFINEFUNC_3_0(int, EVP_set_default_properties, (GO_OSSL_LIB_CTX_PTR libctx, const char *propq), (libctx, propq)) \
+DEFINEFUNC_3_0(GO_OSSL_PROVIDER_PTR, OSSL_PROVIDER_load, (GO_OSSL_LIB_CTX_PTR libctx, const char *name), (libctx, name)) \
+DEFINEFUNC_3_0(GO_EVP_MD_PTR, EVP_MD_fetch, (GO_OSSL_LIB_CTX_PTR ctx, const char *algorithm, const char *properties), (ctx, algorithm, properties)) \
+DEFINEFUNC_3_0(void, EVP_MD_free, (GO_EVP_MD_PTR md), (md)) \
 DEFINEFUNC(int, RAND_bytes, (unsigned char* arg0, int arg1), (arg0, arg1))
