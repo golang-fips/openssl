@@ -113,7 +113,7 @@ func SetFIPS(enabled bool) error {
 			mode = C.int(0)
 		}
 		if C.go_openssl_FIPS_mode_set(mode) != 1 {
-			return fail("openssl: FIPS_mode_set")
+			return fail("FIPS_mode_set")
 		}
 		return nil
 	case 3:
@@ -129,7 +129,7 @@ func SetFIPS(enabled bool) error {
 		if !providerAvailable(props) {
 			// If not, fallback to provName provider.
 			if C.go_openssl_OSSL_PROVIDER_load(nil, provName) == nil {
-				return fail("openssl: OSSL_PROVIDER_try_load")
+				return fail("OSSL_PROVIDER_try_load")
 			}
 			// Make sure we now have a provider available.
 			if !providerAvailable(props) {
@@ -137,7 +137,7 @@ func SetFIPS(enabled bool) error {
 			}
 		}
 		if C.go_openssl_EVP_set_default_properties(nil, props) != 1 {
-			return fail("openssl: EVP_set_default_properties")
+			return fail("EVP_set_default_properties")
 		}
 		return nil
 	default:
