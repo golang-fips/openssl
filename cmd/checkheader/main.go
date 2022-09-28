@@ -12,7 +12,7 @@ import (
 )
 
 // checkheader is a static analyzer that detects incompatibilities between wrapper definitions and OpenSSL headers.
-// It generates a C source file which imports the wrappers header and use it to declare symbols from the OpenSSL headers.
+// It generates a C source file where for each wrapper, the file declares a new symbol that's assigned to the symbol it represents in the actual OpenSSL headers.
 // This C file is then compiled using GCC. The compilation will succeed if everything is compatible, else it will
 // report a meaningful error.
 //
