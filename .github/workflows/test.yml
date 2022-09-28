@@ -21,7 +21,7 @@ jobs:
       run: sudo sh ./scripts/openssl.sh ${{ matrix.openssl-version }}
     - name: Check headers
       working-directory: ./cmd/checkheader
-      run: go run . --ossl-include /usr/local/src/openssl-${{ matrix.openssl-version }}/include ../../openssl/shims.h
+      run: go run . --ossl-include /usr/local/src/openssl-${{ matrix.openssl-version }}/include -shim ../../openssl/shims.h
     - name: Run Test
       run: go test -gcflags=all=-d=checkptr -v ./...
       env:
