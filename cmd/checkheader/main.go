@@ -29,12 +29,13 @@ import (
 
 const description = `
 Example: A check operation:
-  go run ./cmd/checkheader --ossl-include /usr/local/src/openssl-1.1.1/include ./openssl/shims.h 
+  go run ./cmd/checkheader --ossl-include /usr/local/src/openssl-1.1.1/include -shim ./openssl/shims.h 
 Checkheader generates a C program and compiles it with gcc. The compilation verifies types and functions defined in the target
 header file match the definitions in --ossl-include.
 `
 
 var osslInclude = flag.String("ossl-include", "", "OpenSSL include directory. Required.")
+var osslShim = flag.String("shim", "", "C header containing the OpenSSL wrappers. Required.")
 var work = flag.Bool("work", false, "print the name of the temporary C program file and do not delete it when exiting.")
 
 func main() {
@@ -44,19 +45,20 @@ func main() {
 		fmt.Fprintf(flag.CommandLine.Output(), "%s\n\n", description)
 	}
 	flag.Parse()
-	if flag.NArg() != 1 {
+	if *osslInclude == "" {
+		fmt.Fprintln(flag.CommandLine.Output(), "required flag not provided: --ossl-include")
 		flag.Usage()
 		os.Exit(1)
 	}
-	if *osslInclude == "" {
-		fmt.Fprintln(flag.CommandLine.Output(), "required flag not provided: --ossl-include")
+	if *osslShim == "" {
+		fmt.Fprintln(flag.CommandLine.Output(), "required flag not provided: -shim")
 		flag.Usage()
 		os.Exit(1)
 	}
 	if _, err := os.Stat(*osslInclude); err != nil {
 		log.Fatalf("OpenSSL include directory not found: %v\n", err)
 	}
-	s, err := generate(flag.Arg(0))
+	s, err := generate(*osslShim)
 	if err != nil {
 		log.Fatal(err)
 	}
