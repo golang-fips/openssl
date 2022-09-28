@@ -1,5 +1,9 @@
 #!/bin/sh
 
+# openssl.sh is intended for use in a CI workflow to set up various versions of OpenSSL without
+# relying on availability in any particular distro's package manager. It downloads the specified
+# OpenSSL version, builds it, and configures it for global use on the current machine.
+
 set -eux
 
 version=$1

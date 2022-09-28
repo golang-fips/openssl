@@ -16,21 +16,21 @@ import (
 // This C file is then compiled using GCC. The compilation will succeed if everything is compatible, else it will
 // report a meaningful error.
 //
-// The C source file is generated only using the wrappers header following these rules:
+// The C source file is generated based on only the wrappers header and these rules:
 // - Lines are added in order of appearance.
 // - Blank lines are discarded.
-// - Comments are discarded unless they contain a C directive, i.e #include, #if or #endif.
-// - Typedefs following this pattern "typedef void* GO_%name%_PTR" are translated into "#define %name% GO_%name%_PTR".
+// - Comments are discarded unless they contain a C directive, i.e #include, #if or #endif. The directive in the comment is included in the output.
+// - Typedefs following the pattern "typedef void* GO_%name%_PTR" are translated into "#define %name% GO_%name%_PTR".
 // - Enums are validated against their definition in the OpenSSL headers. Example:
 //   "enum { GO_EVP_CTRL_GCM_SET_TAG = 0x11 }" => "_Static_assert(EVP_CTRL_GCM_SET_TAG == 0x11);"
 // - Function macros are validated against their definition in the OpenSSL headers. Example:
 //   "DEFINEFUNC(int, RAND_bytes, (unsigned char *a0, int a1), (a0, a1))" => "int(*__check_0)(unsigned char *, int) = RAND_bytes;"
-// - Function macros can be excluded when checking old OpenSSL versions by prepending '/*check:from=%version%*/', %version% being a version string such as '1.1.1' or '3.0.0'.
+// - Function macros are excluded when checking old OpenSSL versions if they are prepended with '/*check:from=%version%*/', %version% being a version string such as '1.1.1' or '3.0.0'.
 
 const description = `
 Example: A check operation:
   go run ./cmd/checkheader --ossl-include /usr/local/src/openssl-1.1.1/include ./openssl/shims.h 
-Checkheader generates a C program, the compilation of which verifies types and functions defined in the target
+Checkheader generates a C program and compiles it with gcc. The compilation verifies types and functions defined in the target
 header file match the definitions in --ossl-include.
 `
 
@@ -84,7 +84,7 @@ func gccRun(program string) error {
 		log.Fatal(err)
 	}
 	// gcc will fail to compile the generated C header if
-	// any of the static checks fails. If it succeed it means
+	// any of the static checks fail. If it succeeds, it means
 	// the checked header matches the OpenSSL definitions.
 	p := exec.Command("gcc",
 		"-c",                           // skip linking
