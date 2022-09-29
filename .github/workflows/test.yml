@@ -22,6 +22,13 @@ jobs:
     - name: Check headers
       working-directory: ./cmd/checkheader
       run: go run . --ossl-include /usr/local/src/openssl-${{ matrix.openssl-version }}/include -shim ../../openssl/shims.h
+    - name: Set OpenSSL config and prove FIPS
+      run: |
+        sudo cp ./scripts/openssl-3.cnf /usr/local/ssl/openssl.cnf
+        go test -v -count 0 ./openssl | grep -q "FIPS enabled: true"
+      if: ${{ matrix.openssl-version == '3.0.1' }}
+      env:
+        GO_OPENSSL_VERSION_OVERRIDE: ${{ matrix.openssl-version }}
     - name: Run Test
       run: go test -gcflags=all=-d=checkptr -v ./...
       env:
