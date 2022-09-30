@@ -38,3 +38,17 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #undef DEFINEFUNC_1_1
 #undef DEFINEFUNC_3_0
 #undef DEFINEFUNC_RENAMED_1_1
+
+// go_shaX is a SHA generic wrapper which hash p into out.
+// One shot sha functions are expected to be fast, so
+// we maximize performance by batching all cgo calls.
+static inline int
+go_shaX(GO_EVP_MD_PTR md, void *p, size_t n, void *out)
+{
+    GO_EVP_MD_CTX_PTR ctx = go_openssl_EVP_MD_CTX_new();
+    go_openssl_EVP_DigestInit_ex(ctx, md, NULL);
+    int ret = go_openssl_EVP_DigestUpdate(ctx, p, n) &&
+        go_openssl_EVP_DigestFinal_ex(ctx, out, NULL);
+    go_openssl_EVP_MD_CTX_free(ctx);
+    return ret;
+}
