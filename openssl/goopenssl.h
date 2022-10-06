@@ -43,7 +43,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 // One shot sha functions are expected to be fast, so
 // we maximize performance by batching all cgo calls.
 static inline int
-go_shaX(GO_EVP_MD_PTR md, void *p, size_t n, void *out)
+go_shaX(GO_EVP_MD_PTR md, const void *p, size_t n, void *out)
 {
     GO_EVP_MD_CTX_PTR ctx = go_openssl_EVP_MD_CTX_new();
     go_openssl_EVP_DigestInit_ex(ctx, md, NULL);

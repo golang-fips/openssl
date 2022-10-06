@@ -422,7 +422,7 @@ func (h *sha512Hash) Sum(in []byte) []byte {
 	return append(in, h.out[:]...)
 }
 
-// sha256State layout is taken from
+// sha512State layout is taken from
 // https://github.com/openssl/openssl/blob/0418e993c717a6863f206feaa40673a261de7395/include/openssl/sha.h#L95.
 type sha512State struct {
 	h      [8]uint64
