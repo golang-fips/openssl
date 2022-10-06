@@ -9,12 +9,18 @@ enum {
     GO_OPENSSL_INIT_LOAD_CONFIG = 0x00000040L
 };
 
+// #include <openssl/evp.h>
+enum {
+    GO_EVP_MAX_MD_SIZE = 64
+};
+
 typedef void* GO_OPENSSL_INIT_SETTINGS_PTR;
 typedef void* GO_OSSL_LIB_CTX_PTR;
 typedef void* GO_OSSL_PROVIDER_PTR;
 typedef void* GO_ENGINE_PTR;
 typedef void* GO_EVP_MD_PTR;
 typedef void* GO_EVP_MD_CTX_PTR;
+typedef void* GO_HMAC_CTX_PTR;
 
 // FOR_ALL_OPENSSL_FUNCTIONS is the list of all functions from libcrypto that are used in this package.
 // Forgetting to add a function here results in build failure with message reporting the function
@@ -47,6 +53,9 @@ typedef void* GO_EVP_MD_CTX_PTR;
 //
 // DEFINEFUNC_RENAMED_1_1 acts like DEFINEFUNC but tries to load the function using the new name when using >= 1.1.x
 // and the old name when using 1.0.2. In both cases the function will have the new name.
+//
+// DEFINEFUNC_RENAMED_3_0 acts like DEFINEFUNC but tries to load the function using the new name when using >= 3.x
+// and the old name when using 1.x. In both cases the function will have the new name.
 //
 // #include <openssl/crypto.h>
 // #include <openssl/err.h>
@@ -89,4 +98,14 @@ DEFINEFUNC(const GO_EVP_MD_PTR, EVP_sha1, (void), ()) \
 DEFINEFUNC(const GO_EVP_MD_PTR, EVP_sha224, (void), ()) \
 DEFINEFUNC(const GO_EVP_MD_PTR, EVP_sha256, (void), ()) \
 DEFINEFUNC(const GO_EVP_MD_PTR, EVP_sha384, (void), ()) \
-DEFINEFUNC(const GO_EVP_MD_PTR, EVP_sha512, (void), ())
+DEFINEFUNC(const GO_EVP_MD_PTR, EVP_sha512, (void), ()) \
+DEFINEFUNC_RENAMED_3_0(int, EVP_MD_get_size, EVP_MD_size, (const GO_EVP_MD_PTR arg0), (arg0)) \
+DEFINEFUNC_LEGACY_1_0(void, HMAC_CTX_init, (GO_HMAC_CTX_PTR arg0), (arg0)) \
+DEFINEFUNC_LEGACY_1_0(void, HMAC_CTX_cleanup, (GO_HMAC_CTX_PTR arg0), (arg0)) \
+DEFINEFUNC(int, HMAC_Init_ex, (GO_HMAC_CTX_PTR arg0, const void *arg1, int arg2, const GO_EVP_MD_PTR arg3, GO_ENGINE_PTR arg4), (arg0, arg1, arg2, arg3, arg4)) \
+DEFINEFUNC(int, HMAC_Update, (GO_HMAC_CTX_PTR arg0, const unsigned char *arg1, size_t arg2), (arg0, arg1, arg2)) \
+DEFINEFUNC(int, HMAC_Final, (GO_HMAC_CTX_PTR arg0, unsigned char *arg1, unsigned int *arg2), (arg0, arg1, arg2)) \
+DEFINEFUNC(int, HMAC_CTX_copy, (GO_HMAC_CTX_PTR dest, GO_HMAC_CTX_PTR src), (dest, src)) \
+DEFINEFUNC_1_1(void, HMAC_CTX_free, (GO_HMAC_CTX_PTR arg0), (arg0)) \
+DEFINEFUNC_1_1(GO_HMAC_CTX_PTR, HMAC_CTX_new, (void), ()) \
+DEFINEFUNC_1_1(int, HMAC_CTX_reset, (GO_HMAC_CTX_PTR arg0), (arg0))

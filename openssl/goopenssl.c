@@ -15,6 +15,7 @@
 #define DEFINEFUNC_1_1(ret, func, args, argscall)              DEFINEFUNC(ret, func, args, argscall)
 #define DEFINEFUNC_3_0(ret, func, args, argscall)              DEFINEFUNC(ret, func, args, argscall)
 #define DEFINEFUNC_RENAMED_1_1(ret, func, oldfunc, args, argscall) DEFINEFUNC(ret, func, args, argscall)
+#define DEFINEFUNC_RENAMED_3_0(ret, func, oldfunc, args, argscall) DEFINEFUNC(ret, func, args, argscall)
 
 FOR_ALL_OPENSSL_FUNCTIONS
 
@@ -24,6 +25,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #undef DEFINEFUNC_1_1
 #undef DEFINEFUNC_3_0
 #undef DEFINEFUNC_RENAMED_1_1
+#undef DEFINEFUNC_RENAMED_3_0
 
 
 // Load all the functions stored in FOR_ALL_OPENSSL_FUNCTIONS
@@ -69,6 +71,15 @@ go_openssl_load_functions(void* handle, int major, int minor)
     {                                                               \
         DEFINEFUNC_INTERNAL(func, #func)                            \
     }
+#define DEFINEFUNC_RENAMED_3_0(ret, func, oldfunc, args, argscall)  \
+    if (major == 1)                                                 \
+    {                                                               \
+        DEFINEFUNC_INTERNAL(func, #oldfunc)                         \
+    }                                                               \
+    else                                                            \
+    {                                                               \
+        DEFINEFUNC_INTERNAL(func, #func)                            \
+    }
 
 FOR_ALL_OPENSSL_FUNCTIONS
 
@@ -78,6 +89,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #undef DEFINEFUNC_1_1
 #undef DEFINEFUNC_3_0
 #undef DEFINEFUNC_RENAMED_1_1
+#undef DEFINEFUNC_RENAMED_3_0
 }
 
 static unsigned long
