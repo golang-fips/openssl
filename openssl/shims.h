@@ -12,7 +12,9 @@ enum {
 typedef void* GO_OPENSSL_INIT_SETTINGS_PTR;
 typedef void* GO_OSSL_LIB_CTX_PTR;
 typedef void* GO_OSSL_PROVIDER_PTR;
+typedef void* GO_ENGINE_PTR;
 typedef void* GO_EVP_MD_PTR;
+typedef void* GO_EVP_MD_CTX_PTR;
 
 // FOR_ALL_OPENSSL_FUNCTIONS is the list of all functions from libcrypto that are used in this package.
 // Forgetting to add a function here results in build failure with message reporting the function
@@ -74,4 +76,17 @@ DEFINEFUNC_3_0(int, EVP_set_default_properties, (GO_OSSL_LIB_CTX_PTR libctx, con
 DEFINEFUNC_3_0(GO_OSSL_PROVIDER_PTR, OSSL_PROVIDER_load, (GO_OSSL_LIB_CTX_PTR libctx, const char *name), (libctx, name)) \
 DEFINEFUNC_3_0(GO_EVP_MD_PTR, EVP_MD_fetch, (GO_OSSL_LIB_CTX_PTR ctx, const char *algorithm, const char *properties), (ctx, algorithm, properties)) \
 DEFINEFUNC_3_0(void, EVP_MD_free, (GO_EVP_MD_PTR md), (md)) \
-DEFINEFUNC(int, RAND_bytes, (unsigned char* arg0, int arg1), (arg0, arg1))
+DEFINEFUNC(int, RAND_bytes, (unsigned char* arg0, int arg1), (arg0, arg1)) \
+DEFINEFUNC_RENAMED_1_1(GO_EVP_MD_CTX_PTR, EVP_MD_CTX_new, EVP_MD_CTX_create, (), ()) \
+DEFINEFUNC_RENAMED_1_1(void, EVP_MD_CTX_free, EVP_MD_CTX_destroy, (GO_EVP_MD_CTX_PTR ctx), (ctx)) \
+DEFINEFUNC(int, EVP_MD_CTX_copy, (GO_EVP_MD_CTX_PTR out, const GO_EVP_MD_CTX_PTR in), (out, in)) \
+DEFINEFUNC(int, EVP_DigestInit_ex, (GO_EVP_MD_CTX_PTR ctx, const GO_EVP_MD_PTR type, GO_ENGINE_PTR impl), (ctx, type, impl)) \
+DEFINEFUNC(int, EVP_DigestInit, (GO_EVP_MD_CTX_PTR ctx, const GO_EVP_MD_PTR type), (ctx, type)) \
+DEFINEFUNC(int, EVP_DigestUpdate, (GO_EVP_MD_CTX_PTR ctx, const void *d, size_t cnt), (ctx, d, cnt)) \
+DEFINEFUNC(int, EVP_DigestFinal_ex, (GO_EVP_MD_CTX_PTR ctx, unsigned char *md, unsigned int *s), (ctx, md, s)) \
+DEFINEFUNC(int, EVP_DigestFinal, (GO_EVP_MD_CTX_PTR ctx, unsigned char *md, unsigned int *s), (ctx, md, s)) \
+DEFINEFUNC(const GO_EVP_MD_PTR, EVP_sha1, (void), ()) \
+DEFINEFUNC(const GO_EVP_MD_PTR, EVP_sha224, (void), ()) \
+DEFINEFUNC(const GO_EVP_MD_PTR, EVP_sha256, (void), ()) \
+DEFINEFUNC(const GO_EVP_MD_PTR, EVP_sha384, (void), ()) \
+DEFINEFUNC(const GO_EVP_MD_PTR, EVP_sha512, (void), ())
