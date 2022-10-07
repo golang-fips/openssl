@@ -2,7 +2,27 @@ package openssl
 
 // #include "goopenssl.h"
 import "C"
-import "crypto"
+import (
+	"crypto"
+	"hash"
+)
+
+// hashToMD converts a hash.Hash implementation from this package to a GO_EVP_MD_PTR.
+func hashToMD(h hash.Hash) C.GO_EVP_MD_PTR {
+	switch h.(type) {
+	case *sha1Hash:
+		return C.go_openssl_EVP_sha1()
+	case *sha224Hash:
+		return C.go_openssl_EVP_sha224()
+	case *sha256Hash:
+		return C.go_openssl_EVP_sha256()
+	case *sha384Hash:
+		return C.go_openssl_EVP_sha384()
+	case *sha512Hash:
+		return C.go_openssl_EVP_sha512()
+	}
+	return nil
+}
 
 // cryptoHashToMD converts a crypto.Hash to a GO_EVP_MD_PTR.
 func cryptoHashToMD(ch crypto.Hash) C.GO_EVP_MD_PTR {

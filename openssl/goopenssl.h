@@ -29,6 +29,8 @@ void go_openssl_load_functions(void* handle, int major, int minor);
     DEFINEFUNC(ret, func, args, argscall)
 #define DEFINEFUNC_RENAMED_1_1(ret, func, oldfunc, args, argscall)     \
     DEFINEFUNC(ret, func, args, argscall)
+#define DEFINEFUNC_RENAMED_3_0(ret, func, oldfunc, args, argscall)     \
+    DEFINEFUNC(ret, func, args, argscall)
 
 FOR_ALL_OPENSSL_FUNCTIONS
 
@@ -38,6 +40,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #undef DEFINEFUNC_1_1
 #undef DEFINEFUNC_3_0
 #undef DEFINEFUNC_RENAMED_1_1
+#undef DEFINEFUNC_RENAMED_3_0
 
 // go_shaX is a SHA generic wrapper which hash p into out.
 // One shot sha functions are expected to be fast, so
