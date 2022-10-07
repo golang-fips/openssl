@@ -31,7 +31,7 @@ func NewHMAC(h func() hash.Hash, key []byte) hash.Hash {
 		// This is supported in OpenSSL/Standard lib and as such
 		// we must support it here. When using HMAC with a null key
 		// HMAC_Init will try and reuse the key from the ctx. This is
-		// not the bahavior previously implemented, so as a workaround
+		// not the behavior previously implemented, so as a workaround
 		// we pass an "empty" key.
 		hkey = make([]byte, C.GO_EVP_MAX_MD_SIZE)
 	}
