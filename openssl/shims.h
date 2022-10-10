@@ -70,6 +70,9 @@ typedef void* GO_HMAC_CTX_PTR;
 #define FOR_ALL_OPENSSL_FUNCTIONS \
 DEFINEFUNC(int, ERR_set_mark, (void), ()) \
 DEFINEFUNC(int, ERR_pop_to_mark, (void), ()) \
+DEFINEFUNC(void, ERR_error_string_n, (unsigned long e, char *buf, size_t len), (e, buf, len)) \
+DEFINEFUNC_LEGACY_1(unsigned long, ERR_get_error_line, (const char **file, int *line), (file, line)) \
+DEFINEFUNC_3_0(unsigned long, ERR_get_error_all, (const char **file, int *line, const char **func, const char **data, int *flags), (file, line, func, data, flags)) \
 DEFINEFUNC_RENAMED_1_1(const char *, OpenSSL_version, SSLeay_version, (int type), (type)) \
 DEFINEFUNC(void, OPENSSL_init, (void), ()) \
 DEFINEFUNC_LEGACY_1_0(void, ERR_load_crypto_strings, (void), ()) \

@@ -10,6 +10,7 @@ import "C"
 import (
 	"errors"
 	"strconv"
+	"strings"
 	"sync"
 	"unsafe"
 )
@@ -114,7 +115,7 @@ func SetFIPS(enabled bool) error {
 			mode = C.int(0)
 		}
 		if C.go_openssl_FIPS_mode_set(mode) != 1 {
-			return fail("FIPS_mode_set")
+			return newOpenSSLError("FIPS_mode_set")
 		}
 		return nil
 	case 3:
@@ -130,7 +131,7 @@ func SetFIPS(enabled bool) error {
 		if !providerAvailable(props) {
 			// If not, fallback to provName provider.
 			if C.go_openssl_OSSL_PROVIDER_load(nil, provName) == nil {
-				return fail("OSSL_PROVIDER_try_load")
+				return newOpenSSLError("OSSL_PROVIDER_try_load")
 			}
 			// Make sure we now have a provider available.
 			if !providerAvailable(props) {
@@ -138,7 +139,7 @@ func SetFIPS(enabled bool) error {
 			}
 		}
 		if C.go_openssl_EVP_set_default_properties(nil, props) != 1 {
-			return fail("EVP_set_default_properties")
+			return newOpenSSLError("EVP_set_default_properties")
 		}
 		return nil
 	default:
@@ -179,4 +180,33 @@ func base(b []byte) *C.uchar {
 		return nil
 	}
 	return (*C.uchar)(unsafe.Pointer(&b[0]))
+}
+
+func newOpenSSLError(msg string) error {
+	var b strings.Builder
+	b.WriteString(msg)
+	b.WriteString("\nopenssl error(s):")
+	for {
+		var (
+			e    C.ulong
+			file *C.char
+			line C.int
+		)
+		switch vMajor {
+		case 1:
+			e = C.go_openssl_ERR_get_error_line(&file, &line)
+		case 3:
+			e = C.go_openssl_ERR_get_error_all(&file, &line, nil, nil, nil)
+		default:
+			panic(errUnsupportedVersion())
+		}
+		if e == 0 {
+			break
+		}
+		b.WriteByte('\n')
+		var buf [256]byte
+		C.go_openssl_ERR_error_string_n(e, (*C.char)(unsafe.Pointer(&buf[0])), C.size_t(len(buf)))
+		b.WriteString(string(buf[:]) + "\n\t" + C.GoString(file) + ":" + strconv.Itoa(int(line)))
+	}
+	return errors.New(b.String())
 }
