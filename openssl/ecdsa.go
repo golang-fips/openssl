@@ -10,14 +10,11 @@ package openssl
 // #include "goopenssl.h"
 import "C"
 import (
+	"crypto"
 	"errors"
 	"runtime"
 	"unsafe"
 )
-
-type ecdsaSignature struct {
-	R, S BigInt
-}
 
 type PrivateKeyECDSA struct {
 	key *C.GO_EC_KEY
@@ -125,6 +122,22 @@ func NewPrivateKeyECDSA(curve string, X, Y BigInt, D BigInt) (*PrivateKeyECDSA, 
 	return k, nil
 }
 
+func HashSignECDSA(priv *PrivateKeyECDSA, hash []byte, h crypto.Hash) ([]byte, error) {
+	size := C._goboringcrypto_ECDSA_size(priv.key)
+	sig := make([]byte, size)
+	var sigLen C.uint
+	md := cryptoHashToMD(h)
+	if md == nil {
+		panic("boring: invalid hash")
+	}
+	if C._goboringcrypto_ECDSA_sign(md, base(hash), C.size_t(len(hash)), (*C.uint8_t)(unsafe.Pointer(&sig[0])), &sigLen, priv.key) == 0 {
+		return nil, NewOpenSSLError("ECDSA_sign failed")
+	}
+	runtime.KeepAlive(priv)
+	sig = sig[:sigLen]
+	return sig, nil
+}
+
 func SignMarshalECDSA(priv *PrivateKeyECDSA, hash []byte) ([]byte, error) {
 	size := C._goboringcrypto_ECDSA_size(priv.key)
 	sig := make([]byte, size)
@@ -137,8 +150,19 @@ func SignMarshalECDSA(priv *PrivateKeyECDSA, hash []byte) ([]byte, error) {
 	runtime.KeepAlive(priv)
 	return sig[:sigLen], nil
 }
+
 func VerifyECDSA(pub *PublicKeyECDSA, hash []byte, sig []byte) bool {
 	ok := C._goboringcrypto_internal_ECDSA_verify(0, base(hash), C.size_t(len(hash)), (*C.uint8_t)(unsafe.Pointer(&sig[0])), C.uint(len(sig)), pub.key) > 0
+	runtime.KeepAlive(pub)
+	return ok
+}
+
+func HashVerifyECDSA(pub *PublicKeyECDSA, msg []byte, sig []byte, h crypto.Hash) bool {
+	md := cryptoHashToMD(h)
+	if md == nil {
+		panic("boring: invalid hash")
+	}
+	ok := C._goboringcrypto_ECDSA_verify(md, base(msg), C.size_t(len(msg)), (*C.uint8_t)(unsafe.Pointer(&sig[0])), C.uint(len(sig)), pub.key) > 0
 	runtime.KeepAlive(pub)
 	return ok
 }
