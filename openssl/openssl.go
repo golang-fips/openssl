@@ -31,6 +31,7 @@ const GoStrictFipsEnv = "GOLANG_STRICT_FIPS"
 
 const (
 	OPENSSL_VERSION_1_1_0 = uint64(C.ulong(0x10100000))
+	OPENSSL_VERSION_1_1_1 = uint64(C.ulong(0x10101000))
 	OPENSSL_VERSION_3_0_0 = uint64(C.ulong(0x30000000))
 )
 
