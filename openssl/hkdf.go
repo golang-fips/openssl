@@ -20,6 +20,10 @@ type hkdf struct {
 }
 
 func newHKDF(h func() hash.Hash, mode C.int) (*hkdf, error) {
+	if openSSLVersion() < OPENSSL_VERSION_1_1_1 {
+		return nil, NewOpenSSLError("HKDF is not supported")
+	}
+
 	ch := h()
 	md := hashToMD(ch)
 	if md == nil {

@@ -743,6 +743,7 @@ DEFINEFUNC(int, EVP_PKEY_verify,
 typedef EVP_PKEY_CTX GO_EVP_PKEY_CTX;
 
 DEFINEFUNC(GO_EVP_PKEY_CTX *, EVP_PKEY_CTX_new, (GO_EVP_PKEY * arg0, ENGINE *arg1), (arg0, arg1))
+DEFINEFUNC(GO_EVP_PKEY_CTX *, EVP_PKEY_CTX_new_id, (int arg0, ENGINE *arg1), (arg0, arg1))
 DEFINEFUNC(void, EVP_PKEY_CTX_free, (GO_EVP_PKEY_CTX * arg0), (arg0))
 DEFINEFUNC(int, EVP_PKEY_CTX_ctrl,
 		   (EVP_PKEY_CTX * ctx, int keytype, int optype, int cmd, int p1, void *p2),
@@ -854,16 +855,100 @@ enum {
 	GO_EVP_PKEY_HKDF = EVP_PKEY_HKDF,
 };
 
-DEFINEFUNC(GO_EVP_PKEY_CTX *, EVP_PKEY_CTX_new_id, (int arg0, ENGINE *arg1), (arg0, arg1))
-
 enum {
 	GO_EVP_PKEY_HKDEF_MODE_EXTRACT_ONLY = EVP_PKEY_HKDEF_MODE_EXTRACT_ONLY,
 	GO_EVP_PKEY_HKDEF_MODE_EXPAND_ONLY = EVP_PKEY_HKDEF_MODE_EXPAND_ONLY,
 };
 
+#if OPENSSL_VERSION_NUMBER >= 0x30000000
 DEFINEFUNC(int, EVP_PKEY_CTX_set_hkdf_mode, (GO_EVP_PKEY_CTX *arg0, int arg1), (arg0, arg1))
 DEFINEFUNC(int, EVP_PKEY_CTX_set_hkdf_md, (GO_EVP_PKEY_CTX *arg0, const GO_EVP_MD *arg1), (arg0, arg1))
 DEFINEFUNC(int, EVP_PKEY_CTX_set1_hkdf_salt, (GO_EVP_PKEY_CTX *arg0, unsigned char *arg1, int arg2), (arg0, arg1, arg2))
 DEFINEFUNC(int, EVP_PKEY_CTX_set1_hkdf_key, (GO_EVP_PKEY_CTX *arg0, unsigned char *arg1, int arg2), (arg0, arg1, arg2))
 DEFINEFUNC(int, EVP_PKEY_CTX_add1_hkdf_info, (GO_EVP_PKEY_CTX *arg0, unsigned char *arg1, int arg2), (arg0, arg1, arg2))
+#else
+static inline int
+_goboringcrypto_EVP_PKEY_CTX_set_hkdf_mode(GO_EVP_PKEY_CTX *pctx, int mode)
+{
+	return _goboringcrypto_EVP_PKEY_CTX_ctrl(pctx, -1, EVP_PKEY_OP_DERIVE,
+						 EVP_PKEY_CTRL_HKDF_MODE, mode, NULL);
+}
+
+static inline int
+_goboringcrypto_EVP_PKEY_CTX_set_hkdf_md(GO_EVP_PKEY_CTX *pctx, const GO_EVP_MD *md)
+{
+	return _goboringcrypto_EVP_PKEY_CTX_ctrl(pctx, -1, EVP_PKEY_OP_DERIVE,
+						 EVP_PKEY_CTRL_HKDF_MD, 0, (void *)(md));
+}
+
+static inline int
+_goboringcrypto_EVP_PKEY_CTX_set1_hkdf_salt(GO_EVP_PKEY_CTX *pctx, unsigned char *salt, int saltlen)
+{
+	return _goboringcrypto_EVP_PKEY_CTX_ctrl(pctx, -1, EVP_PKEY_OP_DERIVE,
+						 EVP_PKEY_CTRL_HKDF_SALT, saltlen, (void *)(salt));
+}
+
+static inline int
+_goboringcrypto_EVP_PKEY_CTX_set1_hkdf_key(GO_EVP_PKEY_CTX *pctx, unsigned char *key, int keylen)
+{
+	return _goboringcrypto_EVP_PKEY_CTX_ctrl(pctx, -1, EVP_PKEY_OP_DERIVE,
+						 EVP_PKEY_CTRL_HKDF_KEY, keylen, (void *)(key));
+}
+
+static inline int
+_goboringcrypto_EVP_PKEY_CTX_add1_hkdf_info(GO_EVP_PKEY_CTX *pctx, unsigned char *info, int infolen)
+{
+	return _goboringcrypto_EVP_PKEY_CTX_ctrl(pctx, -1, EVP_PKEY_OP_DERIVE,
+						 EVP_PKEY_CTRL_HKDF_INFO, infolen, (void *)(info));
+}
+#endif
+
+
+#else
+
+/* As HKDF is not supported in earlier OpenSSL versions than 1.1.1 and
+ * fallback implementation cannot be provided in a FIPS compliant
+ * manner, we only provide stub definitions of the above symbols.  At
+ * run-time, HKDF operations in hkdf.go (see newHKDF) will return an
+ * error depending on the OpenSSL version.
+ */
+
+enum {
+	GO_EVP_PKEY_HKDF,
+};
+
+enum {
+	GO_EVP_PKEY_HKDEF_MODE_EXTRACT_ONLY,
+	GO_EVP_PKEY_HKDEF_MODE_EXPAND_ONLY,
+};
+
+static inline int
+_goboringcrypto_EVP_PKEY_CTX_set_hkdf_mode(GO_EVP_PKEY_CTX *arg0, int arg1)
+{
+	return -1;
+}
+
+static inline int
+_goboringcrypto_EVP_PKEY_CTX_set_hkdf_md(GO_EVP_PKEY_CTX *arg0, const GO_EVP_MD *arg1)
+{
+	return -1;
+}
+
+static inline int
+_goboringcrypto_EVP_PKEY_CTX_set1_hkdf_salt(GO_EVP_PKEY_CTX *arg0, unsigned char *arg1, int arg2)
+{
+	return -1;
+}
+
+static inline int
+_goboringcrypto_EVP_PKEY_CTX_set1_hkdf_key(GO_EVP_PKEY_CTX *arg0, unsigned char *arg1, int arg2)
+{
+	return -1;
+}
+
+static inline int
+_goboringcrypto_EVP_PKEY_CTX_add1_hkdf_info(GO_EVP_PKEY_CTX *arg0, unsigned char *arg1, int arg2)
+{
+	return -1;
+}
 #endif

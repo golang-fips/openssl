@@ -125,10 +125,10 @@ func VerifyRSAPSS(pub *PublicKeyRSA, h crypto.Hash, hashed, sig []byte, saltLen 
 	panic("boringcrypto: not available")
 }
 
-func ExtractHKDF(h func() hash.Hash, secret, salt []byte) []byte {
+func ExtractHKDF(h func() hash.Hash, secret, salt []byte) ([]byte, error) {
 	panic("boringcrypto: not available")
 }
 
-func ExpandHKDF(h func() hash.Hash, pseudorandomKey, info []byte) io.Reader {
+func ExpandHKDF(h func() hash.Hash, pseudorandomKey, info []byte) (io.Reader, error) {
 	panic("boringcrypto: not available")
 }
