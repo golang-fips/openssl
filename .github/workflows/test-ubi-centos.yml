@@ -110,7 +110,8 @@ jobs:
           cd $GITHUB_WORKSPACE/..
           git clone https://github.com/golang-fips/go
           cd go
-          git checkout ${{ inputs.go_fips_ref }}
+          git fetch origin ${{ inputs.go_fips_ref }}:000_github_actions_test
+          git checkout 000_github_actions_test
           git config user.name "golang-fips ci"
           git config user.email "<>"
 
