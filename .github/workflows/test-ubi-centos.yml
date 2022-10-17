@@ -99,10 +99,20 @@ jobs:
           git config --global user.name "golang-fips ci"
           git config --global user.email "<>"
 
-      - name: "Checkout golang-fips/openssl-fips"
-        uses: actions/checkout@v3
-        with:
-          ref: ${{ inputs.go_openssl_ref }}
+      #- name: "Checkout golang-fips/openssl-fips"
+      #  uses: actions/checkout@v3
+      #  with:
+      #    ref: ${{ inputs.go_openssl_ref }}
+
+      - name: "Clone golang-fips/openssl-fips"
+        shell: bash
+        run: |
+          cd $GITHUB_WORKSPACE/..
+          rm -rf openssl-fips
+          git clone https://github.com/golang-fips/openssl-fips
+          cd openssl-fips
+          git fetch origin ${{ inputs.go_openssl_ref }}:000_github_actions_test
+          git checkout 000_github_actions_test
 
       - name: "Clone golang-fips/go"
         shell: bash
@@ -112,8 +122,6 @@ jobs:
           cd go
           git fetch origin ${{ inputs.go_fips_ref }}:000_github_actions_test
           git checkout 000_github_actions_test
-          git config user.name "golang-fips ci"
-          git config user.email "<>"
 
       - name: "Setup initial fips patches"
         shell: bash
