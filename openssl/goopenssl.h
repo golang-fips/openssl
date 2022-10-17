@@ -264,7 +264,7 @@ DEFINEFUNCINTERNAL(void, HMAC_CTX_cleanup, (GO_HMAC_CTX * arg0), (arg0))
 static inline void
 _goboringcrypto_HMAC_CTX_free(HMAC_CTX *ctx) {
    if (ctx != NULL) {
-       _goboringcrypto_HMAC_CTX_cleanup(ctx);
+       _goboringcrypto_internal_HMAC_CTX_cleanup(ctx);
        free(ctx);
    }
 }
@@ -313,8 +313,8 @@ DEFINEFUNC(GO_HMAC_CTX*, HMAC_CTX_new, (void), ())
 #if OPENSSL_VERSION_NUMBER < 0x10100000L
 static inline int
 _goboringcrypto_HMAC_CTX_reset(GO_HMAC_CTX* ctx) {
-	_goboringcrypto_HMAC_CTX_cleanup(ctx);
-	_goboringcrypto_HMAC_CTX_init(ctx);
+	_goboringcrypto_internal_HMAC_CTX_cleanup(ctx);
+	_goboringcrypto_internal_HMAC_CTX_init(ctx);
 	return 0;
 }
 #else
@@ -482,12 +482,12 @@ int _goboringcrypto_EVP_verify_raw(const uint8_t *msg, size_t msgLen,
                                GO_RSA *key);
 
 #if OPENSSL_VERSION_NUMBER < 0x10100000L
-DEFINEFUNC(void, EVP_MD_CTX_destroy, (EVP_MD_CTX *ctx), (ctx))
-#else
-DEFINEFUNCINTERNAL(void, EVP_MD_CTX_free, (EVP_MD_CTX *ctx), (ctx))
+DEFINEFUNCINTERNAL(void, EVP_MD_CTX_destroy, (EVP_MD_CTX *ctx), (ctx))
 static inline void _goboringcrypto_EVP_MD_CTX_free(EVP_MD_CTX *ctx) {
-	return _goboringcrypto_internal_EVP_MD_CTX_free(ctx);
+	return _goboringcrypto_internal_EVP_MD_CTX_destroy(ctx);
 }
+#else
+DEFINEFUNC(void, EVP_MD_CTX_free, (EVP_MD_CTX *ctx), (ctx))
 #endif
 
 int _goboringcrypto_ECDSA_sign(EVP_MD *md, const uint8_t *arg1, size_t arg2, uint8_t *arg3, unsigned int *arg4, GO_EC_KEY *arg5);
