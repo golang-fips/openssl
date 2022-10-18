@@ -112,6 +112,9 @@ func (c *aesCipher) Decrypt(dst, src []byte) {
 		if err != nil {
 			panic(err)
 		}
+		if C.go_openssl_EVP_CIPHER_CTX_set_padding(c.dec_ctx, 0) != 1 {
+			panic("crypto/cipher: could not disable cipher padding")
+		}
 	}
 
 	C.go_openssl_EVP_DecryptUpdate_wrapper(c.dec_ctx, base(dst), base(src), aesBlockSize)
@@ -173,6 +176,9 @@ func (c *aesCipher) NewCBCEncrypter(iv []byte) cipher.BlockMode {
 
 	runtime.SetFinalizer(x, (*aesCBC).finalize)
 
+	if C.go_openssl_EVP_CIPHER_CTX_set_padding(x.ctx, 0) != 1 {
+		panic("cipher: unable to set padding")
+	}
 	return x
 }
 
@@ -200,11 +206,12 @@ func (c *aesCipher) NewCBCDecrypter(iv []byte) cipher.BlockMode {
 	if err != nil {
 		panic(err)
 	}
+
+	runtime.SetFinalizer(x, (*aesCBC).finalize)
+
 	if C.go_openssl_EVP_CIPHER_CTX_set_padding(x.ctx, 0) != 1 {
 		panic("cipher: unable to set padding")
 	}
-
-	runtime.SetFinalizer(x, (*aesCBC).finalize)
 	return x
 }
 
