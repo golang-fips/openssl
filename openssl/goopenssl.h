@@ -11,6 +11,7 @@
 
 #include <stdlib.h> // size_t
 #include <stdint.h> // uint8_t
+#include <string.h> // memset
 
 #include <openssl/ossl_typ.h>
 
@@ -369,13 +370,61 @@ DEFINEFUNC(int, BN_set_word, (BIGNUM *a, BN_ULONG w), (a, w))
 DEFINEFUNC(unsigned int, BN_num_bits, (const GO_BIGNUM *arg0), (arg0))
 DEFINEFUNC(int, BN_is_negative, (const GO_BIGNUM *arg0), (arg0))
 DEFINEFUNC(GO_BIGNUM *, BN_bin2bn, (const uint8_t *arg0, size_t arg1, GO_BIGNUM *arg2), (arg0, arg1, arg2))
-DEFINEFUNC(GO_BIGNUM *, BN_lebin2bn, (const unsigned char *s, size_t len, BIGNUM *ret), (s, len, ret))
-DEFINEFUNC(int, BN_bn2lebinpad, (const BIGNUM *a, unsigned char *to, size_t tolen), (a, to, tolen))
 
-static inline unsigned int
+static inline int
 _goboringcrypto_BN_num_bytes(const GO_BIGNUM* a) {
 	return ((_goboringcrypto_BN_num_bits(a)+7)/8);
 }
+
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L
+DEFINEFUNC(GO_BIGNUM *, BN_lebin2bn, (const unsigned char *s, size_t len, BIGNUM *ret), (s, len, ret))
+DEFINEFUNC(int, BN_bn2lebinpad, (const BIGNUM *a, unsigned char *to, size_t tolen), (a, to, tolen))
+#else
+DEFINEFUNCINTERNAL(int, BN_bn2bin, (const BIGNUM *a, unsigned char *to), (a, to))
+
+static inline GO_BIGNUM *
+_goboringcrypto_BN_lebin2bn(const unsigned char *s, size_t len, BIGNUM *ret)
+{
+	unsigned char *copy;
+	size_t i;
+	GO_BIGNUM *result;
+
+	copy = malloc(len);
+	if (!copy)
+		return NULL;
+	for (i = 0; i < len; i++)
+		copy[i] = s[len - i - 1];
+
+	result = _goboringcrypto_BN_bin2bn(copy, len, ret);
+	free(copy);
+	return result;
+}
+
+static inline int
+_goboringcrypto_BN_bn2lebinpad(const BIGNUM *a, unsigned char *to, size_t tolen)
+{
+	int size = _goboringcrypto_BN_num_bytes(a);
+	size_t i;
+
+	if (size > tolen)
+		return -1;
+
+	memset(to, 0, tolen - size);
+	if (_goboringcrypto_internal_BN_bn2bin(a, to + tolen - size) != size)
+		return -1;
+
+	/* reverse bytes */
+	for (i = 0; i < tolen / 2; i++) {
+		unsigned char tmp;
+
+		tmp = to[i];
+		to[i] = to[tolen - i - 1];
+		to[tolen - i - 1] = tmp;
+	}
+
+	return tolen;
+}
+#endif
 
 #include <openssl/ec.h>
 
