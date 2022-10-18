@@ -448,7 +448,6 @@ typedef EC_KEY GO_EC_KEY;
 
 DEFINEFUNC(GO_EC_KEY *, EC_KEY_new, (void), ())
 DEFINEFUNC(GO_EC_KEY *, EC_KEY_new_by_curve_name, (int arg0), (arg0))
-DEFINEFUNC(int, EC_KEY_oct2key, (GO_EC_KEY *arg0, const unsigned char *arg1, size_t arg2, BN_CTX *arg3), (arg0, arg1, arg2, arg3))
 DEFINEFUNC(void, EC_KEY_free, (GO_EC_KEY * arg0), (arg0))
 DEFINEFUNC(const GO_EC_GROUP *, EC_KEY_get0_group, (const GO_EC_KEY *arg0), (arg0))
 DEFINEFUNC(int, EC_KEY_set_group, (GO_EC_KEY *arg0, const EC_GROUP *arg1), (arg0, arg1))
@@ -457,6 +456,31 @@ DEFINEFUNC(int, EC_KEY_set_private_key, (GO_EC_KEY * arg0, const GO_BIGNUM *arg1
 DEFINEFUNC(int, EC_KEY_set_public_key, (GO_EC_KEY * arg0, const GO_EC_POINT *arg1), (arg0, arg1))
 DEFINEFUNC(const GO_BIGNUM *, EC_KEY_get0_private_key, (const GO_EC_KEY *arg0), (arg0))
 DEFINEFUNC(const GO_EC_POINT *, EC_KEY_get0_public_key, (const GO_EC_KEY *arg0), (arg0))
+
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L
+DEFINEFUNC(int, EC_KEY_oct2key, (GO_EC_KEY *arg0, const unsigned char *arg1, size_t arg2, BN_CTX *arg3), (arg0, arg1, arg2, arg3))
+#else
+DEFINEFUNCINTERNAL(int, EC_POINT_oct2point, (const EC_GROUP *arg0, EC_POINT *arg1, const unsigned char *arg2, size_t arg3, BN_CTX *arg4), (arg0, arg1, arg2, arg3, arg4))
+
+static inline int
+_goboringcrypto_EC_KEY_oct2key(GO_EC_KEY *eckey, const unsigned char *buf, size_t len, BN_CTX *ctx)
+{
+	const GO_EC_GROUP *group = _goboringcrypto_EC_KEY_get0_group(eckey);
+	GO_EC_POINT *pubkey;
+	int ret = 1;
+
+	pubkey = _goboringcrypto_EC_POINT_new(group);
+	if (!pubkey)
+		return 0;
+
+	if (_goboringcrypto_internal_EC_POINT_oct2point(group, pubkey, buf, len, ctx) != 1 ||
+	    _goboringcrypto_EC_KEY_set_public_key(eckey, pubkey) != 1)
+		ret = 0;
+
+	_goboringcrypto_EC_POINT_free(pubkey);
+	return ret;
+}
+#endif
 
 // TODO: EC_KEY_check_fips?
 
