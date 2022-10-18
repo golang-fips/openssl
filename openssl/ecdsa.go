@@ -11,10 +11,16 @@ package openssl
 import "C"
 import (
 	"crypto"
+	"encoding/asn1"
 	"errors"
+	"math/big"
 	"runtime"
 	"unsafe"
 )
+
+type ecdsaSignature struct {
+	R, S *big.Int
+}
 
 type PrivateKeyECDSA struct {
 	key *C.GO_EC_KEY
@@ -122,7 +128,7 @@ func NewPrivateKeyECDSA(curve string, X, Y BigInt, D BigInt) (*PrivateKeyECDSA, 
 	return k, nil
 }
 
-func HashSignECDSA(priv *PrivateKeyECDSA, hash []byte, h crypto.Hash) ([]byte, error) {
+func HashSignECDSA(priv *PrivateKeyECDSA, hash []byte, h crypto.Hash) (*big.Int, *big.Int, error) {
 	size := C._goboringcrypto_ECDSA_size(priv.key)
 	sig := make([]byte, size)
 	var sigLen C.uint
@@ -131,11 +137,15 @@ func HashSignECDSA(priv *PrivateKeyECDSA, hash []byte, h crypto.Hash) ([]byte, e
 		panic("boring: invalid hash")
 	}
 	if C._goboringcrypto_ECDSA_sign(md, base(hash), C.size_t(len(hash)), (*C.uint8_t)(unsafe.Pointer(&sig[0])), &sigLen, priv.key) == 0 {
-		return nil, NewOpenSSLError("ECDSA_sign failed")
+		return nil, nil, NewOpenSSLError("ECDSA_sign failed")
 	}
 	runtime.KeepAlive(priv)
 	sig = sig[:sigLen]
-	return sig, nil
+	var esig ecdsaSignature
+	if _, err := asn1.Unmarshal(sig, &esig); err != nil {
+		return nil, nil, err
+	}
+	return esig.R, esig.S, nil
 }
 
 func SignMarshalECDSA(priv *PrivateKeyECDSA, hash []byte) ([]byte, error) {
@@ -157,10 +167,14 @@ func VerifyECDSA(pub *PublicKeyECDSA, hash []byte, sig []byte) bool {
 	return ok
 }
 
-func HashVerifyECDSA(pub *PublicKeyECDSA, msg []byte, sig []byte, h crypto.Hash) bool {
+func HashVerifyECDSA(pub *PublicKeyECDSA, msg []byte, r, s *big.Int, h crypto.Hash) bool {
 	md := cryptoHashToMD(h)
 	if md == nil {
 		panic("boring: invalid hash")
+	}
+	sig, err := asn1.Marshal(ecdsaSignature{r, s})
+	if err != nil {
+		return false
 	}
 	ok := C._goboringcrypto_ECDSA_verify(md, base(msg), C.size_t(len(msg)), (*C.uint8_t)(unsafe.Pointer(&sig[0])), C.uint(len(sig)), pub.key) > 0
 	runtime.KeepAlive(pub)
