@@ -106,9 +106,9 @@ DEFINEFUNC(int, EVP_DigestFinal, (GO_EVP_MD_CTX_PTR ctx, unsigned char *md, unsi
 DEFINEFUNC_LEGACY_1_0(int, MD5_Init, (GO_MD5_CTX_PTR c), (c)) \
 DEFINEFUNC_LEGACY_1_0(int, MD5_Update, (GO_MD5_CTX_PTR c, const void *data, size_t len), (c, data, len)) \
 DEFINEFUNC_LEGACY_1_0(int, MD5_Final, (unsigned char *md, GO_MD5_CTX_PTR c), (md, c)) \
-DEFINEFUNC_LEGACY_1_0(int, SHA1_Init, (GO_SHA_CTX_PTR arg0), (arg0)) \
-DEFINEFUNC_LEGACY_1_0(int, SHA1_Update, (GO_SHA_CTX_PTR arg0, const void *arg1, size_t arg2), (arg0, arg1, arg2)) \
-DEFINEFUNC_LEGACY_1_0(int, SHA1_Final, (uint8_t * arg0, GO_SHA_CTX_PTR arg1), (arg0, arg1)) \
+DEFINEFUNC_LEGACY_1_0(int, SHA1_Init, (GO_SHA_CTX_PTR c), (c)) \
+DEFINEFUNC_LEGACY_1_0(int, SHA1_Update, (GO_SHA_CTX_PTR c, const void *data, size_t len), (c, data, len)) \
+DEFINEFUNC_LEGACY_1_0(int, SHA1_Final, (unsigned char *md, GO_SHA_CTX_PTR c), (md, c)) \
 DEFINEFUNC_1_1(const GO_EVP_MD_PTR, EVP_md5_sha1, (void), ()) \
 DEFINEFUNC(const GO_EVP_MD_PTR, EVP_md5, (void), ()) \
 DEFINEFUNC(const GO_EVP_MD_PTR, EVP_sha1, (void), ()) \
