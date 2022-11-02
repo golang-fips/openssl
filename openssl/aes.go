@@ -92,7 +92,9 @@ func (c *aesCipher) Encrypt(dst, src []byte) {
 		}
 	}
 
-	C.go_openssl_EVP_EncryptUpdate_wrapper(c.enc_ctx, base(dst), base(src), aesBlockSize)
+	if C.go_openssl_EVP_EncryptUpdate_wrapper(c.enc_ctx, base(dst), base(src), aesBlockSize) != 1 {
+		panic("crypto/cipher: EncryptUpdate failed")
+	}
 	runtime.KeepAlive(c)
 }
 
@@ -229,7 +231,9 @@ func (x *aesCTR) XORKeyStream(dst, src []byte) {
 	if len(src) == 0 {
 		return
 	}
-	C.go_openssl_EVP_EncryptUpdate_wrapper(x.ctx, base(dst), base(src), C.int(len(src)))
+	if C.go_openssl_EVP_EncryptUpdate_wrapper(x.ctx, base(dst), base(src), C.int(len(src))) != 1 {
+		panic("crypto/cipher: EncryptUpdate failed")
+	}
 	runtime.KeepAlive(x)
 }
 
