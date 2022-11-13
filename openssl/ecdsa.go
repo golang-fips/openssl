@@ -131,7 +131,7 @@ func NewPrivateKeyECDSA(curve string, X, Y BigInt, D BigInt) (*PrivateKeyECDSA, 
 func HashSignECDSA(priv *PrivateKeyECDSA, hash []byte, h crypto.Hash) (*big.Int, *big.Int, error) {
 	size := C._goboringcrypto_ECDSA_size(priv.key)
 	sig := make([]byte, size)
-	var sigLen C.uint
+	var sigLen C.size_t
 	md := cryptoHashToMD(h)
 	if md == nil {
 		panic("boring: invalid hash")
