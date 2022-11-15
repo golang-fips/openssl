@@ -14,6 +14,7 @@ package openssl
 */
 import "C"
 import (
+	"encoding/binary"
 	"errors"
 	"fmt"
 	"math/bits"
@@ -45,9 +46,23 @@ var enabled = false
 // will still be done by OpenSSL.
 var strictFIPS = false
 
+var nativeEndian binary.ByteOrder
+
 func init() {
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
+
+	buf := [2]byte{}
+	*(*uint16)(unsafe.Pointer(&buf[0])) = uint16(0xABCD)
+
+	switch buf {
+	case [2]byte{0xCD, 0xAB}:
+		nativeEndian = binary.LittleEndian
+	case [2]byte{0xAB, 0xCD}:
+		nativeEndian = binary.BigEndian
+	default:
+		panic("Could not determine native endianness.")
+	}
 
 	// Check if we can `dlopen` OpenSSL
 	if C._goboringcrypto_DLOPEN_OPENSSL() == C.NULL {
@@ -184,6 +199,20 @@ type fail string
 
 func (e fail) Error() string { return "boringcrypto: " + string(e) + " failed" }
 
+const wordBytes = bits.UintSize / 8
+
+// Reverse each limb of z.
+func (z BigInt) byteSwap() {
+	for i, d := range z {
+		var n uint = 0
+		for j := 0; j < wordBytes; j++ {
+			n |= uint(byte(d)) << (8 * (wordBytes - j - 1))
+			d >>= 8
+		}
+		z[i] = n
+	}
+}
+
 func wbase(b BigInt) *C.uint8_t {
 	if len(b) == 0 {
 		return nil
@@ -191,16 +220,27 @@ func wbase(b BigInt) *C.uint8_t {
 	return (*C.uint8_t)(unsafe.Pointer(&b[0]))
 }
 
-const wordBytes = bits.UintSize / 8
-
 func bigToBN(x BigInt) *C.GO_BIGNUM {
+	if nativeEndian == binary.BigEndian {
+		z := make(BigInt, len(x))
+		copy(z, x)
+		z.byteSwap()
+		x = z
+	}
+	// Limbs are always ordered in LSB first, so we can safely apply
+	// BN_lebin2bn regardless of host endianness.
 	return C._goboringcrypto_BN_lebin2bn(wbase(x), C.size_t(len(x)*wordBytes), nil)
 }
 
 func bnToBig(bn *C.GO_BIGNUM) BigInt {
 	x := make(BigInt, (C._goboringcrypto_BN_num_bytes(bn)+wordBytes-1)/wordBytes)
+	// Limbs are always ordered in LSB first, so we can safely apply
+	// BN_bn2lebinpad regardless of host endianness.
 	if C._goboringcrypto_BN_bn2lebinpad(bn, wbase(x), C.size_t(len(x)*wordBytes)) == 0 {
 		panic("boringcrypto: bignum conversion failed")
+	}
+	if nativeEndian == binary.BigEndian {
+		x.byteSwap()
 	}
 	return x
 }
