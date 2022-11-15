@@ -8,6 +8,7 @@ package openssl
 // #cgo LDFLAGS: -ldl
 import "C"
 import (
+	"encoding/binary"
 	"errors"
 	"math/bits"
 	"strconv"
@@ -27,6 +28,8 @@ var (
 	initErr  error
 )
 
+var nativeEndian binary.ByteOrder
+
 // Init loads and initializes OpenSSL.
 // It must be called before any other OpenSSL call.
 //
@@ -40,6 +43,17 @@ var (
 // using a list of supported and well-known version suffixes, going from higher to lower versions.
 func Init(version string) error {
 	initOnce.Do(func() {
+		buf := [2]byte{}
+		*(*uint16)(unsafe.Pointer(&buf[0])) = uint16(0xABCD)
+
+		switch buf {
+		case [2]byte{0xCD, 0xAB}:
+			nativeEndian = binary.LittleEndian
+		case [2]byte{0xAB, 0xCD}:
+			nativeEndian = binary.BigEndian
+		default:
+			panic("Could not determine native endianness.")
+		}
 		vMajor, vMinor, initErr = opensslInit(version)
 	})
 	return initErr
@@ -214,6 +228,18 @@ func newOpenSSLError(msg string) error {
 
 const wordBytes = bits.UintSize / 8
 
+// Reverse each limb of z.
+func (z BigInt) byteSwap() {
+	for i, d := range z {
+		var n uint = 0
+		for j := 0; j < wordBytes; j++ {
+			n |= uint(byte(d)) << (8 * (wordBytes - j - 1))
+			d >>= 8
+		}
+		z[i] = n
+	}
+}
+
 func wbase(b BigInt) *C.uchar {
 	if len(b) == 0 {
 		return nil
@@ -225,6 +251,14 @@ func bigToBN(x BigInt) C.GO_BIGNUM_PTR {
 	if len(x) == 0 {
 		return nil
 	}
+	if nativeEndian == binary.BigEndian {
+		z := make(BigInt, len(x))
+		copy(z, x)
+		z.byteSwap()
+		x = z
+	}
+	// Limbs are always ordered in LSB first, so we can safely apply
+	// BN_lebin2bn regardless of host endianness.
 	return C.go_openssl_BN_lebin2bn(wbase(x), C.int(len(x)*wordBytes), nil)
 }
 
@@ -232,9 +266,14 @@ func bnToBig(bn C.GO_BIGNUM_PTR) BigInt {
 	if bn == nil {
 		return nil
 	}
+	// Limbs are always ordered in LSB first, so we can safely apply
+	// BN_bn2lebinpad regardless of host endianness.
 	x := make(BigInt, C.go_openssl_BN_num_bits(bn))
 	if C.go_openssl_BN_bn2lebinpad(bn, wbase(x), C.int(len(x)*wordBytes)) == 0 {
 		panic("openssl: bignum conversion failed")
+	}
+	if nativeEndian == binary.BigEndian {
+		x.byteSwap()
 	}
 	return x
 }
