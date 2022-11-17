@@ -104,14 +104,14 @@ func (h *evpHash) Reset() {
 	// There is no need to reset h.ctx2 because it is always reset after
 	// use in evpHash.sum.
 	if C.go_openssl_EVP_DigestInit(h.ctx, h.md) != 1 {
-		panic("openssl: EVP_DigestInit failed")
+		panic(newOpenSSLError("EVP_DigestInit"))
 	}
 	runtime.KeepAlive(h)
 }
 
 func (h *evpHash) Write(p []byte) (int, error) {
 	if len(p) > 0 && C.go_openssl_EVP_DigestUpdate(h.ctx, unsafe.Pointer(&*addr(p)), C.size_t(len(p))) != 1 {
-		panic("openssl: EVP_DigestUpdate failed")
+		panic(newOpenSSLError("EVP_DigestUpdate"))
 	}
 	runtime.KeepAlive(h)
 	return len(p), nil
@@ -131,10 +131,10 @@ func (h *evpHash) sum(out []byte) {
 	// In particular it is OK to Sum, then Write more, then Sum again,
 	// and the second Sum acts as if the first didn't happen.
 	if C.go_openssl_EVP_MD_CTX_copy(h.ctx2, h.ctx) != 1 {
-		panic("openssl: EVP_MD_CTX_copy failed")
+		panic(newOpenSSLError("EVP_MD_CTX_copy"))
 	}
 	if C.go_openssl_EVP_DigestFinal(h.ctx2, (*C.uchar)(noescape(unsafe.Pointer(base(out)))), nil) != 1 {
-		panic("openssl: EVP_DigestFinal failed")
+		panic(newOpenSSLError("EVP_DigestFinal"))
 	}
 	runtime.KeepAlive(h)
 }

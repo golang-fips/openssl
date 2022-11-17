@@ -28,9 +28,13 @@ func hashToMD(h hash.Hash) C.GO_EVP_MD_PTR {
 func cryptoHashToMD(ch crypto.Hash) C.GO_EVP_MD_PTR {
 	switch ch {
 	case crypto.MD5:
-		// TODO: not necessary yet
+		return C.go_openssl_EVP_md5()
 	case crypto.MD5SHA1:
-		// TODO: not necessary yet
+		if vMajor == 1 && vMinor == 0 {
+			return C.go_openssl_EVP_md5_sha1_backport()
+		} else {
+			return C.go_openssl_EVP_md5_sha1()
+		}
 	case crypto.SHA1:
 		return C.go_openssl_EVP_sha1()
 	case crypto.SHA224:
