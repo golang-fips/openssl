@@ -9,6 +9,7 @@ package openssl
 import "C"
 import (
 	"errors"
+	"math/bits"
 	"strconv"
 	"strings"
 	"sync"
@@ -209,4 +210,31 @@ func newOpenSSLError(msg string) error {
 		b.WriteString(string(buf[:]) + "\n\t" + C.GoString(file) + ":" + strconv.Itoa(int(line)))
 	}
 	return errors.New(b.String())
+}
+
+const wordBytes = bits.UintSize / 8
+
+func wbase(b BigInt) *C.uchar {
+	if len(b) == 0 {
+		return nil
+	}
+	return (*C.uchar)(unsafe.Pointer(&b[0]))
+}
+
+func bigToBN(x BigInt) C.GO_BIGNUM_PTR {
+	if len(x) == 0 {
+		return nil
+	}
+	return C.go_openssl_BN_lebin2bn(wbase(x), C.int(len(x)*wordBytes), nil)
+}
+
+func bnToBig(bn C.GO_BIGNUM_PTR) BigInt {
+	if bn == nil {
+		return nil
+	}
+	x := make(BigInt, C.go_openssl_BN_num_bits(bn))
+	if C.go_openssl_BN_bn2lebinpad(bn, wbase(x), C.int(len(x)*wordBytes)) == 0 {
+		panic("openssl: bignum conversion failed")
+	}
+	return x
 }
