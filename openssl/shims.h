@@ -225,7 +225,7 @@ DEFINEFUNC(int, EVP_PKEY_encrypt_init, (GO_EVP_PKEY_CTX_PTR arg0), (arg0)) \
 DEFINEFUNC(int, EVP_PKEY_sign_init, (GO_EVP_PKEY_CTX_PTR arg0), (arg0)) \
 DEFINEFUNC(int, EVP_PKEY_verify_init, (GO_EVP_PKEY_CTX_PTR arg0), (arg0)) \
 DEFINEFUNC(int, EVP_PKEY_sign, (GO_EVP_PKEY_CTX_PTR arg0, unsigned char *arg1, size_t *arg2, const unsigned char *arg3, size_t arg4), (arg0, arg1, arg2, arg3, arg4)) \
-DEFINEFUNC(int, EVP_PKEY_set1_EC_KEY, (GO_EVP_PKEY_PTR pkey, const GO_EC_KEY_PTR key), (pkey, key)) \
+DEFINEFUNC(int, EVP_PKEY_set1_EC_KEY, (GO_EVP_PKEY_PTR pkey, GO_EC_KEY_PTR key), (pkey, key)) \
 DEFINEFUNC(GO_EC_KEY_PTR, EVP_PKEY_get1_EC_KEY, (GO_EVP_PKEY_PTR pkey), (pkey)) \
 DEFINEFUNC(GO_RSA_PTR, RSA_new, (void), ()) \
 DEFINEFUNC(void, RSA_free, (GO_RSA_PTR arg0), (arg0)) \
