@@ -4,6 +4,7 @@
 package openssl_test
 
 import (
+	"crypto"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"testing"
@@ -54,27 +55,38 @@ func testECDSASignAndVerify(t *testing.T, c elliptic.Curve) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	msg := []byte("hi!")
+	hashed := openssl.SHA256(msg)
 
 	priv, err := openssl.NewPrivateKeyECDSA(key.Params().Name, bbig.Enc(key.X), bbig.Enc(key.Y), bbig.Enc(key.D))
 	if err != nil {
 		t.Fatal(err)
 	}
-	hashed := []byte("testing")
-	sig, err := openssl.SignMarshalECDSA(priv, hashed)
-	if err != nil {
-		t.Fatal(err)
-	}
-
 	pub, err := openssl.NewPublicKeyECDSA(key.Params().Name, bbig.Enc(key.X), bbig.Enc(key.Y))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !openssl.VerifyECDSA(pub, hashed, sig) {
+	signed, err := openssl.SignMarshalECDSA(priv, hashed[:])
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !openssl.VerifyECDSA(pub, hashed[:], signed) {
 		t.Errorf("Verify failed")
 	}
-	hashed[0] ^= 0xff
-	if openssl.VerifyECDSA(pub, hashed, sig) {
+	signed[0] ^= 0xff
+	if openssl.VerifyECDSA(pub, hashed[:], signed) {
 		t.Errorf("Verify succeeded despite intentionally invalid hash!")
+	}
+	signed, err = openssl.HashSignECDSA(priv, crypto.SHA256, msg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !openssl.HashVerifyECDSA(pub, crypto.SHA256, msg, signed) {
+		t.Errorf("Verify failed")
+	}
+	signed[0] ^= 0xff
+	if openssl.HashVerifyECDSA(pub, crypto.SHA256, msg, signed) {
+		t.Errorf("Verify failed")
 	}
 }
 

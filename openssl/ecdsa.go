@@ -6,6 +6,7 @@ package openssl
 // #include "goopenssl.h"
 import "C"
 import (
+	"crypto"
 	"errors"
 	"runtime"
 )
@@ -102,10 +103,17 @@ func SignMarshalECDSA(priv *PrivateKeyECDSA, hash []byte) ([]byte, error) {
 	return evpSign(priv.withKey, 0, 0, 0, hash)
 }
 
+func HashSignECDSA(priv *PrivateKeyECDSA, h crypto.Hash, msg []byte) ([]byte, error) {
+	return evpHashSign(priv.withKey, h, msg)
+}
+
 func VerifyECDSA(pub *PublicKeyECDSA, hash []byte, sig []byte) bool {
 	return evpVerify(pub.withKey, 0, 0, 0, sig, hash) == nil
 }
 
+func HashVerifyECDSA(pub *PublicKeyECDSA, h crypto.Hash, msg, sig []byte) bool {
+	return evpHashVerify(pub.withKey, h, msg, sig) == nil
+}
 func newECKey(curve string, X, Y, D BigInt) (C.GO_EVP_PKEY_PTR, error) {
 	nid, err := curveNID(curve)
 	if err != nil {
