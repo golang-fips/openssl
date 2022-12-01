@@ -6,6 +6,7 @@ import (
 	"crypto"
 	"errors"
 	"hash"
+	"strconv"
 	"unsafe"
 )
 
@@ -275,4 +276,60 @@ func evpVerify(withKey withKeyFunc, padding C.int, saltLen C.int, h crypto.Hash,
 		return nil
 	}
 	return verifyEVP(withKey, padding, nil, nil, saltLen, h, verifyInit, verify, sig, hashed)
+}
+
+func evpHashSign(withKey withKeyFunc, h crypto.Hash, msg []byte) ([]byte, error) {
+	md := cryptoHashToMD(h)
+	if md == nil {
+		return nil, errors.New("unsupported hash function: " + strconv.Itoa(int(h)))
+	}
+	var out []byte
+	var outLen C.size_t
+	ctx := C.go_openssl_EVP_MD_CTX_new()
+	if ctx == nil {
+		return nil, newOpenSSLError("EVP_MD_CTX_new failed")
+	}
+	defer C.go_openssl_EVP_MD_CTX_free(ctx)
+	if withKey(func(key C.GO_EVP_PKEY_PTR) C.int {
+		return C.go_openssl_EVP_DigestSignInit(ctx, nil, md, nil, key)
+	}) != 1 {
+		return nil, newOpenSSLError("EVP_DigestSignInit failed")
+	}
+	if C.go_openssl_EVP_DigestUpdate(ctx, unsafe.Pointer(base(msg)), C.size_t(len(msg))) != 1 {
+		return nil, newOpenSSLError("EVP_DigestUpdate failed")
+	}
+	// Obtain the signature length
+	if C.go_openssl_EVP_DigestSignFinal(ctx, nil, &outLen) != 1 {
+		return nil, newOpenSSLError("EVP_DigestSignFinal failed")
+	}
+	out = make([]byte, outLen)
+	// Obtain the signature
+	if C.go_openssl_EVP_DigestSignFinal(ctx, base(out), &outLen) != 1 {
+		return nil, newOpenSSLError("EVP_DigestSignFinal failed")
+	}
+	return out[:outLen], nil
+}
+
+func evpHashVerify(withKey withKeyFunc, h crypto.Hash, msg, sig []byte) error {
+	md := cryptoHashToMD(h)
+	if md == nil {
+		return errors.New("unsupported hash function: " + strconv.Itoa(int(h)))
+	}
+	ctx := C.go_openssl_EVP_MD_CTX_new()
+	if ctx == nil {
+		return newOpenSSLError("EVP_MD_CTX_new failed")
+	}
+	defer C.go_openssl_EVP_MD_CTX_free(ctx)
+	if withKey(func(key C.GO_EVP_PKEY_PTR) C.int {
+		return C.go_openssl_EVP_DigestVerifyInit(ctx, nil, md, nil, key)
+	}) != 1 {
+		return newOpenSSLError("EVP_DigestVerifyInit failed")
+	}
+	if C.go_openssl_EVP_DigestUpdate(ctx, unsafe.Pointer(base(msg)), C.size_t(len(msg))) != 1 {
+		return newOpenSSLError("EVP_DigestUpdate failed")
+	}
+	if C.go_openssl_EVP_DigestVerifyFinal(ctx, base(sig), C.size_t(len(sig))) != 1 {
+		return newOpenSSLError("EVP_DigestVerifyFinal failed")
+	}
+	return nil
 }

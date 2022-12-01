@@ -11,7 +11,6 @@ import (
 	"errors"
 	"hash"
 	"runtime"
-	"strconv"
 	"unsafe"
 )
 
@@ -213,36 +212,7 @@ func SignRSAPKCS1v15(priv *PrivateKeyRSA, h crypto.Hash, hashed []byte) ([]byte,
 }
 
 func HashSignRSAPKCS1v15(priv *PrivateKeyRSA, h crypto.Hash, msg []byte) ([]byte, error) {
-	md := cryptoHashToMD(h)
-	if md == nil {
-		return nil, errors.New("crypto/rsa: unsupported hash function: " + strconv.Itoa(int(h)))
-	}
-	var out []byte
-	var outLen C.size_t
-	if priv.withKey(func(key C.GO_EVP_PKEY_PTR) C.int {
-		ctx := C.go_openssl_EVP_MD_CTX_new()
-		if ctx == nil {
-			return 0
-		}
-		defer C.go_openssl_EVP_MD_CTX_free(ctx)
-		if ret := C.go_openssl_EVP_DigestSignInit(ctx, nil, md, nil, key); ret != 1 {
-			return ret
-		}
-		if ret := C.go_openssl_EVP_DigestUpdate(ctx, unsafe.Pointer(base(msg)), C.size_t(len(msg))); ret != 1 {
-			return ret
-		}
-		// Obtain the signature length
-		if ret := C.go_openssl_EVP_DigestSignFinal(ctx, nil, &outLen); ret != 1 {
-			return ret
-		}
-		out = make([]byte, outLen)
-		// Obtain the signature
-		return C.go_openssl_EVP_DigestSignFinal(ctx, base(out), &outLen)
-	}) == 0 {
-		return nil, newOpenSSLError("RSA_sign failed")
-	}
-
-	return out[:outLen], nil
+	return evpHashSign(priv.withKey, h, msg)
 }
 
 func VerifyRSAPKCS1v15(pub *PublicKeyRSA, h crypto.Hash, hashed, sig []byte) error {
@@ -258,30 +228,8 @@ func VerifyRSAPKCS1v15(pub *PublicKeyRSA, h crypto.Hash, hashed, sig []byte) err
 	return evpVerify(pub.withKey, C.GO_RSA_PKCS1_PADDING, 0, h, sig, hashed)
 }
 
-func HashVerifyRSAPKCS1v15(priv *PublicKeyRSA, h crypto.Hash, msg, sig []byte) error {
-	md := cryptoHashToMD(h)
-	if md == nil {
-		return errors.New("crypto/rsa: unsupported hash function: " + strconv.Itoa(int(h)))
-	}
-	if priv.withKey(func(key C.GO_EVP_PKEY_PTR) C.int {
-		ctx := C.go_openssl_EVP_MD_CTX_new()
-		if ctx == nil {
-			return 0
-		}
-		defer C.go_openssl_EVP_MD_CTX_free(ctx)
-		if ret := C.go_openssl_EVP_DigestVerifyInit(ctx, nil, md, nil, key); ret != 1 {
-			return ret
-		}
-		if ret := C.go_openssl_EVP_DigestUpdate(ctx, unsafe.Pointer(base(msg)), C.size_t(len(msg))); ret != 1 {
-			return ret
-		}
-		// Obtain the signature
-		return C.go_openssl_EVP_DigestVerifyFinal(ctx, base(sig), C.size_t(len(sig)))
-	}) == 0 {
-		return errors.New("crypto/rsa: verification error")
-	}
-
-	return nil
+func HashVerifyRSAPKCS1v15(pub *PublicKeyRSA, h crypto.Hash, msg, sig []byte) error {
+	return evpHashVerify(pub.withKey, h, msg, sig)
 }
 
 // rsa_st_1_0_2 is rsa_st memory layout in OpenSSL 1.0.2.
