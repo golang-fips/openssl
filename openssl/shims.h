@@ -21,7 +21,21 @@ enum {
     GO_EVP_CTRL_GCM_SET_TAG = 0x11,
     GO_EVP_PKEY_CTRL_MD = 1,
     GO_EVP_PKEY_RSA = 6,
+    GO_EVP_PKEY_EC = 408,
     GO_EVP_MAX_MD_SIZE = 64
+};
+
+// #include <openssl/ec.h>
+enum {
+    GO_EVP_PKEY_CTRL_EC_PARAMGEN_CURVE_NID = 0x1001
+};
+
+// #include <openssl/obj_mac.h>
+enum {
+    GO_NID_X9_62_prime256v1 = 415,
+    GO_NID_secp224r1 = 713,
+    GO_NID_secp384r1 = 715,
+    GO_NID_secp521r1 = 716
 };
 
 // #include <openssl/rsa.h>
@@ -52,8 +66,12 @@ typedef void* GO_EVP_MD_CTX_PTR;
 typedef void* GO_HMAC_CTX_PTR;
 typedef void* GO_EVP_CIPHER_PTR;
 typedef void* GO_EVP_CIPHER_CTX_PTR;
+typedef void* GO_EC_KEY_PTR;
+typedef void* GO_EC_POINT_PTR;
+typedef void* GO_EC_GROUP_PTR;
 typedef void* GO_RSA_PTR;
 typedef void* GO_BIGNUM_PTR;
+typedef void* GO_BN_CTX_PTR;
 
 // #include <openssl/md5.h>
 typedef void* GO_MD5_CTX_PTR;
@@ -207,6 +225,8 @@ DEFINEFUNC(int, EVP_PKEY_encrypt_init, (GO_EVP_PKEY_CTX_PTR arg0), (arg0)) \
 DEFINEFUNC(int, EVP_PKEY_sign_init, (GO_EVP_PKEY_CTX_PTR arg0), (arg0)) \
 DEFINEFUNC(int, EVP_PKEY_verify_init, (GO_EVP_PKEY_CTX_PTR arg0), (arg0)) \
 DEFINEFUNC(int, EVP_PKEY_sign, (GO_EVP_PKEY_CTX_PTR arg0, unsigned char *arg1, size_t *arg2, const unsigned char *arg3, size_t arg4), (arg0, arg1, arg2, arg3, arg4)) \
+DEFINEFUNC(int, EVP_PKEY_set1_EC_KEY, (GO_EVP_PKEY_PTR pkey, const GO_EC_KEY_PTR key), (pkey, key)) \
+DEFINEFUNC(GO_EC_KEY_PTR, EVP_PKEY_get1_EC_KEY, (GO_EVP_PKEY_PTR pkey), (pkey)) \
 DEFINEFUNC(GO_RSA_PTR, RSA_new, (void), ()) \
 DEFINEFUNC(void, RSA_free, (GO_RSA_PTR arg0), (arg0)) \
 DEFINEFUNC_1_1(int, RSA_set0_factors, (GO_RSA_PTR rsa, GO_BIGNUM_PTR p, GO_BIGNUM_PTR q), (rsa, p, q)) \
@@ -215,8 +235,18 @@ DEFINEFUNC_1_1(void, RSA_get0_crt_params, (const GO_RSA_PTR r, const GO_BIGNUM_P
 DEFINEFUNC_1_1(int, RSA_set0_key, (GO_RSA_PTR r, GO_BIGNUM_PTR n, GO_BIGNUM_PTR e, GO_BIGNUM_PTR d), (r, n, e, d)) \
 DEFINEFUNC_1_1(void, RSA_get0_factors, (const GO_RSA_PTR rsa, const GO_BIGNUM_PTR *p, const GO_BIGNUM_PTR *q), (rsa, p, q)) \
 DEFINEFUNC_1_1(void, RSA_get0_key, (const GO_RSA_PTR rsa, const GO_BIGNUM_PTR *n, const GO_BIGNUM_PTR *e, const GO_BIGNUM_PTR *d), (rsa, n, e, d)) \
+DEFINEFUNC(GO_BIGNUM_PTR, BN_new, (void), ()) \
+DEFINEFUNC(void, BN_free, (GO_BIGNUM_PTR arg0), (arg0)) \
 DEFINEFUNC(void, BN_clear_free, (GO_BIGNUM_PTR arg0), (arg0)) \
 DEFINEFUNC(int, BN_num_bits, (const GO_BIGNUM_PTR arg0), (arg0)) \
 /* bn_lebin2bn and bn_bn2lebinpad are not exported in any OpenSSL 1.0.2, but they exist. */ \
 /*check:from=1.1.0*/ DEFINEFUNC_RENAMED_1_1(GO_BIGNUM_PTR, BN_lebin2bn, bn_lebin2bn, (const unsigned char *s, int len, GO_BIGNUM_PTR ret), (s, len, ret)) \
-/*check:from=1.1.0*/ DEFINEFUNC_RENAMED_1_1(int, BN_bn2lebinpad, bn_bn2lebinpad, (const GO_BIGNUM_PTR a, unsigned char *to, int tolen), (a, to, tolen))
+/*check:from=1.1.0*/ DEFINEFUNC_RENAMED_1_1(int, BN_bn2lebinpad, bn_bn2lebinpad, (const GO_BIGNUM_PTR a, unsigned char *to, int tolen), (a, to, tolen)) \
+DEFINEFUNC(int, EC_KEY_set_public_key_affine_coordinates, (GO_EC_KEY_PTR key, GO_BIGNUM_PTR x, GO_BIGNUM_PTR y), (key, x, y)) \
+DEFINEFUNC(void, EC_KEY_free, (GO_EC_KEY_PTR arg0), (arg0)) \
+DEFINEFUNC(const GO_EC_GROUP_PTR, EC_KEY_get0_group, (const GO_EC_KEY_PTR arg0), (arg0)) \
+DEFINEFUNC(const GO_BIGNUM_PTR, EC_KEY_get0_private_key, (const GO_EC_KEY_PTR arg0), (arg0)) \
+DEFINEFUNC(const GO_EC_POINT_PTR, EC_KEY_get0_public_key, (const GO_EC_KEY_PTR arg0), (arg0)) \
+DEFINEFUNC(GO_EC_KEY_PTR, EC_KEY_new_by_curve_name, (int arg0), (arg0)) \
+DEFINEFUNC(int, EC_KEY_set_private_key, (GO_EC_KEY_PTR arg0, const GO_BIGNUM_PTR arg1), (arg0, arg1)) \
+DEFINEFUNC(int, EC_POINT_get_affine_coordinates_GFp, (const GO_EC_GROUP_PTR arg0, const GO_EC_POINT_PTR arg1, GO_BIGNUM_PTR arg2, GO_BIGNUM_PTR arg3, GO_BN_CTX_PTR arg4), (arg0, arg1, arg2, arg3, arg4))

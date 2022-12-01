@@ -52,7 +52,10 @@ func cryptoHashToMD(ch crypto.Hash) C.GO_EVP_MD_PTR {
 	return nil
 }
 
-func generateEVPPKey(id C.int, bits int) (C.GO_EVP_PKEY_PTR, error) {
+func generateEVPPKey(id C.int, bits int, curve string) (C.GO_EVP_PKEY_PTR, error) {
+	if (bits == 0 && curve == "") || (bits != 0 && curve != "") {
+		return nil, fail("incorrect generateEVPPKey parameters")
+	}
 	ctx := C.go_openssl_EVP_PKEY_CTX_new_id(id, nil)
 	if ctx == nil {
 		return nil, newOpenSSLError("EVP_PKEY_CTX_new_id failed")
@@ -63,6 +66,15 @@ func generateEVPPKey(id C.int, bits int) (C.GO_EVP_PKEY_PTR, error) {
 	}
 	if bits != 0 {
 		if C.go_openssl_EVP_PKEY_CTX_ctrl(ctx, id, -1, C.GO_EVP_PKEY_CTRL_RSA_KEYGEN_BITS, C.int(bits), nil) != 1 {
+			return nil, newOpenSSLError("EVP_PKEY_CTX_ctrl failed")
+		}
+	}
+	if curve != "" {
+		nid, err := curveNID(curve)
+		if err != nil {
+			return nil, err
+		}
+		if C.go_openssl_EVP_PKEY_CTX_ctrl(ctx, id, -1, C.GO_EVP_PKEY_CTRL_EC_PARAMGEN_CURVE_NID, nid, nil) != 1 {
 			return nil, newOpenSSLError("EVP_PKEY_CTX_ctrl failed")
 		}
 	}
