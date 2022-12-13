@@ -114,6 +114,7 @@ func VerifyECDSA(pub *PublicKeyECDSA, hash []byte, sig []byte) bool {
 func HashVerifyECDSA(pub *PublicKeyECDSA, h crypto.Hash, msg, sig []byte) bool {
 	return evpHashVerify(pub.withKey, h, msg, sig) == nil
 }
+
 func newECKey(curve string, X, Y, D BigInt) (C.GO_EVP_PKEY_PTR, error) {
 	nid, err := curveNID(curve)
 	if err != nil {
@@ -126,7 +127,7 @@ func newECKey(curve string, X, Y, D BigInt) (C.GO_EVP_PKEY_PTR, error) {
 	}
 	defer C.go_openssl_EC_KEY_free(key)
 
-	// Convert X, Y, and D coordinates to OpenSSL format.
+	// Convert X, Y, and D coordinates to OpenSSL format. D is optional and may be nil.
 	bx, by, bd := bigToBN(X), bigToBN(Y), bigToBN(D)
 	defer func() {
 		bnFree(bx)
@@ -152,7 +153,7 @@ func newECKey(curve string, X, Y, D BigInt) (C.GO_EVP_PKEY_PTR, error) {
 	}
 	if C.go_openssl_EVP_PKEY_set1_EC_KEY(pkey, key) != 1 {
 		C.go_openssl_EVP_PKEY_free(pkey)
-		return nil, newOpenSSLError("EVP_PKEY_assign failed")
+		return nil, newOpenSSLError("EVP_PKEY_set1_EC_KEY failed")
 	}
 	return pkey, nil
 }
