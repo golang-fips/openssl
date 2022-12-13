@@ -158,12 +158,6 @@ func newECKey(curve string, X, Y, D BigInt) (C.GO_EVP_PKEY_PTR, error) {
 	return pkey, nil
 }
 
-func bnFree(bn C.GO_BIGNUM_PTR) {
-	if bn != nil {
-		C.go_openssl_BN_free(bn)
-	}
-}
-
 func curveNID(curve string) (C.int, error) {
 	switch curve {
 	case "P-224":

@@ -238,3 +238,9 @@ func bnToBig(bn C.GO_BIGNUM_PTR) BigInt {
 	}
 	return x
 }
+
+func bnFree(bn C.GO_BIGNUM_PTR) {
+	if bn != nil {
+		C.go_openssl_BN_free(bn)
+	}
+}
