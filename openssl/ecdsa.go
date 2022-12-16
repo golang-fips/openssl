@@ -40,7 +40,6 @@ func (k *PublicKeyECDSA) withKey(f func(C.GO_EVP_PKEY_PTR) C.int) C.int {
 }
 
 var errUnknownCurve = errors.New("openssl: unknown elliptic curve")
-var errUnsupportedCurve = errors.New("openssl: unsupported elliptic curve")
 
 func NewPublicKeyECDSA(curve string, X, Y BigInt) (*PublicKeyECDSA, error) {
 	pkey, err := newECKey(curve, X, Y, nil)
