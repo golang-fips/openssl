@@ -120,7 +120,7 @@ func generate(header string) (string, error) {
 			}
 			continue
 		}
-		if strings.HasPrefix(l, "enum {") {
+		if strings.HasPrefix(l, "enum {") || strings.HasPrefix(l, "typedef enum {") {
 			enum = true
 			continue
 		}

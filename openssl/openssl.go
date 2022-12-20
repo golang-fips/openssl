@@ -247,6 +247,13 @@ func wbase(b BigInt) *C.uchar {
 	return (*C.uchar)(unsafe.Pointer(&b[0]))
 }
 
+func bytesToBN(x []byte) C.GO_BIGNUM_PTR {
+	if len(x) == 0 {
+		return nil
+	}
+	return C.go_openssl_BN_bin2bn(base(x), C.int(len(x)), nil)
+}
+
 func bigToBN(x BigInt) C.GO_BIGNUM_PTR {
 	if len(x) == 0 {
 		return nil
