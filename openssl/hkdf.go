@@ -19,6 +19,10 @@ type hkdf struct {
 	ctx *C.GO_EVP_PKEY_CTX
 }
 
+func SupportsHKDF() bool {
+	return openSSLVersion() >= OPENSSL_VERSION_1_1_1
+}
+
 func newHKDF(h func() hash.Hash, mode C.int) (*hkdf, error) {
 	if openSSLVersion() < OPENSSL_VERSION_1_1_1 {
 		return nil, NewOpenSSLError("HKDF is not supported")
