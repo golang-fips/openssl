@@ -11,6 +11,7 @@
 
 #include <stdlib.h> // size_t
 #include <stdint.h> // uint8_t
+#include <string.h> // memset
 
 #include <openssl/ossl_typ.h>
 
@@ -365,13 +366,61 @@ DEFINEFUNC(int, BN_set_word, (BIGNUM *a, BN_ULONG w), (a, w))
 DEFINEFUNC(unsigned int, BN_num_bits, (const GO_BIGNUM *arg0), (arg0))
 DEFINEFUNC(int, BN_is_negative, (const GO_BIGNUM *arg0), (arg0))
 DEFINEFUNC(GO_BIGNUM *, BN_bin2bn, (const uint8_t *arg0, size_t arg1, GO_BIGNUM *arg2), (arg0, arg1, arg2))
-DEFINEFUNC(GO_BIGNUM *, BN_lebin2bn, (const unsigned char *s, size_t len, BIGNUM *ret), (s, len, ret))
-DEFINEFUNC(int, BN_bn2lebinpad, (const BIGNUM *a, unsigned char *to, size_t tolen), (a, to, tolen))
 
-static inline unsigned int
+static inline int
 _goboringcrypto_BN_num_bytes(const GO_BIGNUM* a) {
 	return ((_goboringcrypto_BN_num_bits(a)+7)/8);
 }
+
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L
+DEFINEFUNC(GO_BIGNUM *, BN_lebin2bn, (const unsigned char *s, size_t len, BIGNUM *ret), (s, len, ret))
+DEFINEFUNC(int, BN_bn2lebinpad, (const BIGNUM *a, unsigned char *to, size_t tolen), (a, to, tolen))
+#else
+DEFINEFUNCINTERNAL(int, BN_bn2bin, (const BIGNUM *a, unsigned char *to), (a, to))
+
+static inline GO_BIGNUM *
+_goboringcrypto_BN_lebin2bn(const unsigned char *s, size_t len, BIGNUM *ret)
+{
+	unsigned char *copy;
+	size_t i;
+	GO_BIGNUM *result;
+
+	copy = malloc(len);
+	if (!copy)
+		return NULL;
+	for (i = 0; i < len; i++)
+		copy[i] = s[len - i - 1];
+
+	result = _goboringcrypto_BN_bin2bn(copy, len, ret);
+	free(copy);
+	return result;
+}
+
+static inline int
+_goboringcrypto_BN_bn2lebinpad(const BIGNUM *a, unsigned char *to, size_t tolen)
+{
+	int size = _goboringcrypto_BN_num_bytes(a);
+	size_t i;
+
+	if (size > tolen)
+		return -1;
+
+	memset(to, 0, tolen - size);
+	if (_goboringcrypto_internal_BN_bn2bin(a, to + tolen - size) != size)
+		return -1;
+
+	/* reverse bytes */
+	for (i = 0; i < tolen / 2; i++) {
+		unsigned char tmp;
+
+		tmp = to[i];
+		to[i] = to[tolen - i - 1];
+		to[tolen - i - 1] = tmp;
+	}
+
+	return tolen;
+}
+#endif
 
 #include <openssl/ec.h>
 
@@ -395,7 +444,6 @@ typedef EC_KEY GO_EC_KEY;
 
 DEFINEFUNC(GO_EC_KEY *, EC_KEY_new, (void), ())
 DEFINEFUNC(GO_EC_KEY *, EC_KEY_new_by_curve_name, (int arg0), (arg0))
-DEFINEFUNC(int, EC_KEY_oct2key, (GO_EC_KEY *arg0, const unsigned char *arg1, size_t arg2, BN_CTX *arg3), (arg0, arg1, arg2, arg3))
 DEFINEFUNC(void, EC_KEY_free, (GO_EC_KEY * arg0), (arg0))
 DEFINEFUNC(const GO_EC_GROUP *, EC_KEY_get0_group, (const GO_EC_KEY *arg0), (arg0))
 DEFINEFUNC(int, EC_KEY_set_group, (GO_EC_KEY *arg0, const EC_GROUP *arg1), (arg0, arg1))
@@ -404,6 +452,31 @@ DEFINEFUNC(int, EC_KEY_set_private_key, (GO_EC_KEY * arg0, const GO_BIGNUM *arg1
 DEFINEFUNC(int, EC_KEY_set_public_key, (GO_EC_KEY * arg0, const GO_EC_POINT *arg1), (arg0, arg1))
 DEFINEFUNC(const GO_BIGNUM *, EC_KEY_get0_private_key, (const GO_EC_KEY *arg0), (arg0))
 DEFINEFUNC(const GO_EC_POINT *, EC_KEY_get0_public_key, (const GO_EC_KEY *arg0), (arg0))
+
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L
+DEFINEFUNC(int, EC_KEY_oct2key, (GO_EC_KEY *arg0, const unsigned char *arg1, size_t arg2, BN_CTX *arg3), (arg0, arg1, arg2, arg3))
+#else
+DEFINEFUNCINTERNAL(int, EC_POINT_oct2point, (const EC_GROUP *arg0, EC_POINT *arg1, const unsigned char *arg2, size_t arg3, BN_CTX *arg4), (arg0, arg1, arg2, arg3, arg4))
+
+static inline int
+_goboringcrypto_EC_KEY_oct2key(GO_EC_KEY *eckey, const unsigned char *buf, size_t len, BN_CTX *ctx)
+{
+	const GO_EC_GROUP *group = _goboringcrypto_EC_KEY_get0_group(eckey);
+	GO_EC_POINT *pubkey;
+	int ret = 1;
+
+	pubkey = _goboringcrypto_EC_POINT_new(group);
+	if (!pubkey)
+		return 0;
+
+	if (_goboringcrypto_internal_EC_POINT_oct2point(group, pubkey, buf, len, ctx) != 1 ||
+	    _goboringcrypto_EC_KEY_set_public_key(eckey, pubkey) != 1)
+		ret = 0;
+
+	_goboringcrypto_EC_POINT_free(pubkey);
+	return ret;
+}
+#endif
 
 // TODO: EC_KEY_check_fips?
 
