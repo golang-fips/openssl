@@ -11,6 +11,7 @@ import "C"
 import (
 	"errors"
 	"runtime"
+	"unsafe"
 )
 
 type PublicKeyECDH struct {
@@ -35,7 +36,8 @@ func (k *PublicKeyECDH) finalize() {
 }
 
 type PrivateKeyECDH struct {
-	_pkey C.GO_EVP_PKEY_PTR
+	_pkey        C.GO_EVP_PKEY_PTR
+	hasPublicKey bool
 }
 
 func (k *PrivateKeyECDH) finalize() {
@@ -96,11 +98,6 @@ func NewPrivateKeyECDH(curve string, bytes []byte) (*PrivateKeyECDH, error) {
 	if err != nil {
 		return nil, err
 	}
-	b := bytesToBN(bytes)
-	if b == nil {
-		return nil, newOpenSSLError("BN_bin2bn")
-	}
-	defer C.go_openssl_BN_free(b)
 	key := C.go_openssl_EC_KEY_new_by_curve_name(nid)
 	if key == nil {
 		return nil, newOpenSSLError("EC_KEY_new_by_curve_name")
@@ -111,14 +108,25 @@ func NewPrivateKeyECDH(curve string, bytes []byte) (*PrivateKeyECDH, error) {
 			C.go_openssl_EC_KEY_free(key)
 		}
 	}()
-	if C.go_openssl_EC_KEY_set_private_key(key, b) != 1 {
-		return nil, newOpenSSLError("EC_KEY_set_private_key")
+	if vMajor == 1 && vMinor == 0 {
+		b := C.go_openssl_BN_bin2bn(base(bytes), C.int(len(bytes)), nil)
+		if b == nil {
+			return nil, newOpenSSLError("BN_bin2bn")
+		}
+		defer C.go_openssl_BN_free(b)
+		if C.go_openssl_EC_KEY_set_private_key(key, b) != 1 {
+			return nil, newOpenSSLError("EC_KEY_set_private_key")
+		}
+	} else {
+		if C.go_openssl_EC_KEY_oct2priv(key, base(bytes), C.size_t(len(bytes))) != 1 {
+			return nil, newOpenSSLError("EC_KEY_oct2priv")
+		}
 	}
 	pkey, err = newEVPPKEY(key)
 	if err != nil {
 		return nil, err
 	}
-	k := &PrivateKeyECDH{pkey}
+	k := &PrivateKeyECDH{pkey, false}
 	runtime.SetFinalizer(k, (*PrivateKeyECDH).finalize)
 	return k, nil
 }
@@ -130,50 +138,63 @@ func (k *PrivateKeyECDH) PublicKey() (*PublicKeyECDH, error) {
 		return nil, newOpenSSLError("EVP_PKEY_get1_EC_KEY")
 	}
 	defer C.go_openssl_EC_KEY_free(key)
-	group := C.go_openssl_EC_KEY_get0_group(key)
-	if group == nil {
-		return nil, newOpenSSLError("EC_KEY_get0_group")
-	}
-	pt := C.go_openssl_EC_KEY_get0_public_key(key)
-	if pt == nil {
+	if !k.hasPublicKey {
 		// The public key will be nil if k has been generated using
 		// NewPrivateKeyECDH instead of GenerateKeyECDH.
 		//
 		// OpenSSL does not expose any method to generate the public
-		// key from the private key [1], so we have to calculate it here
-		// https://github.com/openssl/openssl/issues/18437#issuecomment-1144717206
-		pt = C.go_openssl_EC_POINT_new(group)
-		if pt == nil {
-			return nil, newOpenSSLError("EC_POINT_new")
+		// key from the private key [1], so we have to calculate it here.
+		// [1] https://github.com/openssl/openssl/issues/18437#issuecomment-1144717206
+		err := deriveEcdhPublicKey(key)
+		if err != nil {
+			return nil, err
 		}
-		defer C.go_openssl_EC_POINT_free(pt)
-		kbig := C.go_openssl_EC_KEY_get0_private_key(key)
-		if C.go_openssl_EC_POINT_mul(group, pt, kbig, nil, nil, nil) == 0 {
-			return nil, newOpenSSLError("EC_POINT_mul")
-		}
+		k.hasPublicKey = true
 	}
-	pt2octfn := func(data []byte) (int, error) {
-		n := C.go_openssl_EC_POINT_point2oct(group, pt, C.GO_POINT_CONVERSION_UNCOMPRESSED, base(data), C.size_t(len(data)), nil)
+	var bytes []byte
+	if vMajor == 1 && vMinor == 0 {
+		pt := C.go_openssl_EC_KEY_get0_public_key(key)
+		group := C.go_openssl_EC_KEY_get0_group(key)
+		// Get encoded point size.
+		n := C.go_openssl_EC_POINT_point2oct(group, pt, C.GO_POINT_CONVERSION_UNCOMPRESSED, nil, 0, nil)
 		if n == 0 {
-			return 0, newOpenSSLError("EC_POINT_point2oct")
+			return nil, newOpenSSLError("EC_POINT_point2oct")
 		}
-		return int(n), nil
+		// Encode point into bytes.
+		bytes = make([]byte, n)
+		n = C.go_openssl_EC_POINT_point2oct(group, pt, C.GO_POINT_CONVERSION_UNCOMPRESSED, base(bytes), n, nil)
+		if n == 0 {
+			return nil, newOpenSSLError("EC_POINT_point2oct")
+		}
+	} else {
+		var buf *C.uchar
+		n := C.go_openssl_EC_KEY_key2buf(key, C.GO_POINT_CONVERSION_UNCOMPRESSED, &buf, nil)
+		if n == 0 {
+			return nil, newOpenSSLError("EC_KEY_key2buf")
+		}
+		bytes = C.GoBytes(unsafe.Pointer(buf), C.int(n))
+		C.free(unsafe.Pointer(buf))
 	}
-	// Get encoded point size.
-	n, err := pt2octfn(nil)
-	if err != nil {
-		return nil, err
-	}
-	// Encode point into bytes.
-	bytes := make([]byte, n)
-	_, err = pt2octfn(bytes)
-	if err != nil {
-		return nil, err
-	}
+
 	pub := &PublicKeyECDH{k._pkey, bytes, k}
 	// Note: Same as in NewPublicKeyECDH regarding finalizer and KeepAlive.
 	runtime.SetFinalizer(pub, (*PublicKeyECDH).finalize)
 	return pub, nil
+}
+
+func deriveEcdhPublicKey(key C.GO_EC_KEY_PTR) error {
+	group := C.go_openssl_EC_KEY_get0_group(key)
+	pt := C.go_openssl_EC_POINT_new(group)
+	if pt == nil {
+		return newOpenSSLError("EC_POINT_new")
+	}
+	defer C.go_openssl_EC_POINT_free(pt)
+	kbig := C.go_openssl_EC_KEY_get0_private_key(key)
+	if C.go_openssl_EC_POINT_mul(group, pt, kbig, nil, nil, nil) == 0 {
+		return newOpenSSLError("EC_POINT_mul")
+	}
+	C.go_openssl_EC_KEY_set_public_key(key, pt)
+	return nil
 }
 
 func ECDH(priv *PrivateKeyECDH, pub *PublicKeyECDH) ([]byte, error) {
@@ -217,16 +238,23 @@ func GenerateKeyECDH(curve string) (*PrivateKeyECDH, []byte, error) {
 		return nil, nil, newOpenSSLError("EVP_PKEY_get1_EC_KEY")
 	}
 	defer C.go_openssl_EC_KEY_free(key)
-	b := C.go_openssl_EC_KEY_get0_private_key(key)
-	if b == nil {
-		return nil, nil, newOpenSSLError("EC_KEY_get0_private_key")
-	}
 	bits := C.go_openssl_EVP_PKEY_get_bits(pkey)
 	out := make([]byte, (bits+7)/8)
-	if C.go_openssl_BN_bn2binpad(b, base(out), C.int(len(out))) == 0 {
-		return nil, nil, newOpenSSLError("BN_bn2binpad")
+	if vMajor == 1 && vMinor == 0 {
+		b := C.go_openssl_EC_KEY_get0_private_key(key)
+		if b == nil {
+			return nil, nil, newOpenSSLError("EC_KEY_get0_private_key")
+		}
+		if C.go_openssl_BN_bn2binpad(b, base(out), C.int(len(out))) == 0 {
+			return nil, nil, newOpenSSLError("BN_bn2binpad")
+		}
+	} else {
+		n := C.go_openssl_EC_KEY_priv2oct(key, base(out), C.size_t(len(out)))
+		if int(n) != len(out) {
+			return nil, nil, newOpenSSLError("EC_KEY_priv2oct")
+		}
 	}
-	k = &PrivateKeyECDH{pkey}
+	k = &PrivateKeyECDH{pkey, true}
 	runtime.SetFinalizer(k, (*PrivateKeyECDH).finalize)
 	return k, out, nil
 }
