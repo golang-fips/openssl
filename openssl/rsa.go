@@ -27,6 +27,7 @@ func GenerateKeyRSA(bits int) (N, E, D, P, Q, Dp, Dq, Qinv BigInt, err error) {
 	if key == nil {
 		return bad(newOpenSSLError("EVP_PKEY_get1_RSA failed"))
 	}
+	defer C.go_openssl_RSA_free(key)
 	N, E, D = rsaGetKey(key)
 	P, Q = rsaGetFactors(key)
 	Dp, Dq, Qinv = rsaGetCRTParams(key)
