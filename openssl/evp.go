@@ -1,3 +1,6 @@
+//go:build linux && !android
+// +build linux,!android
+
 package openssl
 
 // #include "goopenssl.h"
@@ -354,6 +357,40 @@ func newEVPPKEY(key C.GO_EC_KEY_PTR) (C.GO_EVP_PKEY_PTR, error) {
 	if C.go_openssl_EVP_PKEY_assign(pkey, C.GO_EVP_PKEY_EC, (unsafe.Pointer)(key)) != 1 {
 		C.go_openssl_EVP_PKEY_free(pkey)
 		return nil, newOpenSSLError("EVP_PKEY_assign failed")
+	}
+	return pkey, nil
+}
+
+// getECKey returns the EC_KEY from pkey.
+// If pkey does not contain an EC_KEY it panics.
+// The returned key should not be freed.
+func getECKey(pkey C.GO_EVP_PKEY_PTR) (key C.GO_EC_KEY_PTR) {
+	if vMajor == 1 && vMinor == 0 {
+		key0 := C.go_openssl_EVP_PKEY_get0(pkey)
+		if key0 != nil {
+			key = (C.GO_EC_KEY_PTR)(key0)
+		}
+	} else {
+		key = C.go_openssl_EVP_PKEY_get0_EC_KEY(pkey)
+	}
+	if key == nil {
+		panic("pkey does not contain an EC_KEY")
+	}
+	return key
+}
+
+func newEvpFromParams(id C.int, selection C.int, params []C.OSSL_PARAM) (C.GO_EVP_PKEY_PTR, error) {
+	ctx := C.go_openssl_EVP_PKEY_CTX_new_id(id, nil)
+	if ctx == nil {
+		return nil, newOpenSSLError("EVP_PKEY_CTX_new_id")
+	}
+	defer C.go_openssl_EVP_PKEY_CTX_free(ctx)
+	if C.go_openssl_EVP_PKEY_fromdata_init(ctx) != 1 {
+		return nil, newOpenSSLError("EVP_PKEY_fromdata_init")
+	}
+	var pkey C.GO_EVP_PKEY_PTR
+	if C.go_openssl_EVP_PKEY_fromdata(ctx, &pkey, selection, &params[0]) != 1 {
+		return nil, newOpenSSLError("EVP_PKEY_fromdata")
 	}
 	return pkey, nil
 }

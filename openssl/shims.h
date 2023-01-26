@@ -22,7 +22,10 @@ enum {
     GO_EVP_PKEY_CTRL_MD = 1,
     GO_EVP_PKEY_RSA = 6,
     GO_EVP_PKEY_EC = 408,
-    GO_EVP_MAX_MD_SIZE = 64
+    GO_EVP_MAX_MD_SIZE = 64,
+
+    GO_EVP_PKEY_PUBLIC_KEY = 0x86,
+    GO_EVP_PKEY_KEYPAIR = 0x87
 };
 
 // #include <openssl/ec.h>
@@ -59,6 +62,13 @@ enum {
     GO_EVP_PKEY_CTRL_RSA_OAEP_LABEL = 0x100A
 };
 
+enum {
+    GO_OSSL_PARAM_UNMODIFIED = -1,
+    GO_OSSL_PARAM_UNSIGNED_INTEGER = 2,
+    GO_OSSL_PARAM_UTF8_STRING = 4,
+    GO_OSSL_PARAM_OCTET_STRING = 5
+};
+
 typedef void* GO_OPENSSL_INIT_SETTINGS_PTR;
 typedef void* GO_OSSL_LIB_CTX_PTR;
 typedef void* GO_OSSL_PROVIDER_PTR;
@@ -82,6 +92,19 @@ typedef void* GO_MD5_CTX_PTR;
 
 // #include <openssl/sha.h>
 typedef void* GO_SHA_CTX_PTR;
+
+// OSSL_PARAM does not follow the GO_FOO_PTR pattern
+// because it is not passed around as a pointer but on the stack.
+// We can't abstract it away by using a void*.
+// Copied from
+// https://github.com/openssl/openssl/blob/fcae2ae4f675def607d338b7945b9af1dd9bb746/include/openssl/core.h#L82-L88.
+typedef struct {
+    const char *key;
+    unsigned int data_type;
+    void *data;
+    size_t data_size;
+    size_t return_size;
+} OSSL_PARAM;
 
 // FOR_ALL_OPENSSL_FUNCTIONS is the list of all functions from libcrypto that are used in this package.
 // Forgetting to add a function here results in build failure with message reporting the function
@@ -233,7 +256,14 @@ DEFINEFUNC(int, EVP_PKEY_sign, (GO_EVP_PKEY_CTX_PTR arg0, unsigned char *arg1, s
 DEFINEFUNC(int, EVP_PKEY_derive_init, (GO_EVP_PKEY_CTX_PTR ctx), (ctx)) \
 DEFINEFUNC(int, EVP_PKEY_derive_set_peer, (GO_EVP_PKEY_CTX_PTR ctx, GO_EVP_PKEY_PTR peer), (ctx, peer)) \
 DEFINEFUNC(int, EVP_PKEY_derive, (GO_EVP_PKEY_CTX_PTR ctx, unsigned char *key, size_t *keylen), (ctx, key, keylen)) \
-DEFINEFUNC(GO_EC_KEY_PTR, EVP_PKEY_get1_EC_KEY, (GO_EVP_PKEY_PTR pkey), (pkey)) \
+DEFINEFUNC_LEGACY_1_0(void*, EVP_PKEY_get0, (GO_EVP_PKEY_PTR pkey), (pkey)) \
+/* EVP_PKEY_get0_EC_KEY OpenSSL 1.1.0 and 1.1.1 do not define the inputs and outputs as const  */ \
+/*check:from=3.0.0*/ DEFINEFUNC_1_1(const GO_EC_KEY_PTR, EVP_PKEY_get0_EC_KEY, (const GO_EVP_PKEY_PTR pkey), (pkey)) \
+DEFINEFUNC_3_0(int, EVP_PKEY_fromdata_init, (GO_EVP_PKEY_CTX_PTR ctx), (ctx)) \
+DEFINEFUNC_3_0(int, EVP_PKEY_fromdata, (GO_EVP_PKEY_CTX_PTR ctx, GO_EVP_PKEY_PTR *pkey, int selection, OSSL_PARAM params[]), (ctx, pkey, selection, params)) \
+DEFINEFUNC_3_0(int, EVP_PKEY_set1_encoded_public_key, (GO_EVP_PKEY_PTR pkey, const unsigned char *pub, size_t publen), (pkey, pub, publen)) \
+DEFINEFUNC_3_0(size_t, EVP_PKEY_get1_encoded_public_key, (GO_EVP_PKEY_PTR pkey, unsigned char **ppub), (pkey, ppub)) \
+DEFINEFUNC_3_0(int, EVP_PKEY_get_bn_param, (const GO_EVP_PKEY_PTR pkey, const char *key_name, GO_BIGNUM_PTR *bn), (pkey, key_name, bn)) \
 DEFINEFUNC(GO_RSA_PTR, RSA_new, (void), ()) \
 DEFINEFUNC(void, RSA_free, (GO_RSA_PTR arg0), (arg0)) \
 DEFINEFUNC_1_1(int, RSA_set0_factors, (GO_RSA_PTR rsa, GO_BIGNUM_PTR p, GO_BIGNUM_PTR q), (rsa, p, q)) \
@@ -255,17 +285,17 @@ DEFINEFUNC(int, EC_KEY_set_public_key_affine_coordinates, (GO_EC_KEY_PTR key, GO
 DEFINEFUNC(int, EC_KEY_set_public_key, (GO_EC_KEY_PTR key, const GO_EC_POINT_PTR pub), (key, pub)) \
 DEFINEFUNC(void, EC_KEY_free, (GO_EC_KEY_PTR arg0), (arg0)) \
 DEFINEFUNC(const GO_EC_GROUP_PTR, EC_KEY_get0_group, (const GO_EC_KEY_PTR arg0), (arg0)) \
-DEFINEFUNC_1_1(int, EC_KEY_oct2key, (GO_EC_KEY_PTR eckey, const unsigned char *buf, size_t len, GO_BN_CTX_PTR ctx), (eckey, buf, len, ctx)) \
 DEFINEFUNC(const GO_BIGNUM_PTR, EC_KEY_get0_private_key, (const GO_EC_KEY_PTR arg0), (arg0)) \
 DEFINEFUNC(const GO_EC_POINT_PTR, EC_KEY_get0_public_key, (const GO_EC_KEY_PTR arg0), (arg0)) \
 DEFINEFUNC(GO_EC_KEY_PTR, EC_KEY_new_by_curve_name, (int arg0), (arg0)) \
 DEFINEFUNC(int, EC_KEY_set_private_key, (GO_EC_KEY_PTR arg0, const GO_BIGNUM_PTR arg1), (arg0, arg1)) \
-DEFINEFUNC_1_1(int, EC_KEY_oct2priv, (GO_EC_KEY_PTR eckey, const unsigned char *buf, size_t len), (eckey, buf, len)) \
-DEFINEFUNC_1_1(size_t, EC_KEY_priv2oct, (const GO_EC_KEY_PTR eckey, unsigned char *buf, size_t len), (eckey, buf, len)) \
-DEFINEFUNC_1_1(size_t, EC_KEY_key2buf, (const GO_EC_KEY_PTR eckey, point_conversion_form_t form, unsigned char **pbuf, GO_BN_CTX_PTR ctx), (eckey, form, pbuf, ctx)) \
 DEFINEFUNC(GO_EC_POINT_PTR, EC_POINT_new, (const GO_EC_GROUP_PTR arg0), (arg0)) \
 DEFINEFUNC(void, EC_POINT_free, (GO_EC_POINT_PTR arg0), (arg0)) \
 DEFINEFUNC(int, EC_POINT_mul, (const GO_EC_GROUP_PTR group, GO_EC_POINT_PTR r, const GO_BIGNUM_PTR n, const GO_EC_POINT_PTR q, const GO_BIGNUM_PTR m, GO_BN_CTX_PTR ctx), (group, r, n, q, m, ctx)) \
 DEFINEFUNC(int, EC_POINT_get_affine_coordinates_GFp, (const GO_EC_GROUP_PTR arg0, const GO_EC_POINT_PTR arg1, GO_BIGNUM_PTR arg2, GO_BIGNUM_PTR arg3, GO_BN_CTX_PTR arg4), (arg0, arg1, arg2, arg3, arg4)) \
 DEFINEFUNC(size_t, EC_POINT_point2oct, (const GO_EC_GROUP_PTR group, const GO_EC_POINT_PTR p, point_conversion_form_t form, unsigned char *buf, size_t len, GO_BN_CTX_PTR ctx), (group, p, form, buf, len, ctx)) \
-DEFINEFUNC(int, EC_POINT_oct2point, (const GO_EC_GROUP_PTR group, GO_EC_POINT_PTR p, const unsigned char *buf, size_t len, GO_BN_CTX_PTR ctx), (group, p, buf, len, ctx))
+DEFINEFUNC(int, EC_POINT_oct2point, (const GO_EC_GROUP_PTR group, GO_EC_POINT_PTR p, const unsigned char *buf, size_t len, GO_BN_CTX_PTR ctx), (group, p, buf, len, ctx)) \
+DEFINEFUNC(const char *, OBJ_nid2sn, (int n), (n)) \
+DEFINEFUNC(GO_EC_GROUP_PTR, EC_GROUP_new_by_curve_name, (int nid), (nid)) \
+DEFINEFUNC(void, EC_GROUP_free, (GO_EC_GROUP_PTR group), (group)) \
+

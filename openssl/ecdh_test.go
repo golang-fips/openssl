@@ -1,6 +1,3 @@
-// Copyright (c) Microsoft Corporation.
-// Licensed under the MIT License.
-
 //go:build linux && !android
 // +build linux,!android
 
@@ -44,12 +41,12 @@ func TestECDH(t *testing.T) {
 			}
 			alicePubKey, err := openssl.NewPublicKeyECDH(name, alicePubBytes)
 			if err != nil {
-				t.Error(err)
+				t.Fatal(err)
 			}
 
 			bobPubKeyFromPriv, err := bobKey.PublicKey()
 			if err != nil {
-				t.Error(err)
+				t.Fatal(err)
 			}
 			_, err = openssl.NewPublicKeyECDH(name, bobPubKeyFromPriv.Bytes())
 			if err != nil {
@@ -114,7 +111,7 @@ var ecdhvectors = []struct {
 	},
 }
 
-func TestVectors(t *testing.T) {
+func TestECDHVectors(t *testing.T) {
 	for _, tt := range ecdhvectors {
 		t.Run(tt.Name, func(t *testing.T) {
 			key, err := openssl.NewPrivateKeyECDH(tt.Name, hexDecode(t, tt.PrivateKey))
@@ -125,18 +122,20 @@ func TestVectors(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if !bytes.Equal(pub.Bytes(), hexDecode(t, tt.PublicKey)) {
+			got, want := pub.Bytes(), hexDecode(t, tt.PublicKey)
+			if !bytes.Equal(got, want) {
 				t.Error("public key derived from the private key does not match")
 			}
 			peer, err := openssl.NewPublicKeyECDH(tt.Name, hexDecode(t, tt.PeerPublicKey))
 			if err != nil {
 				t.Fatal(err)
 			}
-			secret, err := openssl.ECDH(key, peer)
+			got, err = openssl.ECDH(key, peer)
 			if err != nil {
 				t.Fatal(err)
 			}
-			if !bytes.Equal(secret, hexDecode(t, tt.SharedSecret)) {
+			want = hexDecode(t, tt.SharedSecret)
+			if !bytes.Equal(got, want) {
 				t.Error("shared secret does not match")
 			}
 		})

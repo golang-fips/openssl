@@ -70,11 +70,7 @@ func GenerateKeyECDSA(curve string) (X, Y, D BigInt, err error) {
 	defer C.go_openssl_EVP_PKEY_free(pkey)
 
 	// Retrieve the internal EC_KEY, which holds the X, Y, and D coordinates.
-	key := C.go_openssl_EVP_PKEY_get1_EC_KEY(pkey)
-	if key == nil {
-		return nil, nil, nil, newOpenSSLError("EVP_PKEY_get1_EC_KEY failed")
-	}
-	defer C.go_openssl_EC_KEY_free(key)
+	key := getECKey(pkey)
 
 	// Allocate two big numbers to store the X and Y coordinates.
 	bx, by := C.go_openssl_BN_new(), C.go_openssl_BN_new()
