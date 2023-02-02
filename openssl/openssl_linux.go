@@ -1,5 +1,6 @@
 package openssl
 
+// #include <stdlib.h> // free
 // #include <dlfcn.h>
 // #cgo LDFLAGS: -ldl
 import "C"
