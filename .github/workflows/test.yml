@@ -38,6 +38,7 @@ jobs:
         GO_OPENSSL_VERSION_OVERRIDE: ${{ matrix.openssl-version }}
   wintest:
     runs-on: windows-2022
+    steps:
     - name: Install Go
       uses: actions/setup-go@v3
       with:
