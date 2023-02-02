@@ -70,11 +70,7 @@ func GenerateKeyECDSA(curve string) (X, Y, D BigInt, err error) {
 	defer C.go_openssl_EVP_PKEY_free(pkey)
 
 	// Retrieve the internal EC_KEY, which holds the X, Y, and D coordinates.
-	key := C.go_openssl_EVP_PKEY_get1_EC_KEY(pkey)
-	if key == nil {
-		return nil, nil, nil, newOpenSSLError("EVP_PKEY_get1_EC_KEY failed")
-	}
-	defer C.go_openssl_EC_KEY_free(key)
+	key := getECKey(pkey)
 
 	// Allocate two big numbers to store the X and Y coordinates.
 	bx, by := C.go_openssl_BN_new(), C.go_openssl_BN_new()
@@ -119,40 +115,37 @@ func newECKey(curve string, X, Y, D BigInt) (C.GO_EVP_PKEY_PTR, error) {
 	if err != nil {
 		return nil, err
 	}
-	// Create a new EC_KEY for the given curve.
-	key := C.go_openssl_EC_KEY_new_by_curve_name(nid)
-	if key == nil {
-		return nil, newOpenSSLError("EC_KEY_new_by_curve_name failed")
-	}
-	defer C.go_openssl_EC_KEY_free(key)
-
-	// Convert X, Y, and D coordinates to OpenSSL format. D is optional and may be nil.
-	bx, by, bd := bigToBN(X), bigToBN(Y), bigToBN(D)
+	var bx, by, bd C.GO_BIGNUM_PTR
 	defer func() {
 		bnFree(bx)
 		bnFree(by)
 		bnFree(bd)
 	}()
+	bx = bigToBN(X)
+	by = bigToBN(Y)
+	bd = bigToBN(D)
 	if bx == nil || by == nil || (D != nil && bd == nil) {
 		return nil, newOpenSSLError("BN_lebin2bn failed")
 	}
-
-	// Set the public and private components.
+	key := C.go_openssl_EC_KEY_new_by_curve_name(nid)
+	if key == nil {
+		return nil, newOpenSSLError("EC_KEY_new_by_curve_name failed")
+	}
+	var pkey C.GO_EVP_PKEY_PTR
+	defer func() {
+		if pkey == nil {
+			defer C.go_openssl_EC_KEY_free(key)
+		}
+	}()
 	if C.go_openssl_EC_KEY_set_public_key_affine_coordinates(key, bx, by) != 1 {
 		return nil, newOpenSSLError("EC_KEY_set_public_key_affine_coordinates failed")
 	}
-	if bd != nil && C.go_openssl_EC_KEY_set_private_key(key, bd) != 1 {
+	if D != nil && C.go_openssl_EC_KEY_set_private_key(key, bd) != 1 {
 		return nil, newOpenSSLError("EC_KEY_set_private_key failed")
 	}
-
-	// Create the EVP_PKEY and assign it the EC_KEY.
-	pkey := C.go_openssl_EVP_PKEY_new()
-	if pkey == nil {
-		return nil, newOpenSSLError("EVP_PKEY_new failed")
-	}
-	if C.go_openssl_EVP_PKEY_set1_EC_KEY(pkey, key) != 1 {
-		C.go_openssl_EVP_PKEY_free(pkey)
-		return nil, newOpenSSLError("EVP_PKEY_set1_EC_KEY failed")
+	pkey, err = newEVPPKEY(key)
+	if err != nil {
+		return nil, err
 	}
 	return pkey, nil
 }
