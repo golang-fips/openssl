@@ -39,7 +39,7 @@ func (pb *paramsBuilder) free() {
 
 // addUTF8 adds a parameter of type data_type.
 // data is stored in the new parameter without copying,
-// any change to it's content after this call will also
+// so any change to its content after this call will also
 // affect the created parameter.
 func (pb *paramsBuilder) add(key *C.char, data_type C.uint, data unsafe.Pointer, data_size C.size_t) {
 	var return_size = C.GO_OSSL_PARAM_UNMODIFIED

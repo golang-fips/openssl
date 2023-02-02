@@ -354,7 +354,7 @@ func newEVPPKEY(key C.GO_EC_KEY_PTR) (C.GO_EVP_PKEY_PTR, error) {
 	if pkey == nil {
 		return nil, newOpenSSLError("EVP_PKEY_new failed")
 	}
-	if C.go_openssl_EVP_PKEY_assign(pkey, C.GO_EVP_PKEY_EC, (unsafe.Pointer)(key)) != 1 {
+	if C.go_openssl_EVP_PKEY_assign(pkey, C.GO_EVP_PKEY_EC, unsafe.Pointer(key)) != 1 {
 		C.go_openssl_EVP_PKEY_free(pkey)
 		return nil, newOpenSSLError("EVP_PKEY_assign failed")
 	}
@@ -366,9 +366,8 @@ func newEVPPKEY(key C.GO_EC_KEY_PTR) (C.GO_EVP_PKEY_PTR, error) {
 // The returned key should not be freed.
 func getECKey(pkey C.GO_EVP_PKEY_PTR) (key C.GO_EC_KEY_PTR) {
 	if vMajor == 1 && vMinor == 0 {
-		key0 := C.go_openssl_EVP_PKEY_get0(pkey)
-		if key0 != nil {
-			key = (C.GO_EC_KEY_PTR)(key0)
+		if key0 := C.go_openssl_EVP_PKEY_get0(pkey); key0 != nil {
+			key = C.GO_EC_KEY_PTR(key0)
 		}
 	} else {
 		key = C.go_openssl_EVP_PKEY_get0_EC_KEY(pkey)

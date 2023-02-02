@@ -163,8 +163,7 @@ func newECDHPkey1(nid C.int, bytes []byte, isPrivate bool) (pkey C.GO_EVP_PKEY_P
 			return nil, newOpenSSLError("EC_KEY_set_public_key")
 		}
 	}
-	pkey, err = newEVPPKEY(key)
-	return
+	return newEVPPKEY(key)
 }
 
 func newECDHPkey3(nid C.int, bytes []byte, isPrivate bool) (C.GO_EVP_PKEY_PTR, error) {
@@ -176,8 +175,7 @@ func newECDHPkey3(nid C.int, bytes []byte, isPrivate bool) (C.GO_EVP_PKEY_PTR, e
 	params.addUTF8(paramGroup, C.GoString(C.go_openssl_OBJ_nid2sn(nid)))
 	var selection C.int
 	if isPrivate {
-		err := params.addBigNumber(paramPrivKey, bytes)
-		if err != nil {
+		if err := params.addBigNumber(paramPrivKey, bytes); err != nil {
 			return nil, err
 		}
 		selection = C.GO_EVP_PKEY_KEYPAIR
