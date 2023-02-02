@@ -4,7 +4,10 @@ package openssl
 // #include <dlfcn.h>
 // #cgo LDFLAGS: -ldl
 import "C"
-import "errors"
+import (
+	"errors"
+	"unsafe"
+)
 
 func dlopen(version string) (unsafe.Pointer, error) {
 	cv := C.CString("libcrypto.so." + version)
