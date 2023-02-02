@@ -1,11 +1,7 @@
-//go:build linux && !android
-// +build linux,!android
-
 // Package openssl provides access to OpenSSL cryptographic functions.
 package openssl
 
 // #include "goopenssl.h"
-// #cgo LDFLAGS: -ldl
 import "C"
 import (
 	"encoding/binary"

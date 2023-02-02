@@ -1,9 +1,3 @@
-// Copyright (c) Microsoft Corporation.
-// Licensed under the MIT License.
-
-//go:build linux && !android
-// +build linux,!android
-
 package openssl_test
 
 import (

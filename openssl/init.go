@@ -1,13 +1,13 @@
-//go:build linux && !android
-// +build linux,!android
+//go:build windows || (linux && !android)
+// +build windows linux,!android
 
 package openssl
 
 // #include "goopenssl.h"
-// #include <dlfcn.h>
 import "C"
 import (
 	"errors"
+	"runtime"
 	"unsafe"
 )
 
@@ -74,27 +74,17 @@ func opensslInit(version string) (major int, minor int, err error) {
 	return major, minor, nil
 }
 
-func dlopen(version string) unsafe.Pointer {
-	cv := C.CString("libcrypto.so." + version)
-	defer C.free(unsafe.Pointer(cv))
-	return C.dlopen(cv, C.RTLD_LAZY|C.RTLD_LOCAL)
-}
-
 func loadLibrary(version string) (unsafe.Pointer, error) {
-	if version != "" {
+	if version != "" || runtime.GOARCH == "windows" {
 		// If version is specified try to load it or error out.
-		handle := dlopen(version)
-		if handle == nil {
-			errstr := C.GoString(C.dlerror())
-			return nil, errors.New("openssl: can't load libcrypto.so." + version + ": " + errstr)
-		}
-		return handle, nil
+		// Windows does not support the list of well known versions.
+		return dlopen(version)
 	}
 	// If the version is not specified, try loading from the list
 	// of well known versions.
 	for _, v := range knownVersions {
-		handle := dlopen(v)
-		if handle == nil {
+		handle, err := dlopen(v)
+		if err != nil {
 			continue
 		}
 		return handle, nil

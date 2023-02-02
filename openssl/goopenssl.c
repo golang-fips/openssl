@@ -1,9 +1,10 @@
-//go:build linux && !android
-// +build linux,!android
-
 #include "goopenssl.h"
 
-#include <dlfcn.h> // dlsym
+#ifdef _WIN32
+#include <windows.h>
+#else
+#include <dlfcn.h>
+#endif
 #include <stdio.h> // fprintf
 
 // Approach taken from .Net System.Security.Cryptography.Native
@@ -27,6 +28,15 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #undef DEFINEFUNC_RENAMED_1_1
 #undef DEFINEFUNC_RENAMED_3_0
 
+static void *
+go_openssl_dlsym(void* handle, const char* name)
+{
+#ifdef _WIN32
+    return GetProcAddress(handle, name);
+#else
+    return dlsym(handle, name);
+#endif
+}
 
 // Load all the functions stored in FOR_ALL_OPENSSL_FUNCTIONS
 // and assign them to their corresponding function pointer
@@ -35,7 +45,7 @@ void
 go_openssl_load_functions(void* handle, int major, int minor)
 {
 #define DEFINEFUNC_INTERNAL(name, func)                                                                         \
-    _g_##name = dlsym(handle, func);                                                                            \
+    _g_##name = go_openssl_dlsym(handle, func);                                                                 \
     if (_g_##name == NULL) {                                                                                    \
         fprintf(stderr, "Cannot get required symbol " #func " from libcrypto version %d.%d\n", major, minor);   \
         abort();                                                                                                \
@@ -97,12 +107,12 @@ version_num(void* handle)
 {
     unsigned long (*fn)(void);
     // OPENSSL_version_num is defined in OpenSSL 1.1.0 and 1.1.1.
-    fn = (unsigned long (*)(void))dlsym(handle, "OpenSSL_version_num");
+    fn = (unsigned long (*)(void))go_openssl_dlsym(handle, "OpenSSL_version_num");
     if (fn != NULL)
         return fn();
 
     // SSLeay is defined in OpenSSL 1.0.2.
-    fn = (unsigned long (*)(void))dlsym(handle, "SSLeay");
+    fn = (unsigned long (*)(void))go_openssl_dlsym(handle, "SSLeay");
     if (fn != NULL)
         return fn();
 
@@ -114,7 +124,7 @@ go_openssl_version_major(void* handle)
 {
     unsigned int (*fn)(void);
     // OPENSSL_version_major is supported since OpenSSL 3.
-    fn = (unsigned int (*)(void))dlsym(handle, "OPENSSL_version_major");
+    fn = (unsigned int (*)(void))go_openssl_dlsym(handle, "OPENSSL_version_major");
     if (fn != NULL)
         return (int)fn();
 
@@ -131,7 +141,7 @@ go_openssl_version_minor(void* handle)
 {
     unsigned int (*fn)(void);
     // OPENSSL_version_minor is supported since OpenSSL 3.
-    fn = (unsigned int (*)(void))dlsym(handle, "OPENSSL_version_minor");
+    fn = (unsigned int (*)(void))go_openssl_dlsym(handle, "OPENSSL_version_minor");
     if (fn != NULL)
         return (int)fn();
 

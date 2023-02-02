@@ -36,3 +36,15 @@ jobs:
       run: go test -gcflags=all=-d=checkptr -count 10 -v ./...
       env:
         GO_OPENSSL_VERSION_OVERRIDE: ${{ matrix.openssl-version }}
+  wintest:
+    runs-on: windows-2022
+    - name: Install Go
+      uses: actions/setup-go@v3
+      with:
+        go-version: 1.19.x
+    - name: Checkout code
+      uses: actions/checkout@v3
+    - name: Run Test
+      run: go test -gcflags=all=-d=checkptr -v ./...
+      env:
+        GO_OPENSSL_VERSION_OVERRIDE: -1_1-x64
