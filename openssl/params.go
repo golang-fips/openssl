@@ -42,6 +42,9 @@ func (pb *paramsBuilder) free() {
 // so any change to its content after this call will also
 // affect the created parameter.
 func (pb *paramsBuilder) add(key *C.char, data_type C.uint, data unsafe.Pointer, data_size C.size_t) {
+	if key == nil {
+		panic("key shouldn't be nil")
+	}
 	var return_size = C.GO_OSSL_PARAM_UNMODIFIED
 	pb.params[len(pb.params)-1] = C.OSSL_PARAM{
 		key:         key,
