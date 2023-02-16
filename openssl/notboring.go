@@ -71,16 +71,16 @@ func VerifyECDSA(pub *PublicKeyECDSA, hash []byte, r, s BigInt, h crypto.Hash) b
 type PublicKeyECDH struct{ _ int }
 type PrivateKeyECDH struct{ _ int }
 
-func GenerateKeyECDH(curve string) (X, Y, D BigInt, err error) {
+func NewPublicKeyECDH(curve string, bytes []byte) (*PublicKeyECDH, error) {
 	panic("boringcrypto: not available")
 }
-func NewPrivateKeyECDH(curve string, X, Y, D BigInt) (*PrivateKeyECDH, error) {
+func NewPrivateKeyECDH(curve string, bytes []byte) (*PrivateKeyECDH, error) {
 	panic("boringcrypto: not available")
 }
-func NewPublicKeyECDH(curve string, X, Y BigInt) (*PublicKeyECDH, error) {
+func ECDH(priv *PrivateKeyECDH, pub *PublicKeyECDH) ([]byte, error) {
 	panic("boringcrypto: not available")
 }
-func SharedKeyECDH(priv *PrivateKeyECDH, peerPublicKey []byte) ([]byte, error) {
+func GenerateKeyECDH(curve string) (*PrivateKeyECDH, []byte, error) {
 	panic("boringcrypto: not available")
 }
 
