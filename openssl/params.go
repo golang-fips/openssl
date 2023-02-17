@@ -83,7 +83,7 @@ func (pb *paramsBuilder) addBigNumber(key *C.char, v []byte) error {
 		if priv == nil {
 			return newOpenSSLError("BN_bin2bn")
 		}
-		defer bnFree(priv)
+		defer C.go_openssl_BN_free(priv)
 		if C.go_openssl_BN_bn2lebinpad(priv, cbytes, C.int(len(v))) == -1 {
 			return newOpenSSLError("BN_bn2lebinpad")
 		}
