@@ -77,7 +77,7 @@ func (pb *paramsBuilder) addBigNumber(key *C.char, v []byte) error {
 		// The original bytes represent a big number using big-endian.
 		// Unfortunately, OpenSSL expects that big numbers are passed using native-endian.
 		// The following call re-encodes cbytes as little-endian.
-		// We would have to to this even if we called OSSL_PARAM_construct_BN,
+		// We would have to do this even if we called OSSL_PARAM_construct_BN,
 		// as it also expect a native-endian number.
 		priv := C.go_openssl_BN_bin2bn(cbytes, C.int(len(v)), nil)
 		if priv == nil {

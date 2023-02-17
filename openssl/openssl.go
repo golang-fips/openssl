@@ -106,7 +106,7 @@ func FIPS() bool {
 		// EVP_default_properties_is_fips_enabled can return true even if the FIPS provider isn't loaded,
 		// it is only based on the default properties.
 		// We can be sure that the FIPS provider is available if we can fetch an algorithm, e.g., SHA2-256,
-		// explictly setting `fips=yes`.
+		// explicitly setting `fips=yes`.
 		return providerAvailable(propFipsYes)
 	default:
 		panic(errUnsupportedVersion())
