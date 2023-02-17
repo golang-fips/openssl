@@ -75,8 +75,8 @@ func GenerateKeyECDSA(curve string) (X, Y, D BigInt, err error) {
 	// Allocate two big numbers to store the X and Y coordinates.
 	bx, by := C.go_openssl_BN_new(), C.go_openssl_BN_new()
 	defer func() {
-		bnFree(bx)
-		bnFree(by)
+		C.go_openssl_BN_free(bx)
+		C.go_openssl_BN_free(by)
 	}()
 	if bx == nil || by == nil {
 		return nil, nil, nil, newOpenSSLError("BN_new failed")
@@ -117,9 +117,9 @@ func newECKey(curve string, X, Y, D BigInt) (C.GO_EVP_PKEY_PTR, error) {
 	}
 	var bx, by, bd C.GO_BIGNUM_PTR
 	defer func() {
-		bnFree(bx)
-		bnFree(by)
-		bnFree(bd)
+		C.go_openssl_BN_free(bx)
+		C.go_openssl_BN_free(by)
+		C.go_openssl_BN_free(bd)
 	}()
 	bx = bigToBN(X)
 	by = bigToBN(Y)
