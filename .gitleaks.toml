@@ -1,0 +1,9 @@
+#
+# GitLeaks Repo Specific Configuration
+#
+# This allowlist is used to ignore false positives during secret scans.
+
+[allowlist]
+paths = [
+      'openssl/ecdh_test.go',
+]
