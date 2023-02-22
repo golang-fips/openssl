@@ -10,6 +10,14 @@ import (
 	"unsafe"
 )
 
+var (
+	paramAlgHMAC = C.CString("HMAC")
+	paramDigest  = C.CString("digest")
+	paramPubKey  = C.CString("pub")
+	paramPrivKey = C.CString("priv")
+	paramGroup   = C.CString("group")
+)
+
 var paramEnd = C.OSSL_PARAM{
 	key:         nil,
 	data_type:   0,

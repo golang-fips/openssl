@@ -11,12 +11,6 @@ import (
 	"unsafe"
 )
 
-var (
-	paramPubKey  = C.CString("pub")
-	paramPrivKey = C.CString("priv")
-	paramGroup   = C.CString("group")
-)
-
 type PublicKeyECDH struct {
 	_pkey C.GO_EVP_PKEY_PTR
 	bytes []byte
