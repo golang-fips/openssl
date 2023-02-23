@@ -65,7 +65,7 @@ func getECKey(pkey *C.GO_EVP_PKEY) (key *C.GO_EC_KEY) {
 	return key
 }
 
-func newEvpFromParams(id C.int, selection C.int, params []C.OSSL_PARAM) (*C.GO_EVP_PKEY, error) {
+func newEvpFromParams(id C.int, selection C.int, params []C.GO_OSSL_PARAM) (*C.GO_EVP_PKEY, error) {
 	ctx := C._goboringcrypto_EVP_PKEY_CTX_new_id(id, nil)
 	if ctx == nil {
 		return nil, NewOpenSSLError("EVP_PKEY_CTX_new_id")
