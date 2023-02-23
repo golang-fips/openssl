@@ -10,7 +10,7 @@ import (
 	"unsafe"
 )
 
-var paramEnd = C.OSSL_PARAM{
+var paramEnd = C.GO_OSSL_PARAM{
 	key:         nil,
 	data_type:   0,
 	data:        nil,
@@ -21,12 +21,12 @@ var paramEnd = C.OSSL_PARAM{
 // paramsBuilder is a container for OSSL_PARAMs.
 // It must be freed using paramsBuilder.free().
 type paramsBuilder struct {
-	params []C.OSSL_PARAM
+	params []C.GO_OSSL_PARAM
 }
 
 func newParamsBuilder() paramsBuilder {
 	var pb paramsBuilder
-	pb.params = make([]C.OSSL_PARAM, 1, 5)
+	pb.params = make([]C.GO_OSSL_PARAM, 1, 5)
 	pb.params[0] = paramEnd
 	return pb
 }
@@ -46,7 +46,7 @@ func (pb *paramsBuilder) add(key *C.char, data_type C.uint, data unsafe.Pointer,
 		panic("key shouldn't be nil")
 	}
 	var return_size = C.GO_OSSL_PARAM_UNMODIFIED
-	pb.params[len(pb.params)-1] = C.OSSL_PARAM{
+	pb.params[len(pb.params)-1] = C.GO_OSSL_PARAM{
 		key:         key,
 		data_type:   data_type,
 		data:        data,
