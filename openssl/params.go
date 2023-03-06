@@ -78,12 +78,6 @@ func (pb *paramsBuilder) addOctetString(key *C.char, v []byte) {
 	pb.add(key, C.GO_OSSL_PARAM_OCTET_STRING, C.CBytes(v), C.size_t(len(v)))
 }
 
-// addOctetStringC adds a parameter of type OSSL_PARAM_OCTET_STRING.
-// The content of v is stored by reference, don't update it after this call.
-func (pb *paramsBuilder) addOctetStringC(key *C.char, v *C.uchar, n C.size_t) {
-	pb.add(key, C.GO_OSSL_PARAM_OCTET_STRING, unsafe.Pointer(v), n)
-}
-
 // addBigNumber adds a parameter of type OSSL_PARAM_UNSIGNED_INTEGER.
 // The content of v is copied into the new param,
 // it's safe to change it after this call.
