@@ -437,6 +437,10 @@ _goboringcrypto_BN_bn2lebinpad(const GO_BIGNUM *a, unsigned char *to, size_t tol
 
 #include <openssl/ec.h>
 
+enum {
+	GO_EVP_PKEY_EC = EVP_PKEY_EC,
+};
+
 typedef EC_GROUP GO_EC_GROUP;
 
 DEFINEFUNC(GO_EC_GROUP *, EC_GROUP_new_by_curve_name, (int arg0), (arg0))
@@ -898,9 +902,9 @@ DEFINEFUNC(int, EVP_PKEY_sign,
 DEFINEFUNC(int, EVP_PKEY_derive_init, (GO_EVP_PKEY_CTX *arg0), (arg0))
 DEFINEFUNC(int, EVP_PKEY_derive, (GO_EVP_PKEY_CTX *arg0, unsigned char *arg1, size_t *arg2), (arg0, arg1, arg2))
 #if OPENSSL_VERSION_NUMBER >= 0x30000000L
-DEFINEFUNC(int, EVP_PKEY_derive_set_peer_ex, (GO_EVP_PKEY_CTX *arg0, GO_EVP_PKEY *arg1, int arg2), (arg0, arg1, arg2))
+DEFINEFUNC(int, EVP_PKEY_derive_set_peer_ex, (GO_EVP_PKEY_CTX *arg0, GO_EVP_PKEY *arg1, int arg2), (arg0, arg1, arg2));
 #else
-
+DEFINEFUNCINTERNAL(int, EVP_PKEY_derive_set_peer, (EVP_PKEY_CTX *ctx, EVP_PKEY *peer), (ctx, peer))
 # if OPENSSL_VERSION_NUMBER >= 0x10100000L
 DEFINEFUNC(int, EVP_PKEY_public_check, (EVP_PKEY_CTX *arg0), (arg0))
 
@@ -916,7 +920,7 @@ _goboringcrypto_EVP_PKEY_derive_set_peer_ex(GO_EVP_PKEY_CTX *ctx, GO_EVP_PKEY *k
         if (ok != 1) {
 		return -1;
 	}
-	return _goboringcrypto_EVP_PKEY_derive_set_peer(ctx, key);
+	return _goboringcrypto_internal_EVP_PKEY_derive_set_peer(ctx, key);
 }
 # else
 static inline int
@@ -924,7 +928,7 @@ _goboringcrypto_EVP_PKEY_derive_set_peer_ex(GO_EVP_PKEY_CTX *ctx, GO_EVP_PKEY *k
 {
 	/* No way to validate public key in OpenSSL 1.0.2 */
 	(void)validate;
-	return _goboringcrypto_EVP_PKEY_derive_set_peer(ctx, key);
+	return _goboringcrypto_internal_EVP_PKEY_derive_set_peer(ctx, key);
 }
 # endif
 #endif
@@ -948,7 +952,6 @@ DEFINEFUNC(int, EVP_PKEY_CTX_set1_hkdf_salt, (GO_EVP_PKEY_CTX *arg0, unsigned ch
 DEFINEFUNC(int, EVP_PKEY_CTX_set1_hkdf_key, (GO_EVP_PKEY_CTX *arg0, unsigned char *arg1, int arg2), (arg0, arg1, arg2))
 DEFINEFUNC(int, EVP_PKEY_CTX_add1_hkdf_info, (GO_EVP_PKEY_CTX *arg0, unsigned char *arg1, int arg2), (arg0, arg1, arg2))
 enum {
-	GO_EVP_PKEY_EC = EVP_PKEY_EC,
 	GO_EVP_PKEY_KEYPAIR = EVP_PKEY_KEYPAIR,
 	GO_EVP_PKEY_PUBLIC_KEY = EVP_PKEY_PUBLIC_KEY,
 };
@@ -991,7 +994,6 @@ _goboringcrypto_EVP_PKEY_CTX_add1_hkdf_info(GO_EVP_PKEY_CTX *pctx, unsigned char
 // These symbols are not present in older versions of OpenSSL but we define them here
 // to fix compilation errors.
 enum {
-	GO_EVP_PKEY_EC,
 	GO_EVP_PKEY_KEYPAIR,
 	GO_EVP_PKEY_PUBLIC_KEY,
 };
@@ -1054,74 +1056,31 @@ enum {
 };
 
 DEFINEFUNC(int, EC_POINT_mul, (const GO_EC_GROUP *group, GO_EC_POINT *r, const GO_BIGNUM *n, const GO_EC_POINT *q, const GO_BIGNUM *m, GO_BN_CTX *ctx), (group, r, n, q, m, ctx))
-DEFINEFUNC(int, EVP_PKEY_get_bits, (const GO_EVP_PKEY *pkey), (pkey))
+#if OPENSSL_VERSION_NUMBER >= 0x30000000
+DEFINEFUNC(int, EVP_PKEY_get_bits, (const GO_EVP_PKEY *pkey), (pkey));
+#else
+DEFINEFUNCINTERNAL(int, EVP_PKEY_bits, (const GO_EVP_PKEY *pkey), (pkey));
+static int
+_goboringcrypto_EVP_PKEY_get_bits(const GO_EVP_PKEY *pkey)
+{
+	return _goboringcrypto_internal_EVP_PKEY_bits(pkey);
+}
+#endif
 DEFINEFUNC(int, EVP_PKEY_get_bn_param, (const GO_EVP_PKEY *pkey, const char *key_name, GO_BIGNUM **bn), (pkey, key_name, bn))
-DEFINEFUNC(const char *, OBJ_nid2sn, (int n), (n))
-DEFINEFUNC(int, EVP_PKEY_assign, (GO_EVP_PKEY *pkey, int type, void *key), (pkey, type, key))
 DEFINEFUNC(int, EVP_PKEY_keygen_init, (GO_EVP_PKEY_CTX *ctx), (ctx))
 DEFINEFUNC(int, EVP_PKEY_keygen, (GO_EVP_PKEY_CTX *ctx, GO_EVP_PKEY **ppkey), (ctx, ppkey))
 
-#if OPENSSL_VERSION_NUMBER >= 0x30000000L
-typedef OSSL_PARAM GO_OSSL_PARAM;
-
+// This is not used when running against openssl < 3.
 enum {
-	GO_OSSL_PARAM_UNMODIFIED = OSSL_PARAM_UNMODIFIED,
-	GO_OSSL_PARAM_UNSIGNED_INTEGER = OSSL_PARAM_UNSIGNED_INTEGER,
-	GO_OSSL_PARAM_UTF8_STRING = OSSL_PARAM_UTF8_STRING,
-	GO_OSSL_PARAM_OCTET_STRING = OSSL_PARAM_OCTET_STRING
+	GO_POINT_CONVERSION_UNCOMPRESSED = 4,
 };
-enum {
-	GO_POINT_CONVERSION_UNCOMPRESSED = POINT_CONVERSION_UNCOMPRESSED,
-};
-#endif
 
 #if OPENSSL_VERSION_NUMBER >= 0x10100000L
-#if OPENSSL_VERSION_NUMBER < 0x30000000L
-typedef struct ossl_param_st GO_OSSL_PARAM;
-struct ossl_param_st {
-    const char *key;             /* the name of the parameter */
-    unsigned int data_type;     /* declare what kind of content is in data */
-    void *data;                  /* value being passed in or out */
-    size_t data_size;            /* data size */
-    size_t return_size;          /* returned size */
-};
-enum {
-  GO_OSSL_PARAM_UNMODIFIED,
-  GO_OSSL_PARAM_UNSIGNED_INTEGER,
-  GO_OSSL_PARAM_UTF8_STRING,
-  GO_OSSL_PARAM_OCTET_STRING
-};
-// This is defined in openssl 3 but we define it here to fix compilation errors.
-// It is not used when running against openssl < 3.
-enum {
-	GO_POINT_CONVERSION_UNCOMPRESSED,
-};
-#endif
-static inline void
-_goboringcrypto_params_free(GO_OSSL_PARAM params[])
-{
-    if (params == NULL)
-        return;
-
-    // Loop through all the params until the first NULL key.
-    for (; params->key != NULL; params++)
-    {
-        if (params->data != NULL)
-        {
-            free(params->data);
-            params->data = NULL;
-        }
-    }
-    return;
-}
 DEFINEFUNC(size_t, EC_POINT_point2oct, (const GO_EC_GROUP *group, const GO_EC_POINT *p, point_conversion_form_t form, unsigned char *buf, size_t len, GO_BN_CTX *ctx), (group, p, form, buf, len, ctx))
 DEFINEFUNC(int, EC_POINT_oct2point, (const GO_EC_GROUP *group, GO_EC_POINT *p, const unsigned char *buf, size_t len, GO_BN_CTX *ctx), (group, p, buf, len, ctx))
 
 DEFINEFUNC(int, EVP_PKEY_set1_encoded_public_key, (GO_EVP_PKEY *pkey, const unsigned char *pub, size_t publen), (pkey, pub, publen))
 DEFINEFUNC(size_t, EVP_PKEY_get1_encoded_public_key, (GO_EVP_PKEY *pkey, unsigned char **ppub), (pkey, ppub))
-
-DEFINEFUNC(int, EVP_PKEY_fromdata_init, (GO_EVP_PKEY_CTX *ctx), (ctx))
-DEFINEFUNC(int, EVP_PKEY_fromdata, (GO_EVP_PKEY_CTX *ctx, GO_EVP_PKEY **pkey, int selection, GO_OSSL_PARAM params[]), (ctx, pkey, selection, params))
 
 DEFINEFUNC(const GO_EC_KEY *, EVP_PKEY_get0_EC_KEY, (const GO_EVP_PKEY *pkey), (pkey))
 #else
@@ -1132,3 +1091,5 @@ _goboringcrypto_EVP_PKEY_get0_EC_KEY(const GO_EVP_PKEY *pkey)
   return _goboringcrypto_internal_EVP_PKEY_get0(pkey);
 }
 #endif
+
+GO_EVP_PKEY *_goboringcrypto_EVP_PKEY_new_for_ecdh(int nid, const uint8_t *bytes, size_t len, int is_private);
