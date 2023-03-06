@@ -16,6 +16,8 @@ var (
 	paramPubKey  = C.CString("pub")
 	paramPrivKey = C.CString("priv")
 	paramGroup   = C.CString("group")
+	paramECPubX  = C.CString("qx")
+	paramECPubY  = C.CString("qy")
 )
 
 var paramEnd = C.OSSL_PARAM{
@@ -76,6 +78,12 @@ func (pb *paramsBuilder) addOctetString(key *C.char, v []byte) {
 	pb.add(key, C.GO_OSSL_PARAM_OCTET_STRING, C.CBytes(v), C.size_t(len(v)))
 }
 
+// addOctetStringC adds a parameter of type OSSL_PARAM_OCTET_STRING.
+// The content of v is stored by reference, don't update it after this call.
+func (pb *paramsBuilder) addOctetStringC(key *C.char, v *C.uchar, n C.size_t) {
+	pb.add(key, C.GO_OSSL_PARAM_OCTET_STRING, unsafe.Pointer(v), n)
+}
+
 // addBigNumber adds a parameter of type OSSL_PARAM_UNSIGNED_INTEGER.
 // The content of v is copied into the new param,
 // it's safe to change it after this call.
@@ -97,5 +105,16 @@ func (pb *paramsBuilder) addBigNumber(key *C.char, v []byte) error {
 		}
 	}
 	pb.add(key, C.GO_OSSL_PARAM_UNSIGNED_INTEGER, unsafe.Pointer(cbytes), C.size_t(len(v)))
+	return nil
+}
+
+// addBN adds a parameter of type OSSL_PARAM_UNSIGNED_INTEGER.
+func (pb *paramsBuilder) addBN(key *C.char, v C.GO_BIGNUM_PTR) error {
+	size := (C.go_openssl_BN_num_bits(v) + 7) / 8
+	x := C.malloc(C.size_t(size))
+	if C.go_openssl_BN_bn2nativepad(v, (*C.uchar)(x), size) == 0 {
+		return newOpenSSLError("BN_bn2nativepad")
+	}
+	pb.add(key, C.GO_OSSL_PARAM_UNSIGNED_INTEGER, x, C.size_t(size))
 	return nil
 }

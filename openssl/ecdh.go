@@ -220,17 +220,9 @@ func deriveEcdhPublicKey(pkey C.GO_EVP_PKEY_PTR, curve string) error {
 		}
 		defer C.go_openssl_BN_free(priv)
 		nid, _ := curveNID(curve)
-		group := C.go_openssl_EC_GROUP_new_by_curve_name(nid)
-		if group == nil {
-			return newOpenSSLError("EC_GROUP_new_by_curve_name")
-		}
-		defer C.go_openssl_EC_GROUP_free(group)
-		pt, err := derive(group, priv)
-		if err != nil {
-			return err
-		}
-		defer C.go_openssl_EC_POINT_free(pt)
-		pubBytes, err := encodeEcPoint(group, pt)
+		pubBytes, err := deriveAndEncode(nid, func(group C.GO_EC_GROUP_PTR) (C.GO_EC_POINT_PTR, error) {
+			return derive(group, priv)
+		})
 		if err != nil {
 			return err
 		}
@@ -241,21 +233,6 @@ func deriveEcdhPublicKey(pkey C.GO_EVP_PKEY_PTR, curve string) error {
 		panic(errUnsupportedVersion())
 	}
 	return nil
-}
-
-func encodeEcPoint(group C.GO_EC_GROUP_PTR, pt C.GO_EC_POINT_PTR) ([]byte, error) {
-	// Get encoded point size.
-	n := C.go_openssl_EC_POINT_point2oct(group, pt, C.GO_POINT_CONVERSION_UNCOMPRESSED, nil, 0, nil)
-	if n == 0 {
-		return nil, newOpenSSLError("EC_POINT_point2oct")
-	}
-	// Encode point into bytes.
-	bytes := make([]byte, n)
-	n = C.go_openssl_EC_POINT_point2oct(group, pt, C.GO_POINT_CONVERSION_UNCOMPRESSED, base(bytes), n, nil)
-	if n == 0 {
-		return nil, newOpenSSLError("EC_POINT_point2oct")
-	}
-	return bytes, nil
 }
 
 func ECDH(priv *PrivateKeyECDH, pub *PublicKeyECDH) ([]byte, error) {
