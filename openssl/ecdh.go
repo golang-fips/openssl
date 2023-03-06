@@ -16,9 +16,7 @@ import (
 )
 
 var (
-	paramPubKey  = C.CString("pub")
 	paramPrivKey = C.CString("priv")
-	paramGroup   = C.CString("group")
 )
 
 type PublicKeyECDH struct {
@@ -118,64 +116,17 @@ func newECDHPkey(curve string, bytes []byte, isPrivate bool) (*C.GO_EVP_PKEY, er
 	if err != nil {
 		return nil, err
 	}
-	if openSSLVersion() < OPENSSL_VERSION_3_0_0 {
-		return newECDHPkey1(nid, bytes, isPrivate)
-	} else {
-		return newECDHPkey3(nid, bytes, isPrivate)
-	}
-}
 
-func newECDHPkey1(nid C.int, bytes []byte, isPrivate bool) (pkey *C.GO_EVP_PKEY, err error) {
-	key := C._goboringcrypto_EC_KEY_new_by_curve_name(nid)
+	var isPrivateValue C.int
+	if isPrivate {
+		isPrivateValue = 1
+	}
+
+	key := C._goboringcrypto_EVP_PKEY_new_for_ecdh(nid, base(bytes), C.size_t(len(bytes)), isPrivateValue)
 	if key == nil {
-		return nil, NewOpenSSLError("EC_KEY_new_by_curve_name")
+		return nil, NewOpenSSLError("EVP_PKEY_new_for_ecdh")
 	}
-	defer func() {
-		if pkey == nil {
-			C._goboringcrypto_EC_KEY_free(key)
-		}
-	}()
-	if isPrivate {
-		priv := C._goboringcrypto_BN_bin2bn(base(bytes), C.size_t(len(bytes)), nil)
-		if priv == nil {
-			return nil, NewOpenSSLError("BN_bin2bn")
-		}
-		defer C._goboringcrypto_BN_free(priv)
-		if C._goboringcrypto_EC_KEY_set_private_key(key, priv) != 1 {
-			return nil, NewOpenSSLError("EC_KEY_set_private_key")
-		}
-	} else {
-		group := C._goboringcrypto_EC_KEY_get0_group(key)
-		pub := C._goboringcrypto_EC_POINT_new(group)
-		if pub == nil {
-			return nil, NewOpenSSLError("EC_POINT_new")
-		}
-		defer C._goboringcrypto_EC_POINT_free(pub)
-		if C._goboringcrypto_EC_POINT_oct2point(group, pub, base(bytes), C.size_t(len(bytes)), nil) != 1 {
-			return nil, errors.New("point not on curve")
-		}
-		if C._goboringcrypto_EC_KEY_set_public_key(key, pub) != 1 {
-			return nil, NewOpenSSLError("EC_KEY_set_public_key")
-		}
-	}
-	return newEVPPKEY(key)
-}
-
-func newECDHPkey3(nid C.int, bytes []byte, isPrivate bool) (*C.GO_EVP_PKEY, error) {
-	params := newParamsBuilder()
-	defer params.free()
-	params.addUTF8(paramGroup, C.GoString(C._goboringcrypto_OBJ_nid2sn(nid)))
-	var selection C.int
-	if isPrivate {
-		if err := params.addBigNumber(paramPrivKey, bytes); err != nil {
-			return nil, err
-		}
-		selection = C.GO_EVP_PKEY_KEYPAIR
-	} else {
-		params.addOctetString(paramPubKey, bytes)
-		selection = C.GO_EVP_PKEY_PUBLIC_KEY
-	}
-	return newEvpFromParams(C.GO_EVP_PKEY_EC, selection, params.params)
+	return key, nil
 }
 
 // deriveEcdhPublicKey sets the raw public key of pkey by deriving it from
