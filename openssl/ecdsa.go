@@ -176,7 +176,7 @@ func newECDSAKey3(nid C.int, bx, by, bd C.GO_BIGNUM_PTR) (C.GO_EVP_PKEY_PTR, err
 		panic("incorrect vMajor version")
 	}
 	// Create the encoded public key public key from bx and by.
-	pubBytes, err := generatePublicKeyAndEncode(nid, func(group C.GO_EC_GROUP_PTR) (C.GO_EC_POINT_PTR, error) {
+	pubBytes, err := generateAndEncodePublicKey(nid, func(group C.GO_EC_GROUP_PTR) (C.GO_EC_POINT_PTR, error) {
 		pt := C.go_openssl_EC_POINT_new(group)
 		if pt == nil {
 			return nil, newOpenSSLError("EC_POINT_new")

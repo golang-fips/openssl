@@ -220,7 +220,7 @@ func deriveEcdhPublicKey(pkey C.GO_EVP_PKEY_PTR, curve string) error {
 		}
 		defer C.go_openssl_BN_free(priv)
 		nid, _ := curveNID(curve)
-		pubBytes, err := generatePublicKeyAndEncode(nid, func(group C.GO_EC_GROUP_PTR) (C.GO_EC_POINT_PTR, error) {
+		pubBytes, err := generateAndEncodePublicKey(nid, func(group C.GO_EC_GROUP_PTR) (C.GO_EC_POINT_PTR, error) {
 			return derive(group, priv)
 		})
 		if err != nil {
