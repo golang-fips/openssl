@@ -410,14 +410,14 @@ func encodeEcPoint(group C.GO_EC_GROUP_PTR, pt C.GO_EC_POINT_PTR) ([]byte, error
 	return bytes, nil
 }
 
-// deriveAndEncode calls derive to generate a public key point and then encodes it.
-func deriveAndEncode(nid C.int, derive func(group C.GO_EC_GROUP_PTR) (C.GO_EC_POINT_PTR, error)) ([]byte, error) {
+// generatePublicKeyAndEncode calls newPubKeyPointFn to generate a public key point and then encodes it.
+func generatePublicKeyAndEncode(nid C.int, newPubKeyPointFn func(group C.GO_EC_GROUP_PTR) (C.GO_EC_POINT_PTR, error)) ([]byte, error) {
 	group := C.go_openssl_EC_GROUP_new_by_curve_name(nid)
 	if group == nil {
 		return nil, newOpenSSLError("EC_GROUP_new_by_curve_name")
 	}
 	defer C.go_openssl_EC_GROUP_free(group)
-	pt, err := derive(group)
+	pt, err := newPubKeyPointFn(group)
 	if err != nil {
 		return nil, err
 	}
