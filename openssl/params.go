@@ -107,6 +107,7 @@ func (pb *paramsBuilder) addBN(key *C.char, v C.GO_BIGNUM_PTR) error {
 	size := (C.go_openssl_BN_num_bits(v) + 7) / 8
 	x := C.malloc(C.size_t(size))
 	if C.go_openssl_BN_bn2nativepad(v, (*C.uchar)(x), size) == 0 {
+		C.free(x)
 		return newOpenSSLError("BN_bn2nativepad")
 	}
 	pb.add(key, C.GO_OSSL_PARAM_UNSIGNED_INTEGER, x, C.size_t(size))
