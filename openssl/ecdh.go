@@ -120,6 +120,12 @@ func newECDHPkey(curve string, bytes []byte, isPrivate bool) (*C.GO_EVP_PKEY, er
 	var isPrivateValue C.int
 	if isPrivate {
 		isPrivateValue = 1
+	} else {
+		if len(bytes) > 0 && bytes[0] != 0x04 {
+			return nil, errors.New("crypto/ecdh: point is compressed")
+		} else if len(bytes) == 1 && bytes[0] == 0x00 {
+			return nil, errors.New("crypto/ecdh: point at infinity")
+		}
 	}
 
 	key := C._goboringcrypto_EVP_PKEY_new_for_ecdh(nid, base(bytes), C.size_t(len(bytes)), isPrivateValue)
