@@ -229,14 +229,14 @@ func bigToBN(x BigInt) *C.GO_BIGNUM {
 	}
 	// Limbs are always ordered in LSB first, so we can safely apply
 	// BN_lebin2bn regardless of host endianness.
-	return C._goboringcrypto_BN_lebin2bn(wbase(x), C.size_t(len(x)*wordBytes), nil)
+	return C._goboringcrypto_BN_lebin2bn(wbase(x), C.int(len(x)*wordBytes), nil)
 }
 
 func bnToBig(bn *C.GO_BIGNUM) BigInt {
 	x := make(BigInt, (C._goboringcrypto_BN_num_bytes(bn)+wordBytes-1)/wordBytes)
 	// Limbs are always ordered in LSB first, so we can safely apply
 	// BN_bn2lebinpad regardless of host endianness.
-	if C._goboringcrypto_BN_bn2lebinpad(bn, wbase(x), C.size_t(len(x)*wordBytes)) == 0 {
+	if C._goboringcrypto_BN_bn2lebinpad(bn, wbase(x), C.int(len(x)*wordBytes)) == 0 {
 		panic("boringcrypto: bignum conversion failed")
 	}
 	if nativeEndian == binary.BigEndian {

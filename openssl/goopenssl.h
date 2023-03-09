@@ -373,14 +373,14 @@ _goboringcrypto_BN_num_bytes(const GO_BIGNUM* a) {
 }
 
 #if OPENSSL_VERSION_NUMBER >= 0x10100000L
-DEFINEFUNC(GO_BIGNUM *, BN_lebin2bn, (const unsigned char *s, size_t len, GO_BIGNUM *ret), (s, len, ret))
-DEFINEFUNC(int, BN_bn2lebinpad, (const GO_BIGNUM *a, unsigned char *to, size_t tolen), (a, to, tolen))
+DEFINEFUNC(GO_BIGNUM *, BN_lebin2bn, (const unsigned char *s, int len, GO_BIGNUM *ret), (s, len, ret))
+DEFINEFUNC(int, BN_bn2lebinpad, (const GO_BIGNUM *a, unsigned char *to, int tolen), (a, to, tolen))
 DEFINEFUNC(int, BN_bn2binpad, (const GO_BIGNUM *a, unsigned char *to, int tolen), (a, to, tolen))
 #else
 DEFINEFUNCINTERNAL(int, BN_bn2bin, (const GO_BIGNUM *a, unsigned char *to), (a, to))
 
 static inline GO_BIGNUM *
-_goboringcrypto_BN_lebin2bn(const unsigned char *s, size_t len, GO_BIGNUM *ret)
+_goboringcrypto_BN_lebin2bn(const unsigned char *s, int len, GO_BIGNUM *ret)
 {
 	unsigned char *copy;
 	size_t i;
@@ -398,10 +398,10 @@ _goboringcrypto_BN_lebin2bn(const unsigned char *s, size_t len, GO_BIGNUM *ret)
 }
 
 static inline int
-_goboringcrypto_BN_bn2binpad(const GO_BIGNUM *a, unsigned char *to, size_t tolen)
+_goboringcrypto_BN_bn2binpad(const GO_BIGNUM *a, unsigned char *to, int tolen)
 {
 	int size = _goboringcrypto_BN_num_bytes(a);
-	size_t i;
+	int i;
 
 	if (size > tolen)
 		return -1;
@@ -414,10 +414,10 @@ _goboringcrypto_BN_bn2binpad(const GO_BIGNUM *a, unsigned char *to, size_t tolen
 }
 
 static inline int
-_goboringcrypto_BN_bn2lebinpad(const GO_BIGNUM *a, unsigned char *to, size_t tolen)
+_goboringcrypto_BN_bn2lebinpad(const GO_BIGNUM *a, unsigned char *to, int tolen)
 {
 	int size = _goboringcrypto_BN_bn2binpad(a, to, tolen);
-	size_t i;
+	int i;
 
 	if (size != tolen)
 		return -1;
@@ -1075,17 +1075,17 @@ enum {
 	GO_POINT_CONVERSION_UNCOMPRESSED = 4,
 };
 
-#if OPENSSL_VERSION_NUMBER >= 0x10100000L
 DEFINEFUNC(size_t, EC_POINT_point2oct, (const GO_EC_GROUP *group, const GO_EC_POINT *p, point_conversion_form_t form, unsigned char *buf, size_t len, GO_BN_CTX *ctx), (group, p, form, buf, len, ctx))
 DEFINEFUNC(int, EC_POINT_oct2point, (const GO_EC_GROUP *group, GO_EC_POINT *p, const unsigned char *buf, size_t len, GO_BN_CTX *ctx), (group, p, buf, len, ctx))
 
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L
 DEFINEFUNC(int, EVP_PKEY_set1_encoded_public_key, (GO_EVP_PKEY *pkey, const unsigned char *pub, size_t publen), (pkey, pub, publen))
 DEFINEFUNC(size_t, EVP_PKEY_get1_encoded_public_key, (GO_EVP_PKEY *pkey, unsigned char **ppub), (pkey, ppub))
 
 DEFINEFUNC(const GO_EC_KEY *, EVP_PKEY_get0_EC_KEY, (const GO_EVP_PKEY *pkey), (pkey))
 #else
-DEFINEFUNCINTERNAL(void *, EVP_PKEY_get0, (GO_EVP_PKEY *pkey), (pkey))
-const GO_EC_KEY *
+DEFINEFUNCINTERNAL(void *, EVP_PKEY_get0, (const GO_EVP_PKEY *pkey), (pkey))
+static const GO_EC_KEY *
 _goboringcrypto_EVP_PKEY_get0_EC_KEY(const GO_EVP_PKEY *pkey)
 {
   return _goboringcrypto_internal_EVP_PKEY_get0(pkey);
@@ -1093,3 +1093,5 @@ _goboringcrypto_EVP_PKEY_get0_EC_KEY(const GO_EVP_PKEY *pkey)
 #endif
 
 GO_EVP_PKEY *_goboringcrypto_EVP_PKEY_new_for_ecdh(int nid, const uint8_t *bytes, size_t len, int is_private);
+size_t _goboringcrypto_EVP_PKEY_get1_encoded_ecdh_public_key(GO_EVP_PKEY *pkey, unsigned char **result);
+int _goboringcrypto_EVP_PKEY_set_ecdh_public_key_from_private(GO_EVP_PKEY *pkey, int nid);

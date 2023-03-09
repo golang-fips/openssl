@@ -85,27 +85,15 @@ func (k *PrivateKeyECDH) PublicKey() (*PublicKeyECDH, error) {
 		k.hasPublicKey = true
 	}
 	var bytes []byte
-	if openSSLVersion() < OPENSSL_VERSION_3_0_0 {
-		key := getECKey(k._pkey)
-		pt := C._goboringcrypto_EC_KEY_get0_public_key(key)
-		if pt == nil {
-			return nil, NewOpenSSLError("EC_KEY_get0_public_key")
-		}
-		group := C._goboringcrypto_EC_KEY_get0_group(key)
-		var err error
-		bytes, err = encodeEcPoint(group, pt)
-		if err != nil {
-			return nil, err
-		}
-	} else {
-		var cbytes *C.uchar
-		n := C._goboringcrypto_EVP_PKEY_get1_encoded_public_key(k._pkey, &cbytes)
-		if n == 0 {
-			return nil, NewOpenSSLError("EVP_PKEY_get_octet_string_param")
-		}
-		bytes = C.GoBytes(unsafe.Pointer(cbytes), C.int(n))
-		C.free(unsafe.Pointer(cbytes))
+	var cbytes *C.uchar
+
+	n := C._goboringcrypto_EVP_PKEY_get1_encoded_ecdh_public_key(k._pkey, &cbytes)
+	if n == 0 {
+		return nil, NewOpenSSLError("EVP_PKEY_get1_encoded_ecdh_public_key")
 	}
+	bytes = C.GoBytes(unsafe.Pointer(cbytes), C.int(n))
+	C.free(unsafe.Pointer(cbytes))
+
 	pub := &PublicKeyECDH{k._pkey, bytes, k}
 	runtime.SetFinalizer(pub, (*PublicKeyECDH).finalize)
 	return pub, nil
@@ -138,59 +126,9 @@ func newECDHPkey(curve string, bytes []byte, isPrivate bool) (*C.GO_EVP_PKEY, er
 // deriveEcdhPublicKey sets the raw public key of pkey by deriving it from
 // the raw private key.
 func deriveEcdhPublicKey(pkey *C.GO_EVP_PKEY, curve string) error {
-	derive := func(group *C.GO_EC_GROUP, priv *C.GO_BIGNUM) (*C.GO_EC_POINT, error) {
-		// OpenSSL does not expose any method to generate the public
-		// key from the private key [1], so we have to calculate it here.
-		// [1] https://github.com/openssl/openssl/issues/18437#issuecomment-1144717206
-		pt := C._goboringcrypto_EC_POINT_new(group)
-		if pt == nil {
-			return nil, NewOpenSSLError("EC_POINT_new")
-		}
-		if C._goboringcrypto_EC_POINT_mul(group, pt, priv, nil, nil, nil) == 0 {
-			C._goboringcrypto_EC_POINT_free(pt)
-			return nil, NewOpenSSLError("EC_POINT_mul")
-		}
-		return pt, nil
-	}
-	if openSSLVersion() < OPENSSL_VERSION_3_0_0 {
-		key := getECKey(pkey)
-		priv := C._goboringcrypto_EC_KEY_get0_private_key(key)
-		if priv == nil {
-			return NewOpenSSLError("EC_KEY_get0_private_key")
-		}
-		group := C._goboringcrypto_EC_KEY_get0_group(key)
-		pub, err := derive(group, priv)
-		if err != nil {
-			return err
-		}
-		defer C._goboringcrypto_EC_POINT_free(pub)
-		if C._goboringcrypto_EC_KEY_set_public_key(key, pub) != 1 {
-			return NewOpenSSLError("EC_KEY_set_public_key")
-		}
-	} else {
-		var priv *C.GO_BIGNUM
-		if C._goboringcrypto_EVP_PKEY_get_bn_param(pkey, paramPrivKey, &priv) != 1 {
-			return NewOpenSSLError("EVP_PKEY_get_bn_param")
-		}
-		defer C._goboringcrypto_BN_free(priv)
-		nid, _ := curveNID(curve)
-		group := C._goboringcrypto_EC_GROUP_new_by_curve_name(nid)
-		if group == nil {
-			return NewOpenSSLError("EC_GROUP_new_by_curve_name")
-		}
-		defer C._goboringcrypto_EC_GROUP_free(group)
-		pt, err := derive(group, priv)
-		if err != nil {
-			return err
-		}
-		defer C._goboringcrypto_EC_POINT_free(pt)
-		pubBytes, err := encodeEcPoint(group, pt)
-		if err != nil {
-			return err
-		}
-		if C._goboringcrypto_EVP_PKEY_set1_encoded_public_key(pkey, base(pubBytes), C.size_t(len(pubBytes))) != 1 {
-			return NewOpenSSLError("EVP_PKEY_set1_encoded_public_key")
-		}
+	nid, _ := curveNID(curve)
+	if C._goboringcrypto_EVP_PKEY_set_ecdh_public_key_from_private(pkey, nid) != 1 {
+		return NewOpenSSLError("EVP_PKEY_set_ecdh_public_key_from_private")
 	}
 	return nil
 }
