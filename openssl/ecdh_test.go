@@ -6,6 +6,7 @@ package openssl_test
 import (
 	"bytes"
 	"encoding/hex"
+	"strings"
 	"testing"
 
 	"github.com/golang-fips/openssl-fips/openssl"
@@ -139,6 +140,32 @@ func TestECDHVectors(t *testing.T) {
 				t.Error("shared secret does not match")
 			}
 		})
+	}
+}
+
+func TestInvalidPublicKey(t *testing.T) {
+	keys := []string{
+		// Bad lengths.
+		"",
+		"04",
+		strings.Repeat("04", 200),
+		// Infinity.
+		"00",
+		// Compressed encodings.
+		"036b17d1f2e12c4247f8bce6e563a440f277037d812deb33a0f4a13945d898c296",
+		"02e2534a3532d08fbba02dde659ee62bd0031fe2db785596ef509302446b030852",
+		// Points not on the curve.
+		"046b17d1f2e12c4247f8bce6e563a440f277037d812deb33a0f4a13945d898c2964fe342e2fe1a7f9b8ee7eb4a7c0f9e162bce33576b315ececbb6406837bf51f6",
+		"0400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+	};
+
+	for _, input := range keys {
+		k, err := openssl.NewPublicKeyECDH("P-256", hexDecode(t, input))
+		if err == nil {
+			t.Errorf("unexpectedly accepted %q", input)
+		} else if k != nil {
+			t.Error("PublicKey was not nil on error")
+		}
 	}
 }
 

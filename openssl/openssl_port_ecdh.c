@@ -6,6 +6,51 @@
 
 #include "goopenssl.h"
 
+static GO_EC_POINT *
+public_key_from_private(const GO_EC_GROUP *group, const GO_BIGNUM *priv)
+{
+	// OpenSSL does not expose any method to generate the public
+	// key from the private key [1], so we have to calculate it here.
+	// [1] https://github.com/openssl/openssl/issues/18437#issuecomment-1144717206
+	GO_EC_POINT *point;
+
+	point = _goboringcrypto_EC_POINT_new(group);
+	if (!point)
+		return NULL;
+
+	if (_goboringcrypto_EC_POINT_mul(group, point, priv, NULL, NULL, NULL) != 1) {
+		_goboringcrypto_EC_POINT_free(point);
+		return NULL;
+	}
+
+	return point;
+}
+
+static size_t
+encode_point(const GO_EC_GROUP *group, const GO_EC_POINT *point,
+	     unsigned char **result)
+{
+	size_t len;
+
+	len = _goboringcrypto_EC_POINT_point2oct(group, point,
+						 GO_POINT_CONVERSION_UNCOMPRESSED,
+						 NULL, 0, NULL);
+	if (!len)
+		return 0;
+
+	*result = malloc(len);
+
+	len = _goboringcrypto_EC_POINT_point2oct(group, point,
+						 GO_POINT_CONVERSION_UNCOMPRESSED,
+						 *result, len, NULL);
+	if (!len) {
+		free(*result);
+		return 0;
+	}
+
+	return len;
+}
+
 #if OPENSSL_VERSION_NUMBER >= 0x30000000
 
 DEFINEFUNCINTERNAL(const char *, OBJ_nid2sn, (int n), (n))
@@ -87,13 +132,72 @@ err:
 	return result;
 }
 
+DEFINEFUNCINTERNAL(void, OPENSSL_free, (void *addr), (addr))
+
+size_t
+_goboringcrypto_EVP_PKEY_get1_encoded_ecdh_public_key(GO_EVP_PKEY *pkey,
+						      unsigned char **result)
+{
+	unsigned char *res;
+	size_t len;
+
+	len = _goboringcrypto_EVP_PKEY_get1_encoded_public_key(pkey, &res);
+	if (!len)
+		return 0;
+
+	*result = malloc(len);
+	if (!*result) {
+		_goboringcrypto_internal_OPENSSL_free(res);
+		return 0;
+	}
+	memcpy(*result, res, len);
+	return len;
+}
+
+int
+_goboringcrypto_EVP_PKEY_set_ecdh_public_key_from_private(GO_EVP_PKEY *pkey, int nid)
+{
+	GO_BIGNUM *priv = NULL;
+	GO_EC_GROUP *group = NULL;
+	GO_EC_POINT *point = NULL;
+	size_t len;
+	unsigned char *pub = NULL;
+	int result = 0;
+
+	if (_goboringcrypto_EVP_PKEY_get_bn_param(pkey, "priv", &priv) != 1)
+		return 0;
+
+	group = _goboringcrypto_EC_GROUP_new_by_curve_name(nid);
+	if (!group)
+		goto err;
+
+	point = public_key_from_private(group, priv);
+	if (!point)
+		goto err;
+
+	len = encode_point(group, point, &pub);
+	if (!len)
+		goto err;
+
+	if (_goboringcrypto_EVP_PKEY_set1_encoded_public_key(pkey, pub, len) != 1)
+		goto err;
+
+	result = 1;
+
+err:
+	_goboringcrypto_EC_GROUP_free(group);
+	_goboringcrypto_EC_POINT_free(point);
+	free(pub);
+	return result;
+}
+
 #else
 
 GO_EVP_PKEY *
 _goboringcrypto_EVP_PKEY_new_for_ecdh(int nid, const uint8_t *bytes, size_t len, int is_private)
 {
-	EVP_PKEY *result = NULL;
-	EC_KEY *key = NULL;
+	GO_EVP_PKEY *result = NULL;
+	GO_EC_KEY *key = NULL;
 
 	key = _goboringcrypto_EC_KEY_new_by_curve_name(nid);
 	if (!key)
@@ -143,6 +247,60 @@ _goboringcrypto_EVP_PKEY_new_for_ecdh(int nid, const uint8_t *bytes, size_t len,
 err:
 	_goboringcrypto_EC_KEY_free(key);
 	return result;
+}
+
+size_t
+_goboringcrypto_EVP_PKEY_get1_encoded_ecdh_public_key(GO_EVP_PKEY *pkey,
+						      unsigned char **result)
+{
+	const GO_EC_KEY *key;
+	const GO_EC_POINT *point;
+	const GO_EC_GROUP *group;
+	size_t len;
+
+	key = _goboringcrypto_EVP_PKEY_get0_EC_KEY(pkey);
+	if (!key)
+		return 0;
+
+	point = _goboringcrypto_EC_KEY_get0_public_key(key);
+	if (!point)
+		return 0;
+
+	group = _goboringcrypto_EC_KEY_get0_group(key);
+	if (!group)
+		return 0;
+
+	return encode_point(group, point, result);
+}
+
+int
+_goboringcrypto_EVP_PKEY_set_ecdh_public_key_from_private(GO_EVP_PKEY *pkey, int nid)
+{
+	GO_EC_KEY *key;
+	const GO_BIGNUM *priv;
+	const GO_EC_GROUP *group;
+	GO_EC_POINT *point;
+
+	key = (GO_EC_KEY *)_goboringcrypto_EVP_PKEY_get0_EC_KEY(pkey);
+	if (!key)
+		return 0;
+
+	priv = _goboringcrypto_EC_KEY_get0_private_key(key);
+	if (!priv)
+		return 0;
+
+	group = _goboringcrypto_EC_KEY_get0_group(key);
+	point = public_key_from_private(group, priv);
+	if (!point)
+		return 0;
+
+	if (_goboringcrypto_EC_KEY_set_public_key(key, point) != 1) {
+		_goboringcrypto_EC_POINT_free(point);
+		return 0;
+	}
+
+	_goboringcrypto_EC_POINT_free(point);
+	return 1;
 }
 
 #endif
