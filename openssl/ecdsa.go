@@ -176,7 +176,7 @@ func newECDSAKey3(nid C.int, bx, by, bd C.GO_BIGNUM_PTR) (C.GO_EVP_PKEY_PTR, err
 		panic("incorrect vMajor version")
 	}
 	// Create the encoded public key public key from bx and by.
-	pubBytes, err := generateAndEncodePublicKey(nid, func(group C.GO_EC_GROUP_PTR) (C.GO_EC_POINT_PTR, error) {
+	pubBytes, err := generateAndEncodeEcPublicKey(nid, func(group C.GO_EC_GROUP_PTR) (C.GO_EC_POINT_PTR, error) {
 		pt := C.go_openssl_EC_POINT_new(group)
 		if pt == nil {
 			return nil, newOpenSSLError("EC_POINT_new")
@@ -215,17 +215,4 @@ func newECDSAKey3(nid C.int, bx, by, bd C.GO_BIGNUM_PTR) (C.GO_EVP_PKEY_PTR, err
 	}
 	defer C.go_openssl_OSSL_PARAM_free(params)
 	return newEvpFromParams(C.GO_EVP_PKEY_EC, selection, params)
-}
-func curveNID(curve string) (C.int, error) {
-	switch curve {
-	case "P-224":
-		return C.GO_NID_secp224r1, nil
-	case "P-256":
-		return C.GO_NID_X9_62_prime256v1, nil
-	case "P-384":
-		return C.GO_NID_secp384r1, nil
-	case "P-521":
-		return C.GO_NID_secp521r1, nil
-	}
-	return 0, errUnknownCurve
 }
