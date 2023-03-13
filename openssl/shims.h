@@ -81,14 +81,17 @@ typedef void* GO_BIGNUM_PTR;
 typedef void* GO_BN_CTX_PTR;
 typedef void* GO_EVP_MAC_PTR;
 typedef void* GO_EVP_MAC_CTX_PTR;
-typedef void* GO_OSSL_PARAM_BLD_PTR;
-typedef void* GO_OSSL_PARAM_PTR;
 
 // #include <openssl/md5.h>
 typedef void* GO_MD5_CTX_PTR;
 
 // #include <openssl/sha.h>
 typedef void* GO_SHA_CTX_PTR;
+
+
+// #include <openssl/param_build.h>
+typedef void* GO_OSSL_PARAM_BLD_PTR;
+typedef void* GO_OSSL_PARAM_PTR;
 
 // FOR_ALL_OPENSSL_FUNCTIONS is the list of all functions from libcrypto that are used in this package.
 // Forgetting to add a function here results in build failure with message reporting the function
