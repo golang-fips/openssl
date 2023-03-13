@@ -191,20 +191,30 @@ func newECDSAKey3(nid C.int, bx, by, bd C.GO_BIGNUM_PTR) (C.GO_EVP_PKEY_PTR, err
 		return nil, err
 	}
 	// Construct the parameters.
-	params := newParamsBuilder()
-	defer params.free()
-	params.addUTF8(paramGroup, C.GoString(C.go_openssl_OBJ_nid2sn(nid)))
-	params.addOctetString(paramPubKey, pubBytes)
+	bld := C.go_openssl_OSSL_PARAM_BLD_new()
+	if bld == nil {
+		return nil, newOpenSSLError("OSSL_PARAM_BLD_new")
+	}
+	defer C.go_openssl_OSSL_PARAM_BLD_free(bld)
+	C.go_openssl_OSSL_PARAM_BLD_push_utf8_string(bld, paramGroup, C.go_openssl_OBJ_nid2sn(nid), 0)
+	cbytes := C.CBytes(pubBytes)
+	defer C.free(cbytes)
+	C.go_openssl_OSSL_PARAM_BLD_push_octet_string(bld, paramPubKey, cbytes, C.size_t(len(pubBytes)))
 	var selection C.int
 	if bd != nil {
-		if err := params.addBN(paramPrivKey, bd); err != nil {
-			return nil, err
+		if C.go_openssl_OSSL_PARAM_BLD_push_BN(bld, paramPrivKey, bd) != 1 {
+			return nil, newOpenSSLError("OSSL_PARAM_BLD_push_BN")
 		}
 		selection = C.GO_EVP_PKEY_KEYPAIR
 	} else {
 		selection = C.GO_EVP_PKEY_PUBLIC_KEY
 	}
-	return newEvpFromParams(C.GO_EVP_PKEY_EC, selection, params.params)
+	params := C.go_openssl_OSSL_PARAM_BLD_to_param(bld)
+	if params == nil {
+		return nil, newOpenSSLError("OSSL_PARAM_BLD_to_param")
+	}
+	defer C.go_openssl_OSSL_PARAM_free(params)
+	return newEvpFromParams(C.GO_EVP_PKEY_EC, selection, params)
 }
 func curveNID(curve string) (C.int, error) {
 	switch curve {

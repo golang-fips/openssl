@@ -164,20 +164,35 @@ func newECDHPkey3(nid C.int, bytes []byte, isPrivate bool) (C.GO_EVP_PKEY_PTR, e
 	if vMajor != 3 {
 		panic("incorrect vMajor version")
 	}
-	params := newParamsBuilder()
-	defer params.free()
-	params.addUTF8(paramGroup, C.GoString(C.go_openssl_OBJ_nid2sn(nid)))
+	bld := C.go_openssl_OSSL_PARAM_BLD_new()
+	if bld == nil {
+		return nil, newOpenSSLError("OSSL_PARAM_BLD_new")
+	}
+	defer C.go_openssl_OSSL_PARAM_BLD_free(bld)
+	C.go_openssl_OSSL_PARAM_BLD_push_utf8_string(bld, paramGroup, C.go_openssl_OBJ_nid2sn(nid), 0)
 	var selection C.int
 	if isPrivate {
-		if err := params.addBigNumber(paramPrivKey, bytes); err != nil {
-			return nil, err
+		priv := C.go_openssl_BN_bin2bn(base(bytes), C.int(len(bytes)), nil)
+		if priv == nil {
+			return nil, newOpenSSLError("BN_bin2bn")
+		}
+		defer C.go_openssl_BN_free(priv)
+		if C.go_openssl_OSSL_PARAM_BLD_push_BN(bld, paramPrivKey, priv) != 1 {
+			return nil, newOpenSSLError("OSSL_PARAM_BLD_push_BN")
 		}
 		selection = C.GO_EVP_PKEY_KEYPAIR
 	} else {
-		params.addOctetString(paramPubKey, bytes)
+		cbytes := C.CBytes(bytes)
+		defer C.free(cbytes)
+		C.go_openssl_OSSL_PARAM_BLD_push_octet_string(bld, paramPubKey, cbytes, C.size_t(len(bytes)))
 		selection = C.GO_EVP_PKEY_PUBLIC_KEY
 	}
-	return newEvpFromParams(C.GO_EVP_PKEY_EC, selection, params.params)
+	params := C.go_openssl_OSSL_PARAM_BLD_to_param(bld)
+	if params == nil {
+		return nil, newOpenSSLError("OSSL_PARAM_BLD_to_param")
+	}
+	defer C.go_openssl_OSSL_PARAM_free(params)
+	return newEvpFromParams(C.GO_EVP_PKEY_EC, selection, params)
 }
 
 // deriveEcdhPublicKey sets the raw public key of pkey by deriving it from

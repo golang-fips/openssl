@@ -143,21 +143,3 @@ go_openssl_EVP_CIPHER_CTX_open_wrapper(const GO_EVP_CIPHER_CTX_PTR ctx,
 
     return 1;
 };
-
-static inline void
-go_openssl_params_free(OSSL_PARAM params[])
-{
-    if (params == NULL)
-        return;
-
-    // Loop through all the params until the first NULL key.
-    for (; params->key != NULL; params++)
-    {
-        if (params->data != NULL)
-        {
-            free(params->data);
-            params->data = NULL;
-        }
-    }
-    return;
-}

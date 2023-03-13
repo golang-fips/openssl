@@ -62,13 +62,6 @@ enum {
     GO_EVP_PKEY_CTRL_RSA_OAEP_LABEL = 0x100A
 };
 
-enum {
-    GO_OSSL_PARAM_UNMODIFIED = -1,
-    GO_OSSL_PARAM_UNSIGNED_INTEGER = 2,
-    GO_OSSL_PARAM_UTF8_STRING = 4,
-    GO_OSSL_PARAM_OCTET_STRING = 5
-};
-
 typedef void* GO_OPENSSL_INIT_SETTINGS_PTR;
 typedef void* GO_OSSL_LIB_CTX_PTR;
 typedef void* GO_OSSL_PROVIDER_PTR;
@@ -88,25 +81,14 @@ typedef void* GO_BIGNUM_PTR;
 typedef void* GO_BN_CTX_PTR;
 typedef void* GO_EVP_MAC_PTR;
 typedef void* GO_EVP_MAC_CTX_PTR;
+typedef void* GO_OSSL_PARAM_BLD_PTR;
+typedef void* GO_OSSL_PARAM_PTR;
 
 // #include <openssl/md5.h>
 typedef void* GO_MD5_CTX_PTR;
 
 // #include <openssl/sha.h>
 typedef void* GO_SHA_CTX_PTR;
-
-// OSSL_PARAM does not follow the GO_FOO_PTR pattern
-// because it is not passed around as a pointer but on the stack.
-// We can't abstract it away by using a void*.
-// Copied from
-// https://github.com/openssl/openssl/blob/fcae2ae4f675def607d338b7945b9af1dd9bb746/include/openssl/core.h#L82-L88.
-typedef struct {
-    const char *key;
-    unsigned int data_type;
-    void *data;
-    size_t data_size;
-    size_t return_size;
-} OSSL_PARAM;
 
 // FOR_ALL_OPENSSL_FUNCTIONS is the list of all functions from libcrypto that are used in this package.
 // Forgetting to add a function here results in build failure with message reporting the function
@@ -261,7 +243,7 @@ DEFINEFUNC_LEGACY_1_0(void*, EVP_PKEY_get0, (GO_EVP_PKEY_PTR pkey), (pkey)) \
 /* EVP_PKEY_get0_EC_KEY OpenSSL 1.1.0 and 1.1.1 do not define the inputs and outputs as const  */ \
 /*check:from=3.0.0*/ DEFINEFUNC_1_1(const GO_EC_KEY_PTR, EVP_PKEY_get0_EC_KEY, (const GO_EVP_PKEY_PTR pkey), (pkey)) \
 DEFINEFUNC_3_0(int, EVP_PKEY_fromdata_init, (GO_EVP_PKEY_CTX_PTR ctx), (ctx)) \
-DEFINEFUNC_3_0(int, EVP_PKEY_fromdata, (GO_EVP_PKEY_CTX_PTR ctx, GO_EVP_PKEY_PTR *pkey, int selection, OSSL_PARAM params[]), (ctx, pkey, selection, params)) \
+DEFINEFUNC_3_0(int, EVP_PKEY_fromdata, (GO_EVP_PKEY_CTX_PTR ctx, GO_EVP_PKEY_PTR *pkey, int selection, GO_OSSL_PARAM_PTR params), (ctx, pkey, selection, params)) \
 DEFINEFUNC_3_0(int, EVP_PKEY_set1_encoded_public_key, (GO_EVP_PKEY_PTR pkey, const unsigned char *pub, size_t publen), (pkey, pub, publen)) \
 DEFINEFUNC_3_0(size_t, EVP_PKEY_get1_encoded_public_key, (GO_EVP_PKEY_PTR pkey, unsigned char **ppub), (pkey, ppub)) \
 DEFINEFUNC_3_0(int, EVP_PKEY_get_bn_param, (const GO_EVP_PKEY_PTR pkey, const char *key_name, GO_BIGNUM_PTR *bn), (pkey, key_name, bn)) \
@@ -282,7 +264,6 @@ DEFINEFUNC(GO_BIGNUM_PTR, BN_bin2bn, (const unsigned char *arg0, int arg1, GO_BI
 /*check:from=1.1.0*/ DEFINEFUNC_RENAMED_1_1(GO_BIGNUM_PTR, BN_lebin2bn, bn_lebin2bn, (const unsigned char *s, int len, GO_BIGNUM_PTR ret), (s, len, ret)) \
 /*check:from=1.1.0*/ DEFINEFUNC_RENAMED_1_1(int, BN_bn2lebinpad, bn_bn2lebinpad, (const GO_BIGNUM_PTR a, unsigned char *to, int tolen), (a, to, tolen)) \
 /*check:from=1.1.0*/ DEFINEFUNC_RENAMED_1_1(int, BN_bn2binpad, bn_bn2binpad, (const GO_BIGNUM_PTR a, unsigned char *to, int tolen), (a, to, tolen)) \
-DEFINEFUNC_3_0(int, BN_bn2nativepad, (const GO_BIGNUM_PTR a, unsigned char *to, int tolen), (a, to, tolen)) \
 DEFINEFUNC(int, EC_KEY_set_public_key_affine_coordinates, (GO_EC_KEY_PTR key, GO_BIGNUM_PTR x, GO_BIGNUM_PTR y), (key, x, y)) \
 DEFINEFUNC(int, EC_KEY_set_public_key, (GO_EC_KEY_PTR key, const GO_EC_POINT_PTR pub), (key, pub)) \
 DEFINEFUNC(void, EC_KEY_free, (GO_EC_KEY_PTR arg0), (arg0)) \
@@ -305,7 +286,14 @@ DEFINEFUNC_3_0(GO_EVP_MAC_PTR, EVP_MAC_fetch, (GO_OSSL_LIB_CTX_PTR ctx, const ch
 DEFINEFUNC_3_0(GO_EVP_MAC_CTX_PTR, EVP_MAC_CTX_new, (GO_EVP_MAC_PTR arg0), (arg0)) \
 DEFINEFUNC_3_0(void, EVP_MAC_CTX_free, (GO_EVP_MAC_CTX_PTR arg0), (arg0)) \
 DEFINEFUNC_3_0(GO_EVP_MAC_CTX_PTR, EVP_MAC_CTX_dup, (const GO_EVP_MAC_CTX_PTR arg0), (arg0)) \
-DEFINEFUNC_3_0(int, EVP_MAC_init, (GO_EVP_MAC_CTX_PTR ctx, const unsigned char *key, size_t keylen, const OSSL_PARAM params[]), (ctx, key, keylen, params)) \
+DEFINEFUNC_3_0(int, EVP_MAC_init, (GO_EVP_MAC_CTX_PTR ctx, const unsigned char *key, size_t keylen, const GO_OSSL_PARAM_PTR params), (ctx, key, keylen, params)) \
 DEFINEFUNC_3_0(int, EVP_MAC_update, (GO_EVP_MAC_CTX_PTR ctx, const unsigned char *data, size_t datalen), (ctx, data, datalen)) \
 DEFINEFUNC_3_0(int, EVP_MAC_final, (GO_EVP_MAC_CTX_PTR ctx, unsigned char *out, size_t *outl, size_t outsize), (ctx, out, outl, outsize)) \
+DEFINEFUNC_3_0(void, OSSL_PARAM_free, (GO_OSSL_PARAM_PTR p), (p)) \
+DEFINEFUNC_3_0(GO_OSSL_PARAM_BLD_PTR, OSSL_PARAM_BLD_new, (), ()) \
+DEFINEFUNC_3_0(void, OSSL_PARAM_BLD_free, (GO_OSSL_PARAM_BLD_PTR bld), (bld)) \
+DEFINEFUNC_3_0(GO_OSSL_PARAM_PTR, OSSL_PARAM_BLD_to_param, (GO_OSSL_PARAM_BLD_PTR bld), (bld)) \
+DEFINEFUNC_3_0(int, OSSL_PARAM_BLD_push_utf8_string, (GO_OSSL_PARAM_BLD_PTR bld, const char *key, const char *buf, size_t bsize), (bld, key, buf, bsize)) \
+DEFINEFUNC_3_0(int, OSSL_PARAM_BLD_push_octet_string, (GO_OSSL_PARAM_BLD_PTR bld, const char *key, const void *buf, size_t bsize), (bld, key, buf, bsize)) \
+DEFINEFUNC_3_0(int, OSSL_PARAM_BLD_push_BN, (GO_OSSL_PARAM_BLD_PTR bld, const char *key, const GO_BIGNUM_PTR bn), (bld, key, bn)) \
 
