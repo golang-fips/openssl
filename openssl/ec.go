@@ -7,8 +7,6 @@ package openssl
 import "C"
 
 var (
-	paramAlgHMAC = C.CString("HMAC")
-	paramDigest  = C.CString("digest")
 	paramPubKey  = C.CString("pub")
 	paramPrivKey = C.CString("priv")
 	paramGroup   = C.CString("group")

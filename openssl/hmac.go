@@ -11,6 +11,11 @@ import (
 	"unsafe"
 )
 
+var (
+	paramAlgHMAC = C.CString("HMAC")
+	paramDigest  = C.CString("digest")
+)
+
 // NewHMAC returns a new HMAC using OpenSSL.
 // The function h must return a hash implemented by
 // OpenSSL (for example, h could be openssl.NewSHA256).
@@ -89,7 +94,7 @@ func newHMAC3(key []byte, h hash.Hash, md C.GO_EVP_MD_PTR) *opensslHMAC {
 		panic(newOpenSSLError("OSSL_PARAM_BLD_new"))
 	}
 	defer C.go_openssl_OSSL_PARAM_BLD_free(bld)
-	C.go_openssl_OSSL_PARAM_BLD_push_utf8_string(bld, paramGroup, digest, 0)
+	C.go_openssl_OSSL_PARAM_BLD_push_utf8_string(bld, paramDigest, digest, 0)
 	params := C.go_openssl_OSSL_PARAM_BLD_to_param(bld)
 	if params == nil {
 		panic(newOpenSSLError("OSSL_PARAM_BLD_to_param"))
