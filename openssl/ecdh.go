@@ -164,20 +164,35 @@ func newECDHPkey3(nid C.int, bytes []byte, isPrivate bool) (C.GO_EVP_PKEY_PTR, e
 	if vMajor != 3 {
 		panic("incorrect vMajor version")
 	}
-	params := newParamsBuilder()
-	defer params.free()
-	params.addUTF8(paramGroup, C.GoString(C.go_openssl_OBJ_nid2sn(nid)))
+	bld := C.go_openssl_OSSL_PARAM_BLD_new()
+	if bld == nil {
+		return nil, newOpenSSLError("OSSL_PARAM_BLD_new")
+	}
+	defer C.go_openssl_OSSL_PARAM_BLD_free(bld)
+	C.go_openssl_OSSL_PARAM_BLD_push_utf8_string(bld, paramGroup, C.go_openssl_OBJ_nid2sn(nid), 0)
 	var selection C.int
 	if isPrivate {
-		if err := params.addBigNumber(paramPrivKey, bytes); err != nil {
-			return nil, err
+		priv := C.go_openssl_BN_bin2bn(base(bytes), C.int(len(bytes)), nil)
+		if priv == nil {
+			return nil, newOpenSSLError("BN_bin2bn")
+		}
+		defer C.go_openssl_BN_free(priv)
+		if C.go_openssl_OSSL_PARAM_BLD_push_BN(bld, paramPrivKey, priv) != 1 {
+			return nil, newOpenSSLError("OSSL_PARAM_BLD_push_BN")
 		}
 		selection = C.GO_EVP_PKEY_KEYPAIR
 	} else {
-		params.addOctetString(paramPubKey, bytes)
+		cbytes := C.CBytes(bytes)
+		defer C.free(cbytes)
+		C.go_openssl_OSSL_PARAM_BLD_push_octet_string(bld, paramPubKey, cbytes, C.size_t(len(bytes)))
 		selection = C.GO_EVP_PKEY_PUBLIC_KEY
 	}
-	return newEvpFromParams(C.GO_EVP_PKEY_EC, selection, params.params)
+	params := C.go_openssl_OSSL_PARAM_BLD_to_param(bld)
+	if params == nil {
+		return nil, newOpenSSLError("OSSL_PARAM_BLD_to_param")
+	}
+	defer C.go_openssl_OSSL_PARAM_free(params)
+	return newEvpFromParams(C.GO_EVP_PKEY_EC, selection, params)
 }
 
 // deriveEcdhPublicKey sets the raw public key of pkey by deriving it from
@@ -220,17 +235,9 @@ func deriveEcdhPublicKey(pkey C.GO_EVP_PKEY_PTR, curve string) error {
 		}
 		defer C.go_openssl_BN_free(priv)
 		nid, _ := curveNID(curve)
-		group := C.go_openssl_EC_GROUP_new_by_curve_name(nid)
-		if group == nil {
-			return newOpenSSLError("EC_GROUP_new_by_curve_name")
-		}
-		defer C.go_openssl_EC_GROUP_free(group)
-		pt, err := derive(group, priv)
-		if err != nil {
-			return err
-		}
-		defer C.go_openssl_EC_POINT_free(pt)
-		pubBytes, err := encodeEcPoint(group, pt)
+		pubBytes, err := generateAndEncodeEcPublicKey(nid, func(group C.GO_EC_GROUP_PTR) (C.GO_EC_POINT_PTR, error) {
+			return derive(group, priv)
+		})
 		if err != nil {
 			return err
 		}
@@ -241,21 +248,6 @@ func deriveEcdhPublicKey(pkey C.GO_EVP_PKEY_PTR, curve string) error {
 		panic(errUnsupportedVersion())
 	}
 	return nil
-}
-
-func encodeEcPoint(group C.GO_EC_GROUP_PTR, pt C.GO_EC_POINT_PTR) ([]byte, error) {
-	// Get encoded point size.
-	n := C.go_openssl_EC_POINT_point2oct(group, pt, C.GO_POINT_CONVERSION_UNCOMPRESSED, nil, 0, nil)
-	if n == 0 {
-		return nil, newOpenSSLError("EC_POINT_point2oct")
-	}
-	// Encode point into bytes.
-	bytes := make([]byte, n)
-	n = C.go_openssl_EC_POINT_point2oct(group, pt, C.GO_POINT_CONVERSION_UNCOMPRESSED, base(bytes), n, nil)
-	if n == 0 {
-		return nil, newOpenSSLError("EC_POINT_point2oct")
-	}
-	return bytes, nil
 }
 
 func ECDH(priv *PrivateKeyECDH, pub *PublicKeyECDH) ([]byte, error) {

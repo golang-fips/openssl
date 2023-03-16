@@ -11,6 +11,11 @@ import (
 	"unsafe"
 )
 
+var (
+	paramAlgHMAC = C.CString("HMAC")
+	paramDigest  = C.CString("digest")
+)
+
 // NewHMAC returns a new HMAC using OpenSSL.
 // The function h must return a hash implemented by
 // OpenSSL (for example, h could be openssl.NewSHA256).
@@ -84,9 +89,18 @@ func newHMAC3(key []byte, h hash.Hash, md C.GO_EVP_MD_PTR) *opensslHMAC {
 		panic("openssl: EVP_MAC_CTX_new failed")
 	}
 	digest := C.go_openssl_EVP_MD_get0_name(md)
-	params := newParamsBuilder()
-	params.addUTF8(paramDigest, C.GoString(digest))
-	if C.go_openssl_EVP_MAC_init(ctx, base(key), C.size_t(len(key)), &params.params[0]) == 0 {
+	bld := C.go_openssl_OSSL_PARAM_BLD_new()
+	if bld == nil {
+		panic(newOpenSSLError("OSSL_PARAM_BLD_new"))
+	}
+	defer C.go_openssl_OSSL_PARAM_BLD_free(bld)
+	C.go_openssl_OSSL_PARAM_BLD_push_utf8_string(bld, paramDigest, digest, 0)
+	params := C.go_openssl_OSSL_PARAM_BLD_to_param(bld)
+	if params == nil {
+		panic(newOpenSSLError("OSSL_PARAM_BLD_to_param"))
+	}
+	defer C.go_openssl_OSSL_PARAM_free(params)
+	if C.go_openssl_EVP_MAC_init(ctx, base(key), C.size_t(len(key)), params) == 0 {
 		panic(newOpenSSLError("EVP_MAC_init failed"))
 	}
 	hkey := make([]byte, len(key))
