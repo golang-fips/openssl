@@ -469,12 +469,12 @@ DEFINEFUNC(int, EC_KEY_set_private_key, (GO_EC_KEY * arg0, const GO_BIGNUM *arg1
 DEFINEFUNC(int, EC_KEY_set_public_key, (GO_EC_KEY * arg0, const GO_EC_POINT *arg1), (arg0, arg1))
 DEFINEFUNC(const GO_BIGNUM *, EC_KEY_get0_private_key, (const GO_EC_KEY *arg0), (arg0))
 DEFINEFUNC(const GO_EC_POINT *, EC_KEY_get0_public_key, (const GO_EC_KEY *arg0), (arg0))
+DEFINEFUNC(size_t, EC_POINT_point2oct, (const GO_EC_GROUP *group, const GO_EC_POINT *p, point_conversion_form_t form, unsigned char *buf, size_t len, GO_BN_CTX *ctx), (group, p, form, buf, len, ctx))
+DEFINEFUNC(int, EC_POINT_oct2point, (const GO_EC_GROUP *group, GO_EC_POINT *p, const unsigned char *buf, size_t len, GO_BN_CTX *ctx), (group, p, buf, len, ctx))
 
 #if OPENSSL_VERSION_NUMBER >= 0x10100000L
 DEFINEFUNC(int, EC_KEY_oct2key, (GO_EC_KEY *arg0, const unsigned char *arg1, size_t arg2, BN_CTX *arg3), (arg0, arg1, arg2, arg3))
 #else
-DEFINEFUNCINTERNAL(int, EC_POINT_oct2point, (const EC_GROUP *arg0, EC_POINT *arg1, const unsigned char *arg2, size_t arg3, BN_CTX *arg4), (arg0, arg1, arg2, arg3, arg4))
-
 static inline int
 _goboringcrypto_EC_KEY_oct2key(GO_EC_KEY *eckey, const unsigned char *buf, size_t len, BN_CTX *ctx)
 {
@@ -486,7 +486,7 @@ _goboringcrypto_EC_KEY_oct2key(GO_EC_KEY *eckey, const unsigned char *buf, size_
 	if (!pubkey)
 		return 0;
 
-	if (_goboringcrypto_internal_EC_POINT_oct2point(group, pubkey, buf, len, ctx) != 1 ||
+	if (_goboringcrypto_EC_POINT_oct2point(group, pubkey, buf, len, ctx) != 1 ||
 	    _goboringcrypto_EC_KEY_set_public_key(eckey, pubkey) != 1)
 		ret = 0;
 
@@ -1074,9 +1074,6 @@ DEFINEFUNC(int, EVP_PKEY_keygen, (GO_EVP_PKEY_CTX *ctx, GO_EVP_PKEY **ppkey), (c
 enum {
 	GO_POINT_CONVERSION_UNCOMPRESSED = 4,
 };
-
-DEFINEFUNC(size_t, EC_POINT_point2oct, (const GO_EC_GROUP *group, const GO_EC_POINT *p, point_conversion_form_t form, unsigned char *buf, size_t len, GO_BN_CTX *ctx), (group, p, form, buf, len, ctx))
-DEFINEFUNC(int, EC_POINT_oct2point, (const GO_EC_GROUP *group, GO_EC_POINT *p, const unsigned char *buf, size_t len, GO_BN_CTX *ctx), (group, p, buf, len, ctx))
 
 #if OPENSSL_VERSION_NUMBER >= 0x10100000L
 DEFINEFUNC(int, EVP_PKEY_set1_encoded_public_key, (GO_EVP_PKEY *pkey, const unsigned char *pub, size_t publen), (pkey, pub, publen))

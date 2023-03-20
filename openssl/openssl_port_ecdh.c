@@ -74,18 +74,46 @@ GO_EVP_PKEY *
 _goboringcrypto_EVP_PKEY_new_for_ecdh(int nid, const uint8_t *bytes, size_t len, int is_private)
 {
 	OSSL_PARAM_BLD *bld;
-	const char *group;
+	const char *group_name;
 	OSSL_PARAM *params = NULL;
 	EVP_PKEY_CTX *ctx = NULL;
 	EVP_PKEY *result = NULL;
 	int selection;
 
+	/* EVP_PKEY_fromdata in earlier 3.0 releases does not check
+	 * that the given point is on the curve.  We do that manually
+	 * with EC_POINT_oct2point.
+	 */
+	if (!is_private) {
+		EC_GROUP *group;
+		EC_POINT *point;
+		int ok;
+
+		group = _goboringcrypto_EC_GROUP_new_by_curve_name(nid);
+		if (!group)
+			return NULL;
+
+		point = _goboringcrypto_EC_POINT_new(group);
+		if (!point) {
+			_goboringcrypto_EC_GROUP_free(group);
+			return NULL;
+		}
+
+		ok = _goboringcrypto_EC_POINT_oct2point(group, point, bytes, len, NULL);
+
+		_goboringcrypto_EC_POINT_free(point);
+		_goboringcrypto_EC_GROUP_free(group);
+
+		if (!ok)
+			return NULL;
+	}
+
 	bld = _goboringcrypto_internal_OSSL_PARAM_BLD_new();
 	if (bld == NULL)
 		return NULL;
 
-	group = _goboringcrypto_internal_OBJ_nid2sn(nid);
-	if (!_goboringcrypto_internal_OSSL_PARAM_BLD_push_utf8_string(bld, "group", group, strlen(group)))
+	group_name = _goboringcrypto_internal_OBJ_nid2sn(nid);
+	if (!_goboringcrypto_internal_OSSL_PARAM_BLD_push_utf8_string(bld, "group", group_name, strlen(group_name)))
 		goto err;
 
 	if (is_private) {
