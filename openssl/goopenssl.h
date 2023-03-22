@@ -760,6 +760,11 @@ enum
 	GO_RSA_PKCS1_PSS_PADDING = 6,
 };
 
+enum {
+	GO_RSA_PSS_SALTLEN_AUTO = -2,
+	GO_RSA_PSS_SALTLEN_DIGEST = -1,
+};
+
 int _goboringcrypto_RSA_sign_pss_mgf1(GO_RSA *, unsigned int *out_len, uint8_t *out, unsigned int max_out, const uint8_t *in, unsigned int in_len, GO_EVP_MD *md, const GO_EVP_MD *mgf1_md, int salt_len);
 
 int _goboringcrypto_RSA_verify_pss_mgf1(GO_RSA *, const uint8_t *msg, unsigned int msg_len, GO_EVP_MD *md, const GO_EVP_MD *mgf1_md, int salt_len, const uint8_t *sig, unsigned int sig_len);

@@ -262,13 +262,28 @@ func encrypt(ctx *C.GO_EVP_PKEY_CTX, out *C.uint8_t, outLen *C.size_t, in *C.uin
 	return C._goboringcrypto_EVP_PKEY_encrypt(ctx, out, outLen, in, inLen)
 }
 
+// These should match crypto/rsa/pss.go
+const saltLengthAuto = 0
+const saltLengthEqualsHash = -1
+
+var invalidSaltLenErr = errors.New("crypto/rsa: PSSOptions.SaltLength cannot be negative")
+
 func SignRSAPSS(priv *PrivateKeyRSA, h crypto.Hash, hashed []byte, saltLen int) ([]byte, error) {
 	md := cryptoHashToMD(h)
 	if md == nil {
 		return nil, errors.New("crypto/rsa: unsupported hash function")
 	}
-	if saltLen == 0 {
-		saltLen = -1
+	switch saltLen {
+	case saltLengthAuto:
+		saltLen = C.GO_RSA_PSS_SALTLEN_AUTO
+	case saltLengthEqualsHash:
+		saltLen = C.GO_RSA_PSS_SALTLEN_DIGEST
+	default:
+		// If we get here saltLen is either > 0 or < -1, in the
+		// latter case we fail out.
+		if saltLen <= 0 {
+			return nil, invalidSaltLenErr
+		}
 	}
 	var out []byte
 	var outLen C.uint
@@ -288,8 +303,17 @@ func VerifyRSAPSS(pub *PublicKeyRSA, h crypto.Hash, hashed, sig []byte, saltLen 
 	if md == nil {
 		return errors.New("crypto/rsa: unsupported hash function")
 	}
-	if saltLen == 0 {
-		saltLen = -2 // auto-recover
+	switch saltLen {
+	case saltLengthAuto:
+		saltLen = C.GO_RSA_PSS_SALTLEN_AUTO
+	case saltLengthEqualsHash:
+		saltLen = C.GO_RSA_PSS_SALTLEN_DIGEST
+	default:
+		// If we get here saltLen is either > 0 or < -1, in the
+		// latter case we fail out.
+		if saltLen <= 0 {
+			return invalidSaltLenErr
+		}
 	}
 	if pub.withKey(func(key *C.GO_RSA) C.int {
 		return C._goboringcrypto_RSA_verify_pss_mgf1(key, base(hashed), C.uint(len(hashed)),
