@@ -71,7 +71,7 @@ func VerifyECDSA(pub *PublicKeyECDSA, hash []byte, r, s BigInt, h crypto.Hash) b
 type PublicKeyECDH struct{ _ int }
 type PrivateKeyECDH struct{ _ int }
 
-func (pc *PublicKeyECDH) Bytes() []byte { panic("boringcrypto: not available") }
+func (pc *PublicKeyECDH) Bytes() []byte                       { panic("boringcrypto: not available") }
 func (pc *PrivateKeyECDH) PublicKey() (*PublicKeyECDH, error) { panic("boringcrypto: not available") }
 
 func NewPublicKeyECDH(curve string, bytes []byte) (*PublicKeyECDH, error) {

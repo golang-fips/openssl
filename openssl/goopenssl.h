@@ -557,15 +557,9 @@ DEFINEFUNC(int, EVP_DigestVerifyFinal,
 	(ctx, sig, siglen))
 
 typedef RSA GO_RSA;
-int _goboringcrypto_EVP_sign(EVP_MD* md, EVP_PKEY_CTX *ctx, const uint8_t *msg, size_t msgLen, uint8_t *sig, size_t *slen, EVP_PKEY *eckey);
-int _goboringcrypto_EVP_sign_raw(EVP_MD *md, EVP_PKEY_CTX *ctx, const uint8_t *msg,
-                                                              size_t msgLen, uint8_t *sig, size_t *slen,
-                                                              GO_RSA *key);
 
+int _goboringcrypto_EVP_sign(EVP_MD* md, EVP_PKEY_CTX *ctx, const uint8_t *msg, size_t msgLen, uint8_t *sig, size_t *slen, EVP_PKEY *eckey);
 int _goboringcrypto_EVP_verify(EVP_MD* md, EVP_PKEY_CTX *ctx, const uint8_t *msg, size_t msgLen, const uint8_t *sig, unsigned int slen, EVP_PKEY *key);
-int _goboringcrypto_EVP_verify_raw(const uint8_t *msg, size_t msgLen,
-                               const uint8_t *sig, unsigned int slen,
-                               GO_RSA *key);
 
 #if OPENSSL_VERSION_NUMBER < 0x10100000L
 DEFINEFUNCINTERNAL(void, EVP_MD_CTX_destroy, (EVP_MD_CTX *ctx), (ctx))
@@ -584,23 +578,18 @@ int _goboringcrypto_ECDSA_verify(EVP_MD *md, const uint8_t *arg1, size_t arg2, c
 // Note: order of struct fields here is unchecked.
 typedef BN_GENCB GO_BN_GENCB;
 
-int _goboringcrypto_EVP_RSA_sign(EVP_MD* md, const uint8_t *msg, unsigned int msgLen, uint8_t *sig, size_t *slen, RSA *rsa);
-int _goboringcrypto_EVP_RSA_verify(EVP_MD* md, const uint8_t *msg, unsigned int msgLen, const uint8_t *sig, unsigned int slen, GO_RSA *rsa);
+int _goboringcrypto_RSA_sign(EVP_MD* md, const uint8_t *msg, unsigned int msgLen, uint8_t *sig, size_t *slen, RSA *rsa);
+int _goboringcrypto_RSA_verify(EVP_MD* md, const uint8_t *msg, unsigned int msgLen, const uint8_t *sig, unsigned int slen, GO_RSA *rsa);
+
+int _goboringcrypto_RSA_sign_raw(EVP_MD *md, const uint8_t *msg, size_t msgLen,
+				 uint8_t *sig, size_t *slen,
+				 GO_RSA *key);
+int _goboringcrypto_RSA_verify_raw(EVP_MD *md, const uint8_t *msg, size_t msgLen,
+				   const uint8_t *sig, unsigned int slen,
+				   GO_RSA *key);
 
 DEFINEFUNC(GO_RSA *, RSA_new, (void), ())
 DEFINEFUNC(void, RSA_free, (GO_RSA * arg0), (arg0))
-DEFINEFUNC(int, RSA_private_encrypt,
-	(int flen, const unsigned char *from, unsigned char *to, RSA *rsa, int padding),
-	(flen, from, to, rsa, padding))
-DEFINEFUNC(int, RSA_public_decrypt,
-	(int flen, const unsigned char *from, unsigned char *to, RSA *rsa, int padding),
-	(flen, from, to, rsa, padding))
-DEFINEFUNC(int, RSA_sign,
-	(int arg0, const uint8_t *arg1, unsigned int arg2, uint8_t *arg3, unsigned int *arg4, GO_RSA *arg5),
-	(arg0, arg1, arg2, arg3, arg4, arg5))
-DEFINEFUNC(int, RSA_verify,
-	(int arg0, const uint8_t *arg1, unsigned int arg2, const uint8_t *arg3, unsigned int arg4, GO_RSA *arg5),
-	(arg0, arg1, arg2, arg3, arg4, arg5))
 DEFINEFUNC(int, RSA_generate_key_ex,
 	(GO_RSA * arg0, int arg1, GO_BIGNUM *arg2, GO_BN_GENCB *arg3),
 	(arg0, arg1, arg2, arg3))
