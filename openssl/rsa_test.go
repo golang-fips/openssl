@@ -139,3 +139,31 @@ func TestPKCS1v15(t *testing.T) {
 		}
 	}
 }
+
+func TestKeyGeneration(t *testing.T) {
+	for _, size := range []int{128, 1024, 2048, 3072} {
+		n, e, _, _, _, _, _, _, err := openssl.GenerateKeyRSA(size)
+		if size < 1024 {
+			if err == nil {
+				t.Errorf("GenerateKeyRSA(%d): unexpectedly succeeded", size)
+			}
+			continue
+		} else {
+			if err != nil {
+				t.Errorf("GenerateKeyRSA(%d): %v", size, err)
+			}
+		}
+
+		if bbig.Dec(n).BitLen() != size {
+			t.Errorf("GenerateKeyRSA(%d): bit size doesn't match: %v",
+				size, bbig.Dec(n).BitLen())
+		}
+
+		// BoringSSL's RSA_generate_key_fips hard-codes e to 65537.
+		f4 := big.NewInt(65537)
+		if bbig.Dec(e).Cmp(f4) != 0 {
+			t.Errorf("GenerateKeyRSA(%d): pubexp doesn't match: %v != %v",
+				size, bbig.Dec(e), f4)
+		}
+	}
+}

@@ -8,15 +8,42 @@
 #include "goopenssl.h"
 
 // Only in BoringSSL.
-int _goboringcrypto_RSA_generate_key_fips(GO_RSA *rsa, int size,
-                                          GO_BN_GENCB *cb) {
+GO_RSA *_goboringcrypto_RSA_generate_key_fips(int bits) {
+  GO_EVP_PKEY_CTX *ctx = NULL;
+  GO_EVP_PKEY *pkey = NULL;
+  GO_BIGNUM *e = NULL;
+  GO_RSA *ret = NULL;
+
+  ctx = _goboringcrypto_EVP_PKEY_CTX_new_id(EVP_PKEY_RSA, NULL);
+  if (!ctx)
+    return NULL;
+
+  if (_goboringcrypto_EVP_PKEY_keygen_init(ctx) <= 0)
+    goto err;
+
+  if (_goboringcrypto_EVP_PKEY_CTX_set_rsa_keygen_bits(ctx, bits) <= 0)
+    goto err;
+
   // BoringSSL's RSA_generate_key_fips hard-codes e to 65537.
-  BIGNUM *e = _goboringcrypto_BN_new();
-  if (e == NULL)
-    return 0;
-  int ret = _goboringcrypto_BN_set_word(e, RSA_F4) &&
-            _goboringcrypto_RSA_generate_key_ex(rsa, size, e, cb);
+  e = _goboringcrypto_BN_new();
+  if (!e)
+    goto err;
+
+  if (_goboringcrypto_BN_set_word(e, RSA_F4) <= 0)
+    goto err;
+
+  if (_goboringcrypto_EVP_PKEY_CTX_set_rsa_keygen_pubexp(ctx, e) <= 0)
+    goto err;
+
+  if (_goboringcrypto_EVP_PKEY_keygen(ctx, &pkey) <= 0)
+    goto err;
+
+  ret = _goboringcrypto_EVP_PKEY_get1_RSA(pkey);
+
+err:
   _goboringcrypto_BN_free(e);
+  _goboringcrypto_EVP_PKEY_free(pkey);
+  _goboringcrypto_EVP_PKEY_CTX_free(ctx);
   return ret;
 }
 
