@@ -23,15 +23,11 @@ func GenerateKeyRSA(bits int) (N, E, D, P, Q, Dp, Dq, Qinv BigInt, err error) {
 		return nil, nil, nil, nil, nil, nil, nil, nil, e
 	}
 
-	key := C._goboringcrypto_RSA_new()
+	key := C._goboringcrypto_RSA_generate_key_fips(C.int(bits))
 	if key == nil {
-		return bad(NewOpenSSLError("RSA_new failed"))
-	}
-	defer C._goboringcrypto_RSA_free(key)
-
-	if C._goboringcrypto_RSA_generate_key_fips(key, C.int(bits), nil) == 0 {
 		return bad(NewOpenSSLError("RSA_generate_key_fips failed"))
 	}
+	defer C._goboringcrypto_RSA_free(key)
 
 	var n, e, d, p, q, dp, dq, qinv *C.GO_BIGNUM
 	C._goboringcrypto_RSA_get0_key(key, &n, &e, &d)
