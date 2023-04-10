@@ -459,12 +459,12 @@ DEFINEFUNC(int, EC_POINT_set_affine_coordinates_GFp,
 
 typedef EC_KEY GO_EC_KEY;
 
+GO_EC_KEY *_goboringcrypto_EC_KEY_generate_key_fips(int nid);
+
 DEFINEFUNC(GO_EC_KEY *, EC_KEY_new, (void), ())
 DEFINEFUNC(GO_EC_KEY *, EC_KEY_new_by_curve_name, (int arg0), (arg0))
 DEFINEFUNC(void, EC_KEY_free, (GO_EC_KEY * arg0), (arg0))
 DEFINEFUNC(const GO_EC_GROUP *, EC_KEY_get0_group, (const GO_EC_KEY *arg0), (arg0))
-DEFINEFUNC(int, EC_KEY_set_group, (GO_EC_KEY *arg0, const EC_GROUP *arg1), (arg0, arg1))
-DEFINEFUNC(int, EC_KEY_generate_key, (GO_EC_KEY * arg0), (arg0))
 DEFINEFUNC(int, EC_KEY_set_private_key, (GO_EC_KEY * arg0, const GO_BIGNUM *arg1), (arg0, arg1))
 DEFINEFUNC(int, EC_KEY_set_public_key, (GO_EC_KEY * arg0, const GO_EC_POINT *arg1), (arg0, arg1))
 DEFINEFUNC(const GO_BIGNUM *, EC_KEY_get0_private_key, (const GO_EC_KEY *arg0), (arg0))
@@ -803,6 +803,7 @@ DEFINEFUNC(GO_EVP_PKEY *, EVP_PKEY_new, (void), ())
 DEFINEFUNC(void, EVP_PKEY_free, (GO_EVP_PKEY * arg0), (arg0))
 DEFINEFUNC(GO_RSA *, EVP_PKEY_get1_RSA, (GO_EVP_PKEY * arg0), (arg0))
 DEFINEFUNC(int, EVP_PKEY_set1_RSA, (GO_EVP_PKEY * arg0, GO_RSA *arg1), (arg0, arg1))
+DEFINEFUNC(GO_EC_KEY *, EVP_PKEY_get1_EC_KEY, (GO_EVP_PKEY * arg0), (arg0))
 DEFINEFUNC(int, EVP_PKEY_set1_EC_KEY, (GO_EVP_PKEY * arg0, GO_EC_KEY *arg1), (arg0, arg1))
 DEFINEFUNC(const GO_EC_KEY *, EVP_PKEY_get0_EC_KEY, (const GO_EVP_PKEY *pkey), (pkey))
 GO_EVP_PKEY *_goboringcrypto_EVP_PKEY_ref(GO_EVP_PKEY *pkey);
@@ -884,6 +885,13 @@ _goboringcrypto_EVP_PKEY_CTX_set_rsa_keygen_pubexp(GO_EVP_PKEY_CTX *ctx, GO_BIGN
 		EVP_PKEY_OP_KEYGEN,
 		EVP_PKEY_CTRL_RSA_KEYGEN_PUBEXP,
 		0, pubexp);
+}
+
+static inline int
+_goboringcrypto_EVP_PKEY_CTX_set_ec_paramgen_curve_nid(GO_EVP_PKEY_CTX *ctx, int nid) {
+	return _goboringcrypto_EVP_PKEY_CTX_ctrl(ctx, EVP_PKEY_EC,
+		EVP_PKEY_OP_PARAMGEN|EVP_PKEY_OP_KEYGEN,
+		EVP_PKEY_CTRL_EC_PARAMGEN_CURVE_NID, nid, NULL);
 }
 
 DEFINEFUNC(int, EVP_PKEY_decrypt,
