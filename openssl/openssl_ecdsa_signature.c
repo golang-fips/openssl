@@ -6,6 +6,34 @@
 
 #include "goopenssl.h"
 
+// Only in BoringSSL.
+GO_EC_KEY *_goboringcrypto_EC_KEY_generate_key_fips(int nid) {
+  GO_EVP_PKEY_CTX *ctx = NULL;
+  GO_EVP_PKEY *pkey = NULL;
+  GO_BIGNUM *e = NULL;
+  GO_EC_KEY *ret = NULL;
+
+  ctx = _goboringcrypto_EVP_PKEY_CTX_new_id(EVP_PKEY_EC, NULL);
+  if (!ctx)
+    return NULL;
+
+  if (_goboringcrypto_EVP_PKEY_keygen_init(ctx) <= 0)
+    goto err;
+
+  if (_goboringcrypto_EVP_PKEY_CTX_set_ec_paramgen_curve_nid(ctx, nid) <= 0)
+    goto err;
+
+  if (_goboringcrypto_EVP_PKEY_keygen(ctx, &pkey) <= 0)
+    goto err;
+
+  ret = _goboringcrypto_EVP_PKEY_get1_EC_KEY(pkey);
+
+err:
+  _goboringcrypto_EVP_PKEY_free(pkey);
+  _goboringcrypto_EVP_PKEY_CTX_free(ctx);
+  return ret;
+}
+
 int _goboringcrypto_ECDSA_sign(EVP_MD *md, const uint8_t *msg, size_t msgLen,
                                uint8_t *sig, size_t *slen,
                                GO_EC_KEY *eckey) {
