@@ -131,12 +131,13 @@ func NewPrivateKeyECDSA(curve string, X, Y BigInt, D BigInt) (*PrivateKeyECDSA, 
 func HashSignECDSA(priv *PrivateKeyECDSA, hash []byte, h crypto.Hash) (*big.Int, *big.Int, error) {
 	size := C._goboringcrypto_ECDSA_size(priv.key)
 	sig := make([]byte, size)
-	var sigLen C.size_t
+	var sigLen C.size_t = C.size_t(size)
 	md := cryptoHashToMD(h)
 	if md == nil {
 		panic("boring: invalid hash")
 	}
-	if C._goboringcrypto_ECDSA_sign(md, base(hash), C.size_t(len(hash)), (*C.uint8_t)(unsafe.Pointer(&sig[0])), &sigLen, priv.key) == 0 {
+	if C._goboringcrypto_ECDSA_sign(md, base(hash), C.size_t(len(hash)),
+		(*C.uint8_t)(unsafe.Pointer(&sig[0])), &sigLen, priv.key) == 0 {
 		return nil, nil, NewOpenSSLError("ECDSA_sign failed")
 	}
 	runtime.KeepAlive(priv)
@@ -151,10 +152,10 @@ func HashSignECDSA(priv *PrivateKeyECDSA, hash []byte, h crypto.Hash) (*big.Int,
 func SignMarshalECDSA(priv *PrivateKeyECDSA, hash []byte) ([]byte, error) {
 	size := C._goboringcrypto_ECDSA_size(priv.key)
 	sig := make([]byte, size)
-	var sigLen C.uint
-	ok := C._goboringcrypto_internal_ECDSA_sign(0, base(hash), C.size_t(len(hash)), (*C.uint8_t)(unsafe.Pointer(&sig[0])), &sigLen, priv.key) > 0
-	if !ok {
-		return nil, NewOpenSSLError(("ECDSA_sign failed"))
+	var sigLen C.size_t = C.size_t(size)
+	if C._goboringcrypto_ECDSA_sign_raw(nil, base(hash), C.size_t(len(hash)),
+		(*C.uint8_t)(unsafe.Pointer(&sig[0])), &sigLen, priv.key) == 0 {
+		return nil, NewOpenSSLError("ECDSA_sign failed")
 	}
 
 	runtime.KeepAlive(priv)
@@ -162,7 +163,8 @@ func SignMarshalECDSA(priv *PrivateKeyECDSA, hash []byte) ([]byte, error) {
 }
 
 func VerifyECDSA(pub *PublicKeyECDSA, hash []byte, sig []byte) bool {
-	ok := C._goboringcrypto_internal_ECDSA_verify(0, base(hash), C.size_t(len(hash)), (*C.uint8_t)(unsafe.Pointer(&sig[0])), C.uint(len(sig)), pub.key) > 0
+	ok := C._goboringcrypto_ECDSA_verify_raw(nil, base(hash), C.size_t(len(hash)),
+		(*C.uint8_t)(unsafe.Pointer(&sig[0])), C.uint(len(sig)), pub.key) > 0
 	runtime.KeepAlive(pub)
 	return ok
 }
