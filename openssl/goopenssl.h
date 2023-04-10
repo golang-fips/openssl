@@ -499,21 +499,7 @@ _goboringcrypto_EC_KEY_oct2key(GO_EC_KEY *eckey, const unsigned char *buf, size_
 
 #include <openssl/ecdsa.h>
 
-typedef ECDSA_SIG GO_ECDSA_SIG;
-
-DEFINEFUNC(GO_ECDSA_SIG *, ECDSA_SIG_new, (void), ())
-DEFINEFUNC(void, ECDSA_SIG_free, (GO_ECDSA_SIG * arg0), (arg0))
-DEFINEFUNC(GO_ECDSA_SIG *, ECDSA_do_sign, (const uint8_t *arg0, size_t arg1, const GO_EC_KEY *arg2), (arg0, arg1, arg2))
-DEFINEFUNC(int, ECDSA_do_verify, (const uint8_t *arg0, size_t arg1, const GO_ECDSA_SIG *arg2, GO_EC_KEY *arg3), (arg0, arg1, arg2, arg3))
 DEFINEFUNC(size_t, ECDSA_size, (const GO_EC_KEY *arg0), (arg0))
-
-DEFINEFUNCINTERNAL(int, ECDSA_sign, 
-	(int type, const unsigned char *dgst, size_t dgstlen, unsigned char *sig, unsigned int *siglen, EC_KEY *eckey),
-	(type, dgst, dgstlen, sig, siglen, eckey))
-
-DEFINEFUNCINTERNAL(int, ECDSA_verify, 
-	(int type, const unsigned char *dgst, size_t dgstlen, const unsigned char *sig, unsigned int siglen, EC_KEY *eckey),
-	(type, dgst, dgstlen, sig, siglen, eckey))
 
 #if OPENSSL_VERSION_NUMBER < 0x10100000L
 DEFINEFUNC(EVP_MD_CTX*, EVP_MD_CTX_create, (void), ())
@@ -572,6 +558,13 @@ DEFINEFUNC(void, EVP_MD_CTX_free, (EVP_MD_CTX *ctx), (ctx))
 
 int _goboringcrypto_ECDSA_sign(EVP_MD *md, const uint8_t *arg1, size_t arg2, uint8_t *arg3, size_t *arg4, GO_EC_KEY *arg5);
 int _goboringcrypto_ECDSA_verify(EVP_MD *md, const uint8_t *arg1, size_t arg2, const uint8_t *arg3, unsigned int arg4, GO_EC_KEY *arg5);
+int _goboringcrypto_ECDSA_sign_raw(EVP_MD *md, const uint8_t *msg,
+				   size_t msgLen, uint8_t *sig, size_t *slen,
+				   GO_EC_KEY *ec_key);
+int _goboringcrypto_ECDSA_verify_raw(EVP_MD *md,
+				     const uint8_t *msg, size_t msgLen,
+				     const uint8_t *sig, unsigned int slen,
+				     GO_EC_KEY *ec_key);
 
 #include <openssl/rsa.h>
 
