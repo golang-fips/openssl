@@ -97,7 +97,7 @@ func GenerateKeyECDSA(curve string) (X, Y, D BigInt, err error) {
 			C.go_openssl_EVP_PKEY_get_bn_param(pkey, paramPrivKey, &bd) != 1 {
 			return nil, nil, nil, newOpenSSLError("EVP_PKEY_get_bn_param")
 		}
-		defer C.go_openssl_BN_free(bd)
+		defer C.go_openssl_BN_clear_free(bd)
 	default:
 		panic(errUnsupportedVersion())
 	}
@@ -131,7 +131,7 @@ func newECDSAKey(curve string, X, Y, D BigInt) (C.GO_EVP_PKEY_PTR, error) {
 	defer func() {
 		C.go_openssl_BN_free(bx)
 		C.go_openssl_BN_free(by)
-		C.go_openssl_BN_free(bd)
+		C.go_openssl_BN_clear_free(bd)
 	}()
 	bx = bigToBN(X)
 	by = bigToBN(Y)
