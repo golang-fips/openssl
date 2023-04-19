@@ -139,7 +139,7 @@ func newECDHPkey1(nid C.int, bytes []byte, isPrivate bool) (pkey C.GO_EVP_PKEY_P
 		if priv == nil {
 			return nil, newOpenSSLError("BN_bin2bn")
 		}
-		defer C.go_openssl_BN_free(priv)
+		defer C.go_openssl_BN_clear_free(priv)
 		if C.go_openssl_EC_KEY_set_private_key(key, priv) != 1 {
 			return nil, newOpenSSLError("EC_KEY_set_private_key")
 		}
@@ -176,7 +176,7 @@ func newECDHPkey3(nid C.int, bytes []byte, isPrivate bool) (C.GO_EVP_PKEY_PTR, e
 		if priv == nil {
 			return nil, newOpenSSLError("BN_bin2bn")
 		}
-		defer C.go_openssl_BN_free(priv)
+		defer C.go_openssl_BN_clear_free(priv)
 		if C.go_openssl_OSSL_PARAM_BLD_push_BN(bld, paramPrivKey, priv) != 1 {
 			return nil, newOpenSSLError("OSSL_PARAM_BLD_push_BN")
 		}
@@ -233,7 +233,7 @@ func deriveEcdhPublicKey(pkey C.GO_EVP_PKEY_PTR, curve string) error {
 		if C.go_openssl_EVP_PKEY_get_bn_param(pkey, paramPrivKey, &priv) != 1 {
 			return newOpenSSLError("EVP_PKEY_get_bn_param")
 		}
-		defer C.go_openssl_BN_free(priv)
+		defer C.go_openssl_BN_clear_free(priv)
 		nid, _ := curveNID(curve)
 		pubBytes, err := generateAndEncodeEcPublicKey(nid, func(group C.GO_EC_GROUP_PTR) (C.GO_EC_POINT_PTR, error) {
 			return derive(group, priv)
@@ -298,7 +298,7 @@ func GenerateKeyECDH(curve string) (*PrivateKeyECDH, []byte, error) {
 		if C.go_openssl_EVP_PKEY_get_bn_param(pkey, paramPrivKey, &priv) != 1 {
 			return nil, nil, newOpenSSLError("EVP_PKEY_get_bn_param")
 		}
-		defer C.go_openssl_BN_free(priv)
+		defer C.go_openssl_BN_clear_free(priv)
 	default:
 		panic(errUnsupportedVersion())
 	}
