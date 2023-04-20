@@ -20,7 +20,7 @@ import (
 var (
 	// vMajor and vMinor hold the major/minor OpenSSL version.
 	// It is only populated if Init has been called.
-	vMajor, vMinor int
+	vMajor, vMinor, vPatch int
 )
 
 var (
@@ -54,13 +54,13 @@ func Init(version string) error {
 		default:
 			panic("Could not determine native endianness.")
 		}
-		vMajor, vMinor, initErr = opensslInit(version)
+		vMajor, vMinor, vPatch, initErr = opensslInit(version)
 	})
 	return initErr
 }
 
 func errUnsupportedVersion() error {
-	return errors.New("openssl: OpenSSL version: " + strconv.Itoa(vMajor) + "." + strconv.Itoa(vMinor))
+	return errors.New("openssl: OpenSSL version: " + strconv.Itoa(vMajor) + "." + strconv.Itoa(vMinor) + "." + strconv.Itoa(vPatch))
 }
 
 type fail string
