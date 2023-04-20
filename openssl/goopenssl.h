@@ -6,6 +6,7 @@
 
 int go_openssl_version_major(void* handle);
 int go_openssl_version_minor(void* handle);
+int go_openssl_version_patch(void* handle);
 int go_openssl_thread_setup(void);
 void go_openssl_load_functions(void* handle, int major, int minor);
 const GO_EVP_MD_PTR go_openssl_EVP_md5_sha1_backport(void);
@@ -109,7 +110,7 @@ go_openssl_EVP_CIPHER_CTX_seal_wrapper(const GO_EVP_CIPHER_CTX_PTR ctx,
         return 0;
 
     return go_openssl_EVP_CIPHER_CTX_ctrl(ctx, GO_EVP_CTRL_GCM_GET_TAG, 16, out + out_len);
-};
+}
 
 static inline int
 go_openssl_EVP_CIPHER_CTX_open_wrapper(const GO_EVP_CIPHER_CTX_PTR ctx,
@@ -142,4 +143,4 @@ go_openssl_EVP_CIPHER_CTX_open_wrapper(const GO_EVP_CIPHER_CTX_PTR ctx,
         return 0;
 
     return 1;
-};
+}

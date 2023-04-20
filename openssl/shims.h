@@ -22,6 +22,11 @@ enum {
     GO_EVP_PKEY_CTRL_MD = 1,
     GO_EVP_PKEY_RSA = 6,
     GO_EVP_PKEY_EC = 408,
+    GO_EVP_PKEY_HKDF = 1036,
+    /* This is defined differently in OpenSSL 3 (1 << 11), but in our
+     * code it is only used in OpenSSL 1.
+    */
+    GO1_EVP_PKEY_OP_DERIVE = (1 << 10),
     GO_EVP_MAX_MD_SIZE = 64,
 
     GO_EVP_PKEY_PUBLIC_KEY = 0x86,
@@ -31,6 +36,18 @@ enum {
 // #include <openssl/ec.h>
 enum {
     GO_EVP_PKEY_CTRL_EC_PARAMGEN_CURVE_NID = 0x1001
+};
+
+// #include <openssl/kdf.h>
+enum {
+    GO_EVP_KDF_HKDF_MODE_EXTRACT_ONLY = 1,
+    GO_EVP_KDF_HKDF_MODE_EXPAND_ONLY = 2,
+
+    GO_EVP_PKEY_CTRL_HKDF_MD = 0x1003,
+    GO_EVP_PKEY_CTRL_HKDF_SALT = 0x1004,
+    GO_EVP_PKEY_CTRL_HKDF_KEY = 0x1005,
+    GO_EVP_PKEY_CTRL_HKDF_INFO = 0x1006,
+    GO_EVP_PKEY_CTRL_HKDF_MODE = 0x1007
 };
 
 typedef enum {
@@ -297,4 +314,9 @@ DEFINEFUNC_3_0(GO_OSSL_PARAM_PTR, OSSL_PARAM_BLD_to_param, (GO_OSSL_PARAM_BLD_PT
 DEFINEFUNC_3_0(int, OSSL_PARAM_BLD_push_utf8_string, (GO_OSSL_PARAM_BLD_PTR bld, const char *key, const char *buf, size_t bsize), (bld, key, buf, bsize)) \
 DEFINEFUNC_3_0(int, OSSL_PARAM_BLD_push_octet_string, (GO_OSSL_PARAM_BLD_PTR bld, const char *key, const void *buf, size_t bsize), (bld, key, buf, bsize)) \
 DEFINEFUNC_3_0(int, OSSL_PARAM_BLD_push_BN, (GO_OSSL_PARAM_BLD_PTR bld, const char *key, const GO_BIGNUM_PTR bn), (bld, key, bn)) \
+DEFINEFUNC_3_0(int, EVP_PKEY_CTX_set_hkdf_mode, (GO_EVP_PKEY_CTX_PTR arg0, int arg1), (arg0, arg1)) \
+DEFINEFUNC_3_0(int, EVP_PKEY_CTX_set_hkdf_md, (GO_EVP_PKEY_CTX_PTR arg0, const GO_EVP_MD_PTR arg1), (arg0, arg1)) \
+DEFINEFUNC_3_0(int, EVP_PKEY_CTX_set1_hkdf_salt, (GO_EVP_PKEY_CTX_PTR arg0, const unsigned char *arg1, int arg2), (arg0, arg1, arg2)) \
+DEFINEFUNC_3_0(int, EVP_PKEY_CTX_set1_hkdf_key, (GO_EVP_PKEY_CTX_PTR arg0, const unsigned char *arg1, int arg2), (arg0, arg1, arg2)) \
+DEFINEFUNC_3_0(int, EVP_PKEY_CTX_add1_hkdf_info, (GO_EVP_PKEY_CTX_PTR arg0, const unsigned char *arg1, int arg2), (arg0, arg1, arg2)) \
 
