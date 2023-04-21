@@ -126,17 +126,17 @@ _goboringcrypto_EVP_PKEY_new_for_ecdh(int nid, const uint8_t *bytes, size_t len,
 			goto err;
 
 		if (!_goboringcrypto_internal_OSSL_PARAM_BLD_push_BN(bld, "priv", priv)) {
-			_goboringcrypto_BN_free(priv);
+			_goboringcrypto_BN_clear_free(priv);
 			goto err;
 		}
 
 		params = _goboringcrypto_internal_OSSL_PARAM_BLD_to_param(bld);
 		if (!params) {
-			_goboringcrypto_BN_free(priv);
+			_goboringcrypto_BN_clear_free(priv);
 			goto err;
 		}
 
-		_goboringcrypto_BN_free(priv);
+		_goboringcrypto_BN_clear_free(priv);
 		selection = GO_EVP_PKEY_KEYPAIR;
 	} else {
 		if (!_goboringcrypto_internal_OSSL_PARAM_BLD_push_octet_string(bld, "pub", bytes, len))
@@ -246,10 +246,10 @@ _goboringcrypto_EVP_PKEY_new_for_ecdh(int nid, const uint8_t *bytes, size_t len,
 		if (!priv)
 			goto err;
 		if (_goboringcrypto_EC_KEY_set_private_key(key, priv) != 1) {
-			_goboringcrypto_BN_free(priv);
+			_goboringcrypto_BN_clear_free(priv);
 			goto err;
 		}
-		_goboringcrypto_BN_free(priv);
+		_goboringcrypto_BN_clear_free(priv);
 	} else {
 		const EC_GROUP *group = _goboringcrypto_EC_KEY_get0_group(key);
 		EC_POINT *pub;
