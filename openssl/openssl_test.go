@@ -6,6 +6,7 @@ package openssl_test
 import (
 	"fmt"
 	"os"
+	"runtime"
 	"testing"
 
 	"github.com/golang-fips/openssl-fips/openssl"
@@ -22,5 +23,8 @@ func TestMain(m *testing.M) {
 	_ = openssl.SetFIPS(true) // Skip the error as we still want to run the tests on machines without FIPS support.
 	fmt.Println("OpenSSL version:", openssl.VersionText())
 	fmt.Println("FIPS enabled:", openssl.FIPS())
-	os.Exit(m.Run())
+	status := m.Run()
+	runtime.GC()
+	openssl.CheckLeaks()
+	os.Exit(status)
 }
