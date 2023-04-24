@@ -1091,3 +1091,17 @@ DEFINEFUNC(size_t, EVP_PKEY_get1_encoded_public_key, (GO_EVP_PKEY *pkey, unsigne
 GO_EVP_PKEY *_goboringcrypto_EVP_PKEY_new_for_ecdh(int nid, const uint8_t *bytes, size_t len, int is_private);
 size_t _goboringcrypto_EVP_PKEY_get1_encoded_ecdh_public_key(GO_EVP_PKEY *pkey, unsigned char **result);
 int _goboringcrypto_EVP_PKEY_set_ecdh_public_key_from_private(GO_EVP_PKEY *pkey, int nid);
+
+static inline void
+_goboringcrypto_do_leak_check(void)
+{
+#ifndef __has_feature
+#define __has_feature(x) 0
+#endif
+
+#if (defined(__SANITIZE_ADDRESS__) && __SANITIZE_ADDRESS__) || \
+      __has_feature(address_sanitizer)
+	extern void __lsan_do_leak_check(void);
+	__lsan_do_leak_check();
+#endif
+}

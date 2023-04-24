@@ -286,3 +286,7 @@ func addr(p []byte) *byte {
 	}
 	return (*byte)(noescape(unsafe.Pointer(&p[0])))
 }
+
+func CheckLeaks() {
+	C._goboringcrypto_do_leak_check()
+}
