@@ -277,3 +277,7 @@ func bnToBig(bn C.GO_BIGNUM_PTR) BigInt {
 	}
 	return x
 }
+
+func CheckLeaks() {
+	C.go_openssl_do_leak_check()
+}
