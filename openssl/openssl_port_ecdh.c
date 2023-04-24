@@ -39,6 +39,8 @@ encode_point(const GO_EC_GROUP *group, const GO_EC_POINT *point,
 		return 0;
 
 	*result = malloc(len);
+	if (!*result)
+		return 0;
 
 	len = _goboringcrypto_EC_POINT_point2oct(group, point,
 						 GO_POINT_CONVERSION_UNCOMPRESSED,
@@ -123,14 +125,18 @@ _goboringcrypto_EVP_PKEY_new_for_ecdh(int nid, const uint8_t *bytes, size_t len,
 		if (!priv)
 			goto err;
 
-		if (!_goboringcrypto_internal_OSSL_PARAM_BLD_push_BN(bld, "priv", priv))
+		if (!_goboringcrypto_internal_OSSL_PARAM_BLD_push_BN(bld, "priv", priv)) {
+			_goboringcrypto_BN_free(priv);
 			goto err;
+		}
 
 		params = _goboringcrypto_internal_OSSL_PARAM_BLD_to_param(bld);
-		_goboringcrypto_BN_free(priv);
-		if (!params)
+		if (!params) {
+			_goboringcrypto_BN_free(priv);
 			goto err;
+		}
 
+		_goboringcrypto_BN_free(priv);
 		selection = GO_EVP_PKEY_KEYPAIR;
 	} else {
 		if (!_goboringcrypto_internal_OSSL_PARAM_BLD_push_octet_string(bld, "pub", bytes, len))
@@ -160,7 +166,7 @@ err:
 	return result;
 }
 
-DEFINEFUNCINTERNAL(void, OPENSSL_free, (void *addr), (addr))
+DEFINEFUNCINTERNAL(void, CRYPTO_free, (void *addr, const char *file, int line), (addr, file, line))
 
 size_t
 _goboringcrypto_EVP_PKEY_get1_encoded_ecdh_public_key(GO_EVP_PKEY *pkey,
@@ -175,10 +181,11 @@ _goboringcrypto_EVP_PKEY_get1_encoded_ecdh_public_key(GO_EVP_PKEY *pkey,
 
 	*result = malloc(len);
 	if (!*result) {
-		_goboringcrypto_internal_OPENSSL_free(res);
+		_goboringcrypto_internal_CRYPTO_free(res, __FILE__, __LINE__);
 		return 0;
 	}
 	memcpy(*result, res, len);
+	_goboringcrypto_internal_CRYPTO_free(res, __FILE__, __LINE__);
 	return len;
 }
 
@@ -215,6 +222,7 @@ _goboringcrypto_EVP_PKEY_set_ecdh_public_key_from_private(GO_EVP_PKEY *pkey, int
 err:
 	_goboringcrypto_EC_GROUP_free(group);
 	_goboringcrypto_EC_POINT_free(point);
+	_goboringcrypto_BN_free(priv);
 	free(pub);
 	return result;
 }
