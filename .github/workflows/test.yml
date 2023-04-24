@@ -36,3 +36,12 @@ jobs:
       run: go test -gcflags=all=-d=checkptr -count 10 -v ./...
       env:
         GO_OPENSSL_VERSION_OVERRIDE: ${{ matrix.openssl-version }}
+    - name: Run Test with address sanitizer
+      run: |
+        ok=true
+        for t in $(go test ./... -list=. | grep '^Test'); do
+          go test ./... -gcflags=all=-d=checkptr -asan -run $t -v || ok=false
+        done
+        $ok
+      env:
+        GO_OPENSSL_VERSION_OVERRIDE: ${{ matrix.openssl-version }}
