@@ -14,22 +14,10 @@ import (
 type PublicKeyECDH struct {
 	_pkey C.GO_EVP_PKEY_PTR
 	bytes []byte
-
-	// priv is only set when PublicKeyECDH is derived from a private key,
-	// in which case priv's finalizer is responsible for freeing _pkey.
-	// This ensures priv is not finalized while the public key is alive,
-	// which could cause use-after-free and double-free behavior.
-	//
-	// We could avoid this altogether by using EVP_PKEY_up_ref
-	// when instantiating a derived public key, unfortunately
-	// it is not available on OpenSSL 1.0.2.
-	priv *PrivateKeyECDH
 }
 
 func (k *PublicKeyECDH) finalize() {
-	if k.priv == nil {
-		C.go_openssl_EVP_PKEY_free(k._pkey)
-	}
+	C.go_openssl_EVP_PKEY_free(k._pkey)
 }
 
 type PrivateKeyECDH struct {
@@ -50,7 +38,7 @@ func NewPublicKeyECDH(curve string, bytes []byte) (*PublicKeyECDH, error) {
 	if err != nil {
 		return nil, err
 	}
-	k := &PublicKeyECDH{pkey, append([]byte(nil), bytes...), nil}
+	k := &PublicKeyECDH{pkey, append([]byte(nil), bytes...)}
 	runtime.SetFinalizer(k, (*PublicKeyECDH).finalize)
 	return k, nil
 }
@@ -76,10 +64,22 @@ func (k *PrivateKeyECDH) PublicKey() (*PublicKeyECDH, error) {
 		}
 		k.hasPublicKey = true
 	}
+	var pkey C.GO_EVP_PKEY_PTR
+	defer func() {
+		C.go_openssl_EVP_PKEY_free(pkey)
+	}()
+
 	var bytes []byte
 	switch vMajor {
 	case 1:
+		pkey = C.go_openssl_EVP_PKEY_new()
+		if pkey == nil {
+			return nil, newOpenSSLError("EVP_PKEY_new")
+		}
 		key := getECKey(k._pkey)
+		if C.go_openssl_EVP_PKEY_set1_EC_KEY(pkey, key) != 1 {
+			return nil, newOpenSSLError("EVP_PKEY_set1_EC_KEY")
+		}
 		pt := C.go_openssl_EC_KEY_get0_public_key(key)
 		if pt == nil {
 			return nil, newOpenSSLError("EC_KEY_get0_public_key")
@@ -91,6 +91,11 @@ func (k *PrivateKeyECDH) PublicKey() (*PublicKeyECDH, error) {
 			return nil, err
 		}
 	case 3:
+		pkey = k._pkey
+		if C.go_openssl_EVP_PKEY_up_ref(pkey) != 1 {
+			return nil, newOpenSSLError("EVP_PKEY_up_ref")
+		}
+
 		var cbytes *C.uchar
 		n := C.go_openssl_EVP_PKEY_get1_encoded_public_key(k._pkey, &cbytes)
 		if n == 0 {
@@ -101,7 +106,8 @@ func (k *PrivateKeyECDH) PublicKey() (*PublicKeyECDH, error) {
 	default:
 		panic(errUnsupportedVersion())
 	}
-	pub := &PublicKeyECDH{k._pkey, bytes, k}
+	pub := &PublicKeyECDH{pkey, bytes}
+	pkey = nil
 	runtime.SetFinalizer(pub, (*PublicKeyECDH).finalize)
 	return pub, nil
 }
