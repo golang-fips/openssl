@@ -117,6 +117,26 @@ func (h *evpHash) Write(p []byte) (int, error) {
 	return len(p), nil
 }
 
+func (h *evpHash) WriteString(s string) (int, error) {
+	// TODO: use unsafe.StringData once we drop support
+	// for go1.19 and earlier.
+	hdr := (*struct {
+		Data *byte
+		Len  int
+	})(unsafe.Pointer(&s))
+	if len(s) > 0 && C.go_openssl_EVP_DigestUpdate(h.ctx, unsafe.Pointer(hdr.Data), C.size_t(len(s))) == 0 {
+		panic("openssl: EVP_DigestUpdate failed")
+	}
+	return len(s), nil
+}
+
+func (h *evpHash) WriteByte(c byte) error {
+	if C.go_openssl_EVP_DigestUpdate(h.ctx, unsafe.Pointer(&c), 1) == 0 {
+		panic("openssl: EVP_DigestUpdate failed")
+	}
+	return nil
+}
+
 func (h *evpHash) Size() int {
 	return h.size
 }

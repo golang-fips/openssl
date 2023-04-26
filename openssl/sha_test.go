@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"encoding"
 	"hash"
+	"io"
 	"testing"
 
 	"github.com/golang-fips/openssl-fips/openssl"
@@ -56,6 +57,23 @@ func TestSha(t *testing.T) {
 				t.Errorf("0x%x != marshaled 0x%x", actual, actual2)
 			}
 
+			h.Reset()
+			sum = h.Sum(nil)
+			if !bytes.Equal(sum, initSum) {
+				t.Errorf("got:%x want:%x", sum, initSum)
+			}
+
+			bw := h.(io.ByteWriter)
+			for i := 0; i < len(msg); i++ {
+				bw.WriteByte(msg[i])
+			}
+			h.Reset()
+			sum = h.Sum(nil)
+			if !bytes.Equal(sum, initSum) {
+				t.Errorf("got:%x want:%x", sum, initSum)
+			}
+
+			h.(io.StringWriter).WriteString(string(msg))
 			h.Reset()
 			sum = h.Sum(nil)
 			if !bytes.Equal(sum, initSum) {
