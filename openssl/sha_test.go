@@ -63,12 +63,6 @@ func TestSha(t *testing.T) {
 				t.Errorf("got:%x want:%x", sum, initSum)
 			}
 
-			h.Reset()
-			sum = h.Sum(nil)
-			if !bytes.Equal(sum, initSum) {
-				t.Errorf("got:%x want:%x", sum, initSum)
-			}
-
 			bw := h.(io.ByteWriter)
 			for i := 0; i < len(msg); i++ {
 				bw.WriteByte(msg[i])
@@ -80,6 +74,11 @@ func TestSha(t *testing.T) {
 			}
 
 			h.(io.StringWriter).WriteString(string(msg))
+			h.Reset()
+			sum = h.Sum(nil)
+			if !bytes.Equal(sum, initSum) {
+				t.Errorf("got:%x want:%x", sum, initSum)
+			}
 		})
 	}
 }
