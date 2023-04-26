@@ -5,6 +5,7 @@
 // +build !msan
 
 #include "goopenssl.h"
+#include <assert.h>
 
 int _goboringcrypto_EVP_sign(EVP_MD *md, EVP_PKEY_CTX *ctx, const uint8_t *msg,
                              size_t msgLen, uint8_t *sig, size_t *slen,
@@ -66,3 +67,52 @@ err:
 
   return ret;
 }
+
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L
+DEFINEFUNCINTERNAL(int, EVP_PKEY_up_ref, (GO_EVP_PKEY *pkey), (pkey))
+
+GO_EVP_PKEY *
+_goboringcrypto_EVP_PKEY_ref(GO_EVP_PKEY *pkey)
+{
+  if (_goboringcrypto_internal_EVP_PKEY_up_ref(pkey) != 1)
+    return NULL;
+
+  return pkey;
+}
+
+#else
+GO_EVP_PKEY *
+_goboringcrypto_EVP_PKEY_ref(GO_EVP_PKEY *pkey)
+{
+  GO_EVP_PKEY *result = NULL;
+
+  if (pkey->type != EVP_PKEY_EC && pkey->type != EVP_PKEY_RSA)
+    return NULL;
+
+  result = _goboringcrypto_EVP_PKEY_new();
+  if (!result)
+    goto err;
+
+  switch (pkey->type) {
+  case EVP_PKEY_EC:
+    if (_goboringcrypto_EVP_PKEY_set1_EC_KEY(result, _goboringcrypto_EVP_PKEY_get0_EC_KEY()) != 1)
+      goto err;
+    break;
+
+  case EVP_PKEY_RSA:
+    if (_goboringcrypto_EVP_PKEY_set1_RSA_KEY(result, _goboringcrypto_EVP_PKEY_get0_RSA_KEY()) != 1)
+      goto err;
+
+    break;
+
+  default:
+    assert(0);
+  }
+
+  return result;
+
+err:
+  _goboringcrypto_EVP_PKEY_free(result);
+  return NULL;
+}
+#endif
