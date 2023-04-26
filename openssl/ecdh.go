@@ -22,22 +22,10 @@ var (
 type PublicKeyECDH struct {
 	_pkey *C.GO_EVP_PKEY
 	bytes []byte
-
-	// priv is only set when PublicKeyECDH is derived from a private key,
-	// in which case priv's finalizer is responsible for freeing _pkey.
-	// This ensures priv is not finalized while the public key is alive,
-	// which could cause use-after-free and double-free behavior.
-	//
-	// We could avoid this altogether by using EVP_PKEY_up_ref
-	// when instantiating a derived public key, unfortunately
-	// it is not available on OpenSSL 1.0.2.
-	priv *PrivateKeyECDH
 }
 
 func (k *PublicKeyECDH) finalize() {
-	if k.priv == nil {
-		C._goboringcrypto_EVP_PKEY_free(k._pkey)
-	}
+	C._goboringcrypto_EVP_PKEY_free(k._pkey)
 }
 
 type PrivateKeyECDH struct {
@@ -58,7 +46,7 @@ func NewPublicKeyECDH(curve string, bytes []byte) (*PublicKeyECDH, error) {
 	if err != nil {
 		return nil, err
 	}
-	k := &PublicKeyECDH{pkey, append([]byte(nil), bytes...), nil}
+	k := &PublicKeyECDH{pkey, append([]byte(nil), bytes...)}
 	runtime.SetFinalizer(k, (*PublicKeyECDH).finalize)
 	return k, nil
 }
@@ -87,14 +75,22 @@ func (k *PrivateKeyECDH) PublicKey() (*PublicKeyECDH, error) {
 	var bytes []byte
 	var cbytes *C.uchar
 
-	n := C._goboringcrypto_EVP_PKEY_get1_encoded_ecdh_public_key(k._pkey, &cbytes)
+	pkey := C._goboringcrypto_EVP_PKEY_ref(k._pkey)
+	if pkey == nil {
+		return nil, NewOpenSSLError("EVP_PKEY_ref")
+	}
+	defer func() {
+		C._goboringcrypto_EVP_PKEY_free(pkey)
+	}()
+	n := C._goboringcrypto_EVP_PKEY_get1_encoded_ecdh_public_key(pkey, &cbytes)
 	if n == 0 {
 		return nil, NewOpenSSLError("EVP_PKEY_get1_encoded_ecdh_public_key")
 	}
 	bytes = C.GoBytes(unsafe.Pointer(cbytes), C.int(n))
 	C.free(unsafe.Pointer(cbytes))
 
-	pub := &PublicKeyECDH{k._pkey, bytes, k}
+	pub := &PublicKeyECDH{pkey, bytes}
+	pkey = nil
 	runtime.SetFinalizer(pub, (*PublicKeyECDH).finalize)
 	return pub, nil
 }

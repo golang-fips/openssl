@@ -811,6 +811,9 @@ DEFINEFUNC(void, EVP_PKEY_free, (GO_EVP_PKEY * arg0), (arg0))
 DEFINEFUNC(GO_RSA *, EVP_PKEY_get1_RSA, (GO_EVP_PKEY * arg0), (arg0))
 DEFINEFUNC(int, EVP_PKEY_set1_RSA, (GO_EVP_PKEY * arg0, GO_RSA *arg1), (arg0, arg1))
 DEFINEFUNC(int, EVP_PKEY_set1_EC_KEY, (GO_EVP_PKEY * arg0, GO_EC_KEY *arg1), (arg0, arg1))
+DEFINEFUNC(const GO_EC_KEY *, EVP_PKEY_get0_EC_KEY, (const GO_EVP_PKEY *pkey), (pkey))
+GO_EVP_PKEY *_goboringcrypto_EVP_PKEY_ref(GO_EVP_PKEY *pkey);
+
 DEFINEFUNC(int, EVP_PKEY_verify,
 	(EVP_PKEY_CTX *ctx, const unsigned char *sig, unsigned int siglen, const unsigned char *tbs, size_t tbslen),
 	(ctx, sig, siglen, tbs, tbslen))
@@ -1083,15 +1086,6 @@ enum {
 #if OPENSSL_VERSION_NUMBER >= 0x10100000L
 DEFINEFUNC(int, EVP_PKEY_set1_encoded_public_key, (GO_EVP_PKEY *pkey, const unsigned char *pub, size_t publen), (pkey, pub, publen))
 DEFINEFUNC(size_t, EVP_PKEY_get1_encoded_public_key, (GO_EVP_PKEY *pkey, unsigned char **ppub), (pkey, ppub))
-
-DEFINEFUNC(const GO_EC_KEY *, EVP_PKEY_get0_EC_KEY, (const GO_EVP_PKEY *pkey), (pkey))
-#else
-DEFINEFUNCINTERNAL(void *, EVP_PKEY_get0, (const GO_EVP_PKEY *pkey), (pkey))
-static const GO_EC_KEY *
-_goboringcrypto_EVP_PKEY_get0_EC_KEY(const GO_EVP_PKEY *pkey)
-{
-  return _goboringcrypto_internal_EVP_PKEY_get0(pkey);
-}
 #endif
 
 GO_EVP_PKEY *_goboringcrypto_EVP_PKEY_new_for_ecdh(int nid, const uint8_t *bytes, size_t len, int is_private);
