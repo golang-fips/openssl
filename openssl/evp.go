@@ -148,10 +148,14 @@ func setupEVP(withKey withKeyFunc, padding C.int,
 			clabel = (*C.uchar)(C.malloc(C.size_t(len(label))))
 			copy((*[1 << 30]byte)(unsafe.Pointer(clabel))[:len(label)], label)
 		}
-		if C.go_openssl_EVP_PKEY_CTX_ctrl(ctx, C.GO_EVP_PKEY_RSA, -1, C.GO_EVP_PKEY_CTRL_RSA_OAEP_LABEL, C.int(len(label)), unsafe.Pointer(clabel)) != 1 {
-			if clabel != nil {
-				C.free(unsafe.Pointer(clabel))
-			}
+		var ret C.int
+		if vMajor == 3 {
+			ret = C.go_openssl_EVP_PKEY_CTX_set0_rsa_oaep_label(ctx, unsafe.Pointer(clabel), C.int(len(label)))
+		} else {
+			ret = C.go_openssl_EVP_PKEY_CTX_ctrl(ctx, C.GO_EVP_PKEY_RSA, -1, C.GO_EVP_PKEY_CTRL_RSA_OAEP_LABEL, C.int(len(label)), unsafe.Pointer(clabel))
+		}
+		if ret != 1 {
+			C.free(unsafe.Pointer(clabel))
 			return nil, newOpenSSLError("EVP_PKEY_CTX_ctrl failed")
 		}
 	case C.GO_RSA_PKCS1_PSS_PADDING:
