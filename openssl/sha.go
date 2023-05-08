@@ -103,8 +103,8 @@ func (h *evpHash) finalize() {
 func (h *evpHash) Reset() {
 	// There is no need to reset h.ctx2 because it is always reset after
 	// use in evpHash.sum.
-	if C.go_openssl_EVP_DigestInit(h.ctx, h.md) != 1 {
-		panic(newOpenSSLError("EVP_DigestInit"))
+	if C.go_openssl_EVP_DigestInit_ex(h.ctx, h.md, nil) != 1 {
+		panic(newOpenSSLError("EVP_DigestInit_ex"))
 	}
 	runtime.KeepAlive(h)
 }
