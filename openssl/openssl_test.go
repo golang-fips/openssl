@@ -28,3 +28,14 @@ func TestMain(m *testing.M) {
 	openssl.CheckLeaks()
 	os.Exit(status)
 }
+
+func TestCheckVersion(t *testing.T) {
+	v := os.Getenv("GO_OPENSSL_VERSION_OVERRIDE")
+	exists, fips := openssl.CheckVersion(v)
+	if !exists {
+		t.Fatalf("OpenSSL version %q not found", v)
+	}
+	if want := openssl.FIPS(); want != fips {
+		t.Fatalf("FIPS mismatch: want %v, got %v", want, fips)
+	}
+}
