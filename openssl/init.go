@@ -18,7 +18,6 @@ import (
 // See Init() for details about version.
 func opensslInit(version string) (major, minor, patch int, err error) {
 	// Load the OpenSSL shared library using dlopen.
-	// If version is specified try to load it or error out.
 	handle := dlopen(version)
 	if handle == nil {
 		errstr := C.GoString(C.dlerror())
