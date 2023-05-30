@@ -48,7 +48,9 @@ rm -rf "openssl-$version"
 mv "openssl-$tag" "openssl-$version"
 
 cd "openssl-$version"
-./config $config
+# -d makes a debug build which helps with debugging memory issues and
+# other problems. It's not necessary for normal use.
+./config -d $config
 make -j$(nproc) $make
 
 cp -H ./libcrypto.so "/usr/lib/libcrypto.so.${version}"
