@@ -40,7 +40,7 @@ jobs:
       run: |
         ok=true
         for t in $(go test ./... -list=. | grep '^Test'); do
-          go test ./... -gcflags=all=-d=checkptr -asan -run $t -v || ok=false
+          go test ./... -gcflags=all=-d=checkptr -asan -run ^$t$ -v || ok=false
         done
         $ok
       env:

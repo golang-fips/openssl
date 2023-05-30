@@ -19,6 +19,7 @@ go_openssl_do_leak_check(void)
 #endif
 }
 
+int go_openssl_fips_enabled(void* handle);
 int go_openssl_version_major(void* handle);
 int go_openssl_version_minor(void* handle);
 int go_openssl_version_patch(void* handle);

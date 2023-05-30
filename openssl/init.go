@@ -11,16 +11,6 @@ import (
 	"unsafe"
 )
 
-// knownVersions is a list of supported and well-known libcrypto.so suffixes in decreasing version order.
-//
-// FreeBSD library version numbering does not directly align to the version of OpenSSL.
-// Its preferred search order is 11 -> 111.
-//
-// Some distributions use 1.0.0 and others (such as Debian) 1.0.2 to refer to the same OpenSSL 1.0.2 version.
-//
-// Fedora derived distros use different naming for the version 1.0.x.
-var knownVersions = [...]string{"3", "1.1", "11", "111", "1.0.2", "1.0.0", "10"}
-
 // opensslInit loads and initialize OpenSSL.
 // If successful, it returns the major and minor OpenSSL version
 // as reported by the OpenSSL API.
@@ -28,9 +18,10 @@ var knownVersions = [...]string{"3", "1.1", "11", "111", "1.0.2", "1.0.0", "10"}
 // See Init() for details about version.
 func opensslInit(version string) (major, minor, patch int, err error) {
 	// Load the OpenSSL shared library using dlopen.
-	handle, err := loadLibrary(version)
-	if err != nil {
-		return 0, 0, 0, err
+	handle := dlopen(version)
+	if handle == nil {
+		errstr := C.GoString(C.dlerror())
+		return 0, 0, 0, errors.New("openssl: can't load libcrypto.so." + version + ": " + errstr)
 	}
 
 	// Retrieve the loaded OpenSSL version and check if it is supported.
@@ -79,26 +70,4 @@ func dlopen(version string) unsafe.Pointer {
 	cv := C.CString("libcrypto.so." + version)
 	defer C.free(unsafe.Pointer(cv))
 	return C.dlopen(cv, C.RTLD_LAZY|C.RTLD_LOCAL)
-}
-
-func loadLibrary(version string) (unsafe.Pointer, error) {
-	if version != "" {
-		// If version is specified try to load it or error out.
-		handle := dlopen(version)
-		if handle == nil {
-			errstr := C.GoString(C.dlerror())
-			return nil, errors.New("openssl: can't load libcrypto.so." + version + ": " + errstr)
-		}
-		return handle, nil
-	}
-	// If the version is not specified, try loading from the list
-	// of well known versions.
-	for _, v := range knownVersions {
-		handle := dlopen(v)
-		if handle == nil {
-			continue
-		}
-		return handle, nil
-	}
-	return nil, errors.New("openssl: can't load libcrypto.so using any known version suffix")
 }
