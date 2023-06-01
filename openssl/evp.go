@@ -94,7 +94,7 @@ type cryptFunc func(C.GO_EVP_PKEY_CTX_PTR, *C.uchar, *C.size_t, *C.uchar, C.size
 type verifyFunc func(C.GO_EVP_PKEY_CTX_PTR, *C.uchar, C.size_t, *C.uchar, C.size_t) error
 
 func setupEVP(withKey withKeyFunc, padding C.int,
-	h hash.Hash, label []byte, saltLen C.int, ch crypto.Hash,
+	h, mgfHash hash.Hash, label []byte, saltLen C.int, ch crypto.Hash,
 	init initFunc) (ctx C.GO_EVP_PKEY_CTX_PTR, err error) {
 	defer func() {
 		if err != nil {
@@ -132,12 +132,25 @@ func setupEVP(withKey withKeyFunc, padding C.int,
 		if md == nil {
 			return nil, errors.New("crypto/rsa: unsupported hash function")
 		}
+		var mgfMD C.GO_EVP_MD_PTR
+		if mgfHash != nil {
+			// mgfHash is optional, but if it is set it must match a supported hash function.
+			mgfMD = hashToMD(mgfHash)
+			if mgfMD == nil {
+				return nil, errors.New("crypto/rsa: unsupported hash function")
+			}
+		}
 		// setPadding must happen before setting EVP_PKEY_CTRL_RSA_OAEP_MD.
 		if err := setPadding(); err != nil {
 			return nil, err
 		}
 		if C.go_openssl_EVP_PKEY_CTX_ctrl(ctx, C.GO_EVP_PKEY_RSA, -1, C.GO_EVP_PKEY_CTRL_RSA_OAEP_MD, 0, unsafe.Pointer(md)) != 1 {
 			return nil, newOpenSSLError("EVP_PKEY_CTX_ctrl failed")
+		}
+		if mgfHash != nil {
+			if C.go_openssl_EVP_PKEY_CTX_ctrl(ctx, C.GO_EVP_PKEY_RSA, -1, C.GO_EVP_PKEY_CTRL_RSA_MGF1_MD, 0, unsafe.Pointer(mgfMD)) != 1 {
+				return nil, newOpenSSLError("EVP_PKEY_CTX_ctrl failed")
+			}
 		}
 		// ctx takes ownership of label, so malloc a copy for OpenSSL to free.
 		// OpenSSL 1.1.1 and higher does not take ownership of the label if the length is zero,
@@ -199,10 +212,10 @@ func setupEVP(withKey withKeyFunc, padding C.int,
 }
 
 func cryptEVP(withKey withKeyFunc, padding C.int,
-	h hash.Hash, label []byte, saltLen C.int, ch crypto.Hash,
+	h, mgfHash hash.Hash, label []byte, saltLen C.int, ch crypto.Hash,
 	init initFunc, crypt cryptFunc, in []byte) ([]byte, error) {
 
-	ctx, err := setupEVP(withKey, padding, h, label, saltLen, ch, init)
+	ctx, err := setupEVP(withKey, padding, h, mgfHash, label, saltLen, ch, init)
 	if err != nil {
 		return nil, err
 	}
@@ -225,7 +238,7 @@ func verifyEVP(withKey withKeyFunc, padding C.int,
 	init initFunc, verify verifyFunc,
 	sig, in []byte) error {
 
-	ctx, err := setupEVP(withKey, padding, h, label, saltLen, ch, init)
+	ctx, err := setupEVP(withKey, padding, h, nil, label, saltLen, ch, init)
 	if err != nil {
 		return err
 	}
@@ -233,7 +246,7 @@ func verifyEVP(withKey withKeyFunc, padding C.int,
 	return verify(ctx, base(sig), C.size_t(len(sig)), base(in), C.size_t(len(in)))
 }
 
-func evpEncrypt(withKey withKeyFunc, padding C.int, h hash.Hash, label, msg []byte) ([]byte, error) {
+func evpEncrypt(withKey withKeyFunc, padding C.int, h, mgfHash hash.Hash, label, msg []byte) ([]byte, error) {
 	encryptInit := func(ctx C.GO_EVP_PKEY_CTX_PTR) error {
 		if ret := C.go_openssl_EVP_PKEY_encrypt_init(ctx); ret != 1 {
 			return newOpenSSLError("EVP_PKEY_encrypt_init failed")
@@ -246,10 +259,10 @@ func evpEncrypt(withKey withKeyFunc, padding C.int, h hash.Hash, label, msg []by
 		}
 		return nil
 	}
-	return cryptEVP(withKey, padding, h, label, 0, 0, encryptInit, encrypt, msg)
+	return cryptEVP(withKey, padding, h, mgfHash, label, 0, 0, encryptInit, encrypt, msg)
 }
 
-func evpDecrypt(withKey withKeyFunc, padding C.int, h hash.Hash, label, msg []byte) ([]byte, error) {
+func evpDecrypt(withKey withKeyFunc, padding C.int, h, mgfHash hash.Hash, label, msg []byte) ([]byte, error) {
 	decryptInit := func(ctx C.GO_EVP_PKEY_CTX_PTR) error {
 		if ret := C.go_openssl_EVP_PKEY_decrypt_init(ctx); ret != 1 {
 			return newOpenSSLError("EVP_PKEY_decrypt_init failed")
@@ -262,7 +275,7 @@ func evpDecrypt(withKey withKeyFunc, padding C.int, h hash.Hash, label, msg []by
 		}
 		return nil
 	}
-	return cryptEVP(withKey, padding, h, label, 0, 0, decryptInit, decrypt, msg)
+	return cryptEVP(withKey, padding, h, mgfHash, label, 0, 0, decryptInit, decrypt, msg)
 }
 
 func evpSign(withKey withKeyFunc, padding C.int, saltLen C.int, h crypto.Hash, hashed []byte) ([]byte, error) {
@@ -278,7 +291,7 @@ func evpSign(withKey withKeyFunc, padding C.int, saltLen C.int, h crypto.Hash, h
 		}
 		return nil
 	}
-	return cryptEVP(withKey, padding, nil, nil, saltLen, h, signtInit, sign, hashed)
+	return cryptEVP(withKey, padding, nil, nil, nil, saltLen, h, signtInit, sign, hashed)
 }
 
 func evpVerify(withKey withKeyFunc, padding C.int, saltLen C.int, h crypto.Hash, sig, hashed []byte) error {
