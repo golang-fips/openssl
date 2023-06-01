@@ -8,6 +8,7 @@ import (
 	"os"
 	"runtime"
 	"testing"
+	"time"
 
 	"github.com/golang-fips/openssl-fips/openssl"
 )
