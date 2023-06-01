@@ -27,6 +27,8 @@ func TestMain(m *testing.M) {
 	for i := 0; i < 5; i++ {
 		// Run GC a few times to avoid false positives in leak detection.
 		runtime.GC()
+		// Sleep a bit to let the finalizers run.
+		time.Sleep(10 * time.Millisecond)
 	}
 	openssl.CheckLeaks()
 	os.Exit(status)
