@@ -8,9 +8,8 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/golang-fips/openssl-fips/openssl"
+	"github.com/golang-fips/openssl/openssl"
 )
-
 
 func TestMain(m *testing.M) {
 	exitVal := m.Run()

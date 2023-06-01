@@ -12,8 +12,8 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/golang-fips/openssl-fips/openssl"
-	"github.com/golang-fips/openssl-fips/openssl/bbig"
+	"github.com/golang-fips/openssl/openssl"
+	"github.com/golang-fips/openssl/openssl/bbig"
 )
 
 func fromBase16(base16 string) openssl.BigInt {
