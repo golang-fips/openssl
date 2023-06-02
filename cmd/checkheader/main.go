@@ -29,7 +29,7 @@ import (
 
 const description = `
 Example: A check operation:
-  go run ./cmd/checkheader --ossl-include /usr/local/src/openssl-1.1.1/include -shim ./openssl/shims.h 
+  go run ./cmd/checkheader --ossl-include /usr/local/src/openssl-1.1.1/include -shim ./shims.h 
 Checkheader generates a C program and compiles it with gcc. The compilation verifies types and functions defined in the target
 header file match the definitions in --ossl-include.
 `

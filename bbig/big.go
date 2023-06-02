@@ -11,7 +11,7 @@ import (
 	"math/big"
 	"unsafe"
 
-	"github.com/golang-fips/openssl-fips/openssl"
+	"github.com/golang-fips/openssl"
 )
 
 func Enc(b *big.Int) openssl.BigInt {

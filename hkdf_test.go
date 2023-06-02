@@ -7,7 +7,7 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/golang-fips/openssl-fips/openssl"
+	"github.com/golang-fips/openssl"
 )
 
 func TestExtractHKDF(t *testing.T) {
@@ -70,4 +70,3 @@ func TestExpandHKDF(t *testing.T) {
 		t.Errorf("OKM doesn't match\ngot: %#v\nexp: %#v", buf, expected)
 	}
 }
-
