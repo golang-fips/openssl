@@ -124,24 +124,24 @@ func (k *PrivateKeyRSA) withKey(f func(C.GO_EVP_PKEY_PTR) C.int) C.int {
 	return f(k._pkey)
 }
 
-func DecryptRSAOAEP(h hash.Hash, priv *PrivateKeyRSA, ciphertext, label []byte) ([]byte, error) {
-	return evpDecrypt(priv.withKey, C.GO_RSA_PKCS1_OAEP_PADDING, h, label, ciphertext)
+func DecryptRSAOAEP(h, mgfHash hash.Hash, priv *PrivateKeyRSA, ciphertext, label []byte) ([]byte, error) {
+	return evpDecrypt(priv.withKey, C.GO_RSA_PKCS1_OAEP_PADDING, h, mgfHash, label, ciphertext)
 }
 
-func EncryptRSAOAEP(h hash.Hash, pub *PublicKeyRSA, msg, label []byte) ([]byte, error) {
-	return evpEncrypt(pub.withKey, C.GO_RSA_PKCS1_OAEP_PADDING, h, label, msg)
+func EncryptRSAOAEP(h, mgfHash hash.Hash, pub *PublicKeyRSA, msg, label []byte) ([]byte, error) {
+	return evpEncrypt(pub.withKey, C.GO_RSA_PKCS1_OAEP_PADDING, h, mgfHash, label, msg)
 }
 
 func DecryptRSAPKCS1(priv *PrivateKeyRSA, ciphertext []byte) ([]byte, error) {
-	return evpDecrypt(priv.withKey, C.GO_RSA_PKCS1_PADDING, nil, nil, ciphertext)
+	return evpDecrypt(priv.withKey, C.GO_RSA_PKCS1_PADDING, nil, nil, nil, ciphertext)
 }
 
 func EncryptRSAPKCS1(pub *PublicKeyRSA, msg []byte) ([]byte, error) {
-	return evpEncrypt(pub.withKey, C.GO_RSA_PKCS1_PADDING, nil, nil, msg)
+	return evpEncrypt(pub.withKey, C.GO_RSA_PKCS1_PADDING, nil, nil, nil, msg)
 }
 
 func DecryptRSANoPadding(priv *PrivateKeyRSA, ciphertext []byte) ([]byte, error) {
-	ret, err := evpDecrypt(priv.withKey, C.GO_RSA_NO_PADDING, nil, nil, ciphertext)
+	ret, err := evpDecrypt(priv.withKey, C.GO_RSA_NO_PADDING, nil, nil, nil, ciphertext)
 	if err != nil {
 		return nil, err
 	}
@@ -165,7 +165,7 @@ func DecryptRSANoPadding(priv *PrivateKeyRSA, ciphertext []byte) ([]byte, error)
 }
 
 func EncryptRSANoPadding(pub *PublicKeyRSA, msg []byte) ([]byte, error) {
-	return evpEncrypt(pub.withKey, C.GO_RSA_NO_PADDING, nil, nil, msg)
+	return evpEncrypt(pub.withKey, C.GO_RSA_NO_PADDING, nil, nil, nil, msg)
 }
 
 func saltLength(saltLen int, sign bool) (C.int, error) {
