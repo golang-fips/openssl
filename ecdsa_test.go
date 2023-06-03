@@ -9,8 +9,8 @@ import (
 	"crypto/elliptic"
 	"testing"
 
-	"github.com/golang-fips/openssl-fips/openssl"
-	"github.com/golang-fips/openssl-fips/openssl/bbig"
+	"github.com/golang-fips/openssl"
+	"github.com/golang-fips/openssl/bbig"
 )
 
 func testAllCurves(t *testing.T, f func(*testing.T, elliptic.Curve)) {

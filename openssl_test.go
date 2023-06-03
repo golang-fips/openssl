@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/golang-fips/openssl-fips/openssl"
+	"github.com/golang-fips/openssl"
 )
 
 // getVersion returns the OpenSSL version to use for testing.

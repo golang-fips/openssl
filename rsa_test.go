@@ -11,8 +11,8 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/golang-fips/openssl-fips/openssl"
-	"github.com/golang-fips/openssl-fips/openssl/bbig"
+	"github.com/golang-fips/openssl"
+	"github.com/golang-fips/openssl/bbig"
 )
 
 func TestRSAKeyGeneration(t *testing.T) {
