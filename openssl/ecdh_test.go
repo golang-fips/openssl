@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/golang-fips/openssl-fips/openssl"
+	"github.com/golang-fips/openssl/openssl"
 )
 
 func TestECDH(t *testing.T) {
@@ -157,7 +157,7 @@ func TestInvalidPublicKey(t *testing.T) {
 		// Points not on the curve.
 		"046b17d1f2e12c4247f8bce6e563a440f277037d812deb33a0f4a13945d898c2964fe342e2fe1a7f9b8ee7eb4a7c0f9e162bce33576b315ececbb6406837bf51f6",
 		"0400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
-	};
+	}
 
 	for _, input := range keys {
 		k, err := openssl.NewPublicKeyECDH("P-256", hexDecode(t, input))
