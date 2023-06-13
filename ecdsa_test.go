@@ -1,5 +1,5 @@
-//go:build linux && !android
-// +build linux,!android
+//go:build linux && !android && !cmd_go_bootstrap && !msan && !no_openssl
+// +build linux,!android,!cmd_go_bootstrap,!msan,!no_openssl
 
 package openssl_test
 

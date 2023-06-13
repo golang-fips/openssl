@@ -1,5 +1,5 @@
-//go:build linux && !android
-// +build linux,!android
+//go:build linux && !android && !cmd_go_bootstrap && !msan && !no_openssl
+// +build linux,!android,!cmd_go_bootstrap,!msan,!no_openssl
 
 // Package openssl provides access to OpenSSL cryptographic functions.
 package openssl
