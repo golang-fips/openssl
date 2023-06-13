@@ -5,5 +5,5 @@
 
 [allowlist]
 paths = [
-      'openssl/ecdh_test.go',
+      'ecdh_test.go',
 ]
