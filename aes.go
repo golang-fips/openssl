@@ -11,8 +11,73 @@ import (
 	"errors"
 	"runtime"
 	"strconv"
+	"sync"
 	"unsafe"
 )
+
+type cipherKind int8
+
+const (
+	cipherAES128_ECB cipherKind = iota
+	cipherAES192_ECB
+	cipherAES256_ECB
+	cipherAES128_CBC
+	cipherAES192_CBC
+	cipherAES256_CBC
+	cipherAES128_CTR
+	cipherAES192_CTR
+	cipherAES256_CTR
+	cipherAES128_GCM
+	cipherAES192_GCM
+	cipherAES256_GCM
+)
+
+// cacheCipher is a cache of cipherKind to GO_EVP_CIPHER_PTR.
+var cacheCipher sync.Map
+
+// newCipher returns a cipher object for the given k.
+func newCipher(k cipherKind) (cipher C.GO_EVP_CIPHER_PTR) {
+	if v, ok := cacheCipher.Load(k); ok {
+		return v.(C.GO_EVP_CIPHER_PTR)
+	}
+	defer func() {
+		if cipher != nil && vMajor == 3 {
+			// On OpenSSL 3, directly operating on a EVP_CIPHER object
+			// not created by EVP_CIPHER has negative performance
+			// implications, as cipher operations will have
+			// to fetch it on every call. Better to just fetch it once here.
+			cipher = C.go_openssl_EVP_CIPHER_fetch(nil, C.go_openssl_EVP_CIPHER_get0_name(cipher), nil)
+		}
+		cacheCipher.Store(k, cipher)
+	}()
+	switch k {
+	case cipherAES128_CBC:
+		cipher = C.go_openssl_EVP_aes_128_cbc()
+	case cipherAES192_CBC:
+		cipher = C.go_openssl_EVP_aes_192_cbc()
+	case cipherAES256_CBC:
+		cipher = C.go_openssl_EVP_aes_256_cbc()
+	case cipherAES128_ECB:
+		cipher = C.go_openssl_EVP_aes_128_ecb()
+	case cipherAES192_ECB:
+		cipher = C.go_openssl_EVP_aes_192_ecb()
+	case cipherAES256_ECB:
+		cipher = C.go_openssl_EVP_aes_256_ecb()
+	case cipherAES128_CTR:
+		cipher = C.go_openssl_EVP_aes_128_ctr()
+	case cipherAES192_CTR:
+		cipher = C.go_openssl_EVP_aes_192_ctr()
+	case cipherAES256_CTR:
+		cipher = C.go_openssl_EVP_aes_256_ctr()
+	case cipherAES128_GCM:
+		cipher = C.go_openssl_EVP_aes_128_gcm()
+	case cipherAES192_GCM:
+		cipher = C.go_openssl_EVP_aes_192_gcm()
+	case cipherAES256_GCM:
+		cipher = C.go_openssl_EVP_aes_256_gcm()
+	}
+	return cipher
+}
 
 type aesKeySizeError int
 
@@ -26,7 +91,7 @@ type aesCipher struct {
 	key     []byte
 	enc_ctx C.GO_EVP_CIPHER_CTX_PTR
 	dec_ctx C.GO_EVP_CIPHER_CTX_PTR
-	cipher  C.GO_EVP_CIPHER_PTR
+	kind    cipherKind
 }
 
 type extraModes interface {
@@ -48,11 +113,11 @@ func NewAESCipher(key []byte) (cipher.Block, error) {
 
 	switch len(c.key) * 8 {
 	case 128:
-		c.cipher = C.go_openssl_EVP_aes_128_ecb()
+		c.kind = cipherAES128_ECB
 	case 192:
-		c.cipher = C.go_openssl_EVP_aes_192_ecb()
+		c.kind = cipherAES192_ECB
 	case 256:
-		c.cipher = C.go_openssl_EVP_aes_256_ecb()
+		c.kind = cipherAES256_ECB
 	default:
 		return nil, errors.New("crypto/cipher: Invalid key size")
 	}
@@ -86,7 +151,7 @@ func (c *aesCipher) Encrypt(dst, src []byte) {
 
 	if c.enc_ctx == nil {
 		var err error
-		c.enc_ctx, err = newCipherCtx(c.cipher, C.GO_AES_ENCRYPT, c.key, nil)
+		c.enc_ctx, err = newCipherCtx(c.kind, C.GO_AES_ENCRYPT, c.key, nil)
 		if err != nil {
 			panic(err)
 		}
@@ -110,7 +175,7 @@ func (c *aesCipher) Decrypt(dst, src []byte) {
 	}
 	if c.dec_ctx == nil {
 		var err error
-		c.dec_ctx, err = newCipherCtx(c.cipher, C.GO_AES_DECRYPT, c.key, nil)
+		c.dec_ctx, err = newCipherCtx(c.kind, C.GO_AES_DECRYPT, c.key, nil)
 		if err != nil {
 			panic(err)
 		}
@@ -159,14 +224,14 @@ func (x *aesCBC) SetIV(iv []byte) {
 func (c *aesCipher) NewCBCEncrypter(iv []byte) cipher.BlockMode {
 	x := new(aesCBC)
 
-	var cipher C.GO_EVP_CIPHER_PTR
+	var cipher cipherKind
 	switch len(c.key) * 8 {
 	case 128:
-		cipher = C.go_openssl_EVP_aes_128_cbc()
+		cipher = cipherAES128_CBC
 	case 192:
-		cipher = C.go_openssl_EVP_aes_192_cbc()
+		cipher = cipherAES192_CBC
 	case 256:
-		cipher = C.go_openssl_EVP_aes_256_cbc()
+		cipher = cipherAES256_CBC
 	default:
 		panic("openssl: unsupported key length")
 	}
@@ -191,14 +256,14 @@ func (c *aesCBC) finalize() {
 func (c *aesCipher) NewCBCDecrypter(iv []byte) cipher.BlockMode {
 	x := new(aesCBC)
 
-	var cipher C.GO_EVP_CIPHER_PTR
+	var cipher cipherKind
 	switch len(c.key) * 8 {
 	case 128:
-		cipher = C.go_openssl_EVP_aes_128_cbc()
+		cipher = cipherAES128_CBC
 	case 192:
-		cipher = C.go_openssl_EVP_aes_192_cbc()
+		cipher = cipherAES192_CBC
 	case 256:
-		cipher = C.go_openssl_EVP_aes_256_cbc()
+		cipher = cipherAES256_CBC
 	default:
 		panic("openssl: unsupported key length")
 	}
@@ -240,14 +305,14 @@ func (x *aesCTR) XORKeyStream(dst, src []byte) {
 func (c *aesCipher) NewCTR(iv []byte) cipher.Stream {
 	x := new(aesCTR)
 
-	var cipher C.GO_EVP_CIPHER_PTR
+	var cipher cipherKind
 	switch len(c.key) * 8 {
 	case 128:
-		cipher = C.go_openssl_EVP_aes_128_ctr()
+		cipher = cipherAES128_CTR
 	case 192:
-		cipher = C.go_openssl_EVP_aes_192_ctr()
+		cipher = cipherAES192_CTR
 	case 256:
-		cipher = C.go_openssl_EVP_aes_256_ctr()
+		cipher = cipherAES256_CTR
 	default:
 		panic("openssl: unsupported key length")
 	}
@@ -314,14 +379,14 @@ func (c *aesCipher) NewGCMTLS() (cipher.AEAD, error) {
 }
 
 func (c *aesCipher) newGCM(tls bool) (cipher.AEAD, error) {
-	var cipher C.GO_EVP_CIPHER_PTR
+	var cipher cipherKind
 	switch len(c.key) * 8 {
 	case 128:
-		cipher = C.go_openssl_EVP_aes_128_gcm()
+		cipher = cipherAES128_GCM
 	case 192:
-		cipher = C.go_openssl_EVP_aes_192_gcm()
+		cipher = cipherAES192_GCM
 	case 256:
-		cipher = C.go_openssl_EVP_aes_256_gcm()
+		cipher = cipherAES256_GCM
 	default:
 		panic("openssl: unsupported key length")
 	}
@@ -453,7 +518,11 @@ func sliceForAppend(in []byte, n int) (head, tail []byte) {
 	return
 }
 
-func newCipherCtx(cipher C.GO_EVP_CIPHER_PTR, mode C.int, key, iv []byte) (C.GO_EVP_CIPHER_CTX_PTR, error) {
+func newCipherCtx(kind cipherKind, mode C.int, key, iv []byte) (C.GO_EVP_CIPHER_CTX_PTR, error) {
+	cipher := newCipher(kind)
+	if cipher == nil {
+		panic("openssl: unsupported cipher: " + strconv.Itoa(int(kind)))
+	}
 	ctx := C.go_openssl_EVP_CIPHER_CTX_new()
 	if ctx == nil {
 		return nil, fail("unable to create EVP cipher ctx")
