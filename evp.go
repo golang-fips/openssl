@@ -14,6 +14,7 @@ import (
 	"unsafe"
 )
 
+// cacheMD is a cache of crypto.Hash to GO_EVP_MD_PTR.
 var cacheMD sync.Map
 
 // hashToMD converts a hash.Hash implementation from this package to a GO_EVP_MD_PTR.
