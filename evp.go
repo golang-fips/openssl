@@ -10,28 +10,49 @@ import (
 	"errors"
 	"hash"
 	"strconv"
+	"sync"
 	"unsafe"
 )
 
+// cacheMD is a cache of crypto.Hash to GO_EVP_MD_PTR.
+var cacheMD sync.Map
+
 // hashToMD converts a hash.Hash implementation from this package to a GO_EVP_MD_PTR.
 func hashToMD(h hash.Hash) C.GO_EVP_MD_PTR {
+	var ch crypto.Hash
 	switch h.(type) {
 	case *sha1Hash:
-		return C.go_openssl_EVP_sha1()
+		ch = crypto.SHA1
 	case *sha224Hash:
-		return C.go_openssl_EVP_sha224()
+		ch = crypto.SHA224
 	case *sha256Hash:
-		return C.go_openssl_EVP_sha256()
+		ch = crypto.SHA256
 	case *sha384Hash:
-		return C.go_openssl_EVP_sha384()
+		ch = crypto.SHA384
 	case *sha512Hash:
-		return C.go_openssl_EVP_sha512()
+		ch = crypto.SHA512
+	}
+	if ch != 0 {
+		return cryptoHashToMD(ch)
 	}
 	return nil
 }
 
 // cryptoHashToMD converts a crypto.Hash to a GO_EVP_MD_PTR.
-func cryptoHashToMD(ch crypto.Hash) C.GO_EVP_MD_PTR {
+func cryptoHashToMD(ch crypto.Hash) (md C.GO_EVP_MD_PTR) {
+	if v, ok := cacheMD.Load(ch); ok {
+		return v.(C.GO_EVP_MD_PTR)
+	}
+	defer func() {
+		if md != nil && vMajor == 3 {
+			// On OpenSSL 3, directly operating on a EVP_MD object
+			// not created by EVP_MD_fetch has negative performance
+			// implications, as digest operations will have
+			// to fetch it on every call. Better to just fetch it once here.
+			md = C.go_openssl_EVP_MD_fetch(nil, C.go_openssl_EVP_MD_get0_name(md), nil)
+		}
+		cacheMD.Store(ch, md)
+	}()
 	switch ch {
 	case crypto.MD5:
 		return C.go_openssl_EVP_md5()
