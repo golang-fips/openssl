@@ -8,12 +8,15 @@ import "C"
 import (
 	"hash"
 	"runtime"
+	"sync"
 	"unsafe"
 )
 
+var paramDigest = C.CString("digest")
+
 var (
-	paramAlgHMAC = C.CString("HMAC")
-	paramDigest  = C.CString("digest")
+	fetchHMACOnce sync.Once
+	evpHMAC       C.GO_EVP_MAC_PTR
 )
 
 // NewHMAC returns a new HMAC using OpenSSL.
@@ -83,8 +86,15 @@ func newHMAC1(key []byte, h hash.Hash, md C.GO_EVP_MD_PTR) *opensslHMAC {
 }
 
 func newHMAC3(key []byte, h hash.Hash, md C.GO_EVP_MD_PTR) *opensslHMAC {
-	mac := C.go_openssl_EVP_MAC_fetch(nil, paramAlgHMAC, nil)
-	ctx := C.go_openssl_EVP_MAC_CTX_new(mac)
+	fetchHMACOnce.Do(func() {
+		name := C.CString("HMAC")
+		evpHMAC = C.go_openssl_EVP_MAC_fetch(nil, name, nil)
+		C.free(unsafe.Pointer(name))
+	})
+	if evpHMAC == nil {
+		panic("openssl: HMAC not supported")
+	}
+	ctx := C.go_openssl_EVP_MAC_CTX_new(evpHMAC)
 	if ctx == nil {
 		panic("openssl: EVP_MAC_CTX_new failed")
 	}
