@@ -57,7 +57,7 @@ type hmacCtx1 struct {
 // hmacCtx3 is used for OpenSSL 3.
 type hmacCtx3 struct {
 	ctx C.GO_EVP_MAC_CTX_PTR
-	key []byte
+	key []byte // only set for OpenSSL 3.0.0, 3.0.1, and 3.0.2.
 }
 
 type opensslHMAC struct {
@@ -113,8 +113,15 @@ func newHMAC3(key []byte, h hash.Hash, md C.GO_EVP_MD_PTR) *opensslHMAC {
 	if C.go_openssl_EVP_MAC_init(ctx, base(key), C.size_t(len(key)), params) == 0 {
 		panic(newOpenSSLError("EVP_MAC_init failed"))
 	}
-	hkey := make([]byte, len(key))
-	copy(hkey, key)
+	var hkey []byte
+	if vMinor == 0 && vPatch <= 2 {
+		// EVP_MAC_init only reset the ctx internal state if a key is passed
+		// when using OpenSSL 3.0.0, 3.0.1, and 3.0.2. New OpenSSL versions
+		// do not have this issue.
+		// See https://github.com/openssl/openssl/issues/17811.
+		hkey = make([]byte, len(key))
+		copy(hkey, key)
+	}
 	hmac := &opensslHMAC{
 		size:      h.Size(),
 		blockSize: h.BlockSize(),
@@ -131,9 +138,6 @@ func (h *opensslHMAC) Reset() {
 			panic(newOpenSSLError("HMAC_Init_ex failed"))
 		}
 	case 3:
-		// EVP_MAC_init only reset the ctx internal state if a key is passed
-		// when using OpenSSL 3.0.1 and 3.0.2.
-		// See https://github.com/openssl/openssl/issues/17811.
 		if C.go_openssl_EVP_MAC_init(h.ctx3.ctx, base(h.ctx3.key), C.size_t(len(h.ctx3.key)), nil) == 0 {
 			panic(newOpenSSLError("EVP_MAC_init failed"))
 		}
