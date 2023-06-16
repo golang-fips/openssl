@@ -25,40 +25,40 @@ import (
 // and applying a noescape along the way.
 // This is all to preserve compatibility with the allocation behavior of the non-openssl implementations.
 
-func shaX(md C.GO_EVP_MD_PTR, p []byte, sum []byte) bool {
-	return C.go_shaX(md, unsafe.Pointer(&*addr(p)), C.size_t(len(p)), unsafe.Pointer(&*addr(sum))) != 0
+func shaX(ch crypto.Hash, p []byte, sum []byte) bool {
+	return C.go_shaX(cryptoHashToMD(ch), unsafe.Pointer(&*addr(p)), C.size_t(len(p)), unsafe.Pointer(&*addr(sum))) != 0
 }
 
 func SHA1(p []byte) (sum [20]byte) {
-	if !shaX(C.go_openssl_EVP_sha1(), p, sum[:]) {
+	if !shaX(crypto.SHA1, p, sum[:]) {
 		panic("openssl: SHA1 failed")
 	}
 	return
 }
 
 func SHA224(p []byte) (sum [28]byte) {
-	if !shaX(C.go_openssl_EVP_sha224(), p, sum[:]) {
+	if !shaX(crypto.SHA224, p, sum[:]) {
 		panic("openssl: SHA224 failed")
 	}
 	return
 }
 
 func SHA256(p []byte) (sum [32]byte) {
-	if !shaX(C.go_openssl_EVP_sha256(), p, sum[:]) {
+	if !shaX(crypto.SHA256, p, sum[:]) {
 		panic("openssl: SHA256 failed")
 	}
 	return
 }
 
 func SHA384(p []byte) (sum [48]byte) {
-	if !shaX(C.go_openssl_EVP_sha384(), p, sum[:]) {
+	if !shaX(crypto.SHA384, p, sum[:]) {
 		panic("openssl: SHA384 failed")
 	}
 	return
 }
 
 func SHA512(p []byte) (sum [64]byte) {
-	if !shaX(C.go_openssl_EVP_sha512(), p, sum[:]) {
+	if !shaX(crypto.SHA512, p, sum[:]) {
 		panic("openssl: SHA512 failed")
 	}
 	return
