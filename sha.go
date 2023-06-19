@@ -66,7 +66,6 @@ func SHA512(p []byte) (sum [64]byte) {
 
 // evpHash implements generic hash methods.
 type evpHash struct {
-	md  C.GO_EVP_MD_PTR
 	ctx C.GO_EVP_MD_CTX_PTR
 	// ctx2 is used in evpHash.sum to avoid changing
 	// the state of ctx. Having it here allows reusing the
@@ -82,16 +81,18 @@ func newEvpHash(ch crypto.Hash, size, blockSize int) *evpHash {
 		panic("openssl: unsupported hash function: " + strconv.Itoa(int(ch)))
 	}
 	ctx := C.go_openssl_EVP_MD_CTX_new()
+	if C.go_openssl_EVP_DigestInit_ex(ctx, md, nil) != 1 {
+		C.go_openssl_EVP_MD_CTX_free(ctx)
+		panic(newOpenSSLError("EVP_DigestInit_ex"))
+	}
 	ctx2 := C.go_openssl_EVP_MD_CTX_new()
 	h := &evpHash{
-		md:        md,
 		ctx:       ctx,
 		ctx2:      ctx2,
 		size:      size,
 		blockSize: blockSize,
 	}
 	runtime.SetFinalizer(h, (*evpHash).finalize)
-	h.Reset()
 	return h
 }
 
@@ -103,7 +104,7 @@ func (h *evpHash) finalize() {
 func (h *evpHash) Reset() {
 	// There is no need to reset h.ctx2 because it is always reset after
 	// use in evpHash.sum.
-	if C.go_openssl_EVP_DigestInit_ex(h.ctx, h.md, nil) != 1 {
+	if C.go_openssl_EVP_DigestInit_ex(h.ctx, nil, nil) != 1 {
 		panic(newOpenSSLError("EVP_DigestInit_ex"))
 	}
 	runtime.KeepAlive(h)
@@ -148,15 +149,8 @@ func (h *evpHash) BlockSize() int {
 }
 
 func (h *evpHash) sum(out []byte) {
-	// Make copy of context because Go hash.Hash mandates
-	// that Sum has no effect on the underlying stream.
-	// In particular it is OK to Sum, then Write more, then Sum again,
-	// and the second Sum acts as if the first didn't happen.
-	if C.go_openssl_EVP_MD_CTX_copy(h.ctx2, h.ctx) != 1 {
-		panic(newOpenSSLError("EVP_MD_CTX_copy"))
-	}
-	if C.go_openssl_EVP_DigestFinal(h.ctx2, (*C.uchar)(noescape(unsafe.Pointer(base(out)))), nil) != 1 {
-		panic(newOpenSSLError("EVP_DigestFinal"))
+	if C.go_sha_sum(h.ctx, h.ctx2, base(out)) != 1 {
+		panic(newOpenSSLError("go_sha_sum"))
 	}
 	runtime.KeepAlive(h)
 }
