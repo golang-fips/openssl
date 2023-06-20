@@ -59,7 +59,7 @@ func GenerateKeyRSA(bits int) (N, E, D, P, Q, Dp, Dq, Qinv BigInt, err error) {
 			return bad(newOpenSSLError("BN_new failed"))
 		}
 		defer func() {
-			C.go_openssl_BN_clear(tmp)
+			C.go_openssl_BN_clear_free(tmp)
 		}()
 		var err error
 		setBigInt := func(bi *BigInt, param *C.char) bool {
