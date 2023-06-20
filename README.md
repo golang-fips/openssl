@@ -28,23 +28,25 @@ On the other hand, Google maintains a branch that uses cgo and BoringSSL to impl
 
 The `openssl` package has support for multiple OpenSSL versions, namely 1.0.2, 1.1.0, 1.1.1 and 3.0.x.
 
-All supported OpenSSL versions passes an small set of automatic tests that ensure they can be built and that there are no major regressions.
+All supported OpenSSL versions pass a small set of automatic tests that ensure they can be built and that there are no major regressions.
 These tests do not validate the cryptographic correctness of the `openssl` package.
 
-On top of that, the [Microsoft Go fork](https://github.com/microsoft/go) and the [RedHat Go fork](https://github.com/golang-fips/go) builds and tests a subset of the supported OpenSSL versions when integrated with the Go `crypto` package.
+On top of that, the [Microsoft Go fork](https://github.com/microsoft/go) and the [RedHat Go fork](https://github.com/golang-fips/go) build and test a subset of the supported OpenSSL versions when integrated with the Go `crypto` package.
 These tests are much more exhaustive and validate a specific OpenSSL version can produce working applications.
 
 ### Building without OpenSSL headers
 
 The `openssl` package does not use any symbol from the OpenSSL headers. There is no need that have them installed to build an application which imports this library.
 
-CI verifies that all the functions and constants defined in our headers match the ones in the OpenSSL headers for every supported OpenSSL version.
+The CI tests in this repository verify that all the functions and constants defined in our headers match the ones in the OpenSSL headers for every supported OpenSSL version.
 
 ### Portable OpenSSL
 
-The OpenSSL bindings are implemented in such a way that the OpenSSL version used when building a program does not have to match with the OpenSSL version used when running it.
+The OpenSSL bindings are implemented in such a way that the OpenSSL version available when building a program does not have to match with the OpenSSL version used when running it.
+In fact, OpenSSL doesn't need to be present on the builder.
+For example, using the `openssl` package and `go build .` on a Windows host with `GOOS=linux` can produce a program that successfully runs on Linux and uses OpenSSL.
 
-This feature does not require any additional configuration, but it only works with OpenSSL versions known and supported by the Go toolchain.
+This feature does not require any additional configuration, but it only works with OpenSSL versions known and supported by the Go toolchain that integrates the `openssl` package.
 
 ## Limitations
 
