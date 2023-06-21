@@ -279,6 +279,7 @@ DEFINEFUNC_1_1(void, RSA_get0_factors, (const GO_RSA_PTR rsa, const GO_BIGNUM_PT
 DEFINEFUNC_1_1(void, RSA_get0_key, (const GO_RSA_PTR rsa, const GO_BIGNUM_PTR *n, const GO_BIGNUM_PTR *e, const GO_BIGNUM_PTR *d), (rsa, n, e, d)) \
 DEFINEFUNC(GO_BIGNUM_PTR, BN_new, (void), ()) \
 DEFINEFUNC(void, BN_free, (GO_BIGNUM_PTR arg0), (arg0)) \
+DEFINEFUNC(void, BN_clear, (GO_BIGNUM_PTR arg0), (arg0)) \
 DEFINEFUNC(void, BN_clear_free, (GO_BIGNUM_PTR arg0), (arg0)) \
 DEFINEFUNC(int, BN_num_bits, (const GO_BIGNUM_PTR arg0), (arg0)) \
 DEFINEFUNC(GO_BIGNUM_PTR, BN_bin2bn, (const unsigned char *arg0, int arg1, GO_BIGNUM_PTR arg2), (arg0, arg1, arg2)) \
