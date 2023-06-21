@@ -31,7 +31,7 @@ The `openssl` package has support for multiple OpenSSL versions, namely 1.0.2, 1
 All supported OpenSSL versions pass a small set of automatic tests that ensure they can be built and that there are no major regressions.
 These tests do not validate the cryptographic correctness of the `openssl` package.
 
-On top of that, the [Microsoft Go fork](https://github.com/microsoft/go) and the [RedHat Go fork](https://github.com/golang-fips/go) build and test a subset of the supported OpenSSL versions when integrated with the Go `crypto` package.
+On top of that, the [golang-fips Go fork](https://github.com/golang-fips/go) -maintained by Red Hat- and the [Microsoft Go fork](https://github.com/microsoft/go), tests a subset of the supported OpenSSL versions when integrated with the Go `crypto` package.
 These tests are much more exhaustive and validate a specific OpenSSL version can produce working applications.
 
 ### Building without OpenSSL headers
@@ -61,5 +61,5 @@ OpenSSL is used for a given build only in limited circumstances:
 The work done to support FIPS compatibility mode leverages code and ideas from other open-source projects:
 
 - All crypto stubs are a mirror of Google's [dev.boringcrypto branch](https://github.com/golang/go/tree/dev.boringcrypto) and the release branch ports of that branch.
-- The mapping between BoringSSL and OpenSSL APIs is taken from the former [RedHat Go fork](https://pagure.io/go).
+- The mapping between BoringSSL and OpenSSL APIs is taken from the former [Red Hat Go fork](https://pagure.io/go).
 - The portable OpenSSL implementation is ported from Microsoft's [.NET runtime](https://github.com/dotnet/runtime) cryptography module.
