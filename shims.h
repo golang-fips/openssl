@@ -159,6 +159,9 @@ typedef void* GO_SHA_CTX_PTR;
 // #include <openssl/provider.h>
 // #include <openssl/param_build.h>
 // #endif
+// #if OPENSSL_VERSION_NUMBER < 0x10100000L
+// #include <openssl/bn.h>
+// #endif
 #define FOR_ALL_OPENSSL_FUNCTIONS \
 DEFINEFUNC(void, ERR_error_string_n, (unsigned long e, char *buf, size_t len), (e, buf, len)) \
 DEFINEFUNC_LEGACY_1(unsigned long, ERR_get_error_line, (const char **file, int *line), (file, line)) \
