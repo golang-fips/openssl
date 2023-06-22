@@ -282,6 +282,8 @@ func tryConvertDefineFunc(w io.Writer, l string, i int) bool {
 	switch l[:i1] {
 	case "DEFINEFUNC":
 		writeDefineFunc("")
+	case "DEFINEFUNC_LEGACY_1_1":
+		writeDefineFunc("(OPENSSL_VERSION_NUMBER >= 0x10100000L) && (OPENSSL_VERSION_NUMBER < 0x30000000L)")
 	case "DEFINEFUNC_LEGACY_1_0":
 		writeDefineFunc("OPENSSL_VERSION_NUMBER < 0x10100000L")
 	case "DEFINEFUNC_LEGACY_1":

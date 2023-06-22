@@ -123,6 +123,10 @@ typedef void* GO_SHA_CTX_PTR;
 // the OpenSSL API and do not require special logic.
 // The process will be aborted if the function can't be loaded.
 //
+// DEFINEFUNC_LEGACY_1_1 acts like DEFINEFUNC but only aborts the process if the function can't be loaded
+// when using 1.1.x. This indicates the function is required when using 1.1.x, but is unused when using later versions.
+// It also might not exist in later versions.
+//
 // DEFINEFUNC_LEGACY_1_0 acts like DEFINEFUNC but only aborts the process if the function can't be loaded
 // when using 1.0.x. This indicates the function is required when using 1.0.x, but is unused when using later versions.
 // It also might not exist in later versions.
