@@ -101,6 +101,7 @@ typedef void* GO_EVP_MAC_PTR;
 typedef void* GO_EVP_MAC_CTX_PTR;
 typedef void* GO_OSSL_PARAM_BLD_PTR;
 typedef void* GO_OSSL_PARAM_PTR;
+typedef void* GO_CRYPTO_THREADID_PTR;
 
 // #include <openssl/md5.h>
 typedef void* GO_MD5_CTX_PTR;
@@ -166,7 +167,8 @@ DEFINEFUNC_RENAMED_1_1(const char *, OpenSSL_version, SSLeay_version, (int type)
 DEFINEFUNC(void, OPENSSL_init, (void), ()) \
 DEFINEFUNC_LEGACY_1_0(void, ERR_load_crypto_strings, (void), ()) \
 DEFINEFUNC_LEGACY_1_0(int, CRYPTO_num_locks, (void), ()) \
-DEFINEFUNC_LEGACY_1_0(void, CRYPTO_set_id_callback, (unsigned long (*id_function)(void)), (id_function)) \
+DEFINEFUNC_LEGACY_1_0(int, CRYPTO_THREADID_set_callback, (void (*threadid_func) (GO_CRYPTO_THREADID_PTR)), (threadid_func)) \
+DEFINEFUNC_LEGACY_1_0(void, CRYPTO_THREADID_set_numeric, (GO_CRYPTO_THREADID_PTR id, unsigned long val), (id, val)) \
 DEFINEFUNC_LEGACY_1_0(void, CRYPTO_set_locking_callback, (void (*locking_function)(int mode, int n, const char *file, int line)), (locking_function)) \
 DEFINEFUNC_LEGACY_1_0(void, OPENSSL_add_all_algorithms_conf, (void), ()) \
 DEFINEFUNC_1_1(int, OPENSSL_init_crypto, (uint64_t ops, const GO_OPENSSL_INIT_SETTINGS_PTR settings), (ops, settings)) \
