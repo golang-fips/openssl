@@ -47,7 +47,7 @@ func opensslInit(version string) (major, minor, patch int, err error) {
 
 	// Load the OpenSSL functions.
 	// See shims.go for the complete list of supported functions.
-	C.go_openssl_load_functions(handle, C.int(major), C.int(minor))
+	C.go_openssl_load_functions(handle, C.int(major), C.int(minor), C.int(patch))
 
 	// Initialize OpenSSL.
 	C.go_openssl_OPENSSL_init()

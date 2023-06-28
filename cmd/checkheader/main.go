@@ -288,6 +288,8 @@ func tryConvertDefineFunc(w io.Writer, l string, i int) bool {
 		writeDefineFunc("OPENSSL_VERSION_NUMBER < 0x30000000L")
 	case "DEFINEFUNC_1_1":
 		writeDefineFunc("OPENSSL_VERSION_NUMBER >= 0x10100000L")
+	case "DEFINEFUNC_1_1_1":
+		writeDefineFunc("OPENSSL_VERSION_NUMBER >= 0x10101000L")
 	case "DEFINEFUNC_3_0":
 		writeDefineFunc("OPENSSL_VERSION_NUMBER >= 0x30000000L")
 	case "DEFINEFUNC_RENAMED_1_1":

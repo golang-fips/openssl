@@ -64,6 +64,41 @@ func SHA512(p []byte) (sum [64]byte) {
 	return
 }
 
+// Same as SupportsHKDF, as in v1.1.1+
+func SupportsSHA3() bool {
+	return vMajor > 1 ||
+		(vMajor >= 1 && vMinor > 1) ||
+		(vMajor >= 1 && vMinor >= 1 && vPatch >= 1)
+}
+
+func SHA3_224(p []byte) (sum [28]byte) {
+	if !shaX(crypto.SHA3_224, p, sum[:]) {
+		panic("openssl: SHA3_224 failed")
+	}
+	return
+}
+
+func SHA3_256(p []byte) (sum [32]byte) {
+	if !shaX(crypto.SHA3_256, p, sum[:]) {
+		panic("openssl: SHA3_256 failed")
+	}
+	return
+}
+
+func SHA3_384(p []byte) (sum [48]byte) {
+	if !shaX(crypto.SHA3_384, p, sum[:]) {
+		panic("openssl: SHA3_384 failed")
+	}
+	return
+}
+
+func SHA3_512(p []byte) (sum [64]byte) {
+	if !shaX(crypto.SHA3_512, p, sum[:]) {
+		panic("openssl: SHA3_512 failed")
+	}
+	return
+}
+
 // evpHash implements generic hash methods.
 type evpHash struct {
 	ctx C.GO_EVP_MD_CTX_PTR
@@ -557,6 +592,74 @@ func (h *sha512Hash) UnmarshalBinary(b []byte) error {
 	d.nh = n >> 61
 	d.nx = uint32(n) % 128
 	return nil
+}
+
+// NewSHA3_224 returns a new SHA3-224 hash.
+func NewSHA3_224() hash.Hash {
+	return &sha3_224Hash{
+		evpHash: newEvpHash(crypto.SHA3_224, 224/8, 64),
+	}
+}
+
+type sha3_224Hash struct {
+	*evpHash
+	out [224 / 8]byte
+}
+
+func (h *sha3_224Hash) Sum(in []byte) []byte {
+	h.sum(h.out[:])
+	return append(in, h.out[:]...)
+}
+
+// NewSHA3_256 returns a new SHA3-256 hash.
+func NewSHA3_256() hash.Hash {
+	return &sha3_256Hash{
+		evpHash: newEvpHash(crypto.SHA3_256, 256/8, 64),
+	}
+}
+
+type sha3_256Hash struct {
+	*evpHash
+	out [256 / 8]byte
+}
+
+func (h *sha3_256Hash) Sum(in []byte) []byte {
+	h.sum(h.out[:])
+	return append(in, h.out[:]...)
+}
+
+// NewSHA3_384 returns a new SHA3-384 hash.
+func NewSHA3_384() hash.Hash {
+	return &sha3_384Hash{
+		evpHash: newEvpHash(crypto.SHA3_384, 384/8, 128),
+	}
+}
+
+type sha3_384Hash struct {
+	*evpHash
+	out [384 / 8]byte
+}
+
+func (h *sha3_384Hash) Sum(in []byte) []byte {
+	h.sum(h.out[:])
+	return append(in, h.out[:]...)
+}
+
+// NewSHA3_512 returns a new SHA3-512 hash.
+func NewSHA3_512() hash.Hash {
+	return &sha3_512Hash{
+		evpHash: newEvpHash(crypto.SHA3_512, 512/8, 128),
+	}
+}
+
+type sha3_512Hash struct {
+	*evpHash
+	out [512 / 8]byte
+}
+
+func (h *sha3_512Hash) Sum(in []byte) []byte {
+	h.sum(h.out[:])
+	return append(in, h.out[:]...)
 }
 
 // appendUint64 appends x into b as a big endian byte sequence.

@@ -13,6 +13,7 @@
 #define DEFINEFUNC_LEGACY_1_0(ret, func, args, argscall)       DEFINEFUNC(ret, func, args, argscall)
 #define DEFINEFUNC_LEGACY_1(ret, func, args, argscall)         DEFINEFUNC(ret, func, args, argscall)
 #define DEFINEFUNC_1_1(ret, func, args, argscall)              DEFINEFUNC(ret, func, args, argscall)
+#define DEFINEFUNC_1_1_1(ret, func, args, argscall)            DEFINEFUNC(ret, func, args, argscall)
 #define DEFINEFUNC_3_0(ret, func, args, argscall)              DEFINEFUNC(ret, func, args, argscall)
 #define DEFINEFUNC_RENAMED_1_1(ret, func, oldfunc, args, argscall) DEFINEFUNC(ret, func, args, argscall)
 #define DEFINEFUNC_RENAMED_3_0(ret, func, oldfunc, args, argscall) DEFINEFUNC(ret, func, args, argscall)
@@ -23,6 +24,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #undef DEFINEFUNC_LEGACY_1_0
 #undef DEFINEFUNC_LEGACY_1
 #undef DEFINEFUNC_1_1
+#undef DEFINEFUNC_1_1_1
 #undef DEFINEFUNC_3_0
 #undef DEFINEFUNC_RENAMED_1_1
 #undef DEFINEFUNC_RENAMED_3_0
@@ -52,7 +54,7 @@ go_openssl_fips_enabled(void* handle)
 // and assign them to their corresponding function pointer
 // defined in goopenssl.h.
 void
-go_openssl_load_functions(void* handle, int major, int minor)
+go_openssl_load_functions(void* handle, int major, int minor, int patch)
 {
 #define DEFINEFUNC_INTERNAL(name, func)                                                                         \
     _g_##name = dlsym(handle, func);                                                                            \
@@ -74,6 +76,11 @@ go_openssl_load_functions(void* handle, int major, int minor)
     }
 #define DEFINEFUNC_1_1(ret, func, args, argscall)     \
     if (major == 3 || (major == 1 && minor == 1))     \
+    {                                                 \
+        DEFINEFUNC_INTERNAL(func, #func)              \
+    }
+#define DEFINEFUNC_1_1_1(ret, func, args, argscall)     \
+    if (major == 3 || (major == 1 && minor == 1 && patch == 1))     \
     {                                                 \
         DEFINEFUNC_INTERNAL(func, #func)              \
     }
@@ -107,6 +114,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #undef DEFINEFUNC_LEGACY_1_0
 #undef DEFINEFUNC_LEGACY_1
 #undef DEFINEFUNC_1_1
+#undef DEFINEFUNC_1_1_1
 #undef DEFINEFUNC_3_0
 #undef DEFINEFUNC_RENAMED_1_1
 #undef DEFINEFUNC_RENAMED_3_0

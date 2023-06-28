@@ -24,7 +24,7 @@ int go_openssl_version_major(void* handle);
 int go_openssl_version_minor(void* handle);
 int go_openssl_version_patch(void* handle);
 int go_openssl_thread_setup(void);
-void go_openssl_load_functions(void* handle, int major, int minor);
+void go_openssl_load_functions(void* handle, int major, int minor, int patch);
 const GO_EVP_MD_PTR go_openssl_EVP_md5_sha1_backport(void);
 
 // Define pointers to all the used OpenSSL functions.
@@ -43,6 +43,8 @@ const GO_EVP_MD_PTR go_openssl_EVP_md5_sha1_backport(void);
     DEFINEFUNC(ret, func, args, argscall)
 #define DEFINEFUNC_1_1(ret, func, args, argscall)   \
     DEFINEFUNC(ret, func, args, argscall)
+#define DEFINEFUNC_1_1_1(ret, func, args, argscall)     \
+    DEFINEFUNC(ret, func, args, argscall)
 #define DEFINEFUNC_3_0(ret, func, args, argscall)     \
     DEFINEFUNC(ret, func, args, argscall)
 #define DEFINEFUNC_RENAMED_1_1(ret, func, oldfunc, args, argscall)     \
@@ -56,6 +58,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #undef DEFINEFUNC_LEGACY_1_0
 #undef DEFINEFUNC_LEGACY_1
 #undef DEFINEFUNC_1_1
+#undef DEFINEFUNC_1_1_1
 #undef DEFINEFUNC_3_0
 #undef DEFINEFUNC_RENAMED_1_1
 #undef DEFINEFUNC_RENAMED_3_0

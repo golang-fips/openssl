@@ -31,6 +31,14 @@ func hashToMD(h hash.Hash) C.GO_EVP_MD_PTR {
 		ch = crypto.SHA384
 	case *sha512Hash:
 		ch = crypto.SHA512
+	case *sha3_224Hash:
+		ch = crypto.SHA3_224
+	case *sha3_256Hash:
+		ch = crypto.SHA3_256
+	case *sha3_384Hash:
+		ch = crypto.SHA3_384
+	case *sha3_512Hash:
+		ch = crypto.SHA3_512
 	}
 	if ch != 0 {
 		return cryptoHashToMD(ch)
@@ -72,6 +80,26 @@ func cryptoHashToMD(ch crypto.Hash) (md C.GO_EVP_MD_PTR) {
 		return C.go_openssl_EVP_sha384()
 	case crypto.SHA512:
 		return C.go_openssl_EVP_sha512()
+	case crypto.SHA3_224:
+		if !SupportsSHA3() {
+			return nil
+		}
+		return C.go_openssl_EVP_sha3_224()
+	case crypto.SHA3_256:
+		if !SupportsSHA3() {
+			return nil
+		}
+		return C.go_openssl_EVP_sha3_256()
+	case crypto.SHA3_384:
+		if !SupportsSHA3() {
+			return nil
+		}
+		return C.go_openssl_EVP_sha3_384()
+	case crypto.SHA3_512:
+		if !SupportsSHA3() {
+			return nil
+		}
+		return C.go_openssl_EVP_sha3_512()
 	}
 	return nil
 }
