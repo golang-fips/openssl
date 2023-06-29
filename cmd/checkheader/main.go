@@ -89,10 +89,10 @@ func gccRun(program string) error {
 	// any of the static checks fail. If it succeeds, it means
 	// the checked header matches the OpenSSL definitions.
 	p := exec.Command("gcc",
-		"-c",                           // skip linking
-		"-Werror",                      // promote all warnings to errors
-		"-Wno-deprecated-declarations", // deprecation warnings are expected
-		"-isystem", *osslInclude,       // OpenSSL include from --ossl-include must be preferred over system includes
+		"-c",                      // skip linking
+		"-Werror",                 // promote all warnings to errors
+		"-DOPENSSL_NO_DEPRECATED", // hide deprecated functions
+		"-isystem", *osslInclude,  // OpenSSL include from --ossl-include must be preferred over system includes
 		"-o", "/dev/null", // discard output
 		name)
 	p.Stdout = os.Stdout
@@ -282,6 +282,8 @@ func tryConvertDefineFunc(w io.Writer, l string, i int) bool {
 	switch l[:i1] {
 	case "DEFINEFUNC":
 		writeDefineFunc("")
+	case "DEFINEFUNC_LEGACY_1_1":
+		writeDefineFunc("(OPENSSL_VERSION_NUMBER >= 0x10100000L) && (OPENSSL_VERSION_NUMBER < 0x30000000L)")
 	case "DEFINEFUNC_LEGACY_1_0":
 		writeDefineFunc("OPENSSL_VERSION_NUMBER < 0x10100000L")
 	case "DEFINEFUNC_LEGACY_1":
