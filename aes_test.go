@@ -190,11 +190,7 @@ func TestSealPanic(t *testing.T) {
 		gcm.Seal(nil, make([]byte, gcmStandardNonceSize-1), []byte{0x01, 0x02, 0x03}, nil)
 	})
 	assertPanic(t, func() {
-		// maxInt is implemented as math.MaxInt, but this constant
-		// is only available since go1.17.
-		// TODO: use math.MaxInt once go1.16 is no longer supported.
-		maxInt := int((^uint(0)) >> 1)
-		gcm.Seal(nil, make([]byte, gcmStandardNonceSize), make([]byte, maxInt), nil)
+		gcm.Seal(nil, make([]byte, gcmStandardNonceSize), make([]byte, math.MaxInt), nil)
 	})
 }
 
