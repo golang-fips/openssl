@@ -54,7 +54,6 @@ OpenSSL is used for a given build only in limited circumstances:
 
 - The platform must be `GOOS=linux`.
 - The build must set `CGO_ENABLED=1`.
-- The android build tag must not be specified.
 
 ## Acknowledgements
 

@@ -1,5 +1,5 @@
-//go:build linux && !android
-// +build linux,!android
+//go:build linux
+// +build linux
 
 // Package openssl provides access to OpenSSL cryptographic functions.
 package openssl
