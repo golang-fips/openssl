@@ -1,5 +1,5 @@
-//go:build linux && !android
-// +build linux,!android
+//go:build linux
+// +build linux
 
 // The following is a partial backport of crypto/evp/m_md5_sha1.c,
 // commit cbc8a839959418d8a2c2e3ec6bdf394852c9501e on the
