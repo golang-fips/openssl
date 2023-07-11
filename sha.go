@@ -154,7 +154,7 @@ func (h *evpHash) Write(p []byte) (int, error) {
 }
 
 func (h *evpHash) WriteString(s string) (int, error) {
-	if len(s) > 0 && C.go_openssl_EVP_DigestUpdate(h.ctx, unsafe.StringData(s), C.size_t(len(s))) == 0 {
+	if len(s) > 0 && C.go_openssl_EVP_DigestUpdate(h.ctx, unsafe.Pointer(unsafe.StringData(s)), C.size_t(len(s))) == 0 {
 		panic("openssl: EVP_DigestUpdate failed")
 	}
 	runtime.KeepAlive(h)

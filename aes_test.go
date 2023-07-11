@@ -6,6 +6,7 @@ package openssl
 import (
 	"bytes"
 	"crypto/cipher"
+	"math"
 	"testing"
 )
 
