@@ -1,5 +1,4 @@
 //go:build linux
-// +build linux
 
 // Package openssl provides access to OpenSSL cryptographic functions.
 package openssl
