@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/golang-fips/openssl"
+	"github.com/golang-fips/openssl/v2"
 )
 
 func TestSha(t *testing.T) {

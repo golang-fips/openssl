@@ -6,7 +6,7 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/golang-fips/openssl"
+	"github.com/golang-fips/openssl/v2"
 )
 
 func TestExtractHKDF(t *testing.T) {
