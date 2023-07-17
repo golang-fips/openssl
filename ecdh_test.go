@@ -7,7 +7,7 @@ import (
 	"encoding/hex"
 	"testing"
 
-	"github.com/golang-fips/openssl"
+	"github.com/golang-fips/openssl/v2"
 )
 
 func TestECDH(t *testing.T) {

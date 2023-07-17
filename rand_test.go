@@ -5,7 +5,7 @@ package openssl_test
 import (
 	"testing"
 
-	"github.com/golang-fips/openssl"
+	"github.com/golang-fips/openssl/v2"
 )
 
 func TestRand(t *testing.T) {
