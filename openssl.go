@@ -1,11 +1,9 @@
-//go:build linux && !cmd_go_bootstrap
+//go:build !cmd_go_bootstrap
 
 // Package openssl provides access to OpenSSL cryptographic functions.
 package openssl
 
 // #include "goopenssl.h"
-// #include <dlfcn.h>
-// #cgo LDFLAGS: -ldl
 import "C"
 import (
 	"encoding/binary"
@@ -34,25 +32,25 @@ var nativeEndian binary.ByteOrder
 // and if the FIPS mode is enabled.
 // This function can be called before Init.
 func CheckVersion(version string) (exists, fips bool) {
-	handle := dlopen(version)
+	handle, _ := dlopen(version)
 	if handle == nil {
 		return false, false
 	}
-	defer C.dlclose(handle)
+	defer dlclose(handle)
 	fips = C.go_openssl_fips_enabled(handle) == 1
 	return true, fips
 }
 
-// Init loads and initializes OpenSSL.
+// Init loads and initializes OpenSSL from the shared library at path.
 // It must be called before any other OpenSSL call, except CheckVersion.
 //
-// Only the first call to Init is effective,
-// subsequent calls will return the same error result as the one from the first call.
+// Only the first call to Init is effective.
+// Subsequent calls will return the same error result as the one from the first call.
 //
-// version will be appended to the OpenSSL shared library name as a version suffix
-// when calling dlopen. For example, `version=1.1.1k-fips` makes Init look for
-// the shared library libcrypto.so.1.1.1k-fips.
-func Init(version string) error {
+// The file is passed to dlopen() verbatim to load the OpenSSL shared library.
+// For example, `file=libcrypto.so.1.1.1k-fips` makes Init look for the shared
+// library libcrypto.so.1.1.1k-fips.
+func Init(file string) error {
 	initOnce.Do(func() {
 		buf := [2]byte{}
 		*(*uint16)(unsafe.Pointer(&buf[0])) = uint16(0xABCD)
@@ -65,7 +63,7 @@ func Init(version string) error {
 		default:
 			panic("Could not determine native endianness.")
 		}
-		vMajor, vMinor, vPatch, initErr = opensslInit(version)
+		vMajor, vMinor, vPatch, initErr = opensslInit(file)
 	})
 	return initErr
 }

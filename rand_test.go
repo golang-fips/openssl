@@ -1,5 +1,3 @@
-//go:build linux
-
 package openssl_test
 
 import (

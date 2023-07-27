@@ -1,8 +1,13 @@
-//go:build linux
+//go:build unix || windows
 
 #include "goopenssl.h"
 
-#include <dlfcn.h> // dlsym
+#ifdef _WIN32
+# include <windows.h>
+# define dlsym (void*)GetProcAddress
+#else
+# include <dlfcn.h> // dlsym
+#endif
 #include <stdio.h> // fprintf
 
 // Approach taken from .Net System.Security.Cryptography.Native

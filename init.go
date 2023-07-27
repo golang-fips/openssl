@@ -1,26 +1,23 @@
-//go:build linux && !cmd_go_bootstrap
+//go:build !cmd_go_bootstrap
 
 package openssl
 
 // #include "goopenssl.h"
-// #include <dlfcn.h>
 import "C"
 import (
 	"errors"
-	"unsafe"
 )
 
 // opensslInit loads and initialize OpenSSL.
 // If successful, it returns the major and minor OpenSSL version
 // as reported by the OpenSSL API.
 //
-// See Init() for details about version.
-func opensslInit(version string) (major, minor, patch int, err error) {
+// See Init() for details about file.
+func opensslInit(file string) (major, minor, patch int, err error) {
 	// Load the OpenSSL shared library using dlopen.
-	handle := dlopen(version)
-	if handle == nil {
-		errstr := C.GoString(C.dlerror())
-		return 0, 0, 0, errors.New("openssl: can't load libcrypto.so." + version + ": " + errstr)
+	handle, err := dlopen(file)
+	if err != nil {
+		return 0, 0, 0, err
 	}
 
 	// Retrieve the loaded OpenSSL version and check if it is supported.
@@ -63,10 +60,4 @@ func opensslInit(version string) (major, minor, patch int, err error) {
 		}
 	}
 	return major, minor, patch, nil
-}
-
-func dlopen(version string) unsafe.Pointer {
-	cv := C.CString("libcrypto.so." + version)
-	defer C.free(unsafe.Pointer(cv))
-	return C.dlopen(cv, C.RTLD_LAZY|C.RTLD_LOCAL)
 }

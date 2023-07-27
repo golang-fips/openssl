@@ -1,4 +1,4 @@
-//go:build linux
+//go:build unix
 
 #include "goopenssl.h"
 #include <pthread.h>
