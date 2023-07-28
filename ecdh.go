@@ -314,8 +314,8 @@ func GenerateKeyECDH(curve string) (*PrivateKeyECDH, []byte, error) {
 	// generating a private ECDH key.
 	bits := C.go_openssl_EVP_PKEY_get_bits(pkey)
 	bytes := make([]byte, (bits+7)/8)
-	if C.go_openssl_BN_bn2binpad(priv, base(bytes), C.int(len(bytes))) == 0 {
-		return nil, nil, newOpenSSLError("BN_bn2binpad")
+	if err := bnToBinPad(priv, bytes); err != nil {
+		return nil, nil, err
 	}
 	k = &PrivateKeyECDH{pkey, curve, true}
 	runtime.SetFinalizer(k, (*PrivateKeyECDH).finalize)

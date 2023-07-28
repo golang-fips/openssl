@@ -242,10 +242,39 @@ func wbase(b BigInt) *C.uchar {
 	return (*C.uchar)(unsafe.Pointer(&b[0]))
 }
 
+// bignum_st_1_0_2 is bignum_st (BIGNUM) memory layout in OpenSSL 1.0.2.
+type bignum_st_1_0_2 struct {
+	d     unsafe.Pointer // Pointer to an array of BN_ULONG bit chunks
+	top   C.int          // Index of last used d +1
+	dmax  C.int
+	neg   C.int
+	flags C.int
+}
+
 func bigToBN(x BigInt) C.GO_BIGNUM_PTR {
 	if len(x) == 0 {
 		return nil
 	}
+
+	if vMajor == 1 && vMinor == 0 {
+		// OpenSSL 1.0.x does not export bn_lebin2bn on all platforms,
+		// so we have to emulate it.
+		bn := C.go_openssl_BN_new()
+		if bn == nil {
+			return nil
+		}
+		if C.go_openssl_bn_expand2(bn, C.int(len(x))) == nil {
+			C.go_openssl_BN_free(bn)
+			panic(newOpenSSLError("BN_expand2"))
+		}
+		// The bytes of a BigInt are laid out in memory in the same order as a
+		// BIGNUM, regardless of host endianness.
+		bns := (*bignum_st_1_0_2)(unsafe.Pointer(bn))
+		d := unsafe.Slice((*uint)(bns.d), len(x))
+		bns.top = C.int(copy(d, x))
+		return bn
+	}
+
 	if nativeEndian == binary.BigEndian {
 		z := make(BigInt, len(x))
 		copy(z, x)
@@ -261,6 +290,17 @@ func bnToBig(bn C.GO_BIGNUM_PTR) BigInt {
 	if bn == nil {
 		return nil
 	}
+
+	if vMajor == 1 && vMinor == 0 {
+		// OpenSSL 1.0.x does not export bn_bn2lebinpad on all platforms,
+		// so we have to emulate it.
+		bns := (*bignum_st_1_0_2)(unsafe.Pointer(bn))
+		d := unsafe.Slice((*uint)(bns.d), bns.top)
+		x := make(BigInt, len(d))
+		copy(x, d)
+		return x
+	}
+
 	// Limbs are always ordered in LSB first, so we can safely apply
 	// BN_bn2lebinpad regardless of host endianness.
 	x := make(BigInt, C.go_openssl_BN_num_bits(bn))
@@ -271,6 +311,37 @@ func bnToBig(bn C.GO_BIGNUM_PTR) BigInt {
 		x.byteSwap()
 	}
 	return x
+}
+
+func bnNumBytes(bn C.GO_BIGNUM_PTR) int {
+	return (int(C.go_openssl_BN_num_bits(bn)) + 7) / 8
+}
+
+// bnToBinPad converts the absolute value of bn into big-endian form and stores
+// it at to, padding with zeroes if necessary. If len(to) is not large enough to
+// hold the result, an error is returned.
+func bnToBinPad(bn C.GO_BIGNUM_PTR, to []byte) error {
+	if vMajor == 1 && vMinor == 0 {
+		// OpenSSL 1.0.x does not export bn_bn2binpad on all platforms,
+		// so we have to emulate it.
+		n := bnNumBytes(bn)
+		pad := len(to) - n
+		if pad < 0 {
+			return errors.New("openssl: destination buffer too small")
+		}
+		for i := 0; i < pad; i++ {
+			to[i] = 0
+		}
+		if int(C.go_openssl_BN_bn2bin(bn, base(to[pad:]))) != n {
+			return errors.New("openssl: BN_bn2bin short write")
+		}
+		return nil
+	}
+
+	if C.go_openssl_BN_bn2binpad(bn, base(to), C.int(len(to))) < 0 {
+		return newOpenSSLError("BN_bn2binpad")
+	}
+	return nil
 }
 
 func CheckLeaks() {
