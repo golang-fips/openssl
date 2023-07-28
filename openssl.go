@@ -9,6 +9,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"math/bits"
+	"runtime"
 	"strconv"
 	"strings"
 	"sync"
@@ -219,6 +220,64 @@ func newOpenSSLError(msg string) error {
 		b.WriteString(string(buf[:]) + "\n\t" + C.GoString(file) + ":" + strconv.Itoa(int(line)))
 	}
 	return errors.New(b.String())
+}
+
+var unknownFile = "<go code>\000"
+
+// caller reports file and line number information about function invocations on
+// the calling goroutine's stack, in a form suitable for passing to C code.
+// The argument skip is the number of stack frames to ascend, with 0 identifying
+// the caller of caller. The return values report the file name and line number
+// within the file of the corresponding call. The returned file is a C string
+// with static storage duration.
+func caller(skip int) (file *C.char, line C.int) {
+	_, f, l, ok := runtime.Caller(skip + 1)
+	if !ok {
+		f = unknownFile
+	}
+	// The underlying bytes of the file string are null-terminated rodata with
+	// static lifetimes, so can be safely passed to C without worrying about
+	// leaking memory or use-after-free.
+	return (*C.char)(noescape(unsafe.Pointer(unsafe.StringData(f)))), C.int(l)
+}
+
+// cryptoMalloc allocates n bytes of memory on the OpenSSL heap, which may be
+// different from the heap which C.malloc allocates on. The allocated object
+// must be freed using cryptoFree. cryptoMalloc is equivalent to the
+// OPENSSL_malloc macro.
+//
+// Like C.malloc, this function is guaranteed to never return nil. If OpenSSL's
+// malloc indicates out of memory, it crashes the program.
+//
+// Only objects which the OpenSSL library will take ownership of (i.e. will be
+// freed by OPENSSL_free / CRYPTO_free) need to be allocated on the OpenSSL
+// heap.
+func cryptoMalloc(n int) unsafe.Pointer {
+	file, line := caller(1)
+	var p unsafe.Pointer
+	if vMajor == 1 && vMinor == 0 {
+		p = C.go_openssl_CRYPTO_malloc_legacy102(C.int(n), file, line)
+	} else {
+		p = C.go_openssl_CRYPTO_malloc(C.size_t(n), file, line)
+	}
+	if p == nil {
+		// Un-recover()-ably crash the program in the same manner as the
+		// C.malloc() wrapper function.
+		runtime_throw("openssl: CRYPTO_malloc failed")
+	}
+	return p
+}
+
+// cryptoFree frees an object allocated on the OpenSSL heap, which may be
+// different from the heap which C.malloc allocates on. cryptoFree is equivalent
+// to the OPENSSL_free macro.
+func cryptoFree(p unsafe.Pointer) {
+	if vMajor == 1 && vMinor == 0 {
+		C.go_openssl_CRYPTO_free_legacy102(p)
+		return
+	}
+	file, line := caller(1)
+	C.go_openssl_CRYPTO_free(p, file, line)
 }
 
 const wordBytes = bits.UintSize / 8

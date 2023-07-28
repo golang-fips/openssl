@@ -168,3 +168,16 @@ go_openssl_EVP_CIPHER_CTX_open_wrapper(const GO_EVP_CIPHER_CTX_PTR ctx,
 
     return 1;
 }
+
+// Hand-roll custom wrappers for CRYPTO_malloc and CRYPTO_free which cast the
+// function pointers to the correct signatures for OpenSSL 1.0.2.
+
+static inline void *
+go_openssl_CRYPTO_malloc_legacy102(int num, const char *file, int line) {
+    return ((void *(*)(int, const char *, int))_g_CRYPTO_malloc)(num, file, line);
+}
+
+static inline void
+go_openssl_CRYPTO_free_legacy102(void *str) {
+    ((void (*)(void *))_g_CRYPTO_free)(str);
+}

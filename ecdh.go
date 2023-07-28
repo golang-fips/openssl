@@ -101,7 +101,7 @@ func (k *PrivateKeyECDH) PublicKey() (*PublicKeyECDH, error) {
 			return nil, newOpenSSLError("EVP_PKEY_get_octet_string_param")
 		}
 		bytes = C.GoBytes(unsafe.Pointer(cbytes), C.int(n))
-		C.free(unsafe.Pointer(cbytes))
+		cryptoFree(unsafe.Pointer(cbytes))
 	default:
 		panic(errUnsupportedVersion())
 	}

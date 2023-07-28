@@ -180,6 +180,11 @@ DEFINEFUNC_LEGACY_1_0(int, CRYPTO_num_locks, (void), ()) \
 DEFINEFUNC_LEGACY_1_0(int, CRYPTO_THREADID_set_callback, (void (*threadid_func) (GO_CRYPTO_THREADID_PTR)), (threadid_func)) \
 DEFINEFUNC_LEGACY_1_0(void, CRYPTO_THREADID_set_numeric, (GO_CRYPTO_THREADID_PTR id, unsigned long val), (id, val)) \
 DEFINEFUNC_LEGACY_1_0(void, CRYPTO_set_locking_callback, (void (*locking_function)(int mode, int n, const char *file, int line)), (locking_function)) \
+/* CRYPTO_malloc argument num changes from int to size_t in OpenSSL 1.1.0, */ \
+/* and CRYPTO_free has file and line arguments added. */ \
+/* Exclude them from headercheck tool when using previous OpenSSL versions. */ \
+/*check:from=1.1.0*/ DEFINEFUNC(void *, CRYPTO_malloc, (size_t num, const char *file, int line), (num, file, line)) \
+/*check:from=1.1.0*/ DEFINEFUNC(void, CRYPTO_free, (void *str, const char *file, int line), (str, file, line)) \
 DEFINEFUNC_LEGACY_1_0(void, OPENSSL_add_all_algorithms_conf, (void), ()) \
 DEFINEFUNC_1_1(int, OPENSSL_init_crypto, (uint64_t ops, const GO_OPENSSL_INIT_SETTINGS_PTR settings), (ops, settings)) \
 DEFINEFUNC_LEGACY_1(int, FIPS_mode, (void), ()) \
