@@ -71,6 +71,8 @@ func newHKDF(h func() hash.Hash, mode C.int) (*hkdf, error) {
 
 type hkdf struct {
 	ctx C.GO_EVP_PKEY_CTX_PTR
+
+	buf []byte
 }
 
 func (c *hkdf) finalize() {
@@ -82,11 +84,20 @@ func (c *hkdf) finalize() {
 func (c *hkdf) Read(p []byte) (int, error) {
 	defer runtime.KeepAlive(c)
 
-	outLen := C.size_t(len(p))
-	if C.go_openssl_EVP_PKEY_derive(c.ctx, base(p), &outLen) != 1 {
+	// EVP_PKEY_derive doesn't support incremental output, each call
+	// derives the key from scratch and returns the requested bytes.
+	// To implement io.Reader, we need to ask for len(c.buf) + len(p)
+	// bytes and copy the last derived len(p) bytes to p.
+	// We use c.buf to know how many bytes we've already derived and
+	// to avoid allocating the whole output buffer on each call.
+	start := len(c.buf)
+	c.buf = append(c.buf, make([]byte, len(p))...)
+	outLen := C.size_t(len(c.buf))
+	if C.go_openssl_EVP_PKEY_derive(c.ctx, base(c.buf), &outLen) != 1 {
 		return 0, newOpenSSLError("EVP_PKEY_derive")
 	}
-	return int(outLen), nil
+	n := copy(p, c.buf[start:outLen])
+	return n, nil
 }
 
 func ExtractHKDF(h func() hash.Hash, secret, salt []byte) ([]byte, error) {
