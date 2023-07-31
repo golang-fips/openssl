@@ -43,7 +43,11 @@ int _goboringcrypto_EVP_sign_raw(EVP_MD *md, EVP_PKEY_CTX *ctx, const uint8_t *m
                              GO_RSA *rsa_key) {
   int ret = 0;
   GO_EVP_PKEY *pk = _goboringcrypto_EVP_PKEY_new();
-  _goboringcrypto_EVP_PKEY_assign_RSA(pk, rsa_key);
+  if (!pk)
+    return 0;
+
+  if (!(_goboringcrypto_EVP_PKEY_set1_RSA(pk, rsa_key)))
+    goto err;
 
   if (!ctx && !(ctx = _goboringcrypto_EVP_PKEY_CTX_new(pk, NULL)))
     goto err;
@@ -63,6 +67,8 @@ int _goboringcrypto_EVP_sign_raw(EVP_MD *md, EVP_PKEY_CTX *ctx, const uint8_t *m
 err:
   if (ctx)
     _goboringcrypto_EVP_PKEY_CTX_free(ctx);
+  if (pk)
+    _goboringcrypto_EVP_PKEY_free(pk);
 
   return ret;
 }
@@ -103,7 +109,11 @@ int _goboringcrypto_EVP_verify_raw(const uint8_t *msg, size_t msgLen,
   int ret = 0;
   EVP_PKEY_CTX *ctx;
   GO_EVP_PKEY *pk = _goboringcrypto_EVP_PKEY_new();
-  _goboringcrypto_EVP_PKEY_assign_RSA(pk, rsa_key);
+  if (!pk)
+    return 0;
+
+  if (!(_goboringcrypto_EVP_PKEY_set1_RSA(pk, rsa_key)))
+    goto err;
 
   if (!(ctx = _goboringcrypto_EVP_PKEY_CTX_new(pk, NULL)))
     goto err;
@@ -123,6 +133,8 @@ int _goboringcrypto_EVP_verify_raw(const uint8_t *msg, size_t msgLen,
 err:
   if (ctx)
     _goboringcrypto_EVP_PKEY_CTX_free(ctx);
+  if (pk)
+    _goboringcrypto_EVP_PKEY_free(pk);
 
   return ret;
 }
