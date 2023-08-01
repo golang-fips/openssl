@@ -1,4 +1,4 @@
-//go:build linux
+//go:build linux && !cmd_go_bootstrap
 
 // Package openssl provides access to OpenSSL cryptographic functions.
 package openssl
