@@ -61,7 +61,7 @@ func newHKDF(h func() hash.Hash, mode C.int) (*hkdf, error) {
 		}
 	}
 
-	c := &hkdf{ctx: ctx}
+	c := &hkdf{ctx: ctx, hashLen: ch.Size()}
 	ctx = nil
 
 	runtime.SetFinalizer(c, (*hkdf).finalize)
@@ -72,7 +72,8 @@ func newHKDF(h func() hash.Hash, mode C.int) (*hkdf, error) {
 type hkdf struct {
 	ctx C.GO_EVP_PKEY_CTX_PTR
 
-	buf []byte
+	hashLen int
+	buf     []byte
 }
 
 func (c *hkdf) finalize() {
@@ -90,13 +91,19 @@ func (c *hkdf) Read(p []byte) (int, error) {
 	// bytes and copy the last derived len(p) bytes to p.
 	// We use c.buf to know how many bytes we've already derived and
 	// to avoid allocating the whole output buffer on each call.
-	start := len(c.buf)
-	c.buf = append(c.buf, make([]byte, len(p))...)
-	outLen := C.size_t(len(c.buf))
+	prevLen := len(c.buf)
+	needLen := len(p)
+	remains := 255*c.hashLen - prevLen
+	// Check whether enough data can be generated.
+	if remains < needLen {
+		return 0, errors.New("hkdf: entropy limit reached")
+	}
+	c.buf = append(c.buf, make([]byte, needLen)...)
+	outLen := C.size_t(prevLen + needLen)
 	if C.go_openssl_EVP_PKEY_derive(c.ctx, base(c.buf), &outLen) != 1 {
 		return 0, newOpenSSLError("EVP_PKEY_derive")
 	}
-	n := copy(p, c.buf[start:outLen])
+	n := copy(p, c.buf[prevLen:outLen])
 	return n, nil
 }
 
