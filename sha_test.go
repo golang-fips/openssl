@@ -4,6 +4,7 @@ package openssl_test
 
 import (
 	"bytes"
+	"crypto"
 	"encoding"
 	"hash"
 	"io"
@@ -13,30 +14,51 @@ import (
 	"github.com/golang-fips/openssl/v2"
 )
 
+func cryptoToHash(h crypto.Hash) func() hash.Hash {
+	switch h {
+	case crypto.SHA1:
+		return openssl.NewSHA1
+	case crypto.SHA224:
+		return openssl.NewSHA224
+	case crypto.SHA256:
+		return openssl.NewSHA256
+	case crypto.SHA384:
+		return openssl.NewSHA384
+	case crypto.SHA512:
+		return openssl.NewSHA512
+	case crypto.SHA3_224:
+		return openssl.NewSHA3_224
+	case crypto.SHA3_256:
+		return openssl.NewSHA3_256
+	case crypto.SHA3_384:
+		return openssl.NewSHA3_384
+	case crypto.SHA3_512:
+		return openssl.NewSHA3_512
+	}
+	return nil
+}
+
 func TestSha(t *testing.T) {
-	msg := []byte("testig")
-	var tests = []struct {
-		name string
-		fn   func() hash.Hash
-	}{
-		{"sha1", openssl.NewSHA1},
-		{"sha224", openssl.NewSHA224},
-		{"sha256", openssl.NewSHA256},
-		{"sha384", openssl.NewSHA384},
-		{"sha512", openssl.NewSHA512},
-		{"sha3_224", openssl.NewSHA3_224},
-		{"sha3_256", openssl.NewSHA3_256},
-		{"sha3_384", openssl.NewSHA3_384},
-		{"sha3_512", openssl.NewSHA3_512},
+	msg := []byte("testing")
+	var tests = []crypto.Hash{
+		crypto.SHA1,
+		crypto.SHA224,
+		crypto.SHA256,
+		crypto.SHA384,
+		crypto.SHA512,
+		crypto.SHA3_224,
+		crypto.SHA3_256,
+		crypto.SHA3_384,
+		crypto.SHA3_512,
 	}
 	for _, tt := range tests {
 		tt := tt
-		t.Run(tt.name, func(t *testing.T) {
+		t.Run(tt.String(), func(t *testing.T) {
 			t.Parallel()
-			if strings.HasPrefix(tt.name, "sha3_") && !openssl.SupportsSHA3() {
-				t.Skip("crypto/sha3: only supported with openssl-1.1.1+")
+			if !openssl.SupportsHash(tt) {
+				t.Skip("skipping: not supported")
 			}
-			h := tt.fn()
+			h := cryptoToHash(tt)()
 			initSum := h.Sum(nil)
 			n, err := h.Write(msg)
 			if err != nil {
@@ -52,12 +74,12 @@ func TestSha(t *testing.T) {
 			if bytes.Equal(sum, initSum) {
 				t.Error("Write didn't change internal hash state")
 			}
-			if !strings.HasPrefix(tt.name, "sha3_") {
+			if !strings.HasPrefix(tt.String(), "SHA3-") {
 				state, err := h.(encoding.BinaryMarshaler).MarshalBinary()
 				if err != nil {
 					t.Errorf("could not marshal: %v", err)
 				}
-				h2 := tt.fn()
+				h2 := cryptoToHash(tt)()
 				if err := h2.(encoding.BinaryUnmarshaler).UnmarshalBinary(state); err != nil {
 					t.Errorf("could not unmarshal: %v", err)
 				}
@@ -94,54 +116,53 @@ func TestSha(t *testing.T) {
 func TestSHA_OneShot(t *testing.T) {
 	msg := []byte("testing")
 	var tests = []struct {
-		name    string
-		want    func() hash.Hash
+		h       crypto.Hash
 		oneShot func([]byte) []byte
 	}{
-		{"sha1", openssl.NewSHA1, func(p []byte) []byte {
+		{crypto.SHA1, func(p []byte) []byte {
 			b := openssl.SHA1(p)
 			return b[:]
 		}},
-		{"sha224", openssl.NewSHA224, func(p []byte) []byte {
+		{crypto.SHA224, func(p []byte) []byte {
 			b := openssl.SHA224(p)
 			return b[:]
 		}},
-		{"sha256", openssl.NewSHA256, func(p []byte) []byte {
+		{crypto.SHA256, func(p []byte) []byte {
 			b := openssl.SHA256(p)
 			return b[:]
 		}},
-		{"sha384", openssl.NewSHA384, func(p []byte) []byte {
+		{crypto.SHA384, func(p []byte) []byte {
 			b := openssl.SHA384(p)
 			return b[:]
 		}},
-		{"sha512", openssl.NewSHA512, func(p []byte) []byte {
+		{crypto.SHA512, func(p []byte) []byte {
 			b := openssl.SHA512(p)
 			return b[:]
 		}},
-		{"sha3_224", openssl.NewSHA3_224, func(p []byte) []byte {
+		{crypto.SHA3_224, func(p []byte) []byte {
 			b := openssl.SHA3_224(p)
 			return b[:]
 		}},
-		{"sha3_256", openssl.NewSHA3_256, func(p []byte) []byte {
+		{crypto.SHA3_256, func(p []byte) []byte {
 			b := openssl.SHA3_256(p)
 			return b[:]
 		}},
-		{"sha3_384", openssl.NewSHA3_384, func(p []byte) []byte {
+		{crypto.SHA3_384, func(p []byte) []byte {
 			b := openssl.SHA3_384(p)
 			return b[:]
 		}},
-		{"sha3_512", openssl.NewSHA3_512, func(p []byte) []byte {
+		{crypto.SHA3_512, func(p []byte) []byte {
 			b := openssl.SHA3_512(p)
 			return b[:]
 		}},
 	}
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if strings.HasPrefix(tt.name, "sha3_") && !openssl.SupportsSHA3() {
-				t.Skip("crypto/sha3: only supported with openssl-1.1.1+")
+		t.Run(tt.h.String(), func(t *testing.T) {
+			if !openssl.SupportsHash(tt.h) {
+				t.Skip("skipping: not supported")
 			}
 			got := tt.oneShot(msg)
-			h := tt.want()
+			h := cryptoToHash(tt.h)()
 			h.Write(msg)
 			want := h.Sum(nil)
 			if !bytes.Equal(got[:], want) {
