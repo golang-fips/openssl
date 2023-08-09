@@ -63,7 +63,7 @@ func SHA512(p []byte) (sum [64]byte) {
 	return
 }
 
-// SupportsHash returns true if h is supported.
+// SupportsHash returns true if a hash.Hash implementation is supported for h.
 func SupportsHash(h crypto.Hash) bool {
 	switch h {
 	case crypto.SHA1, crypto.SHA224, crypto.SHA256, crypto.SHA384, crypto.SHA512:
