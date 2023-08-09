@@ -60,6 +60,9 @@ func cryptoHashToMD(ch crypto.Hash) (md C.GO_EVP_MD_PTR) {
 		}
 		cacheMD.Store(ch, md)
 	}()
+	// SupportsHash returns false for MD5 and MD5SHA1 because we don't
+	// provide a hash.Hash implementation for them. Yet, they can
+	// still be used when signing/verifying with an RSA key.
 	switch ch {
 	case crypto.MD5:
 		return C.go_openssl_EVP_md5()
@@ -69,6 +72,11 @@ func cryptoHashToMD(ch crypto.Hash) (md C.GO_EVP_MD_PTR) {
 		} else {
 			return C.go_openssl_EVP_md5_sha1()
 		}
+	}
+	if !SupportsHash(ch) {
+		return nil
+	}
+	switch ch {
 	case crypto.SHA1:
 		return C.go_openssl_EVP_sha1()
 	case crypto.SHA224:
@@ -80,24 +88,12 @@ func cryptoHashToMD(ch crypto.Hash) (md C.GO_EVP_MD_PTR) {
 	case crypto.SHA512:
 		return C.go_openssl_EVP_sha512()
 	case crypto.SHA3_224:
-		if !SupportsSHA3() {
-			return nil
-		}
 		return C.go_openssl_EVP_sha3_224()
 	case crypto.SHA3_256:
-		if !SupportsSHA3() {
-			return nil
-		}
 		return C.go_openssl_EVP_sha3_256()
 	case crypto.SHA3_384:
-		if !SupportsSHA3() {
-			return nil
-		}
 		return C.go_openssl_EVP_sha3_384()
 	case crypto.SHA3_512:
-		if !SupportsSHA3() {
-			return nil
-		}
 		return C.go_openssl_EVP_sha3_512()
 	}
 	return nil
