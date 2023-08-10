@@ -187,6 +187,13 @@ func base(b []byte) *C.uchar {
 	return (*C.uchar)(unsafe.Pointer(&b[0]))
 }
 
+func sbase(b []byte) *C.char {
+	if len(b) == 0 {
+		return nil
+	}
+	return (*C.char)(unsafe.Pointer(&b[0]))
+}
+
 func newOpenSSLError(msg string) error {
 	var b strings.Builder
 	b.WriteString(msg)
