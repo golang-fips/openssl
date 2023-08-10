@@ -75,7 +75,18 @@ var sha1TestVectors = []testVector{
 
 // Test vectors from
 // http://stackoverflow.com/questions/5130513/pbkdf2-hmac-sha2-test-vectors
+// except the first one, which is not copied from elsewhere.
 var sha256TestVectors = []testVector{
+	{
+		"",
+		"salt",
+		1,
+		[]byte{
+			0xf1, 0x35, 0xc2, 0x79, 0x93, 0xba, 0xf9, 0x87,
+			0x73, 0xc5, 0xcd, 0xb4, 0x0a, 0x57, 0x06, 0xce,
+			0x6a, 0x34, 0x5c, 0xde, 0x61,
+		},
+	},
 	{
 		"password",
 		"salt",
