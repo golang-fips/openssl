@@ -22,6 +22,7 @@ enum {
     GO_EVP_PKEY_CTRL_MD = 1,
     GO_EVP_PKEY_RSA = 6,
     GO_EVP_PKEY_EC = 408,
+    GO_EVP_PKEY_TLS1_PRF = 1021,
     GO_EVP_PKEY_HKDF = 1036,
     /* This is defined differently in OpenSSL 3 (1 << 11), but in our
      * code it is only used in OpenSSL 1.
@@ -43,6 +44,9 @@ enum {
     GO_EVP_KDF_HKDF_MODE_EXTRACT_ONLY = 1,
     GO_EVP_KDF_HKDF_MODE_EXPAND_ONLY = 2,
 
+    GO_EVP_PKEY_CTRL_TLS_MD = 0x1000,
+    GO_EVP_PKEY_CTRL_TLS_SECRET = 0x1001,
+    GO_EVP_PKEY_CTRL_TLS_SEED = 0x1002,
     GO_EVP_PKEY_CTRL_HKDF_MD = 0x1003,
     GO_EVP_PKEY_CTRL_HKDF_SALT = 0x1004,
     GO_EVP_PKEY_CTRL_HKDF_KEY = 0x1005,
@@ -341,4 +345,7 @@ DEFINEFUNC_3_0(int, EVP_PKEY_up_ref, (GO_EVP_PKEY_PTR key), (key)) \
 DEFINEFUNC_LEGACY_1(int, EVP_PKEY_set1_EC_KEY, (GO_EVP_PKEY_PTR pkey, GO_EC_KEY_PTR key), (pkey, key)) \
 DEFINEFUNC_3_0(int, EVP_PKEY_CTX_set0_rsa_oaep_label, (GO_EVP_PKEY_CTX_PTR ctx, void *label, int len), (ctx, label, len)) \
 DEFINEFUNC(int, PKCS5_PBKDF2_HMAC, (const char *pass, int passlen, const unsigned char *salt, int saltlen, int iter, const GO_EVP_MD_PTR digest, int keylen, unsigned char *out), (pass, passlen, salt, saltlen, iter, digest, keylen, out)) \
+DEFINEFUNC_3_0(int, EVP_PKEY_CTX_set_tls1_prf_md, (GO_EVP_PKEY_CTX_PTR arg0, const GO_EVP_MD_PTR arg1), (arg0, arg1)) \
+DEFINEFUNC_3_0(int, EVP_PKEY_CTX_set1_tls1_prf_secret, (GO_EVP_PKEY_CTX_PTR arg0, const unsigned char *arg1, int arg2), (arg0, arg1, arg2)) \
+DEFINEFUNC_3_0(int, EVP_PKEY_CTX_add1_tls1_prf_seed, (GO_EVP_PKEY_CTX_PTR arg0, const unsigned char *arg1, int arg2), (arg0, arg1, arg2)) \
 
