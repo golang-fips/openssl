@@ -28,6 +28,20 @@ func shaX(ch crypto.Hash, p []byte, sum []byte) bool {
 	return C.go_openssl_EVP_Digest(unsafe.Pointer(&*addr(p)), C.size_t(len(p)), (*C.uchar)(unsafe.Pointer(&*addr(sum))), nil, cryptoHashToMD(ch), nil) != 0
 }
 
+func MD4(p []byte) (sum [16]byte) {
+	if !shaX(crypto.MD4, p, sum[:]) {
+		panic("openssl: MD4 failed")
+	}
+	return
+}
+
+func MD5(p []byte) (sum [16]byte) {
+	if !shaX(crypto.MD5, p, sum[:]) {
+		panic("openssl: MD5 failed")
+	}
+	return
+}
+
 func SHA1(p []byte) (sum [20]byte) {
 	if !shaX(crypto.SHA1, p, sum[:]) {
 		panic("openssl: SHA1 failed")
@@ -66,7 +80,7 @@ func SHA512(p []byte) (sum [64]byte) {
 // SupportsHash returns true if a hash.Hash implementation is supported for h.
 func SupportsHash(h crypto.Hash) bool {
 	switch h {
-	case crypto.SHA1, crypto.SHA224, crypto.SHA256, crypto.SHA384, crypto.SHA512:
+	case crypto.MD4, crypto.MD5, crypto.SHA1, crypto.SHA224, crypto.SHA256, crypto.SHA384, crypto.SHA512:
 		return true
 	case crypto.SHA3_224, crypto.SHA3_256, crypto.SHA3_384, crypto.SHA3_512:
 		return vMajor > 1 ||
@@ -215,6 +229,97 @@ func (h *evpHash) shaState() unsafe.Pointer {
 	default:
 		panic(errUnsupportedVersion())
 	}
+}
+
+// NewMD4 returns a new MD4 hash.
+// The returned hash doesn't implement encoding.BinaryMarshaler and
+// encoding.BinaryUnmarshaler.
+func NewMD4() hash.Hash {
+	return &md4Hash{
+		evpHash: newEvpHash(crypto.MD4, 16, 64),
+	}
+}
+
+type md4Hash struct {
+	*evpHash
+	out [16]byte
+}
+
+func (h *md4Hash) Sum(in []byte) []byte {
+	h.sum(h.out[:])
+	return append(in, h.out[:]...)
+}
+
+// NewMD5 returns a new MD5 hash.
+func NewMD5() hash.Hash {
+	return &md5Hash{
+		evpHash: newEvpHash(crypto.MD5, 16, 64),
+	}
+}
+
+// md5State layout is taken from
+// https://github.com/openssl/openssl/blob/0418e993c717a6863f206feaa40673a261de7395/include/openssl/md5.h#L33.
+type md5State struct {
+	h      [4]uint32
+	nl, nh uint32
+	x      [64]byte
+	nx     uint32
+}
+
+type md5Hash struct {
+	*evpHash
+	out [16]byte
+}
+
+func (h *md5Hash) Sum(in []byte) []byte {
+	h.sum(h.out[:])
+	return append(in, h.out[:]...)
+}
+
+const (
+	sha5Magic         = "md5\x01"
+	sha5MarshaledSize = len(sha5Magic) + 4*4 + 64 + 8
+)
+
+func (h *md5Hash) MarshalBinary() ([]byte, error) {
+	d := (*md5State)(h.shaState())
+	if d == nil {
+		return nil, errors.New("crypto/sha1: can't retrieve hash state")
+	}
+	b := make([]byte, 0, sha5MarshaledSize)
+	b = append(b, sha5Magic...)
+	b = appendUint32(b, d.h[0])
+	b = appendUint32(b, d.h[1])
+	b = appendUint32(b, d.h[2])
+	b = appendUint32(b, d.h[3])
+	b = append(b, d.x[:d.nx]...)
+	b = b[:len(b)+len(d.x)-int(d.nx)] // already zero
+	b = appendUint64(b, uint64(d.nl)>>3|uint64(d.nh)<<29)
+	return b, nil
+}
+
+func (h *md5Hash) UnmarshalBinary(b []byte) error {
+	if len(b) < len(sha5Magic) || string(b[:len(sha5Magic)]) != sha5Magic {
+		return errors.New("crypto/sha1: invalid hash state identifier")
+	}
+	if len(b) != sha5MarshaledSize {
+		return errors.New("crypto/sha1: invalid hash state size")
+	}
+	d := (*md5State)(h.shaState())
+	if d == nil {
+		return errors.New("crypto/sha1: can't retrieve hash state")
+	}
+	b = b[len(sha5Magic):]
+	b, d.h[0] = consumeUint32(b)
+	b, d.h[1] = consumeUint32(b)
+	b, d.h[2] = consumeUint32(b)
+	b, d.h[3] = consumeUint32(b)
+	b = b[copy(d.x[:], b):]
+	_, n := consumeUint64(b)
+	d.nl = uint32(n << 3)
+	d.nh = uint32(n >> 29)
+	d.nx = uint32(n) % 64
+	return nil
 }
 
 // NewSHA1 returns a new SHA1 hash.

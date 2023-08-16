@@ -14,6 +14,10 @@ import (
 
 func cryptoToHash(h crypto.Hash) func() hash.Hash {
 	switch h {
+	case crypto.MD4:
+		return openssl.NewMD4
+	case crypto.MD5:
+		return openssl.NewMD5
 	case crypto.SHA1:
 		return openssl.NewSHA1
 	case crypto.SHA224:
@@ -39,6 +43,8 @@ func cryptoToHash(h crypto.Hash) func() hash.Hash {
 func TestSha(t *testing.T) {
 	msg := []byte("testing")
 	var tests = []crypto.Hash{
+		crypto.MD4,
+		crypto.MD5,
 		crypto.SHA1,
 		crypto.SHA224,
 		crypto.SHA256,
@@ -72,7 +78,7 @@ func TestSha(t *testing.T) {
 			if bytes.Equal(sum, initSum) {
 				t.Error("Write didn't change internal hash state")
 			}
-			if !strings.HasPrefix(tt.String(), "SHA3-") {
+			if name := tt.String(); name != "MD4" && !strings.HasPrefix(name, "SHA3-") {
 				state, err := h.(encoding.BinaryMarshaler).MarshalBinary()
 				if err != nil {
 					t.Errorf("could not marshal: %v", err)
