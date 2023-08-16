@@ -6,7 +6,6 @@ import (
 	"encoding"
 	"hash"
 	"io"
-	"strings"
 	"testing"
 
 	"github.com/golang-fips/openssl/v2"
@@ -42,27 +41,30 @@ func cryptoToHash(h crypto.Hash) func() hash.Hash {
 
 func TestSha(t *testing.T) {
 	msg := []byte("testing")
-	var tests = []crypto.Hash{
-		crypto.MD4,
-		crypto.MD5,
-		crypto.SHA1,
-		crypto.SHA224,
-		crypto.SHA256,
-		crypto.SHA384,
-		crypto.SHA512,
-		crypto.SHA3_224,
-		crypto.SHA3_256,
-		crypto.SHA3_384,
-		crypto.SHA3_512,
+	var tests = []struct {
+		h            crypto.Hash
+		hasMarshaler bool
+	}{
+		{crypto.MD4, false},
+		{crypto.MD5, true},
+		{crypto.SHA1, true},
+		{crypto.SHA224, true},
+		{crypto.SHA256, true},
+		{crypto.SHA384, true},
+		{crypto.SHA512, true},
+		{crypto.SHA3_224, false},
+		{crypto.SHA3_256, false},
+		{crypto.SHA3_384, false},
+		{crypto.SHA3_512, false},
 	}
 	for _, tt := range tests {
 		tt := tt
-		t.Run(tt.String(), func(t *testing.T) {
+		t.Run(tt.h.String(), func(t *testing.T) {
 			t.Parallel()
-			if !openssl.SupportsHash(tt) {
+			if !openssl.SupportsHash(tt.h) {
 				t.Skip("skipping: not supported")
 			}
-			h := cryptoToHash(tt)()
+			h := cryptoToHash(tt.h)()
 			initSum := h.Sum(nil)
 			n, err := h.Write(msg)
 			if err != nil {
@@ -78,12 +80,12 @@ func TestSha(t *testing.T) {
 			if bytes.Equal(sum, initSum) {
 				t.Error("Write didn't change internal hash state")
 			}
-			if name := tt.String(); name != "MD4" && !strings.HasPrefix(name, "SHA3-") {
+			if tt.hasMarshaler {
 				state, err := h.(encoding.BinaryMarshaler).MarshalBinary()
 				if err != nil {
 					t.Errorf("could not marshal: %v", err)
 				}
-				h2 := cryptoToHash(tt)()
+				h2 := cryptoToHash(tt.h)()
 				if err := h2.(encoding.BinaryUnmarshaler).UnmarshalBinary(state); err != nil {
 					t.Errorf("could not unmarshal: %v", err)
 				}

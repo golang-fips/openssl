@@ -79,15 +79,7 @@ func SHA512(p []byte) (sum [64]byte) {
 
 // SupportsHash returns true if a hash.Hash implementation is supported for h.
 func SupportsHash(h crypto.Hash) bool {
-	switch h {
-	case crypto.MD4, crypto.MD5, crypto.SHA1, crypto.SHA224, crypto.SHA256, crypto.SHA384, crypto.SHA512:
-		return true
-	case crypto.SHA3_224, crypto.SHA3_256, crypto.SHA3_384, crypto.SHA3_512:
-		return vMajor > 1 ||
-			(vMajor >= 1 && vMinor > 1) ||
-			(vMajor >= 1 && vMinor >= 1 && vPatch >= 1)
-	}
-	return false
+	return cryptoHashToMD(h) != nil
 }
 
 func SHA3_224(p []byte) (sum [28]byte) {
