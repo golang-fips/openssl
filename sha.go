@@ -24,54 +24,54 @@ import (
 // and applying a noescape along the way.
 // This is all to preserve compatibility with the allocation behavior of the non-openssl implementations.
 
-func shaX(ch crypto.Hash, p []byte, sum []byte) bool {
+func hashOneShot(ch crypto.Hash, p []byte, sum []byte) bool {
 	return C.go_openssl_EVP_Digest(unsafe.Pointer(&*addr(p)), C.size_t(len(p)), (*C.uchar)(unsafe.Pointer(&*addr(sum))), nil, cryptoHashToMD(ch), nil) != 0
 }
 
 func MD4(p []byte) (sum [16]byte) {
-	if !shaX(crypto.MD4, p, sum[:]) {
+	if !hashOneShot(crypto.MD4, p, sum[:]) {
 		panic("openssl: MD4 failed")
 	}
 	return
 }
 
 func MD5(p []byte) (sum [16]byte) {
-	if !shaX(crypto.MD5, p, sum[:]) {
+	if !hashOneShot(crypto.MD5, p, sum[:]) {
 		panic("openssl: MD5 failed")
 	}
 	return
 }
 
 func SHA1(p []byte) (sum [20]byte) {
-	if !shaX(crypto.SHA1, p, sum[:]) {
+	if !hashOneShot(crypto.SHA1, p, sum[:]) {
 		panic("openssl: SHA1 failed")
 	}
 	return
 }
 
 func SHA224(p []byte) (sum [28]byte) {
-	if !shaX(crypto.SHA224, p, sum[:]) {
+	if !hashOneShot(crypto.SHA224, p, sum[:]) {
 		panic("openssl: SHA224 failed")
 	}
 	return
 }
 
 func SHA256(p []byte) (sum [32]byte) {
-	if !shaX(crypto.SHA256, p, sum[:]) {
+	if !hashOneShot(crypto.SHA256, p, sum[:]) {
 		panic("openssl: SHA256 failed")
 	}
 	return
 }
 
 func SHA384(p []byte) (sum [48]byte) {
-	if !shaX(crypto.SHA384, p, sum[:]) {
+	if !hashOneShot(crypto.SHA384, p, sum[:]) {
 		panic("openssl: SHA384 failed")
 	}
 	return
 }
 
 func SHA512(p []byte) (sum [64]byte) {
-	if !shaX(crypto.SHA512, p, sum[:]) {
+	if !hashOneShot(crypto.SHA512, p, sum[:]) {
 		panic("openssl: SHA512 failed")
 	}
 	return
@@ -83,28 +83,28 @@ func SupportsHash(h crypto.Hash) bool {
 }
 
 func SHA3_224(p []byte) (sum [28]byte) {
-	if !shaX(crypto.SHA3_224, p, sum[:]) {
+	if !hashOneShot(crypto.SHA3_224, p, sum[:]) {
 		panic("openssl: SHA3_224 failed")
 	}
 	return
 }
 
 func SHA3_256(p []byte) (sum [32]byte) {
-	if !shaX(crypto.SHA3_256, p, sum[:]) {
+	if !hashOneShot(crypto.SHA3_256, p, sum[:]) {
 		panic("openssl: SHA3_256 failed")
 	}
 	return
 }
 
 func SHA3_384(p []byte) (sum [48]byte) {
-	if !shaX(crypto.SHA3_384, p, sum[:]) {
+	if !hashOneShot(crypto.SHA3_384, p, sum[:]) {
 		panic("openssl: SHA3_384 failed")
 	}
 	return
 }
 
 func SHA3_512(p []byte) (sum [64]byte) {
-	if !shaX(crypto.SHA3_512, p, sum[:]) {
+	if !hashOneShot(crypto.SHA3_512, p, sum[:]) {
 		panic("openssl: SHA3_512 failed")
 	}
 	return
@@ -189,17 +189,17 @@ func (h *evpHash) BlockSize() int {
 }
 
 func (h *evpHash) sum(out []byte) {
-	if C.go_sha_sum(h.ctx, h.ctx2, base(out)) != 1 {
-		panic(newOpenSSLError("go_sha_sum"))
+	if C.go_hash_sum(h.ctx, h.ctx2, base(out)) != 1 {
+		panic(newOpenSSLError("go_hash_sum"))
 	}
 	runtime.KeepAlive(h)
 }
 
-// shaState returns a pointer to the internal sha structure.
+// hashState returns a pointer to the internal hash structure.
 //
 // The EVP_MD_CTX memory layout has changed in OpenSSL 3
 // and the property holding the internal structure is no longer md_data but algctx.
-func (h *evpHash) shaState() unsafe.Pointer {
+func (h *evpHash) hashState() unsafe.Pointer {
 	switch vMajor {
 	case 1:
 		// https://github.com/openssl/openssl/blob/0418e993c717a6863f206feaa40673a261de7395/crypto/evp/evp_local.h#L12.
@@ -274,7 +274,7 @@ const (
 )
 
 func (h *md5Hash) MarshalBinary() ([]byte, error) {
-	d := (*md5State)(h.shaState())
+	d := (*md5State)(h.hashState())
 	if d == nil {
 		return nil, errors.New("crypto/md5: can't retrieve hash state")
 	}
@@ -297,7 +297,7 @@ func (h *md5Hash) UnmarshalBinary(b []byte) error {
 	if len(b) != md5MarshaledSize {
 		return errors.New("crypto/md5: invalid hash state size")
 	}
-	d := (*md5State)(h.shaState())
+	d := (*md5State)(h.hashState())
 	if d == nil {
 		return errors.New("crypto/md5: can't retrieve hash state")
 	}
@@ -346,7 +346,7 @@ const (
 )
 
 func (h *sha1Hash) MarshalBinary() ([]byte, error) {
-	d := (*sha1State)(h.shaState())
+	d := (*sha1State)(h.hashState())
 	if d == nil {
 		return nil, errors.New("crypto/sha1: can't retrieve hash state")
 	}
@@ -370,7 +370,7 @@ func (h *sha1Hash) UnmarshalBinary(b []byte) error {
 	if len(b) != sha1MarshaledSize {
 		return errors.New("crypto/sha1: invalid hash state size")
 	}
-	d := (*sha1State)(h.shaState())
+	d := (*sha1State)(h.hashState())
 	if d == nil {
 		return errors.New("crypto/sha1: can't retrieve hash state")
 	}
@@ -438,7 +438,7 @@ type sha256State struct {
 }
 
 func (h *sha224Hash) MarshalBinary() ([]byte, error) {
-	d := (*sha256State)(h.shaState())
+	d := (*sha256State)(h.hashState())
 	if d == nil {
 		return nil, errors.New("crypto/sha256: can't retrieve hash state")
 	}
@@ -459,7 +459,7 @@ func (h *sha224Hash) MarshalBinary() ([]byte, error) {
 }
 
 func (h *sha256Hash) MarshalBinary() ([]byte, error) {
-	d := (*sha256State)(h.shaState())
+	d := (*sha256State)(h.hashState())
 	if d == nil {
 		return nil, errors.New("crypto/sha256: can't retrieve hash state")
 	}
@@ -486,7 +486,7 @@ func (h *sha224Hash) UnmarshalBinary(b []byte) error {
 	if len(b) != marshaledSize256 {
 		return errors.New("crypto/sha256: invalid hash state size")
 	}
-	d := (*sha256State)(h.shaState())
+	d := (*sha256State)(h.hashState())
 	if d == nil {
 		return errors.New("crypto/sha256: can't retrieve hash state")
 	}
@@ -514,7 +514,7 @@ func (h *sha256Hash) UnmarshalBinary(b []byte) error {
 	if len(b) != marshaledSize256 {
 		return errors.New("crypto/sha256: invalid hash state size")
 	}
-	d := (*sha256State)(h.shaState())
+	d := (*sha256State)(h.hashState())
 	if d == nil {
 		return errors.New("crypto/sha256: can't retrieve hash state")
 	}
@@ -587,7 +587,7 @@ const (
 )
 
 func (h *sha384Hash) MarshalBinary() ([]byte, error) {
-	d := (*sha512State)(h.shaState())
+	d := (*sha512State)(h.hashState())
 	if d == nil {
 		return nil, errors.New("crypto/sha512: can't retrieve hash state")
 	}
@@ -608,7 +608,7 @@ func (h *sha384Hash) MarshalBinary() ([]byte, error) {
 }
 
 func (h *sha512Hash) MarshalBinary() ([]byte, error) {
-	d := (*sha512State)(h.shaState())
+	d := (*sha512State)(h.hashState())
 	if d == nil {
 		return nil, errors.New("crypto/sha512: can't retrieve hash state")
 	}
@@ -638,7 +638,7 @@ func (h *sha384Hash) UnmarshalBinary(b []byte) error {
 	if len(b) != marshaledSize512 {
 		return errors.New("crypto/sha512: invalid hash state size")
 	}
-	d := (*sha512State)(h.shaState())
+	d := (*sha512State)(h.hashState())
 	if d == nil {
 		return errors.New("crypto/sha512: can't retrieve hash state")
 	}
@@ -669,7 +669,7 @@ func (h *sha512Hash) UnmarshalBinary(b []byte) error {
 	if len(b) != marshaledSize512 {
 		return errors.New("crypto/sha512: invalid hash state size")
 	}
-	d := (*sha512State)(h.shaState())
+	d := (*sha512State)(h.hashState())
 	if d == nil {
 		return errors.New("crypto/sha512: can't retrieve hash state")
 	}

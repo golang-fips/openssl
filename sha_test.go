@@ -39,7 +39,7 @@ func cryptoToHash(h crypto.Hash) func() hash.Hash {
 	return nil
 }
 
-func TestSha(t *testing.T) {
+func TestHash(t *testing.T) {
 	msg := []byte("testing")
 	var tests = []struct {
 		h            crypto.Hash
@@ -119,7 +119,7 @@ func TestSha(t *testing.T) {
 	}
 }
 
-func TestSHA_OneShot(t *testing.T) {
+func TestHash_OneShot(t *testing.T) {
 	msg := []byte("testing")
 	var tests = []struct {
 		h       crypto.Hash

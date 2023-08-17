@@ -66,14 +66,14 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #undef DEFINEFUNC_RENAMED_1_1
 #undef DEFINEFUNC_RENAMED_3_0
 
-// go_sha_sum copies ctx into ctx2 and calls EVP_DigestFinal using ctx2.
+// go_hash_sum copies ctx into ctx2 and calls EVP_DigestFinal using ctx2.
 // This is necessary because Go hash.Hash mandates that Sum has no effect
 // on the underlying stream. In particular it is OK to Sum, then Write more,
 // then Sum again, and the second Sum acts as if the first didn't happen.
 // It is written in C because Sum() tend to be in the hot path,
 // and doing one cgo call instead of two is a significant performance win.
 static inline int
-go_sha_sum(GO_EVP_MD_CTX_PTR ctx, GO_EVP_MD_CTX_PTR ctx2, unsigned char *out)
+go_hash_sum(GO_EVP_MD_CTX_PTR ctx, GO_EVP_MD_CTX_PTR ctx2, unsigned char *out)
 {
     if (go_openssl_EVP_MD_CTX_copy(ctx2, ctx) != 1)
         return 0;
