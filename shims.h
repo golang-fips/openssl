@@ -340,4 +340,5 @@ DEFINEFUNC_3_0(int, EVP_PKEY_CTX_add1_hkdf_info, (GO_EVP_PKEY_CTX_PTR arg0, cons
 DEFINEFUNC_3_0(int, EVP_PKEY_up_ref, (GO_EVP_PKEY_PTR key), (key)) \
 DEFINEFUNC_LEGACY_1(int, EVP_PKEY_set1_EC_KEY, (GO_EVP_PKEY_PTR pkey, GO_EC_KEY_PTR key), (pkey, key)) \
 DEFINEFUNC_3_0(int, EVP_PKEY_CTX_set0_rsa_oaep_label, (GO_EVP_PKEY_CTX_PTR ctx, void *label, int len), (ctx, label, len)) \
+DEFINEFUNC(int, PKCS5_PBKDF2_HMAC, (const char *pass, int passlen, const unsigned char *salt, int saltlen, int iter, const GO_EVP_MD_PTR digest, int keylen, unsigned char *out), (pass, passlen, salt, saltlen, iter, digest, keylen, out)) \
 
