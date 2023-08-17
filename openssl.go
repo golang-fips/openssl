@@ -406,3 +406,7 @@ func bnToBinPad(bn C.GO_BIGNUM_PTR, to []byte) error {
 func CheckLeaks() {
 	C.go_openssl_do_leak_check()
 }
+
+func version1_1_1_or_above() bool {
+	return vMajor > 1 || (vMajor >= 1 && vMinor > 1) || (vMajor >= 1 && vMinor >= 1 && vPatch >= 1)
+}

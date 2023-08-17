@@ -269,17 +269,17 @@ func (h *md5Hash) Sum(in []byte) []byte {
 }
 
 const (
-	sha5Magic         = "md5\x01"
-	sha5MarshaledSize = len(sha5Magic) + 4*4 + 64 + 8
+	md5Magic         = "md5\x01"
+	md5MarshaledSize = len(md5Magic) + 4*4 + 64 + 8
 )
 
 func (h *md5Hash) MarshalBinary() ([]byte, error) {
 	d := (*md5State)(h.shaState())
 	if d == nil {
-		return nil, errors.New("crypto/sha1: can't retrieve hash state")
+		return nil, errors.New("crypto/md5: can't retrieve hash state")
 	}
-	b := make([]byte, 0, sha5MarshaledSize)
-	b = append(b, sha5Magic...)
+	b := make([]byte, 0, md5MarshaledSize)
+	b = append(b, md5Magic...)
 	b = appendUint32(b, d.h[0])
 	b = appendUint32(b, d.h[1])
 	b = appendUint32(b, d.h[2])
@@ -291,17 +291,17 @@ func (h *md5Hash) MarshalBinary() ([]byte, error) {
 }
 
 func (h *md5Hash) UnmarshalBinary(b []byte) error {
-	if len(b) < len(sha5Magic) || string(b[:len(sha5Magic)]) != sha5Magic {
-		return errors.New("crypto/sha1: invalid hash state identifier")
+	if len(b) < len(md5Magic) || string(b[:len(md5Magic)]) != md5Magic {
+		return errors.New("crypto/md5: invalid hash state identifier")
 	}
-	if len(b) != sha5MarshaledSize {
-		return errors.New("crypto/sha1: invalid hash state size")
+	if len(b) != md5MarshaledSize {
+		return errors.New("crypto/md5: invalid hash state size")
 	}
 	d := (*md5State)(h.shaState())
 	if d == nil {
-		return errors.New("crypto/sha1: can't retrieve hash state")
+		return errors.New("crypto/md5: can't retrieve hash state")
 	}
-	b = b[len(sha5Magic):]
+	b = b[len(md5Magic):]
 	b, d.h[0] = consumeUint32(b)
 	b, d.h[1] = consumeUint32(b)
 	b, d.h[2] = consumeUint32(b)

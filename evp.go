@@ -70,7 +70,6 @@ func cryptoHashToMD(ch crypto.Hash) (md C.GO_EVP_MD_PTR) {
 			return C.go_openssl_EVP_md5_sha1()
 		}
 	}
-	sha3Defined := vMajor > 1 || (vMajor >= 1 && vMinor > 1) || (vMajor >= 1 && vMinor >= 1 && vPatch >= 1)
 	switch ch {
 	case crypto.MD4:
 		return C.go_openssl_EVP_md4()
@@ -87,19 +86,19 @@ func cryptoHashToMD(ch crypto.Hash) (md C.GO_EVP_MD_PTR) {
 	case crypto.SHA512:
 		return C.go_openssl_EVP_sha512()
 	case crypto.SHA3_224:
-		if sha3Defined {
+		if version1_1_1_or_above() {
 			return C.go_openssl_EVP_sha3_224()
 		}
 	case crypto.SHA3_256:
-		if sha3Defined {
+		if version1_1_1_or_above() {
 			return C.go_openssl_EVP_sha3_256()
 		}
 	case crypto.SHA3_384:
-		if sha3Defined {
+		if version1_1_1_or_above() {
 			return C.go_openssl_EVP_sha3_384()
 		}
 	case crypto.SHA3_512:
-		if sha3Defined {
+		if version1_1_1_or_above() {
 			return C.go_openssl_EVP_sha3_512()
 		}
 	}
