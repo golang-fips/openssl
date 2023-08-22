@@ -138,16 +138,17 @@ func (c *aesCipher) finalize() {
 func (c *aesCipher) BlockSize() int { return aesBlockSize }
 
 func (c *aesCipher) Encrypt(dst, src []byte) {
-	if inexactOverlap(dst, src) {
-		panic("crypto/cipher: invalid buffer overlap")
-	}
 	if len(src) < aesBlockSize {
 		panic("crypto/aes: input not full block")
 	}
 	if len(dst) < aesBlockSize {
 		panic("crypto/aes: output not full block")
 	}
-
+	// Only check for overlap between the parts of src and dst that will actually be used.
+	// This matches Go standard library behavior.
+	if inexactOverlap(dst[:aesBlockSize], src[:aesBlockSize]) {
+		panic("crypto/cipher: invalid buffer overlap")
+	}
 	if c.enc_ctx == nil {
 		var err error
 		c.enc_ctx, err = newCipherCtx(c.kind, C.GO_AES_ENCRYPT, c.key, nil)
@@ -163,14 +164,16 @@ func (c *aesCipher) Encrypt(dst, src []byte) {
 }
 
 func (c *aesCipher) Decrypt(dst, src []byte) {
-	if inexactOverlap(dst, src) {
-		panic("crypto/cipher: invalid buffer overlap")
-	}
 	if len(src) < aesBlockSize {
 		panic("crypto/aes: input not full block")
 	}
 	if len(dst) < aesBlockSize {
 		panic("crypto/aes: output not full block")
+	}
+	// Only check for overlap between the parts of src and dst that will actually be used.
+	// This matches Go standard library behavior.
+	if inexactOverlap(dst[:aesBlockSize], src[:aesBlockSize]) {
+		panic("crypto/cipher: invalid buffer overlap")
 	}
 	if c.dec_ctx == nil {
 		var err error
