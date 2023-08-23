@@ -255,6 +255,7 @@ DEFINEFUNC(const GO_EVP_CIPHER_PTR, EVP_des_ecb, (void), ()) \
 DEFINEFUNC(const GO_EVP_CIPHER_PTR, EVP_des_cbc, (void), ()) \
 DEFINEFUNC(const GO_EVP_CIPHER_PTR, EVP_des_ede3_ecb, (void), ()) \
 DEFINEFUNC(const GO_EVP_CIPHER_PTR, EVP_des_ede3_cbc, (void), ()) \
+DEFINEFUNC_RENAMED_3_0(int, EVP_CIPHER_get_block_size, EVP_CIPHER_block_size, (const GO_EVP_CIPHER_PTR cipher), (cipher)) \
 DEFINEFUNC(void, EVP_CIPHER_CTX_free, (GO_EVP_CIPHER_CTX_PTR arg0), (arg0)) \
 DEFINEFUNC(int, EVP_CIPHER_CTX_ctrl, (GO_EVP_CIPHER_CTX_PTR ctx, int type, int arg, void *ptr), (ctx, type, arg, ptr)) \
 DEFINEFUNC(GO_EVP_PKEY_PTR, EVP_PKEY_new, (void), ()) \

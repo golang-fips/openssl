@@ -24,6 +24,23 @@ const (
 	cipherDES3
 )
 
+func (c cipherKind) String() string {
+	switch c {
+	case cipherAES128:
+		return "AES-128"
+	case cipherAES192:
+		return "AES-192"
+	case cipherAES256:
+		return "AES-256"
+	case cipherDES:
+		return "DES"
+	case cipherDES3:
+		return "DES3"
+	default:
+		panic("unknown cipher kind: " + strconv.Itoa(int(c)))
+	}
+}
+
 type cipherMode int8
 
 const (
@@ -109,10 +126,23 @@ func loadCipher(k cipherKind, mode cipherMode) (cipher C.GO_EVP_CIPHER_PTR) {
 }
 
 type evpCipher struct {
-	key     []byte
-	enc_ctx C.GO_EVP_CIPHER_CTX_PTR
-	dec_ctx C.GO_EVP_CIPHER_CTX_PTR
-	kind    cipherKind
+	key       []byte
+	enc_ctx   C.GO_EVP_CIPHER_CTX_PTR
+	dec_ctx   C.GO_EVP_CIPHER_CTX_PTR
+	kind      cipherKind
+	blockSize int
+}
+
+func newEVPCipher(key []byte, kind cipherKind) (*evpCipher, error) {
+	cipher := loadCipher(kind, cipherModeECB)
+	if cipher == nil {
+		return nil, errors.New("crypto/cipher: unsupported cipher: " + kind.String())
+	}
+	c := &evpCipher{key: make([]byte, len(key)), kind: kind}
+	copy(c.key, key)
+	c.blockSize = int(C.go_openssl_EVP_CIPHER_get_block_size(cipher))
+	runtime.SetFinalizer(c, (*evpCipher).finalize)
+	return c, nil
 }
 
 func (c *evpCipher) finalize() {
@@ -124,28 +154,16 @@ func (c *evpCipher) finalize() {
 	}
 }
 
-func (c *evpCipher) blockSize() int {
-	switch c.kind {
-	case cipherAES128, cipherAES192, cipherAES256:
-		return aesBlockSize
-	case cipherDES, cipherDES3:
-		return desBlockSize
-	default:
-		panic("openssl: unsupported cipher: " + strconv.Itoa(int(c.kind)))
-	}
-}
-
 func (c *evpCipher) encrypt(dst, src []byte) {
-	blockSize := c.blockSize()
-	if len(src) < blockSize {
+	if len(src) < c.blockSize {
 		panic("crypto/cipher: input not full block")
 	}
-	if len(dst) < blockSize {
+	if len(dst) < c.blockSize {
 		panic("crypto/cipher: output not full block")
 	}
 	// Only check for overlap between the parts of src and dst that will actually be used.
 	// This matches Go standard library behavior.
-	if inexactOverlap(dst[:blockSize], src[:blockSize]) {
+	if inexactOverlap(dst[:c.blockSize], src[:c.blockSize]) {
 		panic("crypto/cipher: invalid buffer overlap")
 	}
 	if c.enc_ctx == nil {
@@ -156,23 +174,22 @@ func (c *evpCipher) encrypt(dst, src []byte) {
 		}
 	}
 
-	if C.go_openssl_EVP_EncryptUpdate_wrapper(c.enc_ctx, base(dst), base(src), C.int(blockSize)) != 1 {
+	if C.go_openssl_EVP_EncryptUpdate_wrapper(c.enc_ctx, base(dst), base(src), C.int(c.blockSize)) != 1 {
 		panic("crypto/cipher: EncryptUpdate failed")
 	}
 	runtime.KeepAlive(c)
 }
 
 func (c *evpCipher) decrypt(dst, src []byte) {
-	blockSize := c.blockSize()
-	if len(src) < blockSize {
+	if len(src) < c.blockSize {
 		panic("crypto/cipher: input not full block")
 	}
-	if len(dst) < blockSize {
+	if len(dst) < c.blockSize {
 		panic("crypto/cipher: output not full block")
 	}
 	// Only check for overlap between the parts of src and dst that will actually be used.
 	// This matches Go standard library behavior.
-	if inexactOverlap(dst[:blockSize], src[:blockSize]) {
+	if inexactOverlap(dst[:c.blockSize], src[:c.blockSize]) {
 		panic("crypto/cipher: invalid buffer overlap")
 	}
 	if c.dec_ctx == nil {
@@ -186,7 +203,7 @@ func (c *evpCipher) decrypt(dst, src []byte) {
 		}
 	}
 
-	C.go_openssl_EVP_DecryptUpdate_wrapper(c.dec_ctx, base(dst), base(src), C.int(blockSize))
+	C.go_openssl_EVP_DecryptUpdate_wrapper(c.dec_ctx, base(dst), base(src), C.int(c.blockSize))
 	runtime.KeepAlive(c)
 }
 
@@ -237,7 +254,7 @@ func (c *evpCipher) newCBC(iv []byte, encrypt bool) cipher.BlockMode {
 	if err != nil {
 		panic(err)
 	}
-	x := &cipherCBC{ctx: ctx, blockSize: c.blockSize()}
+	x := &cipherCBC{ctx: ctx, blockSize: c.blockSize}
 	runtime.SetFinalizer(x, (*cipherCBC).finalize)
 	if C.go_openssl_EVP_CIPHER_CTX_set_padding(x.ctx, 0) != 1 {
 		panic("cipher: unable to set padding")
@@ -298,7 +315,7 @@ type noGCM struct {
 }
 
 func (g *noGCM) BlockSize() int {
-	return g.blockSize()
+	return g.blockSize
 }
 
 func (g *noGCM) Encrypt(dst, src []byte) {
@@ -328,7 +345,7 @@ func (c *evpCipher) newGCM(tls bool) (cipher.AEAD, error) {
 	if err != nil {
 		return nil, err
 	}
-	g := &cipherGCM{ctx: ctx, tls: tls, blockSize: c.blockSize()}
+	g := &cipherGCM{ctx: ctx, tls: tls, blockSize: c.blockSize}
 	runtime.SetFinalizer(g, (*cipherGCM).finalize)
 	return g, nil
 }
@@ -455,7 +472,7 @@ func sliceForAppend(in []byte, n int) (head, tail []byte) {
 func newCipherCtx(kind cipherKind, mode cipherMode, encrypt int, key, iv []byte) (C.GO_EVP_CIPHER_CTX_PTR, error) {
 	cipher := loadCipher(kind, mode)
 	if cipher == nil {
-		panic("openssl: unsupported cipher: " + strconv.Itoa(int(kind)))
+		panic("crypto/cipher: unsupported cipher: " + kind.String())
 	}
 	ctx := C.go_openssl_EVP_CIPHER_CTX_new()
 	if ctx == nil {

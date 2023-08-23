@@ -7,10 +7,7 @@ import "C"
 import (
 	"crypto/cipher"
 	"errors"
-	"runtime"
 )
-
-const desBlockSize = 8
 
 // SupportsDESCipher returns true if NewDESCipher is supported.
 func SupportsDESCipher() bool {
@@ -27,28 +24,24 @@ func SupportsTripleDESCipher() bool {
 }
 
 func NewDESCipher(key []byte) (cipher.Block, error) {
-	if !SupportsDESCipher() {
-		return nil, errors.New("crypto/des: not supported")
-	}
 	if len(key) != 8 {
 		return nil, errors.New("crypto/des: invalid key size")
 	}
-	c := &evpCipher{key: make([]byte, len(key)), kind: cipherDES}
-	copy(c.key, key)
-	runtime.SetFinalizer(c, (*evpCipher).finalize)
+	c, err := newEVPCipher(key, cipherDES)
+	if err != nil {
+		return nil, err
+	}
 	return &desCipher{c}, nil
 }
 
 func NewTripleDESCipher(key []byte) (cipher.Block, error) {
-	if !SupportsTripleDESCipher() {
-		return nil, errors.New("crypto/des: not supported")
-	}
 	if len(key) != 24 {
 		return nil, errors.New("crypto/des: invalid key size")
 	}
-	c := &evpCipher{key: make([]byte, len(key)), kind: cipherDES3}
-	copy(c.key, key)
-	runtime.SetFinalizer(c, (*evpCipher).finalize)
+	c, err := newEVPCipher(key, cipherDES3)
+	if err != nil {
+		return nil, err
+	}
 	return &desCipher{c}, nil
 }
 
@@ -63,7 +56,9 @@ type desCipher struct {
 	*evpCipher
 }
 
-func (c *desCipher) BlockSize() int { return desBlockSize }
+func (c *desCipher) BlockSize() int {
+	return c.blockSize
+}
 
 func (c *desCipher) Encrypt(dst, src []byte) {
 	c.encrypt(dst, src)

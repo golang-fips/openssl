@@ -7,10 +7,7 @@ import "C"
 import (
 	"crypto/cipher"
 	"errors"
-	"runtime"
 )
-
-const aesBlockSize = 16
 
 type extraModes interface {
 	// Copied out of crypto/aes/modes.go.
@@ -26,22 +23,21 @@ type extraModes interface {
 var _ extraModes = (*aesCipher)(nil)
 
 func NewAESCipher(key []byte) (cipher.Block, error) {
-	c := &evpCipher{key: make([]byte, len(key))}
-	copy(c.key, key)
-
-	switch len(c.key) * 8 {
+	var kind cipherKind
+	switch len(key) * 8 {
 	case 128:
-		c.kind = cipherAES128
+		kind = cipherAES128
 	case 192:
-		c.kind = cipherAES192
+		kind = cipherAES192
 	case 256:
-		c.kind = cipherAES256
+		kind = cipherAES256
 	default:
 		return nil, errors.New("crypto/aes: invalid key size")
 	}
-
-	runtime.SetFinalizer(c, (*evpCipher).finalize)
-
+	c, err := newEVPCipher(key, kind)
+	if err != nil {
+		return nil, err
+	}
 	return &aesCipher{c}, nil
 }
 
@@ -55,7 +51,9 @@ type aesCipher struct {
 	*evpCipher
 }
 
-func (c *aesCipher) BlockSize() int { return aesBlockSize }
+func (c *aesCipher) BlockSize() int {
+	return c.blockSize
+}
 
 func (c *aesCipher) Encrypt(dst, src []byte) {
 	c.encrypt(dst, src)
