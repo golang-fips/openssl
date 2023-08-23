@@ -9,12 +9,6 @@ enum {
     GO_OPENSSL_INIT_LOAD_CONFIG = 0x00000040L
 };
 
-// #include <openssl/aes.h>
-enum {
-    GO_AES_ENCRYPT = 1,
-    GO_AES_DECRYPT = 0
-};
-
 // #include <openssl/evp.h>
 enum {
     GO_EVP_CTRL_GCM_GET_TAG = 0x10,
