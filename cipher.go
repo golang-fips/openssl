@@ -20,6 +20,8 @@ const (
 	cipherAES128 cipherKind = iota
 	cipherAES192
 	cipherAES256
+	cipherDES
+	cipherDES3
 )
 
 type cipherMode int8
@@ -88,6 +90,20 @@ func loadCipher(k cipherKind, mode cipherMode) (cipher C.GO_EVP_CIPHER_PTR) {
 		case cipherModeGCM:
 			cipher = C.go_openssl_EVP_aes_256_gcm()
 		}
+	case cipherDES:
+		switch mode {
+		case cipherModeECB:
+			cipher = C.go_openssl_EVP_des_ecb()
+		case cipherModeCBC:
+			cipher = C.go_openssl_EVP_des_cbc()
+		}
+	case cipherDES3:
+		switch mode {
+		case cipherModeECB:
+			cipher = C.go_openssl_EVP_des_ede3_ecb()
+		case cipherModeCBC:
+			cipher = C.go_openssl_EVP_des_ede3_cbc()
+		}
 	}
 	return cipher
 }
@@ -112,6 +128,8 @@ func (c *evpCipher) blockSize() int {
 	switch c.kind {
 	case cipherAES128, cipherAES192, cipherAES256:
 		return aesBlockSize
+	case cipherDES, cipherDES3:
+		return desBlockSize
 	default:
 		panic("openssl: unsupported cipher: " + strconv.Itoa(int(c.kind)))
 	}
