@@ -81,25 +81,52 @@ func TestNewGCMNonce(t *testing.T) {
 }
 
 func TestSealAndOpen(t *testing.T) {
-	key := []byte("D249BF6DEC97B1EBD69BC4D6B3A3C49D")
-	ci, err := openssl.NewAESCipher(key)
-	if err != nil {
-		t.Fatal(err)
-	}
-	gcm, err := cipher.NewGCM(ci)
-	if err != nil {
-		t.Fatal(err)
-	}
-	nonce := []byte{0x91, 0xc7, 0xa7, 0x54, 0x52, 0xef, 0x10, 0xdb, 0x91, 0xa8, 0x6c, 0xf9}
-	plainText := []byte{0x01, 0x02, 0x03}
-	additionalData := []byte{0x05, 0x05, 0x07}
-	sealed := gcm.Seal(nil, nonce, plainText, additionalData)
-	decrypted, err := gcm.Open(nil, nonce, sealed, additionalData)
-	if err != nil {
-		t.Error(err)
-	}
-	if !bytes.Equal(decrypted, plainText) {
-		t.Errorf("unexpected decrypted result\ngot: %#v\nexp: %#v", decrypted, plainText)
+	for _, tt := range aesGCMTests {
+		t.Run(tt.description, func(t *testing.T) {
+			ci, err := openssl.NewAESCipher(tt.key)
+			if err != nil {
+				t.Fatalf("NewAESCipher() err = %v", err)
+			}
+			gcm, err := cipher.NewGCM(ci)
+			if err != nil {
+				t.Fatalf("cipher.NewGCM() err = %v", err)
+			}
+
+			sealed := gcm.Seal(nil, tt.nonce, tt.plaintext, tt.aad)
+			if !bytes.Equal(sealed, tt.ciphertext) {
+				t.Errorf("unexpected sealed result\ngot: %#v\nexp: %#v", sealed, tt.ciphertext)
+			}
+
+			decrypted, err := gcm.Open(nil, tt.nonce, tt.ciphertext, tt.aad)
+			if err != nil {
+				t.Errorf("gcm.Open() err = %v", err)
+			}
+			if !bytes.Equal(decrypted, tt.plaintext) {
+				t.Errorf("unexpected decrypted result\ngot: %#v\nexp: %#v", decrypted, tt.plaintext)
+			}
+
+			// Test that open fails if the ciphertext is modified.
+			tt.ciphertext[0] ^= 0x80
+			_, err = gcm.Open(nil, tt.nonce, tt.ciphertext, tt.aad)
+			if err != openssl.ErrOpen {
+				t.Errorf("expected authentication error for tampered message\ngot: %#v", err)
+			}
+			tt.ciphertext[0] ^= 0x80
+
+			// Test that the ciphertext can be opened using a fresh context
+			// which was not previously used to seal the same message.
+			gcm, err = cipher.NewGCM(ci)
+			if err != nil {
+				t.Fatalf("cipher.NewGCM() err = %v", err)
+			}
+			decrypted, err = gcm.Open(nil, tt.nonce, tt.ciphertext, tt.aad)
+			if err != nil {
+				t.Errorf("fresh GCM instance: gcm.Open() err = %v", err)
+			}
+			if !bytes.Equal(decrypted, tt.plaintext) {
+				t.Errorf("fresh GCM instance: unexpected decrypted result\ngot: %#v\nexp: %#v", decrypted, tt.plaintext)
+			}
+		})
 	}
 }
 
