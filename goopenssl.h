@@ -144,10 +144,31 @@ go_openssl_EVP_CIPHER_CTX_open_wrapper(const GO_EVP_CIPHER_CTX_PTR ctx,
                                        const unsigned char *aad, int aad_len,
                                        const unsigned char *tag)
 {
-    if (in_len == 0) in = (const unsigned char *)"";
+    if (in_len == 0) {
+        in = (const unsigned char *)"";
+        // OpenSSL 1.0.2 in FIPS mode contains a bug: it will fail to verify
+        // unless EVP_DecryptUpdate is called at least once with a non-NULL
+        // output buffer.  OpenSSL will not dereference the output buffer when
+        // the input length is zero, so set it to an arbitrary non-NULL pointer
+        // to satisfy OpenSSL when the caller only has authenticated additional
+        // data (AAD) to verify. While a stack-allocated buffer could be used,
+        // that would risk a stack-corrupting buffer overflow if OpenSSL
+        // unexpectedly dereferenced it. Instead pass a value which would
+        // segfault if dereferenced on any modern platform where a NULL-pointer
+        // dereference would also segfault.
+        if (out == NULL) out = (unsigned char *)1;
+    }
     if (aad_len == 0) aad = (const unsigned char *)"";
 
     if (go_openssl_EVP_DecryptInit_ex(ctx, NULL, NULL, NULL, nonce) != 1)
+        return 0;
+
+    // OpenSSL 1.0.x FIPS Object Module 2.0 versions below 2.0.5 require that
+    // the tag be set before the ciphertext, otherwise EVP_DecryptUpdate returns
+    // an error. At least one extant commercially-supported, FIPS validated
+    // build of OpenSSL 1.0.2 uses FIPS module version 2.0.1. Set the tag first
+    // to maximize compatibility with all OpenSSL version combinations.
+    if (go_openssl_EVP_CIPHER_CTX_ctrl(ctx, GO_EVP_CTRL_GCM_SET_TAG, 16, (unsigned char *)(tag)) != 1)
         return 0;
 
     int discard_len, out_len;
@@ -156,9 +177,6 @@ go_openssl_EVP_CIPHER_CTX_open_wrapper(const GO_EVP_CIPHER_CTX_PTR ctx,
     {
         return 0;
     }
-
-    if (go_openssl_EVP_CIPHER_CTX_ctrl(ctx, GO_EVP_CTRL_GCM_SET_TAG, 16, (unsigned char *)(tag)) != 1)
-        return 0;
 
     if (go_openssl_EVP_DecryptFinal_ex(ctx, out + out_len, &discard_len) != 1)
         return 0;
