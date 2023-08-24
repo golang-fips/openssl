@@ -13,16 +13,15 @@ import (
 
 func SupportsTLS1PRF() bool {
 	return vMajor > 1 ||
-		(vMajor >= 1 && vMinor > 1) ||
-		(vMajor >= 1 && vMinor >= 1 && vPatch >= 1)
+		(vMajor >= 1 && vMinor > 1)
 }
 
 func TLS1PRF(secret, label, seed []byte, keyLen int, h func() hash.Hash) ([]byte, error) {
 	var md C.GO_EVP_MD_PTR
 	if h == nil {
-		// TLS1.1 PRF doesn't allow to specify the hash function,
+		// TLS 1.0/1.1 PRF doesn't allow to specify the hash function,
 		// it always uses MD5SHA1. If h is nil, then assume
-		// that the caller wants to use TLS1.1 PRF.
+		// that the caller wants to use TLS 1.0/1.1 PRF.
 		// OpenSSL detects this case by checking if the hash
 		// function is MD5SHA1.
 		md = cryptoHashToMD(crypto.MD5SHA1)
