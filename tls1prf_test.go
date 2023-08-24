@@ -19,7 +19,7 @@ type tls1prfTest struct {
 }
 
 var tls1prfTests = []tls1prfTest{
-	// TLS 1.1 test generated with OpenSSL and cross-validated
+	// TLS 1.0/1.1 test generated with OpenSSL and cross-validated
 	// with Windows CNG.
 	{
 		nil,
@@ -35,7 +35,7 @@ var tls1prfTests = []tls1prfTest{
 			0x27, 0xa6, 0xf7, 0x96, 0xff, 0xd5, 0x19, 0x8c,
 		},
 		[]byte{
-			0x81, 0x14, 0x29, 0xc0, 0x7b, 0xa1, 0xf6, 0xae,
+			0x66, 0x17, 0x40, 0xe6, 0xf9, 0x8b, 0xc9, 0x01,
 		},
 	},
 	// Tests from https://mailarchive.ietf.org/arch/msg/tls/fzVCzk-z3FShgGJ6DOXqM1ydxms/
