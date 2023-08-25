@@ -1,4 +1,4 @@
-//go:build linux && !cmd_go_bootstrap
+//go:build !cmd_go_bootstrap
 
 package openssl
 
@@ -101,7 +101,7 @@ func (k *PrivateKeyECDH) PublicKey() (*PublicKeyECDH, error) {
 			return nil, newOpenSSLError("EVP_PKEY_get_octet_string_param")
 		}
 		bytes = C.GoBytes(unsafe.Pointer(cbytes), C.int(n))
-		C.free(unsafe.Pointer(cbytes))
+		cryptoFree(unsafe.Pointer(cbytes))
 	default:
 		panic(errUnsupportedVersion())
 	}
@@ -314,8 +314,8 @@ func GenerateKeyECDH(curve string) (*PrivateKeyECDH, []byte, error) {
 	// generating a private ECDH key.
 	bits := C.go_openssl_EVP_PKEY_get_bits(pkey)
 	bytes := make([]byte, (bits+7)/8)
-	if C.go_openssl_BN_bn2binpad(priv, base(bytes), C.int(len(bytes))) == 0 {
-		return nil, nil, newOpenSSLError("BN_bn2binpad")
+	if err := bnToBinPad(priv, bytes); err != nil {
+		return nil, nil, err
 	}
 	k = &PrivateKeyECDH{pkey, curve, true}
 	runtime.SetFinalizer(k, (*PrivateKeyECDH).finalize)

@@ -50,9 +50,7 @@ This feature does not require any additional configuration, but it only works wi
 
 ## Limitations
 
-OpenSSL is used for a given build only in limited circumstances:
-
-- The platform must be `GOOS=linux`.
+- Only Unix, Unix-like and Windows platforms are supported.
 - The build must set `CGO_ENABLED=1`.
 
 ## Acknowledgements

@@ -180,6 +180,11 @@ DEFINEFUNC_LEGACY_1_0(int, CRYPTO_num_locks, (void), ()) \
 DEFINEFUNC_LEGACY_1_0(int, CRYPTO_THREADID_set_callback, (void (*threadid_func) (GO_CRYPTO_THREADID_PTR)), (threadid_func)) \
 DEFINEFUNC_LEGACY_1_0(void, CRYPTO_THREADID_set_numeric, (GO_CRYPTO_THREADID_PTR id, unsigned long val), (id, val)) \
 DEFINEFUNC_LEGACY_1_0(void, CRYPTO_set_locking_callback, (void (*locking_function)(int mode, int n, const char *file, int line)), (locking_function)) \
+/* CRYPTO_malloc argument num changes from int to size_t in OpenSSL 1.1.0, */ \
+/* and CRYPTO_free has file and line arguments added. */ \
+/* Exclude them from headercheck tool when using previous OpenSSL versions. */ \
+/*check:from=1.1.0*/ DEFINEFUNC(void *, CRYPTO_malloc, (size_t num, const char *file, int line), (num, file, line)) \
+/*check:from=1.1.0*/ DEFINEFUNC(void, CRYPTO_free, (void *str, const char *file, int line), (str, file, line)) \
 DEFINEFUNC_LEGACY_1_0(void, OPENSSL_add_all_algorithms_conf, (void), ()) \
 DEFINEFUNC_1_1(int, OPENSSL_init_crypto, (uint64_t ops, const GO_OPENSSL_INIT_SETTINGS_PTR settings), (ops, settings)) \
 DEFINEFUNC_LEGACY_1(int, FIPS_mode, (void), ()) \
@@ -300,10 +305,11 @@ DEFINEFUNC(void, BN_clear, (GO_BIGNUM_PTR arg0), (arg0)) \
 DEFINEFUNC(void, BN_clear_free, (GO_BIGNUM_PTR arg0), (arg0)) \
 DEFINEFUNC(int, BN_num_bits, (const GO_BIGNUM_PTR arg0), (arg0)) \
 DEFINEFUNC(GO_BIGNUM_PTR, BN_bin2bn, (const unsigned char *arg0, int arg1, GO_BIGNUM_PTR arg2), (arg0, arg1, arg2)) \
-/* bn_lebin2bn, bn_bn2lebinpad and BN_bn2binpad are not exported in any OpenSSL 1.0.2, but they exist. */ \
-/*check:from=1.1.0*/ DEFINEFUNC_RENAMED_1_1(GO_BIGNUM_PTR, BN_lebin2bn, bn_lebin2bn, (const unsigned char *s, int len, GO_BIGNUM_PTR ret), (s, len, ret)) \
-/*check:from=1.1.0*/ DEFINEFUNC_RENAMED_1_1(int, BN_bn2lebinpad, bn_bn2lebinpad, (const GO_BIGNUM_PTR a, unsigned char *to, int tolen), (a, to, tolen)) \
-/*check:from=1.1.0*/ DEFINEFUNC_RENAMED_1_1(int, BN_bn2binpad, bn_bn2binpad, (const GO_BIGNUM_PTR a, unsigned char *to, int tolen), (a, to, tolen)) \
+DEFINEFUNC_LEGACY_1_0(int, BN_bn2bin, (const GO_BIGNUM_PTR a, unsigned char *to), (a, to)) \
+DEFINEFUNC_LEGACY_1_0(GO_BIGNUM_PTR, bn_expand2, (GO_BIGNUM_PTR a, int n), (a, n)) \
+DEFINEFUNC_1_1(GO_BIGNUM_PTR, BN_lebin2bn, (const unsigned char *s, int len, GO_BIGNUM_PTR ret), (s, len, ret)) \
+DEFINEFUNC_1_1(int, BN_bn2lebinpad, (const GO_BIGNUM_PTR a, unsigned char *to, int tolen), (a, to, tolen)) \
+DEFINEFUNC_1_1(int, BN_bn2binpad, (const GO_BIGNUM_PTR a, unsigned char *to, int tolen), (a, to, tolen)) \
 DEFINEFUNC_LEGACY_1(int, EC_KEY_set_public_key_affine_coordinates, (GO_EC_KEY_PTR key, GO_BIGNUM_PTR x, GO_BIGNUM_PTR y), (key, x, y)) \
 DEFINEFUNC_LEGACY_1(int, EC_KEY_set_public_key, (GO_EC_KEY_PTR key, const GO_EC_POINT_PTR pub), (key, pub)) \
 DEFINEFUNC_LEGACY_1(void, EC_KEY_free, (GO_EC_KEY_PTR arg0), (arg0)) \

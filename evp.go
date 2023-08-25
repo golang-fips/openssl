@@ -1,4 +1,4 @@
-//go:build linux && !cmd_go_bootstrap
+//go:build !cmd_go_bootstrap
 
 package openssl
 
@@ -197,12 +197,11 @@ func setupEVP(withKey withKeyFunc, padding C.int,
 			}
 		}
 		// ctx takes ownership of label, so malloc a copy for OpenSSL to free.
-		// OpenSSL 1.1.1 and higher does not take ownership of the label if the length is zero,
+		// OpenSSL does not take ownership of the label if the length is zero,
 		// so better avoid the allocation.
 		var clabel *C.uchar
 		if len(label) > 0 {
-			// Go guarantees C.malloc never returns nil.
-			clabel = (*C.uchar)(C.malloc(C.size_t(len(label))))
+			clabel = (*C.uchar)(cryptoMalloc(len(label)))
 			copy((*[1 << 30]byte)(unsafe.Pointer(clabel))[:len(label)], label)
 		}
 		var ret C.int
@@ -212,7 +211,7 @@ func setupEVP(withKey withKeyFunc, padding C.int,
 			ret = C.go_openssl_EVP_PKEY_CTX_ctrl(ctx, C.GO_EVP_PKEY_RSA, -1, C.GO_EVP_PKEY_CTRL_RSA_OAEP_LABEL, C.int(len(label)), unsafe.Pointer(clabel))
 		}
 		if ret != 1 {
-			C.free(unsafe.Pointer(clabel))
+			cryptoFree(unsafe.Pointer(clabel))
 			return nil, newOpenSSLError("EVP_PKEY_CTX_ctrl failed")
 		}
 	case C.GO_RSA_PKCS1_PSS_PADDING:
