@@ -13,7 +13,7 @@ import (
 
 func SupportsTLS1PRF() bool {
 	return vMajor > 1 ||
-		(vMajor >= 1 && vMinor > 1)
+		(vMajor >= 1 && vMinor >= 1)
 }
 
 func TLS1PRF(secret, label, seed []byte, keyLen int, h func() hash.Hash) ([]byte, error) {
