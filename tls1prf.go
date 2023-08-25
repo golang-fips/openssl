@@ -16,7 +16,7 @@ func SupportsTLS1PRF() bool {
 		(vMajor >= 1 && vMinor >= 1 && vPatch >= 1)
 }
 
-func TLS1PRF(secret, seed []byte, keyLen int, h func() hash.Hash) ([]byte, error) {
+func TLS1PRF(secret, label, seed []byte, keyLen int, h func() hash.Hash) ([]byte, error) {
 	ch := h()
 	md := hashToMD(ch)
 	if md == nil {
@@ -44,6 +44,10 @@ func TLS1PRF(secret, seed []byte, keyLen int, h func() hash.Hash) ([]byte, error
 			return nil, newOpenSSLError("EVP_PKEY_CTX_set1_tls1_prf_secret")
 		}
 		if C.go_openssl_EVP_PKEY_CTX_add1_tls1_prf_seed(ctx,
+			base(label), C.int(len(label))) != 1 {
+			return nil, newOpenSSLError("EVP_PKEY_CTX_add1_tls1_prf_seed")
+		}
+		if C.go_openssl_EVP_PKEY_CTX_add1_tls1_prf_seed(ctx,
 			base(seed), C.int(len(seed))) != 1 {
 			return nil, newOpenSSLError("EVP_PKEY_CTX_add1_tls1_prf_seed")
 		}
@@ -59,6 +63,12 @@ func TLS1PRF(secret, seed []byte, keyLen int, h func() hash.Hash) ([]byte, error
 			C.GO_EVP_PKEY_CTRL_TLS_SECRET,
 			C.int(len(secret)), unsafe.Pointer(base(secret))) != 1 {
 			return nil, newOpenSSLError("EVP_PKEY_CTX_set1_tls1_prf_secret")
+		}
+		if C.go_openssl_EVP_PKEY_CTX_ctrl(ctx, -1,
+			C.GO1_EVP_PKEY_OP_DERIVE,
+			C.GO_EVP_PKEY_CTRL_TLS_SEED,
+			C.int(len(label)), unsafe.Pointer(base(label))) != 1 {
+			return nil, newOpenSSLError("EVP_PKEY_CTX_add1_tls1_prf_seed")
 		}
 		if C.go_openssl_EVP_PKEY_CTX_ctrl(ctx, -1,
 			C.GO1_EVP_PKEY_OP_DERIVE,
