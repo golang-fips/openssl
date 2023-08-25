@@ -9,14 +9,20 @@ import (
 	"errors"
 )
 
-// SupportsDESCipher returns true if NewDESCipher is supported.
+// SupportsDESCipher returns true if NewDESCipher is supported,
+// which uses ECB mode.
+// If CBC is also supported, then the returned cipher.Block
+// will also implement NewCBCEncrypter and NewCBCDecrypter.
 func SupportsDESCipher() bool {
 	// True for stock OpenSSL 1.
 	// False for stock OpenSSL 3 unless the legacy provider is available.
 	return loadCipher(cipherDES, cipherModeECB) != nil
 }
 
-// SupportsTripleDESCipher returns true if NewTripleDESCipher is supported.
+// SupportsTripleDESCipher returns true if NewTripleDESCipher is supported,
+// which uses ECB mode.
+// If CBC is also supported, then the returned cipher.Block
+// will also implement NewCBCEncrypter and NewCBCDecrypter.
 func SupportsTripleDESCipher() bool {
 	// Should always be true for stock OpenSSL,
 	// even when using the FIPS provider.
@@ -31,6 +37,10 @@ func NewDESCipher(key []byte) (cipher.Block, error) {
 	if err != nil {
 		return nil, err
 	}
+	// Should always be true for stock OpenSSL.
+	if loadCipher(cipherDES, cipherModeCBC) == nil {
+		return &desCipherWithoutCBC{c}, nil
+	}
 	return &desCipher{c}, nil
 }
 
@@ -41,6 +51,10 @@ func NewTripleDESCipher(key []byte) (cipher.Block, error) {
 	c, err := newEVPCipher(key, cipherDES3)
 	if err != nil {
 		return nil, err
+	}
+	// Should always be true for stock OpenSSL.
+	if loadCipher(cipherDES, cipherModeCBC) != nil {
+		return &desCipherWithoutCBC{c}, nil
 	}
 	return &desCipher{c}, nil
 }
@@ -74,4 +88,20 @@ func (c *desCipher) NewCBCEncrypter(iv []byte) cipher.BlockMode {
 
 func (c *desCipher) NewCBCDecrypter(iv []byte) cipher.BlockMode {
 	return c.newCBC(iv, cipherOpDecrypt)
+}
+
+type desCipherWithoutCBC struct {
+	*evpCipher
+}
+
+func (c *desCipherWithoutCBC) BlockSize() int {
+	return c.blockSize
+}
+
+func (c *desCipherWithoutCBC) Encrypt(dst, src []byte) {
+	c.encrypt(dst, src)
+}
+
+func (c *desCipherWithoutCBC) Decrypt(dst, src []byte) {
+	c.decrypt(dst, src)
 }
