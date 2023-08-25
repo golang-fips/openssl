@@ -4,14 +4,14 @@ package openssl_test
 
 import (
 	"bytes"
-	"hash"
+	"crypto"
 	"testing"
 
 	"github.com/golang-fips/openssl/v2"
 )
 
 type tls1prfTest struct {
-	hash   func() hash.Hash
+	hash   crypto.Hash
 	secret []byte
 	label  []byte
 	seed   []byte
@@ -22,7 +22,7 @@ var tls1prfTests = []tls1prfTest{
 	// TLS 1.0/1.1 test generated with OpenSSL and cross-validated
 	// with Windows CNG.
 	{
-		nil,
+		crypto.MD5SHA1,
 		[]byte{
 			0x9b, 0xbe, 0x43, 0x6b, 0xa9, 0x40, 0xf0, 0x17,
 			0xb1, 0x76, 0x52, 0x84, 0x9a, 0x71, 0xdb, 0x35,
@@ -40,7 +40,7 @@ var tls1prfTests = []tls1prfTest{
 	},
 	// Tests from https://mailarchive.ietf.org/arch/msg/tls/fzVCzk-z3FShgGJ6DOXqM1ydxms/
 	{
-		openssl.NewSHA256,
+		crypto.SHA256,
 		[]byte{
 			0x9b, 0xbe, 0x43, 0x6b, 0xa9, 0x40, 0xf0, 0x17,
 			0xb1, 0x76, 0x52, 0x84, 0x9a, 0x71, 0xdb, 0x35,
@@ -69,7 +69,7 @@ var tls1prfTests = []tls1prfTest{
 		},
 	},
 	{
-		openssl.NewSHA384,
+		crypto.SHA384,
 		[]byte{
 			0xb8, 0x0b, 0x73, 0x3d, 0x6c, 0xee, 0xfc, 0xdc,
 			0x71, 0x56, 0x6e, 0xa4, 0x8e, 0x55, 0x67, 0xdf,
@@ -104,7 +104,7 @@ var tls1prfTests = []tls1prfTest{
 		},
 	},
 	{
-		openssl.NewSHA512,
+		crypto.SHA512,
 		[]byte{
 			0xb0, 0x32, 0x35, 0x23, 0xc1, 0x85, 0x35, 0x99,
 			0x58, 0x4d, 0x88, 0x56, 0x8b, 0xbb, 0x05, 0xeb,
@@ -151,13 +151,19 @@ func TestTLS1PRF(t *testing.T) {
 	if !openssl.SupportsTLS1PRF() {
 		t.Skip("TLS 1.2 PRF is not supported")
 	}
-	for i, tt := range tls1prfTests {
-		out, err := openssl.TLS1PRF(tt.secret, tt.label, tt.seed, len(tt.out), tt.hash)
-		if err != nil {
-			t.Errorf("test %d: error deriving TLS 1.2 PRF: %v.", i, err)
-		}
-		if !bytes.Equal(out, tt.out) {
-			t.Errorf("test %d: incorrect key output: have %v, need %v.", i, out, tt.out)
-		}
+	for _, tt := range tls1prfTests {
+		tt := tt
+		t.Run(tt.hash.String(), func(t *testing.T) {
+			if !openssl.SupportsHash(tt.hash) {
+				t.Skip("skipping: hash not supported")
+			}
+			out, err := openssl.TLS1PRF(tt.secret, tt.label, tt.seed, len(tt.out), cryptoToHash(tt.hash))
+			if err != nil {
+				t.Fatalf("error deriving TLS 1.2 PRF: %v.", err)
+			}
+			if !bytes.Equal(out, tt.out) {
+				t.Errorf("incorrect key output: have %v, need %v.", out, tt.out)
+			}
+		})
 	}
 }
