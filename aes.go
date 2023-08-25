@@ -64,11 +64,11 @@ func (c *aesCipher) Decrypt(dst, src []byte) {
 }
 
 func (c *aesCipher) NewCBCEncrypter(iv []byte) cipher.BlockMode {
-	return c.newCBC(iv, true)
+	return c.newCBC(iv, cipherOpEncrypt)
 }
 
 func (c *aesCipher) NewCBCDecrypter(iv []byte) cipher.BlockMode {
-	return c.newCBC(iv, false)
+	return c.newCBC(iv, cipherOpDecrypt)
 }
 
 func (c *aesCipher) NewCTR(iv []byte) cipher.Stream {

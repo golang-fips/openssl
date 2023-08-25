@@ -69,9 +69,9 @@ func (c *desCipher) Decrypt(dst, src []byte) {
 }
 
 func (c *desCipher) NewCBCEncrypter(iv []byte) cipher.BlockMode {
-	return c.newCBC(iv, true)
+	return c.newCBC(iv, cipherOpEncrypt)
 }
 
 func (c *desCipher) NewCBCDecrypter(iv []byte) cipher.BlockMode {
-	return c.newCBC(iv, false)
+	return c.newCBC(iv, cipherOpDecrypt)
 }

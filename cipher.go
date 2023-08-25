@@ -50,6 +50,18 @@ const (
 	cipherModeGCM
 )
 
+// cipherOp is the allowed operations for a cipher,
+// as documented in [EVP_CipherInit_ex].
+//
+// [EVP_CipherInit_ex]: https://www.openssl.org/docs/man3.0/man3/EVP_CipherInit_ex.html
+type cipherOp int8
+
+const (
+	cipherOpNone    cipherOp = -1 // leaves the value of the previous call, if any.
+	cipherOpDecrypt cipherOp = 0
+	cipherOpEncrypt cipherOp = 1
+)
+
 // cacheCipher is a cache of cipherKind to GO_EVP_CIPHER_PTR.
 var cacheCipher sync.Map
 
@@ -168,7 +180,7 @@ func (c *evpCipher) encrypt(dst, src []byte) {
 	}
 	if c.enc_ctx == nil {
 		var err error
-		c.enc_ctx, err = newCipherCtx(c.kind, cipherModeECB, 1, c.key, nil)
+		c.enc_ctx, err = newCipherCtx(c.kind, cipherModeECB, cipherOpEncrypt, c.key, nil)
 		if err != nil {
 			panic(err)
 		}
@@ -194,7 +206,7 @@ func (c *evpCipher) decrypt(dst, src []byte) {
 	}
 	if c.dec_ctx == nil {
 		var err error
-		c.dec_ctx, err = newCipherCtx(c.kind, cipherModeECB, 0, c.key, nil)
+		c.dec_ctx, err = newCipherCtx(c.kind, cipherModeECB, cipherOpDecrypt, c.key, nil)
 		if err != nil {
 			panic(err)
 		}
@@ -240,17 +252,13 @@ func (x *cipherCBC) SetIV(iv []byte) {
 	if len(iv) != x.blockSize {
 		panic("cipher: incorrect length IV")
 	}
-	if C.go_openssl_EVP_CipherInit_ex(x.ctx, nil, nil, nil, base(iv), -1) != 1 {
+	if C.go_openssl_EVP_CipherInit_ex(x.ctx, nil, nil, nil, base(iv), C.int(cipherOpNone)) != 1 {
 		panic("cipher: unable to initialize EVP cipher ctx")
 	}
 }
 
-func (c *evpCipher) newCBC(iv []byte, encrypt bool) cipher.BlockMode {
-	enc := 1
-	if !encrypt {
-		enc = 0
-	}
-	ctx, err := newCipherCtx(c.kind, cipherModeCBC, enc, c.key, iv)
+func (c *evpCipher) newCBC(iv []byte, op cipherOp) cipher.BlockMode {
+	ctx, err := newCipherCtx(c.kind, cipherModeCBC, op, c.key, iv)
 	if err != nil {
 		panic(err)
 	}
@@ -283,7 +291,7 @@ func (x *cipherCTR) XORKeyStream(dst, src []byte) {
 }
 
 func (c *evpCipher) newCTR(iv []byte) cipher.Stream {
-	ctx, err := newCipherCtx(c.kind, cipherModeCTR, 1, c.key, iv)
+	ctx, err := newCipherCtx(c.kind, cipherModeCTR, cipherOpEncrypt, c.key, iv)
 	if err != nil {
 		panic(err)
 	}
@@ -341,7 +349,7 @@ func (c *evpCipher) newGCMChecked(nonceSize, tagSize int) (cipher.AEAD, error) {
 }
 
 func (c *evpCipher) newGCM(tls bool) (cipher.AEAD, error) {
-	ctx, err := newCipherCtx(c.kind, cipherModeGCM, -1, c.key, nil)
+	ctx, err := newCipherCtx(c.kind, cipherModeGCM, cipherOpNone, c.key, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -469,7 +477,7 @@ func sliceForAppend(in []byte, n int) (head, tail []byte) {
 	return
 }
 
-func newCipherCtx(kind cipherKind, mode cipherMode, encrypt int, key, iv []byte) (C.GO_EVP_CIPHER_CTX_PTR, error) {
+func newCipherCtx(kind cipherKind, mode cipherMode, encrypt cipherOp, key, iv []byte) (C.GO_EVP_CIPHER_CTX_PTR, error) {
 	cipher := loadCipher(kind, mode)
 	if cipher == nil {
 		panic("crypto/cipher: unsupported cipher: " + kind.String())
