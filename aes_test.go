@@ -1,4 +1,4 @@
-package openssl
+package openssl_test
 
 import (
 	"bytes"
