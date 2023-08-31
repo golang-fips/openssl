@@ -13,9 +13,7 @@ import (
 )
 
 func SupportsHKDF() bool {
-	return vMajor > 1 ||
-		(vMajor >= 1 && vMinor > 1) ||
-		(vMajor >= 1 && vMinor >= 1 && vPatch >= 1)
+	return version1_1_1_or_above()
 }
 
 func newHKDF(h func() hash.Hash, mode C.int) (*hkdf, error) {

@@ -60,23 +60,21 @@ func cryptoHashToMD(ch crypto.Hash) (md C.GO_EVP_MD_PTR) {
 		}
 		cacheMD.Store(ch, md)
 	}()
-	// SupportsHash returns false for MD5 and MD5SHA1 because we don't
-	// provide a hash.Hash implementation for them. Yet, they can
+	// SupportsHash returns false for MD5SHA1 because we don't
+	// provide a hash.Hash implementation for it. Yet, it can
 	// still be used when signing/verifying with an RSA key.
-	switch ch {
-	case crypto.MD5:
-		return C.go_openssl_EVP_md5()
-	case crypto.MD5SHA1:
+	if ch == crypto.MD5SHA1 {
 		if vMajor == 1 && vMinor == 0 {
 			return C.go_openssl_EVP_md5_sha1_backport()
 		} else {
 			return C.go_openssl_EVP_md5_sha1()
 		}
 	}
-	if !SupportsHash(ch) {
-		return nil
-	}
 	switch ch {
+	case crypto.MD4:
+		return C.go_openssl_EVP_md4()
+	case crypto.MD5:
+		return C.go_openssl_EVP_md5()
 	case crypto.SHA1:
 		return C.go_openssl_EVP_sha1()
 	case crypto.SHA224:
@@ -88,13 +86,21 @@ func cryptoHashToMD(ch crypto.Hash) (md C.GO_EVP_MD_PTR) {
 	case crypto.SHA512:
 		return C.go_openssl_EVP_sha512()
 	case crypto.SHA3_224:
-		return C.go_openssl_EVP_sha3_224()
+		if version1_1_1_or_above() {
+			return C.go_openssl_EVP_sha3_224()
+		}
 	case crypto.SHA3_256:
-		return C.go_openssl_EVP_sha3_256()
+		if version1_1_1_or_above() {
+			return C.go_openssl_EVP_sha3_256()
+		}
 	case crypto.SHA3_384:
-		return C.go_openssl_EVP_sha3_384()
+		if version1_1_1_or_above() {
+			return C.go_openssl_EVP_sha3_384()
+		}
 	case crypto.SHA3_512:
-		return C.go_openssl_EVP_sha3_512()
+		if version1_1_1_or_above() {
+			return C.go_openssl_EVP_sha3_512()
+		}
 	}
 	return nil
 }

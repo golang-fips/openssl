@@ -216,6 +216,7 @@ DEFINEFUNC_LEGACY_1_0(int, SHA1_Init, (GO_SHA_CTX_PTR c), (c)) \
 DEFINEFUNC_LEGACY_1_0(int, SHA1_Update, (GO_SHA_CTX_PTR c, const void *data, size_t len), (c, data, len)) \
 DEFINEFUNC_LEGACY_1_0(int, SHA1_Final, (unsigned char *md, GO_SHA_CTX_PTR c), (md, c)) \
 DEFINEFUNC_1_1(const GO_EVP_MD_PTR, EVP_md5_sha1, (void), ()) \
+DEFINEFUNC(const GO_EVP_MD_PTR, EVP_md4, (void), ()) \
 DEFINEFUNC(const GO_EVP_MD_PTR, EVP_md5, (void), ()) \
 DEFINEFUNC(const GO_EVP_MD_PTR, EVP_sha1, (void), ()) \
 DEFINEFUNC(const GO_EVP_MD_PTR, EVP_sha224, (void), ()) \
