@@ -146,3 +146,28 @@ func hexDecode(t *testing.T, s string) []byte {
 	}
 	return b
 }
+
+func BenchmarkECDH(b *testing.B) {
+	const curve = "P-256"
+	aliceKey, _, err := openssl.GenerateKeyECDH(curve)
+	if err != nil {
+		b.Fatal(err)
+	}
+	bobKey, _, err := openssl.GenerateKeyECDH(curve)
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	alicePubKey, err := aliceKey.PublicKey()
+	if err != nil {
+		b.Fatal(err)
+	}
+	b.ResetTimer()
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+		_, err := openssl.ECDH(bobKey, alicePubKey)
+		if err != nil {
+			b.Fatal(err)
+		}
+	}
+}
