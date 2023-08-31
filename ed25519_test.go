@@ -2,7 +2,6 @@ package openssl_test
 
 import (
 	"bytes"
-	"crypto"
 	"crypto/ed25519"
 	"crypto/sha512"
 	"encoding/hex"
@@ -70,13 +69,7 @@ func TestEd25519SignVerifyHashed(t *testing.T) {
 	if !bytes.Equal(sig, expectedSig) {
 		t.Error("signature doesn't match test vector")
 	}
-	sig2, err := private.Sign(nil, hash[:], &ed25519.Options{Hash: crypto.SHA512})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !bytes.Equal(sig, sig2) {
-		t.Error("signature doesn't match upstream")
-	}
+
 	if err := openssl.VerifyEd25519ph(public, hash[:], sig, nil); err != nil {
 		t.Errorf("valid signature rejected: %v", err)
 	}
@@ -122,19 +115,12 @@ func TestEd25519SignVerifyContext(t *testing.T) {
 
 	private := ed25519.PrivateKey(key)
 	public := []byte(private.Public().(ed25519.PublicKey))
-	sig, err := openssl.SignEd25519ctx(nil, message, context)
+	sig, err := openssl.SignEd25519ctx(key, message, context)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if !bytes.Equal(sig, expectedSig) {
 		t.Error("signature doesn't match test vector")
-	}
-	sig2, err := private.Sign(nil, message, &ed25519.Options{Context: string(context)})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !bytes.Equal(sig, sig2) {
-		t.Error("signature doesn't match upstream")
 	}
 
 	if err := openssl.VerifyEd25519ctx(public, message, sig, context); err != nil {

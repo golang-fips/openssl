@@ -36,17 +36,19 @@ const (
 )
 
 func SupportsEd25519() bool {
-	return vMajor > 1 ||
-		(vMajor >= 1 && vMinor > 1) ||
-		(vMajor >= 1 && vMinor >= 1 && vPatch >= 1)
+	return version1_1_1_or_above()
 }
 
 func SupportsEd25519ph() bool {
-	return vMajor >= 3
+	// Ed25519ph support is implemented in OpenSSL master, but not yet in a release.
+	// TODO: Revisit this once OpenSSL 3.2.0 is released.
+	return false
 }
 
 func SupportsEd25519ctx() bool {
-	return vMajor >= 3
+	// Ed25519ph support is implemented in OpenSSL master, but not yet in a release.
+	// TODO: Revisit this once OpenSSL 3.2.0 is released.
+	return false
 }
 
 func GenerateKeyEd25519() (pub, priv []byte, err error) {
@@ -242,17 +244,25 @@ func ed25519Params(context []byte, kind edDSAKind) (params C.GO_OSSL_PARAM_PTR, 
 	}
 	defer C.go_openssl_OSSL_PARAM_BLD_free(bld)
 
+	var instance *C.char
 	switch kind {
 	case edDSAKindEd25519ph:
-		C.go_openssl_OSSL_PARAM_BLD_push_utf8_string(bld, paramSigInstance, paramSigInstanceEd25519ph, 0)
+		instance = paramSigInstanceEd25519ph
 	case edDSAKindEd25519ctx:
-		C.go_openssl_OSSL_PARAM_BLD_push_utf8_string(bld, paramSigInstance, paramSigInstanceEd25519ctx, 0)
+		instance = paramSigInstanceEd25519ctx
 	default:
 		panic("ed25519: unsupported kind: " + strconv.Itoa(int(kind)))
 	}
-	cbytes := C.CBytes(context)
-	defer C.free(cbytes)
-	C.go_openssl_OSSL_PARAM_BLD_push_octet_string(bld, paramSigContext, cbytes, C.size_t(len(context)))
+	if C.go_openssl_OSSL_PARAM_BLD_push_utf8_string(bld, paramSigInstance, instance, 0) != 1 {
+		return nil, newOpenSSLError("OSSL_PARAM_BLD_push_utf8_string")
+	}
+	if len(context) > 0 {
+		cbytes := C.CBytes(context)
+		defer C.free(cbytes)
+		if C.go_openssl_OSSL_PARAM_BLD_push_octet_string(bld, paramSigContext, cbytes, C.size_t(len(context))) != 1 {
+			return nil, newOpenSSLError("OSSL_PARAM_BLD_push_octet_string")
+		}
+	}
 	params = C.go_openssl_OSSL_PARAM_BLD_to_param(bld)
 	if params == nil {
 		return nil, newOpenSSLError("OSSL_PARAM_BLD_to_param")
