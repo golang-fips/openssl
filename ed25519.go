@@ -7,6 +7,8 @@ import "C"
 import (
 	"errors"
 	"strconv"
+	"sync"
+	"unsafe"
 )
 
 const (
@@ -20,11 +22,32 @@ const (
 	seedSizeEd25519 = 32
 )
 
-// SupportsEd25519 returns true if the current OpenSSL version supports Ed25519.
-// Don't use it to check for Ed25519ctx or Ed25519ph support, those are currently
-// not supported by OpenSSL.
+// TODO: Add support for Ed25519ph and Ed25519ctx when OpenSSL supports them,
+// which will probably be in 3.2.0.
+
+var (
+	onceSupportsEd25519 sync.Once
+	supportsEd25519     bool
+)
+
+// SupportsEd25519 returns true if the current OpenSSL version supports
+// GenerateKeyEd25519, NewKeyFromSeedEd25519, SignEd25519 and VerifyEd25519.
 func SupportsEd25519() bool {
-	return version1_1_1_or_above()
+	onceSupportsEd25519.Do(func() {
+		switch vMajor {
+		case 1:
+			supportsEd25519 = version1_1_1_or_above()
+		case 3:
+			name := C.CString("ED25519")
+			defer C.free(unsafe.Pointer(name))
+			sig := C.go_openssl_EVP_SIGNATURE_fetch(nil, name, nil)
+			if sig != nil {
+				C.go_openssl_EVP_SIGNATURE_free(sig)
+				supportsEd25519 = true
+			}
+		}
+	})
+	return supportsEd25519
 }
 
 func GenerateKeyEd25519() (pub, priv []byte, err error) {
