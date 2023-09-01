@@ -9,13 +9,6 @@ import (
 	"strconv"
 )
 
-var (
-	paramSigInstance           = C.CString("instance")
-	paramSigInstanceEd25519ph  = C.CString("Ed25519ph")
-	paramSigInstanceEd25519ctx = C.CString("Ed25519ctx")
-	paramSigContext            = C.CString("context-string")
-)
-
 const (
 	// publicKeySize is the size, in bytes, of public keys as used in crypto/ed25519.
 	publicKeySizeEd25519 = 32
@@ -27,28 +20,11 @@ const (
 	seedSizeEd25519 = 32
 )
 
-type edDSAKind int
-
-const (
-	edDSAKindEd25519 edDSAKind = iota
-	edDSAKindEd25519ph
-	edDSAKindEd25519ctx
-)
-
+// SupportsEd25519 returns true if the current OpenSSL version supports Ed25519.
+// Don't use it to check for Ed25519ctx or Ed25519ph support, those are currently
+// not supported by OpenSSL.
 func SupportsEd25519() bool {
 	return version1_1_1_or_above()
-}
-
-func SupportsEd25519ph() bool {
-	// Ed25519ph support is implemented in OpenSSL master, but not yet in a release.
-	// TODO: Revisit this once OpenSSL 3.2.0 is released.
-	return false
-}
-
-func SupportsEd25519ctx() bool {
-	// Ed25519ph support is implemented in OpenSSL master, but not yet in a release.
-	// TODO: Revisit this once OpenSSL 3.2.0 is released.
-	return false
 }
 
 func GenerateKeyEd25519() (pub, priv []byte, err error) {
@@ -109,39 +85,16 @@ func extractPKEYPrivEd25519(pkey C.GO_EVP_PKEY_PTR, priv []byte) error {
 func SignEd25519(priv, message []byte) (sig []byte, err error) {
 	// Outline the function body so that the returned key can be stack-allocated.
 	sig = make([]byte, signatureSizeEd25519)
-	err = signEd25519(sig, priv, message, nil, edDSAKindEd25519)
+	err = signEd25519(sig, priv, message)
 	if err != nil {
 		return nil, err
 	}
 	return sig, err
 }
 
-func SignEd25519ph(priv, message, context []byte) (sig []byte, err error) {
-	// Outline the function body so that the returned key can be stack-allocated.
-	sig = make([]byte, signatureSizeEd25519)
-	err = signEd25519(sig, priv, message, context, edDSAKindEd25519ph)
-	if err != nil {
-		return nil, err
-	}
-	return sig, err
-}
-
-func SignEd25519ctx(priv, message, context []byte) (sig []byte, err error) {
-	// Outline the function body so that the returned key can be stack-allocated.
-	sig = make([]byte, signatureSizeEd25519)
-	err = signEd25519(sig, priv, message, context, edDSAKindEd25519ctx)
-	if err != nil {
-		return nil, err
-	}
-	return sig, err
-}
-
-func signEd25519(sig, priv, message, context []byte, kind edDSAKind) error {
+func signEd25519(sig, priv, message []byte) error {
 	if l := len(priv); l != privateKeySizeEd25519 {
 		panic("ed25519: bad private key length: " + strconv.Itoa(l))
-	}
-	if kind != edDSAKindEd25519 && vMajor == 1 {
-		panic("ed25519: unsupported kind: " + strconv.Itoa(int(kind)))
 	}
 	pkey := C.go_openssl_EVP_PKEY_new_raw_private_key(C.GO_EVP_PKEY_ED25519, nil, base(priv[:seedSizeEd25519]), seedSizeEd25519)
 	if pkey == nil {
@@ -153,24 +106,8 @@ func signEd25519(sig, priv, message, context []byte, kind edDSAKind) error {
 		return newOpenSSLError("EVP_MD_CTX_new")
 	}
 	defer C.go_openssl_EVP_MD_CTX_free(ctx)
-	switch vMajor {
-	case 1:
-		if C.go_openssl_EVP_DigestSignInit(ctx, nil, nil, nil, pkey) != 1 {
-			return newOpenSSLError("EVP_DigestSignInit")
-		}
-	case 3:
-		params, err := ed25519Params(context, kind)
-		if err != nil {
-			return err
-		}
-		if params != nil {
-			defer C.go_openssl_OSSL_PARAM_free(params)
-		}
-		if C.go_openssl_EVP_DigestSignInit_ex(ctx, nil, nil, nil, nil, pkey, params) != 1 {
-			return newOpenSSLError("EVP_DigestSignInit_ex")
-		}
-	default:
-		panic(errUnsupportedVersion())
+	if C.go_openssl_EVP_DigestSignInit(ctx, nil, nil, nil, pkey) != 1 {
+		return newOpenSSLError("EVP_DigestSignInit")
 	}
 	siglen := C.size_t(signatureSizeEd25519)
 	if C.go_openssl_EVP_DigestSign(ctx, base(sig), &siglen, base(message), C.size_t(len(message))) != 1 {
@@ -183,18 +120,10 @@ func signEd25519(sig, priv, message, context []byte, kind edDSAKind) error {
 }
 
 func VerifyEd25519(pub, message, sig []byte) error {
-	return verifyEd25519(pub, message, sig, nil, edDSAKindEd25519)
+	return verifyEd25519(pub, message, sig)
 }
 
-func VerifyEd25519ph(pub, message, sig, context []byte) error {
-	return verifyEd25519(pub, message, sig, context, edDSAKindEd25519ph)
-}
-
-func VerifyEd25519ctx(pub, message, sig, context []byte) error {
-	return verifyEd25519(pub, message, sig, context, edDSAKindEd25519ctx)
-}
-
-func verifyEd25519(pub, message, sig, context []byte, kind edDSAKind) error {
+func verifyEd25519(pub, message, sig []byte) error {
 	if l := len(pub); l != publicKeySizeEd25519 {
 		panic("ed25519: bad public key length: " + strconv.Itoa(l))
 	}
@@ -208,64 +137,11 @@ func verifyEd25519(pub, message, sig, context []byte, kind edDSAKind) error {
 		return newOpenSSLError("EVP_MD_CTX_new")
 	}
 	defer C.go_openssl_EVP_MD_CTX_free(ctx)
-	switch vMajor {
-	case 1:
-		if C.go_openssl_EVP_DigestVerifyInit(ctx, nil, nil, nil, pkey) != 1 {
-			return newOpenSSLError("EVP_DigestVerifyInit")
-		}
-	case 3:
-		params, err := ed25519Params(context, kind)
-		if err != nil {
-			return err
-		}
-		if params != nil {
-			defer C.go_openssl_OSSL_PARAM_free(params)
-		}
-		if C.go_openssl_EVP_DigestVerifyInit_ex(ctx, nil, nil, nil, nil, pkey, params) != 1 {
-			return newOpenSSLError("EVP_DigestVerifyInit_ex")
-		}
-	default:
-		panic(errUnsupportedVersion())
+	if C.go_openssl_EVP_DigestVerifyInit(ctx, nil, nil, nil, pkey) != 1 {
+		return newOpenSSLError("EVP_DigestVerifyInit")
 	}
 	if C.go_openssl_EVP_DigestVerify(ctx, base(sig), C.size_t(len(sig)), base(message), C.size_t(len(message))) != 1 {
 		return errors.New("ed25519: invalid signature")
 	}
 	return nil
-}
-
-func ed25519Params(context []byte, kind edDSAKind) (params C.GO_OSSL_PARAM_PTR, err error) {
-	if kind == edDSAKindEd25519 {
-		// Default parameters are fine.
-		return nil, nil
-	}
-	bld := C.go_openssl_OSSL_PARAM_BLD_new()
-	if bld == nil {
-		return nil, newOpenSSLError("OSSL_PARAM_BLD_new")
-	}
-	defer C.go_openssl_OSSL_PARAM_BLD_free(bld)
-
-	var instance *C.char
-	switch kind {
-	case edDSAKindEd25519ph:
-		instance = paramSigInstanceEd25519ph
-	case edDSAKindEd25519ctx:
-		instance = paramSigInstanceEd25519ctx
-	default:
-		panic("ed25519: unsupported kind: " + strconv.Itoa(int(kind)))
-	}
-	if C.go_openssl_OSSL_PARAM_BLD_push_utf8_string(bld, paramSigInstance, instance, 0) != 1 {
-		return nil, newOpenSSLError("OSSL_PARAM_BLD_push_utf8_string")
-	}
-	if len(context) > 0 {
-		cbytes := C.CBytes(context)
-		defer C.free(cbytes)
-		if C.go_openssl_OSSL_PARAM_BLD_push_octet_string(bld, paramSigContext, cbytes, C.size_t(len(context))) != 1 {
-			return nil, newOpenSSLError("OSSL_PARAM_BLD_push_octet_string")
-		}
-	}
-	params = C.go_openssl_OSSL_PARAM_BLD_to_param(bld)
-	if params == nil {
-		return nil, newOpenSSLError("OSSL_PARAM_BLD_to_param")
-	}
-	return params, nil
 }
