@@ -12,13 +12,13 @@ import (
 )
 
 const (
-	// publicKeySize is the size, in bytes, of public keys as used in crypto/ed25519.
+	// publicKeySizeEd25519 is the size, in bytes, of public keys as used in crypto/ed25519.
 	publicKeySizeEd25519 = 32
-	// privateKeySize is the size, in bytes, of private keys as used in crypto/ed25519.
+	// privateKeySizeEd25519 is the size, in bytes, of private keys as used in crypto/ed25519.
 	privateKeySizeEd25519 = 64
-	// signatureSize is the size, in bytes, of signatures generated and verified by crypto/ed25519.
+	// signatureSizeEd25519 is the size, in bytes, of signatures generated and verified by crypto/ed25519.
 	signatureSizeEd25519 = 64
-	// seedSize is the size, in bytes, of private key seeds. These are the private key representations used by RFC 8032.
+	// seedSizeEd25519 is the size, in bytes, of private key seeds. These are the private key representations used by RFC 8032.
 	seedSizeEd25519 = 32
 )
 
