@@ -165,3 +165,17 @@ func TestTLS1PRF(t *testing.T) {
 		})
 	}
 }
+
+func BenchmarkTLS1PRF(b *testing.B) {
+	if !openssl.SupportsTLS1PRF() {
+		b.Skip("TLS PRF is not supported")
+	}
+	tt := tls1prfTests[0]
+	secret, label, seed, out, hash := tt.secret, tt.label, tt.seed, tt.out, cryptoToHash(tt.hash)
+	for i := 0; i < b.N; i++ {
+		_, err := openssl.TLS1PRF(secret, label, seed, len(out), hash)
+		if err != nil {
+			b.Fatal(err)
+		}
+	}
+}

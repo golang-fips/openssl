@@ -175,7 +175,7 @@ func newECDHPkey3(nid C.int, bytes []byte, isPrivate bool) (C.GO_EVP_PKEY_PTR, e
 	}
 	defer C.go_openssl_OSSL_PARAM_BLD_free(bld)
 	C.go_openssl_OSSL_PARAM_BLD_push_utf8_string(bld, paramGroup, C.go_openssl_OBJ_nid2sn(nid), 0)
-	var selection C.int
+	var selection int
 	if isPrivate {
 		priv := C.go_openssl_BN_bin2bn(base(bytes), C.int(len(bytes)), nil)
 		if priv == nil {
@@ -258,26 +258,18 @@ func deriveEcdhPublicKey(pkey C.GO_EVP_PKEY_PTR, curve string) error {
 func ECDH(priv *PrivateKeyECDH, pub *PublicKeyECDH) ([]byte, error) {
 	defer runtime.KeepAlive(priv)
 	defer runtime.KeepAlive(pub)
-	ctx := C.go_openssl_EVP_PKEY_CTX_new(priv._pkey, nil)
-	if ctx == nil {
-		return nil, newOpenSSLError("EVP_PKEY_CTX_new")
+	ctx, err := newEvpPkeyCtx(priv._pkey)
+	if err != nil {
+		return nil, err
 	}
-	defer C.go_openssl_EVP_PKEY_CTX_free(ctx)
-	if C.go_openssl_EVP_PKEY_derive_init(ctx) != 1 {
-		return nil, newOpenSSLError("EVP_PKEY_derive_init")
+	defer ctx.free()
+	if err := ctx.deriveInit(); err != nil {
+		return nil, err
 	}
-	if C.go_openssl_EVP_PKEY_derive_set_peer(ctx, pub._pkey) != 1 {
-		return nil, newOpenSSLError("EVP_PKEY_derive_set_peer")
+	if err := ctx.deriveSetPeer(pub._pkey); err != nil {
+		return nil, err
 	}
-	var outLen C.size_t
-	if C.go_openssl_EVP_PKEY_derive(ctx, nil, &outLen) != 1 {
-		return nil, newOpenSSLError("EVP_PKEY_derive_init")
-	}
-	out := make([]byte, outLen)
-	if C.go_openssl_EVP_PKEY_derive(ctx, base(out), &outLen) != 1 {
-		return nil, newOpenSSLError("EVP_PKEY_derive_init")
-	}
-	return out, nil
+	return ctx.derive(nil)
 }
 
 func GenerateKeyECDH(curve string) (*PrivateKeyECDH, []byte, error) {
