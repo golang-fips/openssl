@@ -23,7 +23,7 @@ const (
 )
 
 // TODO: Add support for Ed25519ph and Ed25519ctx when OpenSSL supports them,
-// which will probably be in 3.2.0.
+// which will probably be in 3.2.0 (https://github.com/openssl/openssl/issues/20418).
 
 var (
 	onceSupportsEd25519 sync.Once
@@ -50,6 +50,7 @@ func SupportsEd25519() bool {
 	return supportsEd25519
 }
 
+// GenerateKeyEd25519 generates a public/private key pair.
 func GenerateKeyEd25519() (pub, priv []byte, err error) {
 	pkey, err := generateEVPPKey(C.GO_EVP_PKEY_ED25519, 0, "")
 	if err != nil {
@@ -66,6 +67,10 @@ func GenerateKeyEd25519() (pub, priv []byte, err error) {
 	return pub, priv, nil
 }
 
+// NewKeyFromSeedEd25519 calculates a private key from a seed. It will panic if
+// len(seed) is not [SeedSize]. This function is provided for interoperability
+// with RFC 8032. RFC 8032's private keys correspond to seeds in this
+// package.
 func NewKeyFromSeedEd25519(seed []byte) (priv []byte, err error) {
 	// Outline the function body so that the returned key can be stack-allocated.
 	priv = make([]byte, privateKeySizeEd25519)
@@ -77,8 +82,8 @@ func NewKeyFromSeedEd25519(seed []byte) (priv []byte, err error) {
 }
 
 func newKeyFromSeedEd25519(priv []byte, seed []byte) error {
-	if l := len(seed); l != seedSizeEd25519 {
-		panic("ed25519: bad seed length: " + strconv.Itoa(l))
+	if len(seed) != seedSizeEd25519 {
+		panic("ed25519: bad seed length: " + strconv.Itoa(len(seed)))
 	}
 	pkey := C.go_openssl_EVP_PKEY_new_raw_private_key(C.GO_EVP_PKEY_ED25519, nil, base(seed), C.size_t(len(seed)))
 	if pkey == nil {
@@ -105,6 +110,7 @@ func extractPKEYPrivEd25519(pkey C.GO_EVP_PKEY_PTR, priv []byte) error {
 	return nil
 }
 
+// Sign signs the message with priv and returns a signature.
 func SignEd25519(priv, message []byte) (sig []byte, err error) {
 	// Outline the function body so that the returned key can be stack-allocated.
 	sig = make([]byte, signatureSizeEd25519)
@@ -116,8 +122,8 @@ func SignEd25519(priv, message []byte) (sig []byte, err error) {
 }
 
 func signEd25519(sig, priv, message []byte) error {
-	if l := len(priv); l != privateKeySizeEd25519 {
-		panic("ed25519: bad private key length: " + strconv.Itoa(l))
+	if len(priv) != privateKeySizeEd25519 {
+		panic("ed25519: bad private key length: " + strconv.Itoa(len(priv)))
 	}
 	pkey := C.go_openssl_EVP_PKEY_new_raw_private_key(C.GO_EVP_PKEY_ED25519, nil, base(priv[:seedSizeEd25519]), seedSizeEd25519)
 	if pkey == nil {
@@ -142,13 +148,10 @@ func signEd25519(sig, priv, message []byte) error {
 	return nil
 }
 
+// VerifyEd25519 reports whether sig is a valid signature of message by pub.
 func VerifyEd25519(pub, message, sig []byte) error {
-	return verifyEd25519(pub, message, sig)
-}
-
-func verifyEd25519(pub, message, sig []byte) error {
-	if l := len(pub); l != publicKeySizeEd25519 {
-		panic("ed25519: bad public key length: " + strconv.Itoa(l))
+	if len(pub) != publicKeySizeEd25519 {
+		panic("ed25519: bad public key length: " + strconv.Itoa(len(pub)))
 	}
 	pkey := C.go_openssl_EVP_PKEY_new_raw_public_key(C.GO_EVP_PKEY_ED25519, nil, base(pub), publicKeySizeEd25519)
 	if pkey == nil {
