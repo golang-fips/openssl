@@ -110,7 +110,7 @@ func extractPKEYPrivEd25519(pkey C.GO_EVP_PKEY_PTR, priv []byte) error {
 	return nil
 }
 
-// Sign signs the message with priv and returns a signature.
+// SignEd25519 signs the message with priv and returns a signature.
 func SignEd25519(priv, message []byte) (sig []byte, err error) {
 	// Outline the function body so that the returned key can be stack-allocated.
 	sig = make([]byte, signatureSizeEd25519)
