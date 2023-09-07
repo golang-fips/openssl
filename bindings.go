@@ -169,7 +169,7 @@ func (ctx evpPkeyCtx) setHKDFProps(mode int, md C.GO_EVP_MD_PTR, key []byte, sal
 		}
 		if key != nil {
 			if C.go_openssl_EVP_PKEY_CTX_set1_hkdf_key(ctx.ptr, base(key), C.int(len(key))) != 1 {
-				return newOpenSSLError("gEVP_PKEY_CTX_set1_hkdf_key")
+				return newOpenSSLError("EVP_PKEY_CTX_set1_hkdf_key")
 			}
 		}
 		if salt != nil {
@@ -222,13 +222,11 @@ func (ctx evpPkeyCtx) setTLS1PRFProps(md C.GO_EVP_MD_PTR, secret []byte, seeds .
 		if C.go_openssl_EVP_PKEY_CTX_set_tls1_prf_md(ctx.ptr, md) != 1 {
 			return newOpenSSLError("EVP_PKEY_CTX_set_tls1_prf_md")
 		}
-		if C.go_openssl_EVP_PKEY_CTX_set1_tls1_prf_secret(ctx.ptr,
-			base(secret), C.int(len(secret))) != 1 {
+		if C.go_openssl_EVP_PKEY_CTX_set1_tls1_prf_secret(ctx.ptr, base(secret), C.int(len(secret))) != 1 {
 			return newOpenSSLError("EVP_PKEY_CTX_set1_tls1_prf_secret")
 		}
 		for _, s := range seeds {
-			if C.go_openssl_EVP_PKEY_CTX_add1_tls1_prf_seed(ctx.ptr,
-				base(s), C.int(len(s))) != 1 {
+			if C.go_openssl_EVP_PKEY_CTX_add1_tls1_prf_seed(ctx.ptr, base(s), C.int(len(s))) != 1 {
 				return newOpenSSLError("EVP_PKEY_CTX_add1_tls1_prf_seed")
 			}
 		}

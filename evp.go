@@ -293,7 +293,7 @@ func evpDecrypt(withKey withKeyFunc, padding int, h, mgfHash hash.Hash, label, m
 }
 
 func evpSign(withKey withKeyFunc, padding int, saltLen int, h crypto.Hash, hashed []byte) ([]byte, error) {
-	signtInit := func(ctx evpPkeyCtx) error {
+	signInit := func(ctx evpPkeyCtx) error {
 		return ctx.signInit()
 	}
 	sign := func(ctx evpPkeyCtx, out, in []byte) ([]byte, error) {
