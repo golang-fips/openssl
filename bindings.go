@@ -62,7 +62,13 @@ func (ctx evpPkeyCtx) encryptInit() error {
 
 func (ctx evpPkeyCtx) encrypt(out []byte, in []byte) ([]byte, error) {
 	outLen := C.size_t(len(out))
-	if ret := C.go_openssl_EVP_PKEY_encrypt(ctx.ptr, base(out), &outLen, base(in), C.size_t(len(in))); ret != 1 {
+	if out == nil {
+		if C.go_openssl_EVP_PKEY_encrypt(ctx.ptr, nil, &outLen, base(in), C.size_t(len(in))) != 1 {
+			return nil, newOpenSSLError("EVP_PKEY_encrypt")
+		}
+		out = make([]byte, outLen)
+	}
+	if C.go_openssl_EVP_PKEY_encrypt(ctx.ptr, base(out), &outLen, base(in), C.size_t(len(in))) != 1 {
 		return nil, newOpenSSLError("EVP_PKEY_encrypt")
 	}
 	return out[:outLen], nil
@@ -77,7 +83,13 @@ func (ctx evpPkeyCtx) decryptInit() error {
 
 func (ctx evpPkeyCtx) decrypt(out []byte, in []byte) ([]byte, error) {
 	outLen := C.size_t(len(out))
-	if ret := C.go_openssl_EVP_PKEY_decrypt(ctx.ptr, base(out), &outLen, base(in), C.size_t(len(in))); ret != 1 {
+	if out == nil {
+		if C.go_openssl_EVP_PKEY_decrypt(ctx.ptr, nil, &outLen, base(in), C.size_t(len(in))) != 1 {
+			return nil, newOpenSSLError("EVP_PKEY_decrypt")
+		}
+		out = make([]byte, outLen)
+	}
+	if C.go_openssl_EVP_PKEY_decrypt(ctx.ptr, base(out), &outLen, base(in), C.size_t(len(in))) != 1 {
 		return nil, newOpenSSLError("EVP_PKEY_decrypt")
 	}
 	return out[:outLen], nil
@@ -92,7 +104,13 @@ func (ctx evpPkeyCtx) signInit() error {
 
 func (ctx evpPkeyCtx) sign(out []byte, in []byte) ([]byte, error) {
 	outLen := C.size_t(len(out))
-	if ret := C.go_openssl_EVP_PKEY_sign(ctx.ptr, base(out), &outLen, base(in), C.size_t(len(in))); ret != 1 {
+	if out == nil {
+		if C.go_openssl_EVP_PKEY_sign(ctx.ptr, nil, &outLen, base(in), C.size_t(len(in))) != 1 {
+			return nil, newOpenSSLError("EVP_PKEY_sign")
+		}
+		out = make([]byte, outLen)
+	}
+	if C.go_openssl_EVP_PKEY_sign(ctx.ptr, base(out), &outLen, base(in), C.size_t(len(in))) != 1 {
 		return nil, newOpenSSLError("EVP_PKEY_sign")
 	}
 	return out[:outLen], nil
@@ -106,7 +124,7 @@ func (ctx evpPkeyCtx) verifyInit() error {
 }
 
 func (ctx evpPkeyCtx) verify(sig []byte, in []byte) error {
-	if ret := C.go_openssl_EVP_PKEY_verify(ctx.ptr, base(sig), C.size_t(len(sig)), base(in), C.size_t(len(in))); ret != 1 {
+	if C.go_openssl_EVP_PKEY_verify(ctx.ptr, base(sig), C.size_t(len(sig)), base(in), C.size_t(len(in))) != 1 {
 		return newOpenSSLError("EVP_PKEY_verify")
 	}
 	return nil

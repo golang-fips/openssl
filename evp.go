@@ -137,31 +137,27 @@ func generateEVPPKey(id int, bits int, curve string) (C.GO_EVP_PKEY_PTR, error) 
 type withKeyFunc func(func(C.GO_EVP_PKEY_PTR) error) error
 type initFunc func(evpPkeyCtx) error
 type cryptFunc func(ctx evpPkeyCtx, out []byte, in []byte) ([]byte, error)
-type verifyFunc func(ctx evpPkeyCtx, out []byte, in []byte) error
+type verifyFunc func(ctx evpPkeyCtx, sig []byte, in []byte) error
 
 var errRSAHashUnsupported = errors.New("crypto/rsa: unsupported hash function")
 
-func setupEVP(withKey withKeyFunc, padding int,
-	h, mgfHash hash.Hash, label []byte, saltLen int, ch crypto.Hash,
-	init initFunc) (ctx evpPkeyCtx, err error) {
-	defer func() {
-		if err != nil {
-			ctx.free()
-		}
-	}()
-
-	err = withKey(func(pkey C.GO_EVP_PKEY_PTR) error {
+func initEVP(withKey withKeyFunc, init initFunc) (ctx evpPkeyCtx, err error) {
+	if err = withKey(func(pkey C.GO_EVP_PKEY_PTR) error {
 		ctx, err = newEvpPkeyCtx(pkey)
 		return err
-	})
-	if err != nil {
-		return
+	}); err != nil {
+		return ctx, err
 	}
 	if err = init(ctx); err != nil {
-		return
+		ctx.free()
+		return ctx, err
 	}
+	return ctx, nil
+}
+
+func setupEVP(ctx evpPkeyCtx, padding, saltLen int, h, mgfHash hash.Hash, label []byte, ch crypto.Hash) error {
 	if padding == 0 {
-		return ctx, nil
+		return nil
 	}
 	// Each padding type has its own requirements in terms of when to apply the padding,
 	// so it can't be just set at this point.
@@ -172,49 +168,46 @@ func setupEVP(withKey withKeyFunc, padding int,
 	case C.GO_RSA_PKCS1_OAEP_PADDING:
 		md := hashToMD(h)
 		if md == nil {
-			err = errRSAHashUnsupported
-			return
+			return errRSAHashUnsupported
 		}
 		var mgfMD C.GO_EVP_MD_PTR
 		if mgfHash != nil {
 			// mgfHash is optional, but if it is set it must match a supported hash function.
 			mgfMD = hashToMD(mgfHash)
 			if mgfMD == nil {
-				err = errRSAHashUnsupported
-				return
+				return errRSAHashUnsupported
 			}
 		}
 		// setPadding must happen before setting EVP_PKEY_CTRL_RSA_OAEP_MD.
-		if err = setPadding(); err != nil {
-			return
+		if err := setPadding(); err != nil {
+			return err
 		}
-		if err = ctx.ctrl(C.GO_EVP_PKEY_RSA, -1, C.GO_EVP_PKEY_CTRL_RSA_OAEP_MD, 0, unsafe.Pointer(md)); err != nil {
-			return
+		if err := ctx.ctrl(C.GO_EVP_PKEY_RSA, -1, C.GO_EVP_PKEY_CTRL_RSA_OAEP_MD, 0, unsafe.Pointer(md)); err != nil {
+			return err
 		}
 		if mgfHash != nil {
-			if err = ctx.ctrl(C.GO_EVP_PKEY_RSA, -1, C.GO_EVP_PKEY_CTRL_RSA_MGF1_MD, 0, unsafe.Pointer(mgfMD)); err != nil {
-				return
+			if err := ctx.ctrl(C.GO_EVP_PKEY_RSA, -1, C.GO_EVP_PKEY_CTRL_RSA_MGF1_MD, 0, unsafe.Pointer(mgfMD)); err != nil {
+				return err
 			}
 		}
-		if err = ctx.setRSAOAEPLabel(label); err != nil {
-			return
+		if err := ctx.setRSAOAEPLabel(label); err != nil {
+			return err
 		}
 	case C.GO_RSA_PKCS1_PSS_PADDING:
 		md := cryptoHashToMD(ch)
 		if md == nil {
-			err = errRSAHashUnsupported
-			return
+			return errRSAHashUnsupported
 		}
-		if err = ctx.ctrl(C.GO_EVP_PKEY_RSA, -1, C.GO_EVP_PKEY_CTRL_MD, 0, unsafe.Pointer(md)); err != nil {
-			return
+		if err := ctx.ctrl(C.GO_EVP_PKEY_RSA, -1, C.GO_EVP_PKEY_CTRL_MD, 0, unsafe.Pointer(md)); err != nil {
+			return err
 		}
 		// setPadding must happen after setting EVP_PKEY_CTRL_MD.
-		if err = setPadding(); err != nil {
-			return
+		if err := setPadding(); err != nil {
+			return err
 		}
 		if saltLen != 0 {
-			if err = ctx.ctrl(C.GO_EVP_PKEY_RSA, -1, C.GO_EVP_PKEY_CTRL_RSA_PSS_SALTLEN, saltLen, nil); err != nil {
-				return
+			if err := ctx.ctrl(C.GO_EVP_PKEY_RSA, -1, C.GO_EVP_PKEY_CTRL_RSA_PSS_SALTLEN, saltLen, nil); err != nil {
+				return err
 			}
 		}
 
@@ -223,52 +216,49 @@ func setupEVP(withKey withKeyFunc, padding int,
 			// We support unhashed messages.
 			md := cryptoHashToMD(ch)
 			if md == nil {
-				err = errRSAHashUnsupported
-				return
+				return errRSAHashUnsupported
 			}
-			if err = ctx.ctrl(-1, -1, C.GO_EVP_PKEY_CTRL_MD, 0, unsafe.Pointer(md)); err != nil {
-				return
+			if err := ctx.ctrl(-1, -1, C.GO_EVP_PKEY_CTRL_MD, 0, unsafe.Pointer(md)); err != nil {
+				return err
 			}
-			if err = setPadding(); err != nil {
-				return
+			if err := setPadding(); err != nil {
+				return err
 			}
 		}
 	default:
-		if err = setPadding(); err != nil {
-			return
+		if err := setPadding(); err != nil {
+			return err
 		}
 	}
-	return ctx, nil
+	return nil
 }
 
 func cryptEVP(withKey withKeyFunc, padding int,
 	h, mgfHash hash.Hash, label []byte, saltLen int, ch crypto.Hash,
 	init initFunc, crypt cryptFunc, in []byte) ([]byte, error) {
-
-	ctx, err := setupEVP(withKey, padding, h, mgfHash, label, saltLen, ch, init)
+	ctx, err := initEVP(withKey, init)
 	if err != nil {
 		return nil, err
 	}
 	defer ctx.free()
-	var pkeySize C.int
-	withKey(func(pkey C.GO_EVP_PKEY_PTR) error {
-		pkeySize = C.go_openssl_EVP_PKEY_get_size(pkey)
-		return nil
-	})
-	out := make([]byte, pkeySize)
-	return crypt(ctx, out, in)
+	if err = setupEVP(ctx, padding, saltLen, h, mgfHash, label, ch); err != nil {
+		return nil, err
+	}
+	return crypt(ctx, nil, in)
 }
 
 func verifyEVP(withKey withKeyFunc, padding int,
 	h hash.Hash, label []byte, saltLen int, ch crypto.Hash,
 	init initFunc, verify verifyFunc,
 	sig, in []byte) error {
-
-	ctx, err := setupEVP(withKey, padding, h, nil, label, saltLen, ch, init)
+	ctx, err := initEVP(withKey, init)
 	if err != nil {
 		return err
 	}
 	defer ctx.free()
+	if err = setupEVP(ctx, padding, saltLen, h, nil, label, ch); err != nil {
+		return err
+	}
 	return verify(ctx, sig, in)
 }
 
@@ -299,7 +289,7 @@ func evpSign(withKey withKeyFunc, padding int, saltLen int, h crypto.Hash, hashe
 	sign := func(ctx evpPkeyCtx, out, in []byte) ([]byte, error) {
 		return ctx.sign(out, in)
 	}
-	return cryptEVP(withKey, padding, nil, nil, nil, saltLen, h, signtInit, sign, hashed)
+	return cryptEVP(withKey, padding, nil, nil, nil, saltLen, h, signInit, sign, hashed)
 }
 
 func evpVerify(withKey withKeyFunc, padding int, saltLen int, h crypto.Hash, sig, hashed []byte) error {
