@@ -9,5 +9,7 @@ package openssl
 // functions that are known to allocate.
 #cgo noescape go_openssl_EVP_PKEY_derive
 #cgo nocallback go_openssl_EVP_PKEY_derive
+#cgo noescape go_openssl_EVP_EncryptUpdate
+#cgo nocallback go_openssl_EVP_EncryptUpdate
 */
 import "C"
