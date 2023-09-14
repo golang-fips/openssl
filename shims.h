@@ -9,12 +9,6 @@ enum {
     GO_OPENSSL_INIT_LOAD_CONFIG = 0x00000040L
 };
 
-// #include <openssl/aes.h>
-enum {
-    GO_AES_ENCRYPT = 1,
-    GO_AES_DECRYPT = 0
-};
-
 // #include <openssl/evp.h>
 enum {
     GO_EVP_CTRL_GCM_GET_TAG = 0x10,
@@ -242,6 +236,7 @@ DEFINEFUNC(int, EVP_CipherUpdate, (GO_EVP_CIPHER_CTX_PTR ctx, unsigned char *out
 DEFINEFUNC(int, EVP_EncryptInit_ex, (GO_EVP_CIPHER_CTX_PTR ctx, const GO_EVP_CIPHER_PTR type, GO_ENGINE_PTR impl, const unsigned char *key, const unsigned char *iv), (ctx, type, impl, key, iv)) \
 DEFINEFUNC(int, EVP_EncryptUpdate, (GO_EVP_CIPHER_CTX_PTR ctx, unsigned char *out, int *outl, const unsigned char *in, int inl), (ctx, out, outl, in, inl)) \
 DEFINEFUNC(int, EVP_EncryptFinal_ex, (GO_EVP_CIPHER_CTX_PTR ctx, unsigned char *out, int *outl), (ctx, out, outl)) \
+DEFINEFUNC(int, EVP_DecryptInit_ex, (GO_EVP_CIPHER_CTX_PTR ctx, const GO_EVP_CIPHER_PTR type, GO_ENGINE_PTR impl, const unsigned char *key, const unsigned char *iv), (ctx, type, impl, key, iv)) \
 DEFINEFUNC(int, EVP_DecryptUpdate, (GO_EVP_CIPHER_CTX_PTR ctx, unsigned char *out, int *outl, const unsigned char *in, int inl),	(ctx, out, outl, in, inl)) \
 DEFINEFUNC(int, EVP_DecryptFinal_ex, (GO_EVP_CIPHER_CTX_PTR ctx, unsigned char *outm, int *outl),	(ctx, outm, outl)) \
 DEFINEFUNC_3_0(GO_EVP_CIPHER_PTR, EVP_CIPHER_fetch, (GO_OSSL_LIB_CTX_PTR ctx, const char *algorithm, const char *properties), (ctx, algorithm, properties)) \
@@ -258,6 +253,11 @@ DEFINEFUNC(const GO_EVP_CIPHER_PTR, EVP_aes_256_cbc, (void), ()) \
 DEFINEFUNC(const GO_EVP_CIPHER_PTR, EVP_aes_256_ctr, (void), ()) \
 DEFINEFUNC(const GO_EVP_CIPHER_PTR, EVP_aes_256_ecb, (void), ()) \
 DEFINEFUNC(const GO_EVP_CIPHER_PTR, EVP_aes_256_gcm, (void), ()) \
+DEFINEFUNC(const GO_EVP_CIPHER_PTR, EVP_des_ecb, (void), ()) \
+DEFINEFUNC(const GO_EVP_CIPHER_PTR, EVP_des_cbc, (void), ()) \
+DEFINEFUNC(const GO_EVP_CIPHER_PTR, EVP_des_ede3_ecb, (void), ()) \
+DEFINEFUNC(const GO_EVP_CIPHER_PTR, EVP_des_ede3_cbc, (void), ()) \
+DEFINEFUNC_RENAMED_3_0(int, EVP_CIPHER_get_block_size, EVP_CIPHER_block_size, (const GO_EVP_CIPHER_PTR cipher), (cipher)) \
 DEFINEFUNC(void, EVP_CIPHER_CTX_free, (GO_EVP_CIPHER_CTX_PTR arg0), (arg0)) \
 DEFINEFUNC(int, EVP_CIPHER_CTX_ctrl, (GO_EVP_CIPHER_CTX_PTR ctx, int type, int arg, void *ptr), (ctx, type, arg, ptr)) \
 DEFINEFUNC(GO_EVP_PKEY_PTR, EVP_PKEY_new, (void), ()) \
