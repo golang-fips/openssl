@@ -132,7 +132,7 @@ func (k *PublicKeyRSA) finalize() {
 	C.go_openssl_EVP_PKEY_free(k._pkey)
 }
 
-func (k *PublicKeyRSA) withKey(f func(C.GO_EVP_PKEY_PTR) C.int) C.int {
+func (k *PublicKeyRSA) withKey(f func(C.GO_EVP_PKEY_PTR) error) error {
 	// Because of the finalizer, any time _pkey is passed to cgo, that call must
 	// be followed by a call to runtime.KeepAlive, to make sure k is not
 	// collected (and finalized) before the cgo call returns.
@@ -193,7 +193,7 @@ func (k *PrivateKeyRSA) finalize() {
 	C.go_openssl_EVP_PKEY_free(k._pkey)
 }
 
-func (k *PrivateKeyRSA) withKey(f func(C.GO_EVP_PKEY_PTR) C.int) C.int {
+func (k *PrivateKeyRSA) withKey(f func(C.GO_EVP_PKEY_PTR) error) error {
 	// Because of the finalizer, any time _pkey is passed to cgo, that call must
 	// be followed by a call to runtime.KeepAlive, to make sure k is not
 	// collected (and finalized) before the cgo call returns.
@@ -245,7 +245,7 @@ func EncryptRSANoPadding(pub *PublicKeyRSA, msg []byte) ([]byte, error) {
 	return evpEncrypt(pub.withKey, C.GO_RSA_NO_PADDING, nil, nil, nil, msg)
 }
 
-func saltLength(saltLen int, sign bool) (C.int, error) {
+func saltLength(saltLen int, sign bool) (int, error) {
 	// A salt length of -2 is valid in OpenSSL, but not in crypto/rsa, so reject
 	// it, and lengths < -2, before we convert to the OpenSSL sentinel values.
 	if saltLen <= -2 {
@@ -266,7 +266,7 @@ func saltLength(saltLen int, sign bool) (C.int, error) {
 		// OpenSSL uses -2 to mean auto-detect size when verifying where Go crypto uses 0.
 		return C.GO_RSA_PSS_SALTLEN_AUTO, nil
 	}
-	return C.int(saltLen), nil
+	return saltLen, nil
 }
 
 func SignRSAPSS(priv *PrivateKeyRSA, h crypto.Hash, hashed []byte, saltLen int) ([]byte, error) {
@@ -294,14 +294,14 @@ func HashSignRSAPKCS1v15(priv *PrivateKeyRSA, h crypto.Hash, msg []byte) ([]byte
 }
 
 func VerifyRSAPKCS1v15(pub *PublicKeyRSA, h crypto.Hash, hashed, sig []byte) error {
-	if pub.withKey(func(pkey C.GO_EVP_PKEY_PTR) C.int {
+	if err := pub.withKey(func(pkey C.GO_EVP_PKEY_PTR) error {
 		size := C.go_openssl_EVP_PKEY_get_size(pkey)
 		if len(sig) < int(size) {
-			return 0
+			return errors.New("crypto/rsa: verification error")
 		}
-		return 1
-	}) == 0 {
-		return errors.New("crypto/rsa: verification error")
+		return nil
+	}); err != nil {
+		return err
 	}
 	return evpVerify(pub.withKey, C.GO_RSA_PKCS1_PADDING, 0, h, sig, hashed)
 }
@@ -415,5 +415,5 @@ func newRSAKey3(isPriv bool, N, E, D, P, Q, Dp, Dq, Qinv BigInt) (C.GO_EVP_PKEY_
 	if isPriv {
 		selection = C.GO_EVP_PKEY_KEYPAIR
 	}
-	return newEvpFromParams(C.GO_EVP_PKEY_RSA, C.int(selection), params)
+	return newEvpFromParams(C.GO_EVP_PKEY_RSA, selection, params)
 }

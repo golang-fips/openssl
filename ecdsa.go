@@ -19,7 +19,7 @@ func (k *PrivateKeyECDSA) finalize() {
 	C.go_openssl_EVP_PKEY_free(k._pkey)
 }
 
-func (k *PrivateKeyECDSA) withKey(f func(C.GO_EVP_PKEY_PTR) C.int) C.int {
+func (k *PrivateKeyECDSA) withKey(f func(C.GO_EVP_PKEY_PTR) error) error {
 	defer runtime.KeepAlive(k)
 	return f(k._pkey)
 }
@@ -33,7 +33,7 @@ func (k *PublicKeyECDSA) finalize() {
 	C.go_openssl_EVP_PKEY_free(k._pkey)
 }
 
-func (k *PublicKeyECDSA) withKey(f func(C.GO_EVP_PKEY_PTR) C.int) C.int {
+func (k *PublicKeyECDSA) withKey(f func(C.GO_EVP_PKEY_PTR) error) error {
 	defer runtime.KeepAlive(k)
 	return f(k._pkey)
 }
@@ -199,7 +199,7 @@ func newECDSAKey3(nid C.int, bx, by, bd C.GO_BIGNUM_PTR) (C.GO_EVP_PKEY_PTR, err
 	cbytes := C.CBytes(pubBytes)
 	defer C.free(cbytes)
 	C.go_openssl_OSSL_PARAM_BLD_push_octet_string(bld, paramPubKey, cbytes, C.size_t(len(pubBytes)))
-	var selection C.int
+	var selection int
 	if bd != nil {
 		if C.go_openssl_OSSL_PARAM_BLD_push_BN(bld, paramPrivKey, bd) != 1 {
 			return nil, newOpenSSLError("OSSL_PARAM_BLD_push_BN")
