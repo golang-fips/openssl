@@ -94,7 +94,9 @@ func TLS1PRF(result, secret, label, seed []byte, h func() hash.Hash) error {
 		return newOpenSSLError("EVP_PKEY_derive")
 	}
 	// The Go standard library expects TLS1PRF to return the requested number of bytes,
-	// fail if it doesn't.
+	// fail if it doesn't. While there is no known situation where this will happen,
+	// EVP_PKEY_derive handles multiple algorithms and there could be a subtle mismatch
+	// after more code changes in the future.
 	if outLen != C.size_t(len(result)) {
 		return errors.New("tls1-prf: derived less bytes than requested")
 	}
