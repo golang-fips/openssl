@@ -507,7 +507,8 @@ func newCipherCtx(kind cipherKind, mode cipherMode, encrypt cipherOp, key, iv []
 		if C.go_openssl_EVP_CIPHER_CTX_set_key_length(ctx, C.int(len(key))) != 1 {
 			return nil, newOpenSSLError("EVP_CIPHER_CTX_set_key_length")
 		}
-		cipher = nil // don't reset the cipher
+		// Pass nil to the next call to EVP_CipherInit_ex to avoid resetting ctx's cipher.
+		cipher = nil
 	}
 	if C.go_openssl_EVP_CipherInit_ex(ctx, cipher, nil, base(key), base(iv), C.int(encrypt)) != 1 {
 		return nil, fail("unable to initialize EVP cipher ctx")
