@@ -72,9 +72,13 @@ func cryptoHashToMD(ch crypto.Hash) (md C.GO_EVP_MD_PTR) {
 	}
 	switch ch {
 	case crypto.MD4:
-		return C.go_openssl_EVP_md4()
+		if versionAtOrAbove(1, 1, 0) || !FIPS() {
+			return C.go_openssl_EVP_md4()
+		}
 	case crypto.MD5:
-		return C.go_openssl_EVP_md5()
+		if versionAtOrAbove(1, 1, 0) || !FIPS() {
+			return C.go_openssl_EVP_md5()
+		}
 	case crypto.SHA1:
 		return C.go_openssl_EVP_sha1()
 	case crypto.SHA224:
