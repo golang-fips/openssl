@@ -210,15 +210,27 @@ func setupEVP(withKey withKeyFunc, padding C.int,
 			clabel = (*C.uchar)(cryptoMalloc(len(label)))
 			copy((*[1 << 30]byte)(unsafe.Pointer(clabel))[:len(label)], label)
 		}
-		var ret C.int
+		var err error
 		if vMajor == 3 {
-			ret = C.go_openssl_EVP_PKEY_CTX_set0_rsa_oaep_label(ctx, unsafe.Pointer(clabel), C.int(len(label)))
+			// Docs say EVP_PKEY_CTX_set0_rsa_oaep_label accepts a null label,
+			// but it does not: https://github.com/openssl/openssl/issues/21288
+			if len(label) == 0 {
+				// cryptoMalloc can't create a zero-length array: use size 1.
+				clabel = (*C.uchar)(cryptoMalloc(1))
+			}
+			ret := C.go_openssl_EVP_PKEY_CTX_set0_rsa_oaep_label(ctx, unsafe.Pointer(clabel), C.int(len(label)))
+			if ret != 1 {
+				err = newOpenSSLError("EVP_PKEY_CTX_set0_rsa_oaep_label failed")
+			}
 		} else {
-			ret = C.go_openssl_EVP_PKEY_CTX_ctrl(ctx, C.GO_EVP_PKEY_RSA, -1, C.GO_EVP_PKEY_CTRL_RSA_OAEP_LABEL, C.int(len(label)), unsafe.Pointer(clabel))
+			ret := C.go_openssl_EVP_PKEY_CTX_ctrl(ctx, C.GO_EVP_PKEY_RSA, -1, C.GO_EVP_PKEY_CTRL_RSA_OAEP_LABEL, C.int(len(label)), unsafe.Pointer(clabel))
+			if ret != 1 {
+				err = newOpenSSLError("EVP_PKEY_CTX_ctrl failed")
+			}
 		}
-		if ret != 1 {
+		if err != nil {
 			cryptoFree(unsafe.Pointer(clabel))
-			return nil, newOpenSSLError("EVP_PKEY_CTX_ctrl failed")
+			return nil, err
 		}
 	case C.GO_RSA_PKCS1_PSS_PADDING:
 		md := cryptoHashToMD(ch)
