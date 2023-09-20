@@ -130,7 +130,7 @@ func TestSignVerifyPKCS1v15(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	signed2, err := openssl.HashSignRSAPKCS1v15(priv, crypto.SHA256, msg)
+	signed2, err := openssl.HashSignRSAPKCS1v15(priv, crypto.SHA256, bytes.NewReader(msg))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -141,7 +141,7 @@ func TestSignVerifyPKCS1v15(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = openssl.HashVerifyRSAPKCS1v15(pub, crypto.SHA256, msg, signed2)
+	err = openssl.HashVerifyRSAPKCS1v15(pub, crypto.SHA256, bytes.NewReader(msg), signed2)
 	if err != nil {
 		t.Fatal(err)
 	}

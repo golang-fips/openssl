@@ -7,6 +7,7 @@ import "C"
 import (
 	"crypto"
 	"errors"
+	"io"
 	"runtime"
 )
 
@@ -109,7 +110,7 @@ func SignMarshalECDSA(priv *PrivateKeyECDSA, hash []byte) ([]byte, error) {
 	return evpSign(priv.withKey, 0, 0, 0, hash)
 }
 
-func HashSignECDSA(priv *PrivateKeyECDSA, h crypto.Hash, msg []byte) ([]byte, error) {
+func HashSignECDSA(priv *PrivateKeyECDSA, h crypto.Hash, msg io.Reader) ([]byte, error) {
 	return evpHashSign(priv.withKey, h, msg)
 }
 
@@ -117,7 +118,7 @@ func VerifyECDSA(pub *PublicKeyECDSA, hash []byte, sig []byte) bool {
 	return evpVerify(pub.withKey, 0, 0, 0, sig, hash) == nil
 }
 
-func HashVerifyECDSA(pub *PublicKeyECDSA, h crypto.Hash, msg, sig []byte) bool {
+func HashVerifyECDSA(pub *PublicKeyECDSA, h crypto.Hash, msg io.Reader, sig []byte) bool {
 	return evpHashVerify(pub.withKey, h, msg, sig) == nil
 }
 

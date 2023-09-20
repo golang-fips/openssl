@@ -355,4 +355,5 @@ DEFINEFUNC(int, PKCS5_PBKDF2_HMAC, (const char *pass, int passlen, const unsigne
 DEFINEFUNC_3_0(int, EVP_PKEY_CTX_set_tls1_prf_md, (GO_EVP_PKEY_CTX_PTR arg0, const GO_EVP_MD_PTR arg1), (arg0, arg1)) \
 DEFINEFUNC_3_0(int, EVP_PKEY_CTX_set1_tls1_prf_secret, (GO_EVP_PKEY_CTX_PTR arg0, const unsigned char *arg1, int arg2), (arg0, arg1, arg2)) \
 DEFINEFUNC_3_0(int, EVP_PKEY_CTX_add1_tls1_prf_seed, (GO_EVP_PKEY_CTX_PTR arg0, const unsigned char *arg1, int arg2), (arg0, arg1, arg2)) \
+DEFINEFUNC_RENAMED_3_0(int, EVP_MD_get_block_size, EVP_MD_block_size, (const GO_EVP_MD_PTR md), (md)) \
 

@@ -1,6 +1,7 @@
 package openssl_test
 
 import (
+	"bytes"
 	"crypto"
 	"crypto/ecdsa"
 	"crypto/elliptic"
@@ -74,15 +75,15 @@ func testECDSASignAndVerify(t *testing.T, c elliptic.Curve) {
 	if openssl.VerifyECDSA(pub, hashed[:], signed) {
 		t.Errorf("Verify succeeded despite intentionally invalid hash!")
 	}
-	signed, err = openssl.HashSignECDSA(priv, crypto.SHA256, msg)
+	signed, err = openssl.HashSignECDSA(priv, crypto.SHA256, bytes.NewReader(msg))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !openssl.HashVerifyECDSA(pub, crypto.SHA256, msg, signed) {
+	if !openssl.HashVerifyECDSA(pub, crypto.SHA256, bytes.NewReader(msg), signed) {
 		t.Errorf("Verify failed")
 	}
 	signed[0] ^= 0xff
-	if openssl.HashVerifyECDSA(pub, crypto.SHA256, msg, signed) {
+	if openssl.HashVerifyECDSA(pub, crypto.SHA256, bytes.NewReader(msg), signed) {
 		t.Errorf("Verify failed")
 	}
 }
