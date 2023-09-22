@@ -57,14 +57,14 @@ func (c *aesCipher) BlockSize() int {
 
 func (c *aesCipher) Encrypt(dst, src []byte) {
 	if err := c.encrypt(dst, src); err != nil {
-		// Upstream expects that the panic message starts with "crypto/aes: ".
+		// crypto/aes expects that the panic message starts with "crypto/aes: ".
 		panic("crypto/aes: " + err.Error())
 	}
 }
 
 func (c *aesCipher) Decrypt(dst, src []byte) {
 	if err := c.decrypt(dst, src); err != nil {
-		// Upstream expects that the panic message starts with "crypto/aes: ".
+		// crypto/aes expects that the panic message starts with "crypto/aes: ".
 		panic("crypto/aes: " + err.Error())
 	}
 }

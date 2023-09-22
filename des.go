@@ -76,14 +76,14 @@ func (c *desCipher) BlockSize() int {
 
 func (c *desCipher) Encrypt(dst, src []byte) {
 	if err := c.encrypt(dst, src); err != nil {
-		// Upstream expects that the panic message starts with "crypto/des: ".
+		// crypto/des expects that the panic message starts with "crypto/des: ".
 		panic("crypto/des: " + err.Error())
 	}
 }
 
 func (c *desCipher) Decrypt(dst, src []byte) {
 	if err := c.decrypt(dst, src); err != nil {
-		// Upstream expects that the panic message starts with "crypto/des: ".
+		// crypto/des expects that the panic message starts with "crypto/des: ".
 		panic("crypto/des: " + err.Error())
 	}
 }
