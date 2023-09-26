@@ -9,6 +9,7 @@ import (
 	"crypto/subtle"
 	"errors"
 	"hash"
+	"io"
 	"runtime"
 	"unsafe"
 )
@@ -289,7 +290,7 @@ func SignRSAPKCS1v15(priv *PrivateKeyRSA, h crypto.Hash, hashed []byte) ([]byte,
 	return evpSign(priv.withKey, C.GO_RSA_PKCS1_PADDING, 0, h, hashed)
 }
 
-func HashSignRSAPKCS1v15(priv *PrivateKeyRSA, h crypto.Hash, msg []byte) ([]byte, error) {
+func HashSignRSAPKCS1v15(priv *PrivateKeyRSA, h crypto.Hash, msg io.Reader) ([]byte, error) {
 	return evpHashSign(priv.withKey, h, msg)
 }
 
@@ -306,7 +307,7 @@ func VerifyRSAPKCS1v15(pub *PublicKeyRSA, h crypto.Hash, hashed, sig []byte) err
 	return evpVerify(pub.withKey, C.GO_RSA_PKCS1_PADDING, 0, h, sig, hashed)
 }
 
-func HashVerifyRSAPKCS1v15(pub *PublicKeyRSA, h crypto.Hash, msg, sig []byte) error {
+func HashVerifyRSAPKCS1v15(pub *PublicKeyRSA, h crypto.Hash, msg io.Reader, sig []byte) error {
 	return evpHashVerify(pub.withKey, h, msg, sig)
 }
 
