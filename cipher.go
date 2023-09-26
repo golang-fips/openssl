@@ -166,57 +166,59 @@ func (c *evpCipher) finalize() {
 	}
 }
 
-func (c *evpCipher) encrypt(dst, src []byte) {
+func (c *evpCipher) encrypt(dst, src []byte) error {
 	if len(src) < c.blockSize {
-		panic("crypto/cipher: input not full block")
+		return errors.New("input not full block")
 	}
 	if len(dst) < c.blockSize {
-		panic("crypto/cipher: output not full block")
+		return errors.New("output not full block")
 	}
 	// Only check for overlap between the parts of src and dst that will actually be used.
 	// This matches Go standard library behavior.
 	if inexactOverlap(dst[:c.blockSize], src[:c.blockSize]) {
-		panic("crypto/cipher: invalid buffer overlap")
+		return errors.New("invalid buffer overlap")
 	}
 	if c.enc_ctx == nil {
 		var err error
 		c.enc_ctx, err = newCipherCtx(c.kind, cipherModeECB, cipherOpEncrypt, c.key, nil)
 		if err != nil {
-			panic(err)
+			return err
 		}
 	}
 
 	if C.go_openssl_EVP_EncryptUpdate_wrapper(c.enc_ctx, base(dst), base(src), C.int(c.blockSize)) != 1 {
-		panic("crypto/cipher: EncryptUpdate failed")
+		return errors.New("EncryptUpdate failed")
 	}
 	runtime.KeepAlive(c)
+	return nil
 }
 
-func (c *evpCipher) decrypt(dst, src []byte) {
+func (c *evpCipher) decrypt(dst, src []byte) error {
 	if len(src) < c.blockSize {
-		panic("crypto/cipher: input not full block")
+		return errors.New("input not full block")
 	}
 	if len(dst) < c.blockSize {
-		panic("crypto/cipher: output not full block")
+		return errors.New("output not full block")
 	}
 	// Only check for overlap between the parts of src and dst that will actually be used.
 	// This matches Go standard library behavior.
 	if inexactOverlap(dst[:c.blockSize], src[:c.blockSize]) {
-		panic("crypto/cipher: invalid buffer overlap")
+		return errors.New("invalid buffer overlap")
 	}
 	if c.dec_ctx == nil {
 		var err error
 		c.dec_ctx, err = newCipherCtx(c.kind, cipherModeECB, cipherOpDecrypt, c.key, nil)
 		if err != nil {
-			panic(err)
+			return err
 		}
 		if C.go_openssl_EVP_CIPHER_CTX_set_padding(c.dec_ctx, 0) != 1 {
-			panic("crypto/cipher: could not disable cipher padding")
+			return errors.New("could not disable cipher padding")
 		}
 	}
 
 	C.go_openssl_EVP_DecryptUpdate_wrapper(c.dec_ctx, base(dst), base(src), C.int(c.blockSize))
 	runtime.KeepAlive(c)
+	return nil
 }
 
 type cipherCBC struct {

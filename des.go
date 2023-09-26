@@ -75,11 +75,17 @@ func (c *desCipher) BlockSize() int {
 }
 
 func (c *desCipher) Encrypt(dst, src []byte) {
-	c.encrypt(dst, src)
+	if err := c.encrypt(dst, src); err != nil {
+		// crypto/des expects that the panic message starts with "crypto/des: ".
+		panic("crypto/des: " + err.Error())
+	}
 }
 
 func (c *desCipher) Decrypt(dst, src []byte) {
-	c.decrypt(dst, src)
+	if err := c.decrypt(dst, src); err != nil {
+		// crypto/des expects that the panic message starts with "crypto/des: ".
+		panic("crypto/des: " + err.Error())
+	}
 }
 
 func (c *desCipher) NewCBCEncrypter(iv []byte) cipher.BlockMode {
