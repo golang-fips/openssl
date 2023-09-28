@@ -170,6 +170,7 @@ DEFINEFUNC_3_0(unsigned long, ERR_get_error_all, (const char **file, int *line, 
 DEFINEFUNC_RENAMED_1_1(const char *, OpenSSL_version, SSLeay_version, (int type), (type)) \
 DEFINEFUNC(void, OPENSSL_init, (void), ()) \
 DEFINEFUNC_LEGACY_1_0(void, ERR_load_crypto_strings, (void), ()) \
+DEFINEFUNC_LEGACY_1_0(void, ERR_remove_thread_state, (const GO_CRYPTO_THREADID_PTR tid), (tid)) \
 DEFINEFUNC_LEGACY_1_0(int, CRYPTO_num_locks, (void), ()) \
 DEFINEFUNC_LEGACY_1_0(int, CRYPTO_THREADID_set_callback, (void (*threadid_func) (GO_CRYPTO_THREADID_PTR)), (threadid_func)) \
 DEFINEFUNC_LEGACY_1_0(void, CRYPTO_THREADID_set_numeric, (GO_CRYPTO_THREADID_PTR id, unsigned long val), (id, val)) \
