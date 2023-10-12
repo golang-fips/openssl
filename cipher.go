@@ -22,6 +22,7 @@ const (
 	cipherAES256
 	cipherDES
 	cipherDES3
+	cipherRC4
 )
 
 func (c cipherKind) String() string {
@@ -36,6 +37,8 @@ func (c cipherKind) String() string {
 		return "DES"
 	case cipherDES3:
 		return "DES3"
+	case cipherRC4:
+		return "RC4"
 	default:
 		panic("unknown cipher kind: " + strconv.Itoa(int(c)))
 	}
@@ -44,7 +47,8 @@ func (c cipherKind) String() string {
 type cipherMode int8
 
 const (
-	cipherModeECB cipherMode = iota
+	cipherModeNone cipherMode = -1
+	cipherModeECB  cipherMode = iota
 	cipherModeCBC
 	cipherModeCTR
 	cipherModeGCM
@@ -133,6 +137,8 @@ func loadCipher(k cipherKind, mode cipherMode) (cipher C.GO_EVP_CIPHER_PTR) {
 		case cipherModeCBC:
 			cipher = C.go_openssl_EVP_des_ede3_cbc()
 		}
+	case cipherRC4:
+		cipher = C.go_openssl_EVP_rc4()
 	}
 	return cipher
 }
@@ -479,17 +485,34 @@ func sliceForAppend(in []byte, n int) (head, tail []byte) {
 	return
 }
 
-func newCipherCtx(kind cipherKind, mode cipherMode, encrypt cipherOp, key, iv []byte) (C.GO_EVP_CIPHER_CTX_PTR, error) {
+func newCipherCtx(kind cipherKind, mode cipherMode, encrypt cipherOp, key, iv []byte) (ctx C.GO_EVP_CIPHER_CTX_PTR, err error) {
 	cipher := loadCipher(kind, mode)
 	if cipher == nil {
 		panic("crypto/cipher: unsupported cipher: " + kind.String())
 	}
-	ctx := C.go_openssl_EVP_CIPHER_CTX_new()
+	ctx = C.go_openssl_EVP_CIPHER_CTX_new()
 	if ctx == nil {
 		return nil, fail("unable to create EVP cipher ctx")
 	}
+	defer func() {
+		if err != nil {
+			C.go_openssl_EVP_CIPHER_CTX_free(ctx)
+		}
+	}()
+	if kind == cipherRC4 {
+		// RC4 cipher supports a variable key length.
+		// We need to set the key length before setting the key,
+		// and to do so we need to have an initialized cipher ctx.
+		if C.go_openssl_EVP_CipherInit_ex(ctx, cipher, nil, nil, nil, C.int(encrypt)) != 1 {
+			return nil, newOpenSSLError("EVP_CipherInit_ex")
+		}
+		if C.go_openssl_EVP_CIPHER_CTX_set_key_length(ctx, C.int(len(key))) != 1 {
+			return nil, newOpenSSLError("EVP_CIPHER_CTX_set_key_length")
+		}
+		// Pass nil to the next call to EVP_CipherInit_ex to avoid resetting ctx's cipher.
+		cipher = nil
+	}
 	if C.go_openssl_EVP_CipherInit_ex(ctx, cipher, nil, base(key), base(iv), C.int(encrypt)) != 1 {
-		C.go_openssl_EVP_CIPHER_CTX_free(ctx)
 		return nil, fail("unable to initialize EVP cipher ctx")
 	}
 	return ctx, nil
