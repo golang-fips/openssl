@@ -138,6 +138,32 @@ func TestRC4Block(t *testing.T) {
 	}
 }
 
+func TestRC4OutOfBoundsWrite(t *testing.T) {
+	if !openssl.SupportsRC4() {
+		t.Skip("RC4 is not supported")
+	}
+	// This cipherText is encrypted "0123456789"
+	cipherText := []byte{238, 41, 187, 114, 151, 2, 107, 13, 178, 63}
+	cipher, err := openssl.NewRC4Cipher([]byte{0})
+	if err != nil {
+		panic(err)
+	}
+	want := "abcdefghij"
+	plainText := []byte(want)
+	shorterLen := len(cipherText) / 2
+	defer func() {
+		err := recover()
+		if err == nil {
+			t.Error("XORKeyStream expected to panic on len(dst) < len(src), but didn't")
+		}
+		const plain = "0123456789"
+		if plainText[shorterLen] == plain[shorterLen] {
+			t.Errorf("XORKeyStream did out of bounds write, want %v, got %v", want, string(plainText))
+		}
+	}()
+	cipher.XORKeyStream(plainText[:shorterLen], cipherText)
+}
+
 func benchmarkRC4(b *testing.B, size int64) {
 	if !openssl.SupportsRC4() {
 		b.Skip("RC4 is not supported")

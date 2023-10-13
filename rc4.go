@@ -52,6 +52,9 @@ func (c *RC4Cipher) XORKeyStream(dst, src []byte) {
 	if inexactOverlap(dst[:len(src)], src) {
 		panic("crypto/rc4: invalid buffer overlap")
 	}
+	// panic if len(dst) < len(src) with a runtime out of bound error,
+	// which is what crypto/rc4 does.
+	_ = dst[len(src)-1]
 	var outLen C.int
 	if C.go_openssl_EVP_EncryptUpdate(c.ctx, base(dst), &outLen, base(src), C.int(len(src))) != 1 {
 		panic("crypto/cipher: EncryptUpdate failed")
