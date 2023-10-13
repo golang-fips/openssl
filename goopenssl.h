@@ -119,7 +119,7 @@ go_openssl_EVP_CIPHER_CTX_seal_wrapper(const GO_EVP_CIPHER_CTX_PTR ctx,
     if (in_len == 0) in = (const unsigned char *)"";
     if (aad_len == 0) aad = (const unsigned char *)"";
 
-    if (go_openssl_EVP_CipherInit_ex(ctx, NULL, NULL, NULL, nonce, GO_AES_ENCRYPT) != 1)
+    if (go_openssl_EVP_EncryptInit_ex(ctx, NULL, NULL, NULL, nonce) != 1)
         return 0;
 
     int discard_len, out_len;
@@ -147,7 +147,7 @@ go_openssl_EVP_CIPHER_CTX_open_wrapper(const GO_EVP_CIPHER_CTX_PTR ctx,
     if (in_len == 0) in = (const unsigned char *)"";
     if (aad_len == 0) aad = (const unsigned char *)"";
 
-    if (go_openssl_EVP_CipherInit_ex(ctx, NULL, NULL, NULL, nonce, GO_AES_DECRYPT) != 1)
+    if (go_openssl_EVP_DecryptInit_ex(ctx, NULL, NULL, NULL, nonce) != 1)
         return 0;
 
     int discard_len, out_len;

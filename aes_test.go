@@ -1,25 +1,58 @@
-package openssl
+package openssl_test
 
 import (
 	"bytes"
 	"crypto/cipher"
 	"math"
 	"testing"
+
+	"github.com/golang-fips/openssl/v2"
 )
+
+func TestAESShortBlocks(t *testing.T) {
+	bytes := func(n int) []byte { return make([]byte, n) }
+
+	c, _ := openssl.NewAESCipher(bytes(16))
+
+	mustPanic(t, "crypto/aes: input not full block", func() { c.Encrypt(bytes(1), bytes(1)) })
+	mustPanic(t, "crypto/aes: input not full block", func() { c.Decrypt(bytes(1), bytes(1)) })
+	mustPanic(t, "crypto/aes: input not full block", func() { c.Encrypt(bytes(100), bytes(1)) })
+	mustPanic(t, "crypto/aes: input not full block", func() { c.Decrypt(bytes(100), bytes(1)) })
+	mustPanic(t, "crypto/aes: output not full block", func() { c.Encrypt(bytes(1), bytes(100)) })
+	mustPanic(t, "crypto/aes: output not full block", func() { c.Decrypt(bytes(1), bytes(100)) })
+}
+
+func mustPanic(t *testing.T, msg string, f func()) {
+	defer func() {
+		err := recover()
+		if err == nil {
+			t.Errorf("function did not panic, wanted %q", msg)
+		} else if err != msg {
+			t.Errorf("got panic %v, wanted %q", err, msg)
+		}
+	}()
+	f()
+}
 
 func TestNewGCMNonce(t *testing.T) {
 	key := []byte("D249BF6DEC97B1EBD69BC4D6B3A3C49D")
-	ci, err := NewAESCipher(key)
+	ci, err := openssl.NewAESCipher(key)
 	if err != nil {
 		t.Fatal(err)
 	}
-	c := ci.(*aesCipher)
 
-	gi, err := c.NewGCM(gcmStandardNonceSize, gcmTagSize)
+	const (
+		gcmTagSize           = 16
+		gcmStandardNonceSize = 12
+	)
+
+	c := ci.(interface {
+		NewGCM(nonceSize, tagSize int) (cipher.AEAD, error)
+	})
+	g, err := c.NewGCM(gcmStandardNonceSize, gcmTagSize)
 	if err != nil {
 		t.Errorf("expected no error for standard nonce size with standard tag size, got: %#v", err)
 	}
-	g := gi.(*aesGCM)
 	if g.NonceSize() != gcmStandardNonceSize {
 		t.Errorf("unexpected nonce size\ngot: %#v\nexp: %#v",
 			g.NonceSize(), gcmStandardNonceSize)
@@ -49,12 +82,11 @@ func TestNewGCMNonce(t *testing.T) {
 
 func TestSealAndOpen(t *testing.T) {
 	key := []byte("D249BF6DEC97B1EBD69BC4D6B3A3C49D")
-	ci, err := NewAESCipher(key)
+	ci, err := openssl.NewAESCipher(key)
 	if err != nil {
 		t.Fatal(err)
 	}
-	c := ci.(*aesCipher)
-	gcm, err := c.NewGCM(gcmStandardNonceSize, gcmTagSize)
+	gcm, err := cipher.NewGCM(ci)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -73,12 +105,11 @@ func TestSealAndOpen(t *testing.T) {
 
 func TestSealAndOpen_Empty(t *testing.T) {
 	key := []byte("D249BF6DEC97B1EBD69BC4D6B3A3C49D")
-	ci, err := NewAESCipher(key)
+	ci, err := openssl.NewAESCipher(key)
 	if err != nil {
 		t.Fatal(err)
 	}
-	c := ci.(*aesCipher)
-	gcm, err := c.NewGCM(gcmStandardNonceSize, gcmTagSize)
+	gcm, err := cipher.NewGCM(ci)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -95,11 +126,11 @@ func TestSealAndOpen_Empty(t *testing.T) {
 
 func TestSealAndOpenTLS(t *testing.T) {
 	key := []byte("D249BF6DEC97B1EBD69BC4D6B3A3C49D")
-	ci, err := NewAESCipher(key)
+	ci, err := openssl.NewAESCipher(key)
 	if err != nil {
 		t.Fatal(err)
 	}
-	gcm, err := NewGCMTLS(ci)
+	gcm, err := openssl.NewGCMTLS(ci)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -145,12 +176,11 @@ func TestSealAndOpenTLS(t *testing.T) {
 
 func TestSealAndOpenAuthenticationError(t *testing.T) {
 	key := []byte("D249BF6DEC97B1EBD69BC4D6B3A3C49D")
-	ci, err := NewAESCipher(key)
+	ci, err := openssl.NewAESCipher(key)
 	if err != nil {
 		t.Fatal(err)
 	}
-	c := ci.(*aesCipher)
-	gcm, err := c.NewGCM(gcmStandardNonceSize, gcmTagSize)
+	gcm, err := cipher.NewGCM(ci)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -159,7 +189,7 @@ func TestSealAndOpenAuthenticationError(t *testing.T) {
 	additionalData := []byte{0x05, 0x05, 0x07}
 	sealed := gcm.Seal(nil, nonce, plainText, additionalData)
 	_, err = gcm.Open(nil, nonce, sealed, nil)
-	if err != errOpen {
+	if err != openssl.ErrOpen {
 		t.Errorf("expected authentication error, got: %#v", err)
 	}
 }
@@ -175,20 +205,19 @@ func assertPanic(t *testing.T, f func()) {
 }
 
 func TestSealPanic(t *testing.T) {
-	ci, err := NewAESCipher([]byte("D249BF6DEC97B1EBD69BC4D6B3A3C49D"))
+	ci, err := openssl.NewAESCipher([]byte("D249BF6DEC97B1EBD69BC4D6B3A3C49D"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	c := ci.(*aesCipher)
-	gcm, err := c.NewGCM(gcmStandardNonceSize, gcmTagSize)
+	gcm, err := cipher.NewGCM(ci)
 	if err != nil {
 		t.Fatal(err)
 	}
 	assertPanic(t, func() {
-		gcm.Seal(nil, make([]byte, gcmStandardNonceSize-1), []byte{0x01, 0x02, 0x03}, nil)
+		gcm.Seal(nil, make([]byte, gcm.NonceSize()-1), []byte{0x01, 0x02, 0x03}, nil)
 	})
 	assertPanic(t, func() {
-		gcm.Seal(nil, make([]byte, gcmStandardNonceSize), make([]byte, math.MaxInt), nil)
+		gcm.Seal(nil, make([]byte, gcm.NonceSize()), make([]byte, math.MaxInt), nil)
 	})
 }
 
@@ -196,7 +225,7 @@ func TestBlobEncryptBasicBlockEncryption(t *testing.T) {
 	key := []byte{0x24, 0xcd, 0x8b, 0x13, 0x37, 0xc5, 0xc1, 0xb1, 0x0, 0xbb, 0x27, 0x40, 0x4f, 0xab, 0x5f, 0x7b, 0x2d, 0x0, 0x20, 0xf5, 0x1, 0x84, 0x4, 0xbf, 0xe3, 0xbd, 0xa1, 0xc4, 0xbf, 0x61, 0x2f, 0xc5}
 	iv := []byte{0x91, 0xc7, 0xa7, 0x54, 0x52, 0xef, 0x10, 0xdb, 0x91, 0xa8, 0x6c, 0xf9, 0x79, 0xd5, 0xac, 0x74}
 
-	block, err := NewAESCipher(key)
+	block, err := openssl.NewAESCipher(key)
 	if err != nil {
 		t.Errorf("expected no error for aes.NewCipher, got: %s", err)
 	}
@@ -205,17 +234,7 @@ func TestBlobEncryptBasicBlockEncryption(t *testing.T) {
 	if blockSize != 16 {
 		t.Errorf("unexpected block size, expected 16 got: %d", blockSize)
 	}
-	var encryptor cipher.BlockMode
-	if c, ok := block.(*aesCipher); ok {
-		encryptor = c.NewCBCEncrypter(iv)
-		if encryptor == nil {
-			t.Error("unable to create new CBC encrypter")
-		}
-	}
-
-	cbc := encryptor.(*aesCBC)
-	cbc.SetIV(iv)
-
+	encryptor := cipher.NewCBCEncrypter(block, iv)
 	encrypted := make([]byte, 32)
 
 	// First block. 16 bytes.
@@ -238,13 +257,7 @@ func TestBlobEncryptBasicBlockEncryption(t *testing.T) {
 		t.Error("unexpected CryptBlocks result for second block")
 	}
 
-	var decrypter cipher.BlockMode
-	if c, ok := block.(*aesCipher); ok {
-		decrypter = c.NewCBCDecrypter(iv)
-		if decrypter == nil {
-			t.Error("unable to create new CBC decrypter")
-		}
-	}
+	decrypter := cipher.NewCBCDecrypter(block, iv)
 	plainText := append(srcBlock1, srcBlock2...)
 	decrypted := make([]byte, len(plainText))
 	decrypter.CryptBlocks(decrypted, encrypted[:16])
@@ -262,7 +275,7 @@ func testDecrypt(t *testing.T, resetNonce bool) {
 		0xe3, 0xbd, 0xa1, 0xc4, 0xbf, 0x61, 0x2f, 0xc5,
 	}
 
-	block, err := NewAESCipher(key)
+	block, err := openssl.NewAESCipher(key)
 	if err != nil {
 		panic(err)
 	}
@@ -271,20 +284,11 @@ func testDecrypt(t *testing.T, resetNonce bool) {
 		0x91, 0xc7, 0xa7, 0x54, 0x52, 0xef, 0x10, 0xdb,
 		0x91, 0xa8, 0x6c, 0xf9, 0x79, 0xd5, 0xac, 0x74,
 	}
-	var encrypter, decrypter cipher.BlockMode
-	if c, ok := block.(*aesCipher); ok {
-		encrypter = c.NewCBCEncrypter(iv)
-		if encrypter == nil {
-			t.Error("unable to create new CBC encrypter")
-		}
-		decrypter = c.NewCBCDecrypter(iv)
-		if decrypter == nil {
-			t.Error("unable to create new CBC decrypter")
-		}
-		if resetNonce {
-			for i := range iv {
-				iv[i] = 0
-			}
+	encrypter := cipher.NewCBCEncrypter(block, iv)
+	decrypter := cipher.NewCBCDecrypter(block, iv)
+	if resetNonce {
+		for i := range iv {
+			iv[i] = 0
 		}
 	}
 
@@ -358,25 +362,13 @@ func Test_aesCipher_finalize(t *testing.T) {
 	// This test is important because aesCipher.finalize contains logic that is normally not exercided while testing.
 	// We can't used NewAESCipher here because the returned object will be automatically finalized by the GC
 	// in case test execution takes long enough, and it can't be finalized twice.
-	new(aesCipher).finalize()
-}
-
-func Test_aesCBC_finalize(t *testing.T) {
-	new(aesCBC).finalize()
-}
-
-func Test_aesGCM_finalize(t *testing.T) {
-	new(aesGCM).finalize()
-}
-
-func Test_aesCTR_finalize(t *testing.T) {
-	new(aesCTR).finalize()
+	openssl.EVPCipherFinalize()
 }
 
 func TestCipherEncryptDecrypt(t *testing.T) {
 	key := []byte{0x2b, 0x7e, 0x15, 0x16, 0x28, 0xae, 0xd2, 0xa6, 0xab, 0xf7, 0x15, 0x88, 0x09, 0xcf, 0x4f, 0x3c}
 	pt := []byte{0x32, 0x43, 0xf6, 0xa8, 0x88, 0x5a, 0x30, 0x8d, 0x31, 0x31, 0x98, 0xa2, 0xe0, 0x37, 0x07, 0x34}
-	c, err := NewAESCipher(key)
+	c, err := openssl.NewAESCipher(key)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -412,7 +404,7 @@ func TestNewCTR(t *testing.T) {
 		0x5a, 0xe4, 0xdf, 0x3e, 0xdb, 0xd5, 0xd3, 0x5e, 0x5b, 0x4f, 0x09, 0x02, 0x0d, 0xb0, 0x3e, 0xab,
 		0x1e, 0x03, 0x1d, 0xda, 0x2f, 0xbe, 0x03, 0xd1, 0x79, 0x21, 0x70, 0xa0, 0xf3, 0x00, 0x9c, 0xee,
 	}
-	c, err := NewAESCipher(key)
+	c, err := openssl.NewAESCipher(key)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -430,7 +422,7 @@ func TestNewCTR(t *testing.T) {
 func TestCipherEncryptDecryptSharedBuffer(t *testing.T) {
 	key := []byte{0x2b, 0x7e, 0x15, 0x16, 0x28, 0xae, 0xd2, 0xa6, 0xab, 0xf7, 0x15, 0x88, 0x09, 0xcf, 0x4f, 0x3c}
 	pt := []byte{0x32, 0x43, 0xf6, 0xa8, 0x88, 0x5a, 0x30, 0x8d, 0x31, 0x31, 0x98, 0xa2, 0xe0, 0x37, 0x07, 0x34}
-	c, err := NewAESCipher(key)
+	c, err := openssl.NewAESCipher(key)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -448,7 +440,7 @@ func TestCipherEncryptDecryptSharedBuffer(t *testing.T) {
 func BenchmarkAES_Encrypt(b *testing.B) {
 	key := []byte{0x2b, 0x7e, 0x15, 0x16, 0x28, 0xae, 0xd2, 0xa6, 0xab, 0xf7, 0x15, 0x88, 0x09, 0xcf, 0x4f, 0x3c}
 	in := []byte{0x32, 0x43, 0xf6, 0xa8, 0x88, 0x5a, 0x30, 0x8d, 0x31, 0x31, 0x98, 0xa2, 0xe0, 0x37, 0x07, 0x34}
-	c, err := NewAESCipher(key)
+	c, err := openssl.NewAESCipher(key)
 	if err != nil {
 		b.Fatal("NewCipher:", err)
 	}
@@ -464,7 +456,7 @@ func BenchmarkAES_Encrypt(b *testing.B) {
 func BenchmarkAES_Decrypt(b *testing.B) {
 	key := []byte{0x2b, 0x7e, 0x15, 0x16, 0x28, 0xae, 0xd2, 0xa6, 0xab, 0xf7, 0x15, 0x88, 0x09, 0xcf, 0x4f, 0x3c}
 	in := []byte{0x39, 0x25, 0x84, 0x1d, 0x02, 0xdc, 0x09, 0xfb, 0xdc, 0x11, 0x85, 0x97, 0x19, 0x6a, 0x0b, 0x32}
-	c, err := NewAESCipher(key)
+	c, err := openssl.NewAESCipher(key)
 	if err != nil {
 		b.Fatal("NewCipher:", err)
 	}
@@ -488,8 +480,8 @@ func BenchmarkAESGCM_Open(b *testing.B) {
 	var key = make([]byte, keySize)
 	var nonce [12]byte
 	var ad [13]byte
-	c, _ := NewAESCipher(key)
-	aesgcm, _ := c.(extraModes).NewGCM(gcmStandardNonceSize, gcmTagSize)
+	c, _ := openssl.NewAESCipher(key)
+	aesgcm, _ := cipher.NewGCM(c)
 	var out []byte
 
 	ct := aesgcm.Seal(nil, nonce[:], buf[:], ad[:])
@@ -511,8 +503,8 @@ func BenchmarkAESGCM_Seal(b *testing.B) {
 	var key = make([]byte, keySize)
 	var nonce [12]byte
 	var ad [13]byte
-	c, _ := NewAESCipher(key)
-	aesgcm, _ := c.(extraModes).NewGCM(gcmStandardNonceSize, gcmTagSize)
+	c, _ := openssl.NewAESCipher(key)
+	aesgcm, _ := cipher.NewGCM(c)
 	var out []byte
 
 	b.ResetTimer()
