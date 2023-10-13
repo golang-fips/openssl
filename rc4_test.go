@@ -139,6 +139,9 @@ func TestRC4Block(t *testing.T) {
 }
 
 func TestRC4OutOfBoundsWrite(t *testing.T) {
+	if !openssl.SupportsRC4() {
+		t.Skip("RC4 is not supported")
+	}
 	// This cipherText is encrypted "0123456789"
 	cipherText := []byte{238, 41, 187, 114, 151, 2, 107, 13, 178, 63}
 	cipher, err := openssl.NewRC4Cipher([]byte{0})
