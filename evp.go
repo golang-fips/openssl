@@ -106,7 +106,7 @@ func cryptoHashToMD(ch crypto.Hash) (md C.GO_EVP_MD_PTR) {
 }
 
 func generateEVPPKey(id C.int, bits int, curve string) (C.GO_EVP_PKEY_PTR, error) {
-	if (bits == 0 && curve == "") || (bits != 0 && curve != "") {
+	if bits != 0 && curve != "" {
 		return nil, fail("incorrect generateEVPPKey parameters")
 	}
 	ctx := C.go_openssl_EVP_PKEY_CTX_new_id(id, nil)

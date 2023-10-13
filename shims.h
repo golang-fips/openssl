@@ -18,6 +18,7 @@ enum {
     GO_EVP_PKEY_EC = 408,
     GO_EVP_PKEY_TLS1_PRF = 1021,
     GO_EVP_PKEY_HKDF = 1036,
+    GO_EVP_PKEY_ED25519 = 1087,
     /* This is defined differently in OpenSSL 3 (1 << 11), but in our
      * code it is only used in OpenSSL 1.
     */
@@ -100,6 +101,7 @@ typedef void* GO_EVP_MAC_CTX_PTR;
 typedef void* GO_OSSL_PARAM_BLD_PTR;
 typedef void* GO_OSSL_PARAM_PTR;
 typedef void* GO_CRYPTO_THREADID_PTR;
+typedef void* GO_EVP_SIGNATURE_PTR;
 
 // #include <openssl/md5.h>
 typedef void* GO_MD5_CTX_PTR;
@@ -199,10 +201,12 @@ DEFINEFUNC(int, EVP_DigestInit_ex, (GO_EVP_MD_CTX_PTR ctx, const GO_EVP_MD_PTR t
 DEFINEFUNC(int, EVP_DigestInit, (GO_EVP_MD_CTX_PTR ctx, const GO_EVP_MD_PTR type), (ctx, type)) \
 DEFINEFUNC(int, EVP_DigestUpdate, (GO_EVP_MD_CTX_PTR ctx, const void *d, size_t cnt), (ctx, d, cnt)) \
 DEFINEFUNC(int, EVP_DigestFinal, (GO_EVP_MD_CTX_PTR ctx, unsigned char *md, unsigned int *s), (ctx, md, s)) \
+DEFINEFUNC_1_1_1(int, EVP_DigestSign, (GO_EVP_MD_CTX_PTR ctx, unsigned char *sigret, size_t *siglen, const unsigned char *tbs, size_t tbslen), (ctx, sigret, siglen, tbs, tbslen)) \
 DEFINEFUNC(int, EVP_DigestSignInit, (GO_EVP_MD_CTX_PTR ctx, GO_EVP_PKEY_CTX_PTR *pctx, const GO_EVP_MD_PTR type, GO_ENGINE_PTR e, GO_EVP_PKEY_PTR pkey), (ctx, pctx, type, e, pkey)) \
 DEFINEFUNC(int, EVP_DigestSignFinal, (GO_EVP_MD_CTX_PTR ctx, unsigned char *sig, size_t *siglen), (ctx, sig, siglen)) \
 DEFINEFUNC(int, EVP_DigestVerifyInit, (GO_EVP_MD_CTX_PTR ctx, GO_EVP_PKEY_CTX_PTR *pctx, const GO_EVP_MD_PTR type, GO_ENGINE_PTR e, GO_EVP_PKEY_PTR pkey), (ctx, pctx, type, e, pkey)) \
 DEFINEFUNC(int, EVP_DigestVerifyFinal, (GO_EVP_MD_CTX_PTR ctx, const unsigned char *sig, size_t siglen), (ctx, sig, siglen)) \
+DEFINEFUNC_1_1_1(int, EVP_DigestVerify, (GO_EVP_MD_CTX_PTR ctx, const unsigned char *sigret, size_t siglen, const unsigned char *tbs, size_t tbslen), (ctx, sigret, siglen, tbs, tbslen)) \
 DEFINEFUNC_LEGACY_1_0(int, MD5_Init, (GO_MD5_CTX_PTR c), (c)) \
 DEFINEFUNC_LEGACY_1_0(int, MD5_Update, (GO_MD5_CTX_PTR c, const void *data, size_t len), (c, data, len)) \
 DEFINEFUNC_LEGACY_1_0(int, MD5_Final, (unsigned char *md, GO_MD5_CTX_PTR c), (md, c)) \
@@ -263,6 +267,8 @@ DEFINEFUNC(int, EVP_CIPHER_CTX_set_key_length, (GO_EVP_CIPHER_CTX_PTR x, int key
 DEFINEFUNC(void, EVP_CIPHER_CTX_free, (GO_EVP_CIPHER_CTX_PTR arg0), (arg0)) \
 DEFINEFUNC(int, EVP_CIPHER_CTX_ctrl, (GO_EVP_CIPHER_CTX_PTR ctx, int type, int arg, void *ptr), (ctx, type, arg, ptr)) \
 DEFINEFUNC(GO_EVP_PKEY_PTR, EVP_PKEY_new, (void), ()) \
+DEFINEFUNC_1_1_1(GO_EVP_PKEY_PTR, EVP_PKEY_new_raw_private_key, (int type, GO_ENGINE_PTR e, const unsigned char *key, size_t keylen), (type, e, key, keylen)) \
+DEFINEFUNC_1_1_1(GO_EVP_PKEY_PTR, EVP_PKEY_new_raw_public_key, (int type, GO_ENGINE_PTR e, const unsigned char *key, size_t keylen), (type, e, key, keylen)) \
 /* EVP_PKEY_size and EVP_PKEY_get_bits pkey parameter is const since OpenSSL 1.1.1. */ \
 /* Exclude it from headercheck tool when using previous OpenSSL versions. */ \
 /*check:from=1.1.1*/ DEFINEFUNC_RENAMED_3_0(int, EVP_PKEY_get_size, EVP_PKEY_size, (const GO_EVP_PKEY_PTR pkey), (pkey)) \
@@ -357,4 +363,8 @@ DEFINEFUNC(int, PKCS5_PBKDF2_HMAC, (const char *pass, int passlen, const unsigne
 DEFINEFUNC_3_0(int, EVP_PKEY_CTX_set_tls1_prf_md, (GO_EVP_PKEY_CTX_PTR arg0, const GO_EVP_MD_PTR arg1), (arg0, arg1)) \
 DEFINEFUNC_3_0(int, EVP_PKEY_CTX_set1_tls1_prf_secret, (GO_EVP_PKEY_CTX_PTR arg0, const unsigned char *arg1, int arg2), (arg0, arg1, arg2)) \
 DEFINEFUNC_3_0(int, EVP_PKEY_CTX_add1_tls1_prf_seed, (GO_EVP_PKEY_CTX_PTR arg0, const unsigned char *arg1, int arg2), (arg0, arg1, arg2)) \
+DEFINEFUNC_1_1_1(int, EVP_PKEY_get_raw_public_key, (const GO_EVP_PKEY_PTR pkey, unsigned char *pub, size_t *len), (pkey, pub, len)) \
+DEFINEFUNC_1_1_1(int, EVP_PKEY_get_raw_private_key, (const GO_EVP_PKEY_PTR pkey, unsigned char *priv, size_t *len), (pkey, priv, len)) \
+DEFINEFUNC_3_0(GO_EVP_SIGNATURE_PTR, EVP_SIGNATURE_fetch, (GO_OSSL_LIB_CTX_PTR ctx, const char *algorithm, const char *properties), (ctx, algorithm, properties)) \
+DEFINEFUNC_3_0(void, EVP_SIGNATURE_free, (GO_EVP_SIGNATURE_PTR signature), (signature)) \
 
