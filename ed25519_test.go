@@ -13,12 +13,16 @@ func TestNewKeyFromSeedEd25519(t *testing.T) {
 		t.Skip("Ed25519 not supported")
 	}
 	seed := bytes.Repeat([]byte{0x01}, ed25519.SeedSize)
-	priv, err := openssl.NewKeyFromSeedEd25519(seed)
+	priv, err := openssl.NewPrivateKeyEd25519FromSeed(seed)
+	if err != nil {
+		t.Fatal(err)
+	}
+	data, err := priv.Bytes()
 	if err != nil {
 		t.Fatal(err)
 	}
 	priv2 := ed25519.NewKeyFromSeed(seed)
-	if !bytes.Equal(priv, priv2) {
+	if !bytes.Equal(data, []byte(priv2)) {
 		t.Errorf("private key mismatch")
 	}
 }
@@ -36,7 +40,11 @@ func TestEd25519SignVerify(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if sig2 := ed25519.Sign(private, message); !bytes.Equal(sig, sig2) {
+	privData, err := private.Bytes()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if sig2 := ed25519.Sign(privData, message); !bytes.Equal(sig, sig2) {
 		t.Errorf("signature mismatch")
 	}
 	if openssl.VerifyEd25519(public, message, sig) != nil {
@@ -70,7 +78,12 @@ func TestEd25519Malleability(t *testing.T) {
 		0xb1, 0x08, 0xc3, 0xbd, 0xae, 0x36, 0x9e, 0xf5, 0x49, 0xfa,
 	}
 
-	if openssl.VerifyEd25519(publicKey, msg, sig) == nil {
+	pub, err := openssl.NewPublicKeyEd25119(publicKey)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if openssl.VerifyEd25519(pub, msg, sig) == nil {
 		t.Fatal("non-canonical signature accepted")
 	}
 }
@@ -93,7 +106,7 @@ func BenchmarkEd25519NewKeyFromSeed(b *testing.B) {
 	}
 	seed := make([]byte, ed25519.SeedSize)
 	for i := 0; i < b.N; i++ {
-		_, err := openssl.NewKeyFromSeedEd25519(seed)
+		_, err := openssl.NewPrivateKeyEd25519FromSeed(seed)
 		if err != nil {
 			b.Fatal(err)
 		}

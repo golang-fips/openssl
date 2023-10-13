@@ -6,6 +6,7 @@ package openssl
 import "C"
 import (
 	"errors"
+	"runtime"
 	"strconv"
 	"sync"
 	"unsafe"
@@ -50,92 +51,141 @@ func SupportsEd25519() bool {
 	return supportsEd25519
 }
 
-// GenerateKeyEd25519 generates a public/private key pair.
-func GenerateKeyEd25519() (pub, priv []byte, err error) {
-	pkey, err := generateEVPPKey(C.GO_EVP_PKEY_ED25519, 0, "")
-	if err != nil {
-		return nil, nil, err
-	}
-	defer C.go_openssl_EVP_PKEY_free(pkey)
-	priv = make([]byte, privateKeySizeEd25519)
-	err = extractPKEYPrivEd25519(pkey, priv)
-	if err != nil {
-		return nil, nil, err
-	}
-	pub = make([]byte, publicKeySizeEd25519)
-	copy(pub, priv[seedSizeEd25519:])
-	return pub, priv, nil
+type PublicKeyEd25519 struct {
+	_pkey C.GO_EVP_PKEY_PTR
 }
 
-// NewKeyFromSeedEd25519 calculates a private key from a seed. It will panic if
-// len(seed) is not [SeedSize]. This function is provided for interoperability
-// with RFC 8032. RFC 8032's private keys correspond to seeds in this
-// package.
-func NewKeyFromSeedEd25519(seed []byte) (priv []byte, err error) {
-	// Outline the function body so that the returned key can be stack-allocated.
-	priv = make([]byte, privateKeySizeEd25519)
-	err = newKeyFromSeedEd25519(priv, seed)
-	if err != nil {
+func (k *PublicKeyEd25519) finalize() {
+	C.go_openssl_EVP_PKEY_free(k._pkey)
+}
+
+func (k *PublicKeyEd25519) Bytes() ([]byte, error) {
+	defer runtime.KeepAlive(k)
+	pub := make([]byte, publicKeySizeEd25519)
+	if err := extractPKEYPubEd25519(k._pkey, pub); err != nil {
 		return nil, err
 	}
-	return priv, err
+	return pub, nil
 }
 
-func newKeyFromSeedEd25519(priv []byte, seed []byte) error {
+type PrivateKeyEd25519 struct {
+	_pkey C.GO_EVP_PKEY_PTR
+}
+
+func (k *PrivateKeyEd25519) finalize() {
+	C.go_openssl_EVP_PKEY_free(k._pkey)
+}
+
+func (k *PrivateKeyEd25519) Bytes() ([]byte, error) {
+	defer runtime.KeepAlive(k)
+	priv := make([]byte, privateKeySizeEd25519)
+	if err := extractPKEYPrivEd25519(k._pkey, priv); err != nil {
+		return nil, err
+	}
+	return priv, nil
+}
+
+// GenerateKeyEd25519 generates a public/private key pair.
+func GenerateKeyEd25519() (*PublicKeyEd25519, *PrivateKeyEd25519, error) {
+	pkeyPriv, err := generateEVPPKey(C.GO_EVP_PKEY_ED25519, 0, "")
+	if err != nil {
+		return nil, nil, err
+	}
+	pub := make([]byte, publicKeySizeEd25519)
+	if err := extractPKEYPubEd25519(pkeyPriv, pub); err != nil {
+		C.go_openssl_EVP_PKEY_free(pkeyPriv)
+		return nil, nil, err
+	}
+	pubk, err := NewPublicKeyEd25119(pub)
+	if err != nil {
+		C.go_openssl_EVP_PKEY_free(pkeyPriv)
+		return nil, nil, err
+	}
+	privk := &PrivateKeyEd25519{_pkey: pkeyPriv}
+	runtime.SetFinalizer(privk, (*PrivateKeyEd25519).finalize)
+	return pubk, privk, nil
+}
+
+func NewPrivateKeyEd25119(priv []byte) (*PrivateKeyEd25519, error) {
+	if len(priv) != privateKeySizeEd25519 {
+		panic("ed25519: bad private key length: " + strconv.Itoa(len(priv)))
+	}
+	return NewPrivateKeyEd25519FromSeed(priv[:seedSizeEd25519])
+}
+
+func NewPublicKeyEd25119(pub []byte) (*PublicKeyEd25519, error) {
+	if len(pub) != publicKeySizeEd25519 {
+		panic("ed25519: bad public key length: " + strconv.Itoa(len(pub)))
+	}
+	pkey := C.go_openssl_EVP_PKEY_new_raw_public_key(C.GO_EVP_PKEY_ED25519, nil, base(pub), C.size_t(len(pub)))
+	if pkey == nil {
+		return nil, newOpenSSLError("EVP_PKEY_new_raw_public_key")
+	}
+	pubk := &PublicKeyEd25519{_pkey: pkey}
+	runtime.SetFinalizer(pubk, (*PublicKeyEd25519).finalize)
+	return pubk, nil
+}
+
+// NewPrivateKeyEd25519FromSeed calculates a private key from a seed. It will panic if
+// len(seed) is not [SeedSize]. RFC 8032's private keys correspond to seeds in this
+// package.
+func NewPrivateKeyEd25519FromSeed(seed []byte) (*PrivateKeyEd25519, error) {
 	if len(seed) != seedSizeEd25519 {
 		panic("ed25519: bad seed length: " + strconv.Itoa(len(seed)))
 	}
 	pkey := C.go_openssl_EVP_PKEY_new_raw_private_key(C.GO_EVP_PKEY_ED25519, nil, base(seed), C.size_t(len(seed)))
 	if pkey == nil {
-		return newOpenSSLError("EVP_PKEY_new_raw_private_key")
+		return nil, newOpenSSLError("EVP_PKEY_new_raw_private_key")
 	}
-	defer C.go_openssl_EVP_PKEY_free(pkey)
-	return extractPKEYPrivEd25519(pkey, priv)
+	priv := &PrivateKeyEd25519{_pkey: pkey}
+	runtime.SetFinalizer(priv, (*PrivateKeyEd25519).finalize)
+	return priv, nil
 }
 
-func extractPKEYPrivEd25519(pkey C.GO_EVP_PKEY_PTR, priv []byte) error {
-	pubSize, privSize := C.size_t(publicKeySizeEd25519), C.size_t(seedSizeEd25519)
-	if C.go_openssl_EVP_PKEY_get_raw_public_key(pkey, base(priv[seedSizeEd25519:]), &pubSize) != 1 {
+func extractPKEYPubEd25519(pkey C.GO_EVP_PKEY_PTR, pub []byte) error {
+	pubSize := C.size_t(publicKeySizeEd25519)
+	if C.go_openssl_EVP_PKEY_get_raw_public_key(pkey, base(pub), &pubSize) != 1 {
 		return newOpenSSLError("EVP_PKEY_get_raw_public_key")
 	}
 	if pubSize != publicKeySizeEd25519 {
-		panic("ed25519: bad public key length: " + strconv.Itoa(int(pubSize)))
+		return errors.New("ed25519: bad public key length: " + strconv.Itoa(int(pubSize)))
 	}
+	return nil
+}
+
+func extractPKEYPrivEd25519(pkey C.GO_EVP_PKEY_PTR, priv []byte) error {
+	if err := extractPKEYPubEd25519(pkey, priv[seedSizeEd25519:]); err != nil {
+		return err
+	}
+	privSize := C.size_t(seedSizeEd25519)
 	if C.go_openssl_EVP_PKEY_get_raw_private_key(pkey, base(priv), &privSize) != 1 {
 		return newOpenSSLError("EVP_PKEY_get_raw_private_key")
 	}
 	if privSize != seedSizeEd25519 {
-		panic("ed25519: bad private key length: " + strconv.Itoa(int(privSize)))
+		return errors.New("ed25519: bad private key length: " + strconv.Itoa(int(privSize)))
 	}
 	return nil
 }
 
 // SignEd25519 signs the message with priv and returns a signature.
-func SignEd25519(priv, message []byte) (sig []byte, err error) {
+func SignEd25519(priv *PrivateKeyEd25519, message []byte) (sig []byte, err error) {
 	// Outline the function body so that the returned key can be stack-allocated.
 	sig = make([]byte, signatureSizeEd25519)
-	err = signEd25519(sig, priv, message)
+	err = signEd25519(priv, sig, message)
 	if err != nil {
 		return nil, err
 	}
 	return sig, err
 }
 
-func signEd25519(sig, priv, message []byte) error {
-	if len(priv) != privateKeySizeEd25519 {
-		panic("ed25519: bad private key length: " + strconv.Itoa(len(priv)))
-	}
-	pkey := C.go_openssl_EVP_PKEY_new_raw_private_key(C.GO_EVP_PKEY_ED25519, nil, base(priv[:seedSizeEd25519]), seedSizeEd25519)
-	if pkey == nil {
-		return newOpenSSLError("EVP_PKEY_new_raw_private_key")
-	}
-	defer C.go_openssl_EVP_PKEY_free(pkey)
+func signEd25519(priv *PrivateKeyEd25519, sig, message []byte) error {
+	defer runtime.KeepAlive(priv)
 	ctx := C.go_openssl_EVP_MD_CTX_new()
 	if ctx == nil {
 		return newOpenSSLError("EVP_MD_CTX_new")
 	}
 	defer C.go_openssl_EVP_MD_CTX_free(ctx)
-	if C.go_openssl_EVP_DigestSignInit(ctx, nil, nil, nil, pkey) != 1 {
+	if C.go_openssl_EVP_DigestSignInit(ctx, nil, nil, nil, priv._pkey) != 1 {
 		return newOpenSSLError("EVP_DigestSignInit")
 	}
 	siglen := C.size_t(signatureSizeEd25519)
@@ -143,27 +193,20 @@ func signEd25519(sig, priv, message []byte) error {
 		return newOpenSSLError("EVP_DigestSign")
 	}
 	if siglen != signatureSizeEd25519 {
-		panic("ed25519: bad signature length: " + strconv.Itoa(int(siglen)))
+		return errors.New("ed25519: bad signature length: " + strconv.Itoa(int(siglen)))
 	}
 	return nil
 }
 
 // VerifyEd25519 reports whether sig is a valid signature of message by pub.
-func VerifyEd25519(pub, message, sig []byte) error {
-	if len(pub) != publicKeySizeEd25519 {
-		panic("ed25519: bad public key length: " + strconv.Itoa(len(pub)))
-	}
-	pkey := C.go_openssl_EVP_PKEY_new_raw_public_key(C.GO_EVP_PKEY_ED25519, nil, base(pub), publicKeySizeEd25519)
-	if pkey == nil {
-		return newOpenSSLError("EVP_PKEY_new_raw_public_key")
-	}
-	defer C.go_openssl_EVP_PKEY_free(pkey)
+func VerifyEd25519(pub *PublicKeyEd25519, message, sig []byte) error {
+	defer runtime.KeepAlive(pub)
 	ctx := C.go_openssl_EVP_MD_CTX_new()
 	if ctx == nil {
 		return newOpenSSLError("EVP_MD_CTX_new")
 	}
 	defer C.go_openssl_EVP_MD_CTX_free(ctx)
-	if C.go_openssl_EVP_DigestVerifyInit(ctx, nil, nil, nil, pkey) != 1 {
+	if C.go_openssl_EVP_DigestVerifyInit(ctx, nil, nil, nil, pub._pkey) != 1 {
 		return newOpenSSLError("EVP_DigestVerifyInit")
 	}
 	if C.go_openssl_EVP_DigestVerify(ctx, base(sig), C.size_t(len(sig)), base(message), C.size_t(len(message))) != 1 {
