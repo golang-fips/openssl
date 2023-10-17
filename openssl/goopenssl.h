@@ -255,70 +255,16 @@ _goboringcrypto_EVP_md5_sha1(void) {
 #endif
 }
 
-#include <openssl/hmac.h>
+typedef struct go_hmac_ctx GO_HMAC_CTX;
 
-typedef HMAC_CTX GO_HMAC_CTX;
-
-DEFINEFUNC(int, HMAC_Init_ex,
-		   (GO_HMAC_CTX * arg0, const void *arg1, int arg2, const GO_EVP_MD *arg3, ENGINE *arg4),
-		   (arg0, arg1, arg2, arg3, arg4))
-DEFINEFUNC(int, HMAC_Update, (GO_HMAC_CTX * arg0, const uint8_t *arg1, size_t arg2), (arg0, arg1, arg2))
-DEFINEFUNC(int, HMAC_Final, (GO_HMAC_CTX * arg0, uint8_t *arg1, unsigned int *arg2), (arg0, arg1, arg2))
-DEFINEFUNC(size_t, HMAC_CTX_copy, (GO_HMAC_CTX *dest, GO_HMAC_CTX *src), (dest, src))
-
-#if OPENSSL_VERSION_NUMBER < 0x10100000L
-DEFINEFUNCINTERNAL(void, HMAC_CTX_cleanup, (GO_HMAC_CTX * arg0), (arg0))
-static inline void
-_goboringcrypto_HMAC_CTX_free(HMAC_CTX *ctx) {
-   if (ctx != NULL) {
-       _goboringcrypto_internal_HMAC_CTX_cleanup(ctx);
-       free(ctx);
-   }
-}
-#else
-DEFINEFUNC(void, HMAC_CTX_free, (GO_HMAC_CTX * arg0), (arg0))
-#endif
-
-#if OPENSSL_VERSION_NUMBER < 0x10100000L
-static inline size_t
-_goboringcrypto_HMAC_size(const GO_HMAC_CTX* arg0) {
-	return _goboringcrypto_EVP_MD_get_size(arg0->md);
-}
-#else
-DEFINEFUNCINTERNAL(const EVP_MD*, HMAC_CTX_get_md, (const GO_HMAC_CTX* ctx), (ctx))
-static inline size_t
-_goboringcrypto_HMAC_size(const GO_HMAC_CTX* arg0) {
-	const EVP_MD* md;
-	md = _goboringcrypto_internal_HMAC_CTX_get_md(arg0);
-	return _goboringcrypto_EVP_MD_get_size(md);
-}
-#endif
-
-#if OPENSSL_VERSION_NUMBER < 0x10100000L
-DEFINEFUNCINTERNAL(void, HMAC_CTX_init, (GO_HMAC_CTX * arg0), (arg0))
-static inline GO_HMAC_CTX*
-_goboringcrypto_HMAC_CTX_new(void) {
-	GO_HMAC_CTX* ctx = malloc(sizeof(GO_HMAC_CTX));
-	if (ctx != NULL)
-		_goboringcrypto_internal_HMAC_CTX_init(ctx);
-	return ctx;
-}
-#else
-DEFINEFUNC(GO_HMAC_CTX*, HMAC_CTX_new, (void), ())
-#endif
-
-#if OPENSSL_VERSION_NUMBER < 0x10100000L
-static inline int
-_goboringcrypto_HMAC_CTX_reset(GO_HMAC_CTX* ctx) {
-	_goboringcrypto_internal_HMAC_CTX_cleanup(ctx);
-	_goboringcrypto_internal_HMAC_CTX_init(ctx);
-	return 0;
-}
-#else
-DEFINEFUNC(int, HMAC_CTX_reset, (GO_HMAC_CTX * arg0), (arg0))
-#endif
-
-int _goboringcrypto_HMAC_CTX_copy_ex(GO_HMAC_CTX *dest, const GO_HMAC_CTX *src);
+GO_HMAC_CTX *_goboringcrypto_HMAC_CTX_new(const unsigned char *key, int keylen,
+					  const EVP_MD *md);
+int _goboringcrypto_HMAC_Update(GO_HMAC_CTX *ctx,
+				const unsigned char *data, size_t len);
+int _goboringcrypto_HMAC_CTX_reset(GO_HMAC_CTX *ctx);
+void _goboringcrypto_HMAC_CTX_free(GO_HMAC_CTX *ctx);
+int _goboringcrypto_HMAC_Final(GO_HMAC_CTX *ctx,
+			       unsigned char *md, unsigned int *len);
 
 #include <openssl/evp.h>
 #include <openssl/aes.h>
