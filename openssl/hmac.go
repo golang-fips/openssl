@@ -80,12 +80,12 @@ func NewHMAC(h func() hash.Hash, key []byte) hash.Hash {
 		// we pass an "empty" key.
 		hkey = make([]byte, C.EVP_MAX_MD_SIZE)
 	}
+	k := (*C.uchar)(unsafe.Pointer(&hkey[0]))
 	hmac := &boringHMAC{
 		md:        md,
 		size:      ch.Size(),
 		blockSize: ch.BlockSize(),
-		key:       hkey,
-		ctx:       C._goboringcrypto_HMAC_CTX_new(),
+		ctx:       C._goboringcrypto_HMAC_CTX_new(k, C.int(len(hkey)), md),
 	}
 	hmac.Reset()
 	return hmac
@@ -94,10 +94,8 @@ func NewHMAC(h func() hash.Hash, key []byte) hash.Hash {
 type boringHMAC struct {
 	md          *C.GO_EVP_MD
 	ctx         *C.GO_HMAC_CTX
-	ctx2        *C.GO_HMAC_CTX
 	size        int
 	blockSize   int
-	key         []byte
 	sum         []byte
 	needCleanup bool
 }
@@ -113,13 +111,6 @@ func (h *boringHMAC) Reset() {
 	}
 	C._goboringcrypto_HMAC_CTX_reset(h.ctx)
 
-	if C._goboringcrypto_HMAC_Init_ex(h.ctx, unsafe.Pointer(base(h.key)), C.int(len(h.key)), h.md, nil) == 0 {
-		panic("boringcrypto: HMAC_Init failed")
-	}
-	if int(C._goboringcrypto_HMAC_size(h.ctx)) != h.size {
-		println("boringcrypto: HMAC size:", C._goboringcrypto_HMAC_size(h.ctx), "!=", h.size)
-		panic("boringcrypto: HMAC size mismatch")
-	}
 	runtime.KeepAlive(h) // Next line will keep h alive too; just making doubly sure.
 	h.sum = nil
 }
@@ -149,15 +140,6 @@ func (h *boringHMAC) Sum(in []byte) []byte {
 		size := h.Size()
 		h.sum = make([]byte, size)
 	}
-	// Make copy of context because Go hash.Hash mandates
-	// that Sum has no effect on the underlying stream.
-	// In particular it is OK to Sum, then Write more, then Sum again,
-	// and the second Sum acts as if the first didn't happen.
-	h.ctx2 = C._goboringcrypto_HMAC_CTX_new()
-	if C._goboringcrypto_HMAC_CTX_copy_ex(h.ctx2, h.ctx) == 0 {
-		panic("boringcrypto: HMAC_CTX_copy_ex failed")
-	}
-	C._goboringcrypto_HMAC_Final(h.ctx2, (*C.uint8_t)(unsafe.Pointer(&h.sum[0])), nil)
-	C._goboringcrypto_HMAC_CTX_free(h.ctx2)
+	C._goboringcrypto_HMAC_Final(h.ctx, (*C.uint8_t)(unsafe.Pointer(&h.sum[0])), nil)
 	return append(in, h.sum...)
 }
