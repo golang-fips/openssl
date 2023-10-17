@@ -85,25 +85,27 @@ func (k *PrivateKeyEd25519) Bytes() ([]byte, error) {
 	return priv, nil
 }
 
-// GenerateKeyEd25519 generates a public/private key pair.
-func GenerateKeyEd25519() (*PublicKeyEd25519, *PrivateKeyEd25519, error) {
-	pkeyPriv, err := generateEVPPKey(C.GO_EVP_PKEY_ED25519, 0, "")
-	if err != nil {
-		return nil, nil, err
-	}
+func (k *PrivateKeyEd25519) Public() (*PublicKeyEd25519, error) {
 	pub := make([]byte, publicKeySizeEd25519)
-	if err := extractPKEYPubEd25519(pkeyPriv, pub); err != nil {
-		C.go_openssl_EVP_PKEY_free(pkeyPriv)
-		return nil, nil, err
+	if err := extractPKEYPubEd25519(k._pkey, pub); err != nil {
+		return nil, err
 	}
 	pubk, err := NewPublicKeyEd25119(pub)
 	if err != nil {
-		C.go_openssl_EVP_PKEY_free(pkeyPriv)
-		return nil, nil, err
+		return nil, err
 	}
-	privk := &PrivateKeyEd25519{_pkey: pkeyPriv}
-	runtime.SetFinalizer(privk, (*PrivateKeyEd25519).finalize)
-	return pubk, privk, nil
+	return pubk, nil
+}
+
+// GenerateKeyEd25519 generates a private key.
+func GenerateKeyEd25519() (*PrivateKeyEd25519, error) {
+	pkeyPriv, err := generateEVPPKey(C.GO_EVP_PKEY_ED25519, 0, "")
+	if err != nil {
+		return nil, err
+	}
+	priv := &PrivateKeyEd25519{_pkey: pkeyPriv}
+	runtime.SetFinalizer(priv, (*PrivateKeyEd25519).finalize)
+	return priv, nil
 }
 
 func NewPrivateKeyEd25119(priv []byte) (*PrivateKeyEd25519, error) {

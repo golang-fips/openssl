@@ -31,7 +31,11 @@ func TestEd25519SignVerify(t *testing.T) {
 	if !openssl.SupportsEd25519() {
 		t.Skip("Ed25519 not supported")
 	}
-	public, private, err := openssl.GenerateKeyEd25519()
+	private, err := openssl.GenerateKeyEd25519()
+	if err != nil {
+		t.Fatal(err)
+	}
+	public, err := private.Public()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -93,7 +97,7 @@ func BenchmarkEd25519GenerateKey(b *testing.B) {
 		b.Skip("Ed25519 not supported")
 	}
 	for i := 0; i < b.N; i++ {
-		_, _, err := openssl.GenerateKeyEd25519()
+		_, err := openssl.GenerateKeyEd25519()
 		if err != nil {
 			b.Fatal(err)
 		}
@@ -117,7 +121,7 @@ func BenchmarkEd25519Signing(b *testing.B) {
 	if !openssl.SupportsEd25519() {
 		b.Skip("Ed25519 not supported")
 	}
-	_, priv, err := openssl.GenerateKeyEd25519()
+	priv, err := openssl.GenerateKeyEd25519()
 	if err != nil {
 		b.Fatal(err)
 	}
@@ -132,7 +136,11 @@ func BenchmarkEd25519Verification(b *testing.B) {
 	if !openssl.SupportsEd25519() {
 		b.Skip("Ed25519 not supported")
 	}
-	pub, priv, err := openssl.GenerateKeyEd25519()
+	priv, err := openssl.GenerateKeyEd25519()
+	if err != nil {
+		b.Fatal(err)
+	}
+	pub, err := priv.Public()
 	if err != nil {
 		b.Fatal(err)
 	}
