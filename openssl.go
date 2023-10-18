@@ -407,6 +407,9 @@ func CheckLeaks() {
 	C.go_openssl_do_leak_check()
 }
 
-func version1_1_1_or_above() bool {
-	return vMajor > 1 || (vMajor >= 1 && vMinor > 1) || (vMajor >= 1 && vMinor >= 1 && vPatch >= 1)
+// versionAtOrAbove returns true when
+// (vMajor, vMinor, vPatch) >= (major, minor, patch),
+// compared lexicographically.
+func versionAtOrAbove(major, minor, patch int) bool {
+	return vMajor > major || (vMajor == major && vMinor > minor) || (vMajor == major && vMinor == minor && vPatch >= patch)
 }
