@@ -60,12 +60,12 @@ go_openssl_fips_enabled(void* handle)
 // and assign them to their corresponding function pointer
 // defined in goopenssl.h.
 void
-go_openssl_load_functions(void* handle, int major, int minor, int patch)
+go_openssl_load_functions(void* handle, unsigned int major, unsigned int minor, unsigned int patch)
 {
 #define DEFINEFUNC_INTERNAL(name, func)                                                                         \
     _g_##name = dlsym(handle, func);                                                                            \
     if (_g_##name == NULL) {                                                                                    \
-        fprintf(stderr, "Cannot get required symbol " #func " from libcrypto version %d.%d\n", major, minor);   \
+        fprintf(stderr, "Cannot get required symbol " #func " from libcrypto version %u.%u\n", major, minor);   \
         abort();                                                                                                \
     }
 #define DEFINEFUNC(ret, func, args, argscall) \

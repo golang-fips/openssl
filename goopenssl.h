@@ -24,7 +24,7 @@ int go_openssl_version_major(void* handle);
 int go_openssl_version_minor(void* handle);
 int go_openssl_version_patch(void* handle);
 int go_openssl_thread_setup(void);
-void go_openssl_load_functions(void* handle, int major, int minor, int patch);
+void go_openssl_load_functions(void* handle, unsigned int major, unsigned int minor, unsigned int patch);
 const GO_EVP_MD_PTR go_openssl_EVP_md5_sha1_backport(void);
 
 // Define pointers to all the used OpenSSL functions.
