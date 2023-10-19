@@ -19,7 +19,7 @@ import (
 var (
 	// vMajor and vMinor hold the major/minor OpenSSL version.
 	// It is only populated if Init has been called.
-	vMajor, vMinor, vPatch int
+	vMajor, vMinor, vPatch uint
 )
 
 var (
@@ -69,8 +69,12 @@ func Init(file string) error {
 	return initErr
 }
 
+func utoa(n uint) string {
+	return strconv.FormatUint(uint64(n), 10)
+}
+
 func errUnsupportedVersion() error {
-	return errors.New("openssl: OpenSSL version: " + strconv.Itoa(vMajor) + "." + strconv.Itoa(vMinor) + "." + strconv.Itoa(vPatch))
+	return errors.New("openssl: OpenSSL version: " + utoa(vMajor) + "." + utoa(vMinor) + "." + utoa(vPatch))
 }
 
 type fail string
@@ -407,6 +411,9 @@ func CheckLeaks() {
 	C.go_openssl_do_leak_check()
 }
 
-func version1_1_1_or_above() bool {
-	return vMajor > 1 || (vMajor >= 1 && vMinor > 1) || (vMajor >= 1 && vMinor >= 1 && vPatch >= 1)
+// versionAtOrAbove returns true when
+// (vMajor, vMinor, vPatch) >= (major, minor, patch),
+// compared lexicographically.
+func versionAtOrAbove(major, minor, patch uint) bool {
+	return vMajor > major || (vMajor == major && vMinor > minor) || (vMajor == major && vMinor == minor && vPatch >= patch)
 }

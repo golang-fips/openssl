@@ -13,7 +13,7 @@ import (
 // as reported by the OpenSSL API.
 //
 // See Init() for details about file.
-func opensslInit(file string) (major, minor, patch int, err error) {
+func opensslInit(file string) (major, minor, patch uint, err error) {
 	// Load the OpenSSL shared library using dlopen.
 	handle, err := dlopen(file)
 	if err != nil {
@@ -24,12 +24,13 @@ func opensslInit(file string) (major, minor, patch int, err error) {
 	// Notice that major and minor could not match with the version parameter
 	// in case the name of the shared library file differs from the OpenSSL
 	// version it contains.
-	major = int(C.go_openssl_version_major(handle))
-	minor = int(C.go_openssl_version_minor(handle))
-	patch = int(C.go_openssl_version_patch(handle))
-	if major == -1 || minor == -1 || patch == -1 {
+	imajor := int(C.go_openssl_version_major(handle))
+	iminor := int(C.go_openssl_version_minor(handle))
+	ipatch := int(C.go_openssl_version_patch(handle))
+	if imajor < 0 || iminor < 0 || ipatch < 0 {
 		return 0, 0, 0, errors.New("openssl: can't retrieve OpenSSL version")
 	}
+	major, minor, patch = uint(imajor), uint(iminor), uint(ipatch)
 	var supported bool
 	if major == 1 {
 		supported = minor == 0 || minor == 1
@@ -43,7 +44,7 @@ func opensslInit(file string) (major, minor, patch int, err error) {
 
 	// Load the OpenSSL functions.
 	// See shims.go for the complete list of supported functions.
-	C.go_openssl_load_functions(handle, C.int(major), C.int(minor), C.int(patch))
+	C.go_openssl_load_functions(handle, C.uint(major), C.uint(minor), C.uint(patch))
 
 	// Initialize OpenSSL.
 	C.go_openssl_OPENSSL_init()

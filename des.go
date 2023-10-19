@@ -14,9 +14,9 @@ import (
 // If CBC is also supported, then the returned cipher.Block
 // will also implement NewCBCEncrypter and NewCBCDecrypter.
 func SupportsDESCipher() bool {
-	// True for stock OpenSSL 1.
+	// True for stock OpenSSL 1 w/o FIPS.
 	// False for stock OpenSSL 3 unless the legacy provider is available.
-	return loadCipher(cipherDES, cipherModeECB) != nil
+	return (versionAtOrAbove(1, 1, 0) || !FIPS()) && loadCipher(cipherDES, cipherModeECB) != nil
 }
 
 // SupportsTripleDESCipher returns true if NewTripleDESCipher is supported,
