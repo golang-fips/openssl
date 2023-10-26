@@ -805,8 +805,8 @@ DEFINEFUNC(GO_RSA *, EVP_PKEY_get1_RSA, (GO_EVP_PKEY * arg0), (arg0))
 DEFINEFUNC(int, EVP_PKEY_set1_RSA, (GO_EVP_PKEY * arg0, GO_RSA *arg1), (arg0, arg1))
 DEFINEFUNC(GO_EC_KEY *, EVP_PKEY_get1_EC_KEY, (GO_EVP_PKEY * arg0), (arg0))
 DEFINEFUNC(int, EVP_PKEY_set1_EC_KEY, (GO_EVP_PKEY * arg0, GO_EC_KEY *arg1), (arg0, arg1))
-DEFINEFUNC(const GO_EC_KEY *, EVP_PKEY_get0_EC_KEY, (const GO_EVP_PKEY *pkey), (pkey))
 GO_EVP_PKEY *_goboringcrypto_EVP_PKEY_ref(GO_EVP_PKEY *pkey);
+const GO_EC_KEY *_goboringcrypto_EVP_PKEY_get0_EC_KEY(const GO_EVP_PKEY *pkey);
 
 DEFINEFUNC(int, EVP_PKEY_verify,
 	(EVP_PKEY_CTX *ctx, const unsigned char *sig, unsigned int siglen, const unsigned char *tbs, size_t tbslen),

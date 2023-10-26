@@ -95,12 +95,12 @@ _goboringcrypto_EVP_PKEY_ref(GO_EVP_PKEY *pkey)
 
   switch (pkey->type) {
   case EVP_PKEY_EC:
-    if (_goboringcrypto_EVP_PKEY_set1_EC_KEY(result, _goboringcrypto_EVP_PKEY_get0_EC_KEY()) != 1)
+    if (_goboringcrypto_EVP_PKEY_assign_EC_KEY(result, _goboringcrypto_EVP_PKEY_get1_EC_KEY(pkey)) != 1)
       goto err;
     break;
 
   case EVP_PKEY_RSA:
-    if (_goboringcrypto_EVP_PKEY_set1_RSA_KEY(result, _goboringcrypto_EVP_PKEY_get0_RSA_KEY()) != 1)
+    if (_goboringcrypto_EVP_PKEY_assign_RSA(result, _goboringcrypto_EVP_PKEY_get1_RSA(pkey)) != 1)
       goto err;
 
     break;
@@ -114,5 +114,23 @@ _goboringcrypto_EVP_PKEY_ref(GO_EVP_PKEY *pkey)
 err:
   _goboringcrypto_EVP_PKEY_free(result);
   return NULL;
+}
+#endif
+
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L
+DEFINEFUNCINTERNAL(const GO_EC_KEY *, EVP_PKEY_get0_EC_KEY, (const GO_EVP_PKEY *pkey), (pkey));
+
+const GO_EC_KEY *
+_goboringcrypto_EVP_PKEY_get0_EC_KEY(const GO_EVP_PKEY *pkey)
+{
+  return _goboringcrypto_internal_EVP_PKEY_get0_EC_KEY(pkey);
+}
+#else
+DEFINEFUNCINTERNAL(void *, EVP_PKEY_get0, (EVP_PKEY *pkey), (pkey))
+
+const GO_EC_KEY *
+_goboringcrypto_EVP_PKEY_get0_EC_KEY(const GO_EVP_PKEY *pkey)
+{
+  return (const GO_EC_KEY *)_goboringcrypto_internal_EVP_PKEY_get0((EVP_PKEY *)pkey);
 }
 #endif
