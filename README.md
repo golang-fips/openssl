@@ -60,3 +60,7 @@ The work done to support FIPS compatibility mode leverages code and ideas from o
 - All crypto stubs are a mirror of Google's [dev.boringcrypto branch](https://github.com/golang/go/tree/dev.boringcrypto) and the release branch ports of that branch.
 - The mapping between BoringSSL and OpenSSL APIs is taken from the former [Red Hat Go fork](https://pagure.io/go).
 - The portable OpenSSL implementation is ported from Microsoft's [.NET runtime](https://github.com/dotnet/runtime) cryptography module.
+
+## Code of Conduct
+
+This project adopts the Go code of conduct: https://go.dev/conduct.
