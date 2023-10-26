@@ -35,6 +35,9 @@ GO_RSA *_goboringcrypto_RSA_generate_key_fips(int bits) {
   if (_goboringcrypto_EVP_PKEY_CTX_set_rsa_keygen_pubexp(ctx, e) <= 0)
     goto err;
 
+  /* EVP_PKEY_CTX_set_rsa_keygen_pubexp takes ownership of e */
+  e = NULL;
+
   if (_goboringcrypto_EVP_PKEY_keygen(ctx, &pkey) <= 0)
     goto err;
 
