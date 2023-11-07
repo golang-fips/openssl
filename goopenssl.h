@@ -82,8 +82,9 @@ go_hash_sum(GO_EVP_MD_CTX_PTR ctx, GO_EVP_MD_CTX_PTR ctx2, unsigned char *out)
     return go_openssl_EVP_DigestFinal(ctx2, out, NULL);
 }
 
-// These wrappers allocate out_len on the C stack to avoid having to pass a pointer from Go, which would escape to the heap.
+// These wrappers allocate length variables on the C stack to avoid having to pass a pointer from Go, which would escape to the heap.
 // Use them only in situations where the output length can be safely discarded.
+
 static inline int
 go_openssl_EVP_EncryptUpdate_wrapper(GO_EVP_CIPHER_CTX_PTR ctx, unsigned char *out, const unsigned char *in, int in_len)
 {
@@ -105,6 +106,48 @@ go_openssl_EVP_CipherUpdate_wrapper(GO_EVP_CIPHER_CTX_PTR ctx, unsigned char *ou
     return go_openssl_EVP_CipherUpdate(ctx, out, &len, in, in_len);
 }
 
+static inline int
+go_openssl_EVP_PKEY_get_raw_public_key_wrapper(const GO_EVP_PKEY_PTR pkey, unsigned char *pub, size_t len)
+{
+    return go_openssl_EVP_PKEY_get_raw_public_key(pkey, pub, &len);
+}
+
+static inline int
+go_openssl_EVP_PKEY_get_raw_private_key_wrapper(const GO_EVP_PKEY_PTR pkey, unsigned char *priv, size_t len)
+{
+    return go_openssl_EVP_PKEY_get_raw_private_key(pkey, priv, &len);
+}
+
+// These wrappers also allocate length variables on the C stack to avoid escape to the heap, but do return the result.
+// A struct is returned that contains multiple return values instead of OpenSSL's approach of using pointers.
+
+typedef struct
+{
+    int result;
+    size_t keylen;
+} go_openssl_EVP_PKEY_derive_wrapper_out;
+
+static inline go_openssl_EVP_PKEY_derive_wrapper_out
+go_openssl_EVP_PKEY_derive_wrapper(GO_EVP_PKEY_CTX_PTR ctx, unsigned char *key, size_t keylen)
+{
+    go_openssl_EVP_PKEY_derive_wrapper_out r = {0, keylen};
+    r.result = go_openssl_EVP_PKEY_derive(ctx, key, &r.keylen);
+    return r;
+}
+
+typedef struct
+{
+    int result;
+    size_t siglen;
+} go_openssl_EVP_DigestSign_wrapper_out;
+
+static inline go_openssl_EVP_DigestSign_wrapper_out
+go_openssl_EVP_DigestSign_wrapper(GO_EVP_MD_CTX_PTR ctx, unsigned char *sigret, size_t siglen, const unsigned char *tbs, size_t tbslen)
+{
+    go_openssl_EVP_DigestSign_wrapper_out r = {0, siglen};
+    r.result = go_openssl_EVP_DigestSign(ctx, sigret, &r.siglen, tbs, tbslen);
+    return r;
+}
 
 // These wrappers allocate out_len on the C stack, and check that it matches the expected
 // value, to avoid having to pass a pointer from Go, which would escape to the heap.

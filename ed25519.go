@@ -146,7 +146,7 @@ func NewPrivateKeyEd25519FromSeed(seed []byte) (*PrivateKeyEd25519, error) {
 
 func extractPKEYPubEd25519(pkey C.GO_EVP_PKEY_PTR, pub []byte) error {
 	pubSize := C.size_t(publicKeySizeEd25519)
-	if C.go_openssl_EVP_PKEY_get_raw_public_key(pkey, base(pub), &pubSize) != 1 {
+	if C.go_openssl_EVP_PKEY_get_raw_public_key_wrapper(pkey, base(pub), pubSize) != 1 {
 		return newOpenSSLError("EVP_PKEY_get_raw_public_key")
 	}
 	if pubSize != publicKeySizeEd25519 {
@@ -160,7 +160,7 @@ func extractPKEYPrivEd25519(pkey C.GO_EVP_PKEY_PTR, priv []byte) error {
 		return err
 	}
 	privSize := C.size_t(seedSizeEd25519)
-	if C.go_openssl_EVP_PKEY_get_raw_private_key(pkey, base(priv), &privSize) != 1 {
+	if C.go_openssl_EVP_PKEY_get_raw_private_key_wrapper(pkey, base(priv), privSize) != 1 {
 		return newOpenSSLError("EVP_PKEY_get_raw_private_key")
 	}
 	if privSize != seedSizeEd25519 {
@@ -190,12 +190,12 @@ func signEd25519(priv *PrivateKeyEd25519, sig, message []byte) error {
 	if C.go_openssl_EVP_DigestSignInit(ctx, nil, nil, nil, priv._pkey) != 1 {
 		return newOpenSSLError("EVP_DigestSignInit")
 	}
-	siglen := C.size_t(signatureSizeEd25519)
-	if C.go_openssl_EVP_DigestSign(ctx, base(sig), &siglen, base(message), C.size_t(len(message))) != 1 {
+	r := C.go_openssl_EVP_DigestSign_wrapper(ctx, base(sig), C.size_t(signatureSizeEd25519), base(message), C.size_t(len(message)))
+	if r.result != 1 {
 		return newOpenSSLError("EVP_DigestSign")
 	}
-	if siglen != signatureSizeEd25519 {
-		return errors.New("ed25519: bad signature length: " + strconv.Itoa(int(siglen)))
+	if r.siglen != signatureSizeEd25519 {
+		return errors.New("ed25519: bad signature length: " + strconv.Itoa(int(r.siglen)))
 	}
 	return nil
 }
