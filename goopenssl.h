@@ -105,6 +105,47 @@ go_openssl_EVP_CipherUpdate_wrapper(GO_EVP_CIPHER_CTX_PTR ctx, unsigned char *ou
     return go_openssl_EVP_CipherUpdate(ctx, out, &len, in, in_len);
 }
 
+// These wrappers allocate a length variable on the C stack to avoid having to pass a pointer from Go, which would escape to the heap.
+// Some OpenSSL APIs use length as either "in" and "out" depending on the value of another parameter, so they accept a pointer.
+// By splitting the "in" and "out" situations into distinct functions, a pointer is not necessary.
+//
+// Note: for simplicity, the "out" wrappers treat a 0 length the same as an error.
+// A 0 is not an expected return value in this context, so this is expected to be ok.
+
+static inline size_t
+go_openssl_EVP_PKEY_derive_wrapper_get_len(GO_EVP_PKEY_CTX_PTR ctx)
+{
+    size_t keylen;
+    if (go_openssl_EVP_PKEY_derive(ctx, NULL, &keylen) != 1)
+        return 0;
+    return keylen;
+}
+
+static inline int
+go_openssl_EVP_PKEY_derive_wrapper_with_len(GO_EVP_PKEY_CTX_PTR ctx, unsigned char *key, size_t keylen)
+{
+    return go_openssl_EVP_PKEY_derive(ctx, key, &keylen);
+}
+
+static inline int
+go_openssl_EVP_PKEY_get_raw_public_key_wrapper_with_len(const GO_EVP_PKEY_PTR pkey, unsigned char *pub, size_t len)
+{
+    return go_openssl_EVP_PKEY_get_raw_public_key(pkey, pub, &len);
+}
+
+static inline int
+go_openssl_EVP_PKEY_get_raw_private_key_wrapper_with_len(const GO_EVP_PKEY_PTR pkey, unsigned char *priv, size_t len)
+{
+    return go_openssl_EVP_PKEY_get_raw_private_key(pkey, priv, &len);
+}
+
+static inline size_t
+go_openssl_EVP_DigestSign_wrapper_modify_len(GO_EVP_MD_CTX_PTR ctx, unsigned char *sigret, size_t siglen, const unsigned char *tbs, size_t tbslen)
+{
+    if (go_openssl_EVP_DigestSign(ctx, sigret, &siglen, tbs, tbslen) != 1)
+        return 0;
+    return siglen;
+}
 
 // These wrappers allocate out_len on the C stack, and check that it matches the expected
 // value, to avoid having to pass a pointer from Go, which would escape to the heap.

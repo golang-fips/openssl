@@ -269,12 +269,12 @@ func ECDH(priv *PrivateKeyECDH, pub *PublicKeyECDH) ([]byte, error) {
 	if C.go_openssl_EVP_PKEY_derive_set_peer(ctx, pub._pkey) != 1 {
 		return nil, newOpenSSLError("EVP_PKEY_derive_set_peer")
 	}
-	var outLen C.size_t
-	if C.go_openssl_EVP_PKEY_derive(ctx, nil, &outLen) != 1 {
+	outLen := C.go_openssl_EVP_PKEY_derive_wrapper_get_len(ctx)
+	if outLen == 0 {
 		return nil, newOpenSSLError("EVP_PKEY_derive_init")
 	}
 	out := make([]byte, outLen)
-	if C.go_openssl_EVP_PKEY_derive(ctx, base(out), &outLen) != 1 {
+	if C.go_openssl_EVP_PKEY_derive_wrapper_with_len(ctx, base(out), outLen) != 1 {
 		return nil, newOpenSSLError("EVP_PKEY_derive_init")
 	}
 	return out, nil

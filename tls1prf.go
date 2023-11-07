@@ -90,7 +90,7 @@ func TLS1PRF(result, secret, label, seed []byte, h func() hash.Hash) error {
 		}
 	}
 	outLen := C.size_t(len(result))
-	if C.go_openssl_EVP_PKEY_derive(ctx, base(result), &outLen) != 1 {
+	if C.go_openssl_EVP_PKEY_derive_wrapper_with_len(ctx, base(result), outLen) != 1 {
 		return newOpenSSLError("EVP_PKEY_derive")
 	}
 	// The Go standard library expects TLS1PRF to return the requested number of bytes,

@@ -98,7 +98,7 @@ func (c *hkdf) Read(p []byte) (int, error) {
 	}
 	c.buf = append(c.buf, make([]byte, needLen)...)
 	outLen := C.size_t(prevLen + needLen)
-	if C.go_openssl_EVP_PKEY_derive(c.ctx, base(c.buf), &outLen) != 1 {
+	if C.go_openssl_EVP_PKEY_derive_wrapper_with_len(c.ctx, base(c.buf), outLen) != 1 {
 		return 0, newOpenSSLError("EVP_PKEY_derive")
 	}
 	n := copy(p, c.buf[prevLen:outLen])
@@ -132,12 +132,12 @@ func ExtractHKDF(h func() hash.Hash, secret, salt []byte) ([]byte, error) {
 			return nil, newOpenSSLError("EVP_PKEY_CTX_set1_hkdf_salt")
 		}
 	}
-	var outLen C.size_t
-	if C.go_openssl_EVP_PKEY_derive(c.ctx, nil, &outLen) != 1 {
+	outLen := C.go_openssl_EVP_PKEY_derive_wrapper_get_len(c.ctx)
+	if outLen == 0 {
 		return nil, newOpenSSLError("EVP_PKEY_derive_init")
 	}
 	out := make([]byte, outLen)
-	if C.go_openssl_EVP_PKEY_derive(c.ctx, base(out), &outLen) != 1 {
+	if C.go_openssl_EVP_PKEY_derive_wrapper_with_len(c.ctx, base(out), outLen) != 1 {
 		return nil, newOpenSSLError("EVP_PKEY_derive")
 	}
 	return out[:outLen], nil
