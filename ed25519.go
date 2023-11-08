@@ -145,12 +145,12 @@ func NewPrivateKeyEd25519FromSeed(seed []byte) (*PrivateKeyEd25519, error) {
 }
 
 func extractPKEYPubEd25519(pkey C.GO_EVP_PKEY_PTR, pub []byte) error {
-	pubSize := C.size_t(publicKeySizeEd25519)
-	if C.go_openssl_EVP_PKEY_get_raw_public_key_wrapper(pkey, base(pub), pubSize) != 1 {
+	r := C.go_openssl_EVP_PKEY_get_raw_public_key_wrapper(pkey, base(pub), C.size_t(publicKeySizeEd25519))
+	if r.result != 1 {
 		return newOpenSSLError("EVP_PKEY_get_raw_public_key")
 	}
-	if pubSize != publicKeySizeEd25519 {
-		return errors.New("ed25519: bad public key length: " + strconv.Itoa(int(pubSize)))
+	if r.len != publicKeySizeEd25519 {
+		return errors.New("ed25519: bad public key length: " + strconv.Itoa(int(r.len)))
 	}
 	return nil
 }
@@ -159,12 +159,12 @@ func extractPKEYPrivEd25519(pkey C.GO_EVP_PKEY_PTR, priv []byte) error {
 	if err := extractPKEYPubEd25519(pkey, priv[seedSizeEd25519:]); err != nil {
 		return err
 	}
-	privSize := C.size_t(seedSizeEd25519)
-	if C.go_openssl_EVP_PKEY_get_raw_private_key_wrapper(pkey, base(priv), privSize) != 1 {
+	r := C.go_openssl_EVP_PKEY_get_raw_private_key_wrapper(pkey, base(priv), C.size_t(seedSizeEd25519))
+	if r.result != 1 {
 		return newOpenSSLError("EVP_PKEY_get_raw_private_key")
 	}
-	if privSize != seedSizeEd25519 {
-		return errors.New("ed25519: bad private key length: " + strconv.Itoa(int(privSize)))
+	if r.len != seedSizeEd25519 {
+		return errors.New("ed25519: bad private key length: " + strconv.Itoa(int(r.len)))
 	}
 	return nil
 }
