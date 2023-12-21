@@ -47,6 +47,12 @@ func NewGCMTLS(c cipher.Block) (cipher.AEAD, error) {
 	return c.(*aesCipher).NewGCMTLS()
 }
 
+// NewGCMTLS13 returns a GCM cipher specific to TLS 1.3 and should not be used
+// for non-TLS purposes.
+func NewGCMTLS13(c cipher.Block) (cipher.AEAD, error) {
+	return c.(*aesCipher).NewGCMTLS13()
+}
+
 type aesCipher struct {
 	*evpCipher
 }
@@ -86,5 +92,9 @@ func (c *aesCipher) NewGCM(nonceSize, tagSize int) (cipher.AEAD, error) {
 }
 
 func (c *aesCipher) NewGCMTLS() (cipher.AEAD, error) {
-	return c.newGCM(true)
+	return c.newGCM(cipherGCMTLS12)
+}
+
+func (c *aesCipher) NewGCMTLS13() (cipher.AEAD, error) {
+	return c.newGCM(cipherGCMTLS13)
 }

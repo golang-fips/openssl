@@ -312,11 +312,26 @@ func (c *cipherCTR) finalize() {
 	C.go_openssl_EVP_CIPHER_CTX_free(c.ctx)
 }
 
+type cipherGCMTLS uint8
+
+const (
+	cipherGCMTLSNone cipherGCMTLS = iota
+	cipherGCMTLS12
+	cipherGCMTLS13
+)
+
 type cipherGCM struct {
-	ctx          C.GO_EVP_CIPHER_CTX_PTR
-	tls          bool
+	ctx C.GO_EVP_CIPHER_CTX_PTR
+	tls cipherGCMTLS
+	// minNextNonce is the minimum value that the next nonce can be, enforced by
+	// all TLS modes.
 	minNextNonce uint64
-	blockSize    int
+	// mask is the nonce mask used in TLS 1.3 mode.
+	mask uint64
+	// maskInitialized is true if mask has been initialized. This happens during
+	// the first Seal. The initialized mask may be 0. Used by TLS 1.3 mode.
+	maskInitialized bool
+	blockSize       int
 }
 
 const (
@@ -353,10 +368,10 @@ func (c *evpCipher) newGCMChecked(nonceSize, tagSize int) (cipher.AEAD, error) {
 	if tagSize != gcmTagSize {
 		return cipher.NewGCMWithTagSize(&noGCM{c}, tagSize)
 	}
-	return c.newGCM(false)
+	return c.newGCM(cipherGCMTLSNone)
 }
 
-func (c *evpCipher) newGCM(tls bool) (cipher.AEAD, error) {
+func (c *evpCipher) newGCM(tls cipherGCMTLS) (cipher.AEAD, error) {
 	ctx, err := newCipherCtx(c.kind, cipherModeGCM, cipherOpNone, c.key, nil)
 	if err != nil {
 		return nil, err
@@ -388,15 +403,39 @@ func (g *cipherGCM) Seal(dst, nonce, plaintext, additionalData []byte) []byte {
 	if len(dst)+len(plaintext)+gcmTagSize < len(dst) {
 		panic("cipher: message too large for buffer")
 	}
-	if g.tls {
+	if g.tls != cipherGCMTLSNone {
 		if len(additionalData) != gcmTlsAddSize {
 			panic("cipher: incorrect additional data length given to GCM TLS")
+		}
+		counter := binary.BigEndian.Uint64(nonce[gcmTlsFixedNonceSize:])
+		if g.tls == cipherGCMTLS13 {
+			// In TLS 1.3, the counter in the nonce has a mask and requires
+			// further decoding.
+			if !g.maskInitialized {
+				// According to TLS 1.3 nonce construction details at
+				// https://tools.ietf.org/html/rfc8446#section-5.3:
+				//
+				//   the first record transmitted under a particular traffic
+				//   key MUST use sequence number 0.
+				//
+				//   The padded sequence number is XORed with [a mask].
+				//
+				//   The resulting quantity (of length iv_length) is used as
+				//   the per-record nonce.
+				//
+				// We need to convert from the given nonce to sequence numbers
+				// to keep track of minNextNonce and enforce the counter
+				// maximum. On the first call, we know counter^mask is 0^mask,
+				// so we can simply store it as the mask.
+				g.mask = counter
+				g.maskInitialized = true
+			}
+			counter ^= g.mask
 		}
 		// BoringCrypto enforces strictly monotonically increasing explicit nonces
 		// and to fail after 2^64 - 1 keys as per FIPS 140-2 IG A.5,
 		// but OpenSSL does not perform this check, so it is implemented here.
 		const maxUint64 = 1<<64 - 1
-		counter := binary.BigEndian.Uint64(nonce[gcmTlsFixedNonceSize:])
 		if counter == maxUint64 {
 			panic("cipher: nonce counter must be less than 2^64 - 1")
 		}
