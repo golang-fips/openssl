@@ -153,51 +153,76 @@ func TestSealAndOpen_Empty(t *testing.T) {
 
 func TestSealAndOpenTLS(t *testing.T) {
 	key := []byte("D249BF6DEC97B1EBD69BC4D6B3A3C49D")
-	ci, err := openssl.NewAESCipher(key)
-	if err != nil {
-		t.Fatal(err)
+	tests := []struct {
+		name string
+		new  func(c cipher.Block) (cipher.AEAD, error)
+		mask func(n *[12]byte)
+	}{
+		{"1.2", openssl.NewGCMTLS, nil},
+		{"1.3", openssl.NewGCMTLS13, nil},
+		{"1.3_masked", openssl.NewGCMTLS13, func(n *[12]byte) {
+			// Arbitrary mask in the high bits.
+			n[9] ^= 0x42
+			// Mask the very first bit. This makes sure that if Seal doesn't
+			// handle the mask, the counter appears to go backwards and panics
+			// when it shouldn't.
+			n[11] ^= 0x1
+		}},
 	}
-	gcm, err := openssl.NewGCMTLS(ci)
-	if err != nil {
-		t.Fatal(err)
-	}
-	nonce := [12]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
-	nonce1 := [12]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}
-	nonce9 := [12]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 9}
-	nonce10 := [12]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10}
-	nonceMax := [12]byte{0, 0, 0, 0, 255, 255, 255, 255, 255, 255, 255, 255}
-	plainText := []byte{0x01, 0x02, 0x03}
-	additionalData := make([]byte, 13)
-	additionalData[11] = byte(len(plainText) >> 8)
-	additionalData[12] = byte(len(plainText))
-	sealed := gcm.Seal(nil, nonce[:], plainText, additionalData)
-	assertPanic(t, func() {
-		gcm.Seal(nil, nonce[:], plainText, additionalData)
-	})
-	sealed1 := gcm.Seal(nil, nonce1[:], plainText, additionalData)
-	gcm.Seal(nil, nonce10[:], plainText, additionalData)
-	assertPanic(t, func() {
-		gcm.Seal(nil, nonce9[:], plainText, additionalData)
-	})
-	assertPanic(t, func() {
-		gcm.Seal(nil, nonceMax[:], plainText, additionalData)
-	})
-	if bytes.Equal(sealed, sealed1) {
-		t.Errorf("different nonces should produce different outputs\ngot: %#v\nexp: %#v", sealed, sealed1)
-	}
-	decrypted, err := gcm.Open(nil, nonce[:], sealed, additionalData)
-	if err != nil {
-		t.Error(err)
-	}
-	decrypted1, err := gcm.Open(nil, nonce1[:], sealed1, additionalData)
-	if err != nil {
-		t.Error(err)
-	}
-	if !bytes.Equal(decrypted, plainText) {
-		t.Errorf("unexpected decrypted result\ngot: %#v\nexp: %#v", decrypted, plainText)
-	}
-	if !bytes.Equal(decrypted, decrypted1) {
-		t.Errorf("unexpected decrypted result\ngot: %#v\nexp: %#v", decrypted, decrypted1)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ci, err := openssl.NewAESCipher(key)
+			if err != nil {
+				t.Fatal(err)
+			}
+			gcm, err := tt.new(ci)
+			if err != nil {
+				t.Fatal(err)
+			}
+			nonce := [12]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+			nonce1 := [12]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}
+			nonce9 := [12]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 9}
+			nonce10 := [12]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10}
+			nonceMax := [12]byte{0, 0, 0, 0, 255, 255, 255, 255, 255, 255, 255, 255}
+			if tt.mask != nil {
+				for _, m := range []*[12]byte{&nonce, &nonce1, &nonce9, &nonce10, &nonceMax} {
+					tt.mask(m)
+				}
+			}
+			plainText := []byte{0x01, 0x02, 0x03}
+			additionalData := make([]byte, 13)
+			additionalData[11] = byte(len(plainText) >> 8)
+			additionalData[12] = byte(len(plainText))
+			sealed := gcm.Seal(nil, nonce[:], plainText, additionalData)
+			assertPanic(t, func() {
+				gcm.Seal(nil, nonce[:], plainText, additionalData)
+			})
+			sealed1 := gcm.Seal(nil, nonce1[:], plainText, additionalData)
+			gcm.Seal(nil, nonce10[:], plainText, additionalData)
+			assertPanic(t, func() {
+				gcm.Seal(nil, nonce9[:], plainText, additionalData)
+			})
+			assertPanic(t, func() {
+				gcm.Seal(nil, nonceMax[:], plainText, additionalData)
+			})
+			if bytes.Equal(sealed, sealed1) {
+				t.Errorf("different nonces should produce different outputs\ngot: %#v\nexp: %#v", sealed, sealed1)
+			}
+			decrypted, err := gcm.Open(nil, nonce[:], sealed, additionalData)
+			if err != nil {
+				t.Error(err)
+			}
+			decrypted1, err := gcm.Open(nil, nonce1[:], sealed1, additionalData)
+			if err != nil {
+				t.Error(err)
+			}
+			if !bytes.Equal(decrypted, plainText) {
+				t.Errorf("unexpected decrypted result\ngot: %#v\nexp: %#v", decrypted, plainText)
+			}
+			if !bytes.Equal(decrypted, decrypted1) {
+				t.Errorf("unexpected decrypted result\ngot: %#v\nexp: %#v", decrypted, decrypted1)
+			}
+		})
 	}
 }
 
