@@ -4,6 +4,8 @@
 
 #include "shims.h"
 
+// Suppress warnings about unused parameters.
+#define UNUSED(x) (void)(x)
 
 static inline void
 go_openssl_do_leak_check(void)
