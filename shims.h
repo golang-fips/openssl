@@ -162,6 +162,7 @@ typedef void* GO_SHA_CTX_PTR;
 // #include <openssl/ec.h>
 // #include <openssl/rand.h>
 // #include <openssl/evp.h>
+// #include <openssl/dsa.h>
 // #if OPENSSL_VERSION_NUMBER >= 0x30000000L
 // #include <openssl/provider.h>
 // #include <openssl/param_build.h>
