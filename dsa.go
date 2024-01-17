@@ -196,12 +196,17 @@ func newDSA1(params DSAParameters, X, Y BigInt) (C.GO_EVP_PKEY_PTR, error) {
 	dsa := C.go_openssl_DSA_new()
 	p, q, g := bigToBN(params.P), bigToBN(params.Q), bigToBN(params.G)
 	if C.go_openssl_DSA_set0_pqg(dsa, p, q, g) != 1 {
+		C.go_openssl_BN_free(p)
+		C.go_openssl_BN_free(q)
+		C.go_openssl_BN_free(g)
 		C.go_openssl_DSA_free(dsa)
 		return nil, newOpenSSLError("DSA_set0_pqg failed")
 	}
 	if Y != nil {
 		pub, priv := bigToBN(Y), bigToBN(X)
 		if C.go_openssl_DSA_set0_key(dsa, pub, priv) != 1 {
+			C.go_openssl_BN_free(pub)
+			C.go_openssl_BN_clear_free(priv)
 			C.go_openssl_DSA_free(dsa)
 			return nil, newOpenSSLError("DSA_set0_key failed")
 		}
@@ -233,12 +238,15 @@ func newDSA3(params DSAParameters, X, Y BigInt) (C.GO_EVP_PKEY_PTR, error) {
 		return nil, newOpenSSLError("OSSL_PARAM_BLD_new")
 	}
 	defer C.go_openssl_OSSL_PARAM_BLD_free(bld)
-	pub, priv := bigToBN(Y), bigToBN(X)
 	selection := C.int(C.GO_EVP_PKEY_PUBLIC_KEY)
+	pub := bigToBN(Y)
+	defer C.go_openssl_BN_free(pub)
 	if C.go_openssl_OSSL_PARAM_BLD_push_BN(bld, paramPubKey, pub) != 1 {
 		return nil, newOpenSSLError("OSSL_PARAM_BLD_push_BN")
 	}
 	if X != nil {
+		priv := bigToBN(X)
+		defer C.go_openssl_BN_clear_free(priv)
 		if C.go_openssl_OSSL_PARAM_BLD_push_BN(bld, paramPrivKey, priv) != 1 {
 			return nil, newOpenSSLError("OSSL_PARAM_BLD_push_BN")
 		}
