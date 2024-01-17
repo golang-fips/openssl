@@ -22,14 +22,6 @@ type DSAParameters struct {
 	P, Q, G BigInt
 }
 
-func (p DSAParameters) keySize() uint32 {
-	return uint32(len(p.P))
-}
-
-func (p DSAParameters) groupSize() uint32 {
-	return uint32(len(p.Q))
-}
-
 // PrivateKeyDSA represents a DSA private key.
 type PrivateKeyDSA struct {
 	DSAParameters
@@ -153,7 +145,7 @@ func GenerateKeyDSA(params DSAParameters) (*PrivateKeyDSA, error) {
 		C.go_openssl_DSA_get0_key(dsa, &y, &x)
 	case 3:
 		defer func() {
-			C.go_openssl_BN_free(x)
+			C.go_openssl_BN_clear_free(x)
 			C.go_openssl_BN_free(y)
 		}()
 		if C.go_openssl_EVP_PKEY_get_bn_param(pkey, paramPubKey, &y) != 1 ||
