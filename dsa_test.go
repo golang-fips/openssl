@@ -3,6 +3,7 @@ package openssl_test
 import (
 	"crypto/dsa"
 	"encoding/asn1"
+	"fmt"
 	"math/big"
 	"testing"
 
@@ -15,16 +16,28 @@ type dsaSignature struct {
 }
 
 func TestDSAGenerateParameters(t *testing.T) {
-	testGenerateDSAParameters(t, 1024, 160)
-	testGenerateDSAParameters(t, 2048, 224)
-	testGenerateDSAParameters(t, 2048, 256)
-	testGenerateDSAParameters(t, 3072, 256)
+	var tests = []struct {
+		L, N int
+	}{
+		{1024, 160},
+		{2048, 224},
+		{2048, 256},
+		{3072, 256},
+	}
+	for _, test := range tests {
+		t.Run(fmt.Sprintf("%d-%d", test.L, test.N), func(t *testing.T) {
+			if openssl.FIPS() {
+				t.Skip("generating DSA parameters with L = 2048 is not supported in FIPS mode")
+			}
+			testGenerateDSAParameters(t, test.L, test.N)
+		})
+	}
 }
 
 func testGenerateDSAParameters(t *testing.T, L, N int) {
 	params, err := openssl.GenerateDSAParameters(L, N)
 	if err != nil {
-		t.Errorf("%d-%d: error generating parameters: %s", L, N, err)
+		t.Errorf("error generating parameters: %s", err)
 		return
 	}
 
@@ -33,11 +46,11 @@ func testGenerateDSAParameters(t *testing.T, L, N int) {
 	G := bbig.Dec(params.G)
 
 	if P.BitLen() != L {
-		t.Errorf("%d-%d: params.BitLen got:%d want:%d", L, N, P.BitLen(), L)
+		t.Errorf("params.BitLen got:%d want:%d", P.BitLen(), L)
 	}
 
 	if Q.BitLen() != N {
-		t.Errorf("%d-%d: q.BitLen got:%d want:%d", L, N, Q.BitLen(), L)
+		t.Errorf("q.BitLen got:%d want:%d", Q.BitLen(), L)
 	}
 
 	one := new(big.Int)
@@ -45,11 +58,11 @@ func testGenerateDSAParameters(t *testing.T, L, N int) {
 	pm1 := new(big.Int).Sub(P, one)
 	quo, rem := new(big.Int).DivMod(pm1, Q, new(big.Int))
 	if rem.Sign() != 0 {
-		t.Errorf("%d-%d: p-1 mod q != 0", L, N)
+		t.Error("p-1 mod q != 0")
 	}
 	x := new(big.Int).Exp(G, quo, P)
 	if x.Cmp(one) == 0 {
-		t.Errorf("%d-%d: invalid generator", L, N)
+		t.Error("invalid generator")
 	}
 
 	priv, err := openssl.GenerateKeyDSA(params)
@@ -58,23 +71,23 @@ func testGenerateDSAParameters(t *testing.T, L, N int) {
 		return
 	}
 
-	testDSASignAndVerify(t, L, priv)
+	testDSASignAndVerify(t, priv)
 }
 
-func testDSASignAndVerify(t *testing.T, i int, priv *openssl.PrivateKeyDSA) {
+func testDSASignAndVerify(t *testing.T, priv *openssl.PrivateKeyDSA) {
 	hashed := []byte("testing")
 	sig, err := openssl.SignDSA(priv, hashed[:])
 	if err != nil {
-		t.Errorf("%d: error signing: %s", i, err)
+		t.Errorf("error signing: %s", err)
 		return
 	}
 	pub, err := openssl.NewPublicKeyDSA(priv.DSAParameters, priv.Y)
 	if err != nil {
-		t.Errorf("%d: error getting public key: %s", i, err)
+		t.Errorf("error getting public key: %s", err)
 		return
 	}
 	if !openssl.VerifyDSA(pub, hashed[:], sig) {
-		t.Errorf("%d: error verifying", i)
+		t.Error("error verifying")
 		return
 	}
 
@@ -96,11 +109,11 @@ func testDSASignAndVerify(t *testing.T, i int, priv *openssl.PrivateKeyDSA) {
 		return
 	}
 	if !dsa.Verify(&priv1.PublicKey, hashed[:], esig.R, esig.S) {
-		t.Errorf("%d: compat: crypto/dsa can't verify OpenSSL signature", i)
+		t.Error("compat: crypto/dsa can't verify OpenSSL signature")
 	}
 	r1, s1, err := dsa.Sign(openssl.RandReader, &priv1, hashed[:])
 	if err != nil {
-		t.Errorf("%d: error signing: %s", i, err)
+		t.Errorf("error signing: %s", err)
 		return
 	}
 	sig, err = asn1.Marshal(dsaSignature{r1, s1})
@@ -109,12 +122,15 @@ func testDSASignAndVerify(t *testing.T, i int, priv *openssl.PrivateKeyDSA) {
 		return
 	}
 	if !openssl.VerifyDSA(pub, hashed[:], sig) {
-		t.Errorf("%d: compat: OpenSSL can't verify crypto/dsa signature", i)
+		t.Error("compat: OpenSSL can't verify crypto/dsa signature")
 		return
 	}
 }
 
 func TestDSASignAndVerify(t *testing.T) {
+	if openssl.FIPS() {
+		t.Skip("DSA signing with L = 2048 is not supported in FIPS mode")
+	}
 	params := openssl.DSAParameters{
 		P: bbig.Enc(fromHex("A9B5B793FB4785793D246BAE77E8FF63CA52F442DA763C440259919FE1BC1D6065A9350637A04F75A2F039401D49F08E066C4D275A5A65DA5684BC563C14289D7AB8A67163BFBF79D85972619AD2CFF55AB0EE77A9002B0EF96293BDD0F42685EBB2C66C327079F6C98000FBCB79AACDE1BC6F9D5C7B1A97E3D9D54ED7951FEF")),
 		Q: bbig.Enc(fromHex("E1D3391245933D68A0714ED34BBCB7A1F422B9C1")),
@@ -127,7 +143,7 @@ func TestDSASignAndVerify(t *testing.T) {
 		t.Fatalf("error generating key: %s", err)
 	}
 
-	testDSASignAndVerify(t, 0, priv)
+	testDSASignAndVerify(t, priv)
 }
 
 func TestDSANewPrivateKeyWithDegenerateKeys(t *testing.T) {
