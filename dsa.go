@@ -297,6 +297,7 @@ func newDSA3(params DSAParameters, X, Y BigInt) (C.GO_EVP_PKEY_PTR, error) {
 	if ctx == nil {
 		return nil, newOpenSSLError("EVP_PKEY_CTX_new_from_pkey")
 	}
+	defer C.go_openssl_EVP_PKEY_CTX_free(ctx)
 	if C.go_openssl_EVP_PKEY_keygen_init(ctx) != 1 {
 		return nil, newOpenSSLError("EVP_PKEY_keygen_init")
 	}
