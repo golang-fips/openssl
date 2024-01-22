@@ -267,7 +267,9 @@ func newDSA3(params DSAParameters, X, Y BigInt) (C.GO_EVP_PKEY_PTR, error) {
 		if C.go_openssl_OSSL_PARAM_BLD_push_BN(bld, paramPubKey, pub) != 1 {
 			return nil, newOpenSSLError("OSSL_PARAM_BLD_push_BN")
 		}
-		selection = C.int(C.GO_EVP_PKEY_PUBLIC_KEY)
+		if X == nil {
+			selection = C.int(C.GO_EVP_PKEY_PUBLIC_KEY)
+		}
 	}
 	if X != nil {
 		priv := bigToBN(X)
