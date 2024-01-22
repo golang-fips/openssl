@@ -81,7 +81,11 @@ func GenerateDSAParameters(L, N int) (DSAParameters, error) {
 	switch vMajor {
 	case 1:
 		dsa := getDSA(pkey)
-		C.go_openssl_DSA_get0_pqg(dsa, &p, &q, &g)
+		if vMinor == 0 {
+			C.go_openssl_DSA_get0_pqg_backport(dsa, &p, &q, &g)
+		} else {
+			C.go_openssl_DSA_get0_pqg(dsa, &p, &q, &g)
+		}
 	case 3:
 		defer func() {
 			C.go_openssl_BN_free(p)
@@ -142,7 +146,11 @@ func GenerateKeyDSA(params DSAParameters) (*PrivateKeyDSA, error) {
 	switch vMajor {
 	case 1:
 		dsa := getDSA(pkey)
-		C.go_openssl_DSA_get0_key(dsa, &y, &x)
+		if vMinor == 0 {
+			C.go_openssl_DSA_get0_key_backport(dsa, &y, &x)
+		} else {
+			C.go_openssl_DSA_get0_key(dsa, &y, &x)
+		}
 	case 3:
 		defer func() {
 			C.go_openssl_BN_clear_free(x)
@@ -187,7 +195,13 @@ func newDSA1(params DSAParameters, X, Y BigInt) (C.GO_EVP_PKEY_PTR, error) {
 	}
 	dsa := C.go_openssl_DSA_new()
 	p, q, g := bigToBN(params.P), bigToBN(params.Q), bigToBN(params.G)
-	if C.go_openssl_DSA_set0_pqg(dsa, p, q, g) != 1 {
+	var ret C.int
+	if vMinor == 0 {
+		ret = C.go_openssl_DSA_set0_pqg_backport(dsa, p, q, g)
+	} else {
+		ret = C.go_openssl_DSA_set0_pqg(dsa, p, q, g)
+	}
+	if ret != 1 {
 		C.go_openssl_BN_free(p)
 		C.go_openssl_BN_free(q)
 		C.go_openssl_BN_free(g)
@@ -196,7 +210,12 @@ func newDSA1(params DSAParameters, X, Y BigInt) (C.GO_EVP_PKEY_PTR, error) {
 	}
 	if Y != nil {
 		pub, priv := bigToBN(Y), bigToBN(X)
-		if C.go_openssl_DSA_set0_key(dsa, pub, priv) != 1 {
+		if vMinor == 0 {
+			ret = C.go_openssl_DSA_set0_key_backport(dsa, pub, priv)
+		} else {
+			ret = C.go_openssl_DSA_set0_key(dsa, pub, priv)
+		}
+		if ret != 1 {
 			C.go_openssl_BN_free(pub)
 			C.go_openssl_BN_clear_free(priv)
 			C.go_openssl_DSA_free(dsa)
