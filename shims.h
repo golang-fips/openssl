@@ -379,8 +379,8 @@ DEFINEFUNC_3_0(void, EVP_SIGNATURE_free, (GO_EVP_SIGNATURE_PTR signature), (sign
 DEFINEFUNC_LEGACY_1(GO_DSA_PTR, DSA_new, (void), ()) \
 DEFINEFUNC_LEGACY_1(void, DSA_free, (GO_DSA_PTR r), (r)) \
 DEFINEFUNC_LEGACY_1(int, DSA_generate_key, (GO_DSA_PTR a), (a)) \
-DEFINEFUNC_LEGACY_1(void, DSA_get0_pqg, (const GO_DSA_PTR d, const GO_BIGNUM_PTR *p, const GO_BIGNUM_PTR *q, const GO_BIGNUM_PTR *g), (d, p, q, g)) \
-DEFINEFUNC_LEGACY_1(int, DSA_set0_pqg, (GO_DSA_PTR d, GO_BIGNUM_PTR p, GO_BIGNUM_PTR q, GO_BIGNUM_PTR g), (d, p, q, g)) \
-DEFINEFUNC_LEGACY_1(void, DSA_get0_key, (const GO_DSA_PTR d, const GO_BIGNUM_PTR *pub_key, const GO_BIGNUM_PTR *priv_key), (d, pub_key, priv_key)) \
-DEFINEFUNC_LEGACY_1(int, DSA_set0_key, (GO_DSA_PTR d, GO_BIGNUM_PTR pub_key, GO_BIGNUM_PTR priv_key), (d, pub_key, priv_key)) \
+DEFINEFUNC_LEGACY_1_1(void, DSA_get0_pqg, (const GO_DSA_PTR d, const GO_BIGNUM_PTR *p, const GO_BIGNUM_PTR *q, const GO_BIGNUM_PTR *g), (d, p, q, g)) \
+DEFINEFUNC_LEGACY_1_1(int, DSA_set0_pqg, (GO_DSA_PTR d, GO_BIGNUM_PTR p, GO_BIGNUM_PTR q, GO_BIGNUM_PTR g), (d, p, q, g)) \
+DEFINEFUNC_LEGACY_1_1(void, DSA_get0_key, (const GO_DSA_PTR d, const GO_BIGNUM_PTR *pub_key, const GO_BIGNUM_PTR *priv_key), (d, pub_key, priv_key)) \
+DEFINEFUNC_LEGACY_1_1(int, DSA_set0_key, (GO_DSA_PTR d, GO_BIGNUM_PTR pub_key, GO_BIGNUM_PTR priv_key), (d, pub_key, priv_key)) \
 
