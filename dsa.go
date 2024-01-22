@@ -249,11 +249,25 @@ func newDSA3(params DSAParameters, X, Y BigInt) (C.GO_EVP_PKEY_PTR, error) {
 		return nil, newOpenSSLError("OSSL_PARAM_BLD_new")
 	}
 	defer C.go_openssl_OSSL_PARAM_BLD_free(bld)
-	selection := C.int(C.GO_EVP_PKEY_PUBLIC_KEY)
-	pub := bigToBN(Y)
-	defer C.go_openssl_BN_free(pub)
-	if C.go_openssl_OSSL_PARAM_BLD_push_BN(bld, paramPubKey, pub) != 1 {
+	p, q, g := bigToBN(params.P), bigToBN(params.Q), bigToBN(params.G)
+	defer func() {
+		C.go_openssl_BN_free(p)
+		C.go_openssl_BN_free(q)
+		C.go_openssl_BN_free(g)
+	}()
+	if C.go_openssl_OSSL_PARAM_BLD_push_BN(bld, paramP, p) != 1 ||
+		C.go_openssl_OSSL_PARAM_BLD_push_BN(bld, paramQ, q) != 1 ||
+		C.go_openssl_OSSL_PARAM_BLD_push_BN(bld, paramG, g) != 1 {
 		return nil, newOpenSSLError("OSSL_PARAM_BLD_push_BN")
+	}
+	selection := C.int(C.GO_EVP_PKEY_KEYPAIR)
+	if Y != nil {
+		pub := bigToBN(Y)
+		defer C.go_openssl_BN_free(pub)
+		if C.go_openssl_OSSL_PARAM_BLD_push_BN(bld, paramPubKey, pub) != 1 {
+			return nil, newOpenSSLError("OSSL_PARAM_BLD_push_BN")
+		}
+		selection = C.int(C.GO_EVP_PKEY_PUBLIC_KEY)
 	}
 	if X != nil {
 		priv := bigToBN(X)
@@ -261,22 +275,34 @@ func newDSA3(params DSAParameters, X, Y BigInt) (C.GO_EVP_PKEY_PTR, error) {
 		if C.go_openssl_OSSL_PARAM_BLD_push_BN(bld, paramPrivKey, priv) != 1 {
 			return nil, newOpenSSLError("OSSL_PARAM_BLD_push_BN")
 		}
-		selection = C.GO_EVP_PKEY_KEYPAIR
 	}
 	bldparams := C.go_openssl_OSSL_PARAM_BLD_to_param(bld)
 	if bldparams == nil {
 		return nil, newOpenSSLError("OSSL_PARAM_BLD_to_param")
 	}
 	defer C.go_openssl_OSSL_PARAM_free(bldparams)
-	pkey, err := newEvpFromParams(C.GO_EVP_PKEY_EC, selection, bldparams)
+	pkey, err := newEvpFromParams(C.GO_EVP_PKEY_DSA, selection, bldparams)
 	if err != nil {
 		return nil, err
 	}
 	if Y != nil {
 		return pkey, nil
 	}
-	// Generate the key.
-	return nil, nil
+	// pkey doesn't contain the public/private components. We use it
+	// as domain parameters placeholder to generate the final key.
+	defer C.go_openssl_EVP_PKEY_free(pkey)
+	ctx := C.go_openssl_EVP_PKEY_CTX_new_from_pkey(nil, pkey, nil)
+	if ctx == nil {
+		return nil, newOpenSSLError("EVP_PKEY_CTX_new_from_pkey")
+	}
+	if C.go_openssl_EVP_PKEY_keygen_init(ctx) != 1 {
+		return nil, newOpenSSLError("EVP_PKEY_keygen_init")
+	}
+	var gkey C.GO_EVP_PKEY_PTR
+	if C.go_openssl_EVP_PKEY_keygen(ctx, &gkey) != 1 {
+		return nil, newOpenSSLError("EVP_PKEY_keygen")
+	}
+	return gkey, nil
 }
 
 // getDSA returns the DSA from pkey.

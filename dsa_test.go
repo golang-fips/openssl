@@ -146,9 +146,15 @@ func TestDSANewPrivateKeyWithDegenerateKeys(t *testing.T) {
 			Q: bbig.Enc(fromHex(test.q)),
 			G: bbig.Enc(fromHex(test.g)),
 		}
-		_, err := openssl.NewPrivateKeyDSA(params, bbig.Enc(fromHex(test.x)), bbig.Enc(fromHex(test.y)))
-		if err == nil {
-			t.Errorf("#%d: error generating key: %s", i, err)
+		x, y := bbig.Enc(fromHex(test.x)), bbig.Enc(fromHex(test.y))
+		priv, err := openssl.NewPrivateKeyDSA(params, x, y)
+		if err != nil {
+			// Some OpenSSL 1 fails to create degenerated private keys, which is fine.
+			continue
+		}
+		hashed := []byte("testing")
+		if _, err := openssl.SignDSA(priv, hashed); err == nil {
+			t.Errorf("#%d: unexpected success", i)
 		}
 	}
 }

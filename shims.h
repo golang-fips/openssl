@@ -285,6 +285,7 @@ DEFINEFUNC_LEGACY_1(int, EVP_PKEY_assign, (GO_EVP_PKEY_PTR pkey, int type, void 
 DEFINEFUNC(int, EVP_PKEY_verify, (GO_EVP_PKEY_CTX_PTR ctx, const unsigned char *sig, size_t siglen, const unsigned char *tbs, size_t tbslen), (ctx, sig, siglen, tbs, tbslen)) \
 DEFINEFUNC(GO_EVP_PKEY_CTX_PTR, EVP_PKEY_CTX_new, (GO_EVP_PKEY_PTR arg0, GO_ENGINE_PTR arg1), (arg0, arg1)) \
 DEFINEFUNC(GO_EVP_PKEY_CTX_PTR, EVP_PKEY_CTX_new_id, (int id, GO_ENGINE_PTR e), (id, e)) \
+DEFINEFUNC_3_0(GO_EVP_PKEY_CTX_PTR, EVP_PKEY_CTX_new_from_pkey, (GO_OSSL_LIB_CTX_PTR libctx, GO_EVP_PKEY_PTR pkey, const char *propquery), (libctx, pkey, propquery)) \
 DEFINEFUNC(int, EVP_PKEY_paramgen_init, (GO_EVP_PKEY_CTX_PTR ctx), (ctx)) \
 DEFINEFUNC(int, EVP_PKEY_paramgen, (GO_EVP_PKEY_CTX_PTR ctx, GO_EVP_PKEY_PTR *ppkey), (ctx, ppkey)) \
 DEFINEFUNC(int, EVP_PKEY_keygen_init, (GO_EVP_PKEY_CTX_PTR ctx), (ctx)) \
