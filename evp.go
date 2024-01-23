@@ -149,7 +149,15 @@ type verifyFunc func(C.GO_EVP_PKEY_CTX_PTR, *C.uchar, C.size_t, *C.uchar, C.size
 
 func setupEVP(withKey withKeyFunc, padding C.int,
 	h, mgfHash hash.Hash, label []byte, saltLen C.int, ch crypto.Hash,
-	init initFunc) (ctx C.GO_EVP_PKEY_CTX_PTR, err error) {
+	init initFunc) (_ C.GO_EVP_PKEY_CTX_PTR, err error) {
+	var ctx C.GO_EVP_PKEY_CTX_PTR
+	withKey(func(pkey C.GO_EVP_PKEY_PTR) C.int {
+		ctx = C.go_openssl_EVP_PKEY_CTX_new(pkey, nil)
+		return 1
+	})
+	if ctx == nil {
+		return nil, newOpenSSLError("EVP_PKEY_CTX_new failed")
+	}
 	defer func() {
 		if err != nil {
 			if ctx != nil {
@@ -158,14 +166,6 @@ func setupEVP(withKey withKeyFunc, padding C.int,
 			}
 		}
 	}()
-
-	withKey(func(pkey C.GO_EVP_PKEY_PTR) C.int {
-		ctx = C.go_openssl_EVP_PKEY_CTX_new(pkey, nil)
-		return 1
-	})
-	if ctx == nil {
-		return nil, newOpenSSLError("EVP_PKEY_CTX_new failed")
-	}
 	if err := init(ctx); err != nil {
 		return nil, err
 	}

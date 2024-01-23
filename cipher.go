@@ -533,12 +533,12 @@ func sliceForAppend(in []byte, n int) (head, tail []byte) {
 	return
 }
 
-func newCipherCtx(kind cipherKind, mode cipherMode, encrypt cipherOp, key, iv []byte) (ctx C.GO_EVP_CIPHER_CTX_PTR, err error) {
+func newCipherCtx(kind cipherKind, mode cipherMode, encrypt cipherOp, key, iv []byte) (_ C.GO_EVP_CIPHER_CTX_PTR, err error) {
 	cipher := loadCipher(kind, mode)
 	if cipher == nil {
 		panic("crypto/cipher: unsupported cipher: " + kind.String())
 	}
-	ctx = C.go_openssl_EVP_CIPHER_CTX_new()
+	ctx := C.go_openssl_EVP_CIPHER_CTX_new()
 	if ctx == nil {
 		return nil, fail("unable to create EVP cipher ctx")
 	}
