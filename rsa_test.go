@@ -217,6 +217,8 @@ func newRSAKey(t *testing.T, size int) (*openssl.PrivateKeyRSA, *openssl.PublicK
 	if err != nil {
 		t.Fatalf("GenerateKeyRSA(%d): %v", size, err)
 	}
+	// Exercise omission of precomputed value
+	Dp = nil
 	priv, err := openssl.NewPrivateKeyRSA(N, E, D, P, Q, Dp, Dq, Qinv)
 	if err != nil {
 		t.Fatalf("NewPrivateKeyRSA(%d): %v", size, err)
