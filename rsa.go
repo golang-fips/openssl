@@ -384,14 +384,30 @@ func newRSAKey3(isPriv bool, N, E, D, P, Q, Dp, Dq, Qinv BigInt) (C.GO_EVP_PKEY_
 		return nil, newOpenSSLError("OSSL_PARAM_BLD_new")
 	}
 	defer C.go_openssl_OSSL_PARAM_BLD_free(bld)
-	var comps = [...]struct {
+
+	type bigIntParam struct{
 		name *C.char
 		num  BigInt
-	}{
-		{paramRSA_N, N}, {paramRSA_E, E}, {paramRSA_D, D},
-		{paramRSA_P, P}, {paramRSA_Q, Q},
-		{paramRSA_Dp, Dp}, {paramRSA_Dq, Dq}, {paramRSA_Qinv, Qinv},
 	}
+
+	comps := make([]bigIntParam, 0, 8)
+
+	required := [...]bigIntParam{
+		{paramRSA_N, N}, {paramRSA_E, E}, {paramRSA_D, D},
+	}
+	comps = append(comps, required[:]...)
+
+	// OpenSSL 3.0 and 3.1 required all the precomputed values if
+	// P and Q are present. See:
+	// https://github.com/openssl/openssl/pull/22334
+	if P != nil && Q != nil && Dp != nil && Dq != nil && Qinv != nil {
+		precomputed := [...]bigIntParam{
+			{paramRSA_P, P}, {paramRSA_Q, Q},
+			{paramRSA_Dp, Dp}, {paramRSA_Dq, Dq}, {paramRSA_Qinv, Qinv},
+		}
+		comps = append(comps, precomputed[:]...)
+	}
+
 	for _, comp := range comps {
 		if comp.num == nil {
 			continue
