@@ -1,3 +1,5 @@
+//go:build !cmd_go_bootstrap
+
 package openssl
 
 // Go wrappers for testing the thread setup code as _test.go files cannot import "C".
