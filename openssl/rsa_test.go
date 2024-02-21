@@ -173,10 +173,10 @@ func TestKeyGeneration(t *testing.T) {
 
 func TestRSAKeyGeneration(t *testing.T) {
 	for _, size := range []int{2048, 3072} {
+		size := size
 		t.Run(strconv.Itoa(size), func(t *testing.T) {
 			t.Parallel()
-			sz := size
-			priv, pub := newRSAKey(t, sz)
+			priv, pub := newRSAKey(t, size)
 			msg := []byte("hi!")
 			enc, err := openssl.EncryptRSAPKCS1(pub, msg)
 			if err != nil {
