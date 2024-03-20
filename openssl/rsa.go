@@ -112,7 +112,11 @@ func (k *PrivateKeyRSA) withKey(f func(*C.GO_RSA) C.int) C.int {
 
 func setupRSA(withKey func(func(*C.GO_RSA) C.int) C.int,
 	padding C.int, h hash.Hash, label []byte, saltLen int, ch crypto.Hash,
-	init func(*C.GO_EVP_PKEY_CTX) C.int) (pkey *C.GO_EVP_PKEY, ctx *C.GO_EVP_PKEY_CTX, err error) {
+	init func(*C.GO_EVP_PKEY_CTX) C.int) (_ *C.GO_EVP_PKEY, _ *C.GO_EVP_PKEY_CTX, err error) {
+
+	var pkey *C.GO_EVP_PKEY
+	var ctx *C.GO_EVP_PKEY_CTX
+
 	defer func() {
 		if err != nil {
 			if pkey != nil {
@@ -139,6 +143,7 @@ func setupRSA(withKey func(func(*C.GO_RSA) C.int) C.int,
 	if ctx == nil {
 		return nil, nil, NewOpenSSLError("EVP_PKEY_CTX_new failed")
 	}
+
 	if init(ctx) == 0 {
 		return nil, nil, NewOpenSSLError("EVP_PKEY_operation_init failed")
 	}
