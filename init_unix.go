@@ -2,7 +2,7 @@
 
 package openssl
 
-// #cgo LDFLAGS: -ldl
+// #cgo LDFLAGS: -ldl -pthread
 // #include <stdlib.h>
 // #include <dlfcn.h>
 import "C"
