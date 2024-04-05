@@ -51,6 +51,30 @@ case "$version" in
         make="build_libs"
         install="install_fips"
         ;;
+    "3.0.13")
+        tag="openssl-3.0.13";
+        sha256="e74504ed7035295ec7062b1da16c15b57ff2a03cd2064a28d8c39458cacc45fc"
+        fipsmodule_version=""
+        config="enable-fips"
+        make="build_libs"
+        install="install_fips"
+        ;;
+    "3.1.5")
+        tag="openssl-3.1.5";
+        sha256="299ddfd0a506a6d37de56386d15ce30d344d91884dfc98ab3330b7c009029931"
+        fipsmodule_version=""
+        config="enable-fips"
+        make="build_libs"
+        install="install_fips"
+        ;;
+    "3.2.1")
+        tag="openssl-3.2.1";
+        sha256="75cc6803ffac92625c06ea3c677fb32ef20d15a1b41ecc8dddbc6b9d6a2da84c"
+        fipsmodule_version=""
+        config="enable-fips"
+        make="build_libs"
+        install="install_fips"
+        ;;
     *)
         echo >&2 "error: unsupported OpenSSL version '$version'"
         exit 1 ;;

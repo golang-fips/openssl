@@ -26,7 +26,7 @@ On the other hand, Google maintains a branch that uses cgo and BoringSSL to impl
 
 ### Multiple OpenSSL versions supported
 
-The `openssl` package has support for multiple OpenSSL versions, namely 1.0.2, 1.1.0, 1.1.1 and 3.0.x.
+The `openssl` package has support for multiple OpenSSL versions, namely 1.0.2, 1.1.0, 1.1.1 and 3.x.
 
 All supported OpenSSL versions pass a small set of automatic tests that ensure they can be built and that there are no major regressions.
 These tests do not validate the cryptographic correctness of the `openssl` package.
