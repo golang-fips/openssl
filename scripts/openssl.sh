@@ -53,7 +53,7 @@ case "$version" in
         ;;
     "3.0.13")
         tag="openssl-3.0.13";
-        sha256="88525753f79d3bec27d2fa7c66aa0b92b3aa9498dafd93d7cfa4b3780cdae313"
+        sha256="e74504ed7035295ec7062b1da16c15b57ff2a03cd2064a28d8c39458cacc45fc"
         fipsmodule_version=""
         config="enable-fips"
         make="build_libs"
@@ -61,7 +61,7 @@ case "$version" in
         ;;
     "3.1.5")
         tag="openssl-3.1.5";
-        sha256="6ae015467dabf0469b139ada93319327be24b98251ffaeceda0221848dc09262"
+        sha256="299ddfd0a506a6d37de56386d15ce30d344d91884dfc98ab3330b7c009029931"
         fipsmodule_version=""
         config="enable-fips"
         make="build_libs"
@@ -69,7 +69,7 @@ case "$version" in
         ;;
     "3.2.1")
         tag="openssl-3.2.1";
-        sha256="83c7329fe52c850677d75e5d0b0ca245309b97e8ecbcfdc1dfdc4ab9fac35b39"
+        sha256="75cc6803ffac92625c06ea3c677fb32ef20d15a1b41ecc8dddbc6b9d6a2da84c"
         fipsmodule_version=""
         config="enable-fips"
         make="build_libs"
