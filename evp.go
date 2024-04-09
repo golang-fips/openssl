@@ -249,6 +249,17 @@ func setupEVP(withKey withKeyFunc, padding C.int,
 		}
 
 	case C.GO_RSA_PKCS1_PADDING:
+		if vMajor >= 3 {
+			// OpenSSL 3.2 changed the EVP_PKEY_decrypt behavior to not return an error
+			// when the padding is invalid. Instead, it returns a random value.
+			// See https://github.com/openssl/openssl/pull/13817.
+			// This is a security improvement, but it breaks compatibility with [rsa.DecryptPKCS1v15],
+			// which is documented to return an error when the padding is invalid.
+			// To maintain compatibility, we need to enable implicit rejection of invalid padding.
+			// Unconditionally enable implicit rejection of invalid padding, even in OpenSSL 3.0 and 3.1,
+			// as some distributions have backported this change. Ignore the error, is is an optional feature.
+			_ = C.go_openssl_EVP_PKEY_CTX_ctrl(ctx, C.GO_EVP_PKEY_RSA, -1, C.GO_EVP_PKEY_CTRL_RSA_IMPLICIT_REJECTION, 0, nil)
+		}
 		if ch != 0 {
 			// We support unhashed messages.
 			md := cryptoHashToMD(ch)

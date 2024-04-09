@@ -4,8 +4,12 @@ import (
 	"bytes"
 	"crypto"
 	"crypto/rsa"
+	"crypto/x509"
+	"encoding/base64"
+	"encoding/pem"
 	"math/big"
 	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/golang-fips/openssl/v2"
@@ -263,4 +267,48 @@ func BenchmarkGenerateKeyRSA(b *testing.B) {
 			b.Fatal(err)
 		}
 	}
+}
+
+func TestOverlongMessagePKCS1v15(t *testing.T) {
+	priv := parseKey(rsaPrivateKey)
+	ciphertext := decodeBase64("fjOVdirUzFoLlukv80dBllMLjXythIf22feqPrNo0YoIjzyzyoMFiLjAc/Y4krkeZ11XFThIrEvw\nkRiZcCq5ng==")
+	_, err := openssl.DecryptRSAPKCS1(priv, ciphertext)
+	if err == nil {
+		t.Error("RSA decrypted a message that was too long.")
+	}
+}
+
+var rsaPrivateKey = testingKey(`-----BEGIN RSA TESTING KEY-----
+MIIBOgIBAAJBALKZD0nEffqM1ACuak0bijtqE2QrI/KLADv7l3kK3ppMyCuLKoF0
+fd7Ai2KW5ToIwzFofvJcS/STa6HA5gQenRUCAwEAAQJBAIq9amn00aS0h/CrjXqu
+/ThglAXJmZhOMPVn4eiu7/ROixi9sex436MaVeMqSNf7Ex9a8fRNfWss7Sqd9eWu
+RTUCIQDasvGASLqmjeffBNLTXV2A5g4t+kLVCpsEIZAycV5GswIhANEPLmax0ME/
+EO+ZJ79TJKN5yiGBRsv5yvx5UiHxajEXAiAhAol5N4EUyq6I9w1rYdhPMGpLfk7A
+IU2snfRJ6Nq2CQIgFrPsWRCkV+gOYcajD17rEqmuLrdIRexpg8N1DOSXoJ8CIGlS
+tAboUGBxTDq3ZroNism3DaMIbKPyYrAqhKov1h5V
+-----END RSA TESTING KEY-----`)
+
+func decodeBase64(in string) []byte {
+	out := make([]byte, base64.StdEncoding.DecodedLen(len(in)))
+	n, err := base64.StdEncoding.Decode(out, []byte(in))
+	if err != nil {
+		return nil
+	}
+	return out[0:n]
+}
+
+func testingKey(s string) string { return strings.ReplaceAll(s, "TESTING KEY", "PRIVATE KEY") }
+
+func parseKey(s string) *openssl.PrivateKeyRSA {
+	p, _ := pem.Decode([]byte(s))
+	var err error
+	k, err := x509.ParsePKCS1PrivateKey(p.Bytes)
+	if err != nil {
+		panic(err)
+	}
+	key, err := openssl.NewPrivateKeyRSA(bbig.Enc(k.N), bbig.Enc(big.NewInt(int64(k.E))), bbig.Enc(k.D), bbig.Enc(k.Primes[0]), bbig.Enc(k.Primes[1]), nil, nil, nil)
+	if err != nil {
+		panic(err)
+	}
+	return key
 }
