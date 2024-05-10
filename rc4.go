@@ -4,7 +4,10 @@ package openssl
 
 // #include "goopenssl.h"
 import "C"
-import "runtime"
+import (
+	"runtime"
+	"sync"
+)
 
 // SupportsRC4 returns true if NewRC4Cipher is supported.
 func SupportsRC4() bool {
@@ -15,7 +18,8 @@ func SupportsRC4() bool {
 
 // A RC4Cipher is an instance of RC4 using a particular key.
 type RC4Cipher struct {
-	ctx C.GO_EVP_CIPHER_CTX_PTR
+	ctx     C.GO_EVP_CIPHER_CTX_PTR
+	ctxLock sync.Mutex
 }
 
 // NewRC4Cipher creates and returns a new Cipher.
@@ -24,7 +28,7 @@ func NewRC4Cipher(key []byte) (*RC4Cipher, error) {
 	if err != nil {
 		return nil, err
 	}
-	c := &RC4Cipher{ctx}
+	c := &RC4Cipher{ctx: ctx}
 	runtime.SetFinalizer(c, (*RC4Cipher).finalize)
 	return c, nil
 }
@@ -37,6 +41,8 @@ func (c *RC4Cipher) finalize() {
 
 // Reset zeros the key data and makes the Cipher unusable.
 func (c *RC4Cipher) Reset() {
+	c.ctxLock.Lock()
+	defer c.ctxLock.Unlock()
 	if c.ctx != nil {
 		C.go_openssl_EVP_CIPHER_CTX_free(c.ctx)
 		c.ctx = nil
@@ -54,6 +60,8 @@ func (c *RC4Cipher) XORKeyStream(dst, src []byte) {
 	}
 	// panic if len(dst) < len(src) with a runtime out of bound error,
 	// which is what crypto/rc4 does.
+	c.ctxLock.Lock()
+	defer c.ctxLock.Unlock()
 	_ = dst[len(src)-1]
 	var outLen C.int
 	if C.go_openssl_EVP_EncryptUpdate(c.ctx, base(dst), &outLen, base(src), C.int(len(src))) != 1 {

@@ -145,7 +145,9 @@ func loadCipher(k cipherKind, mode cipherMode) (cipher C.GO_EVP_CIPHER_PTR) {
 
 type evpCipher struct {
 	key       []byte
+	encLock   sync.Mutex
 	enc_ctx   C.GO_EVP_CIPHER_CTX_PTR
+	decLock   sync.Mutex
 	dec_ctx   C.GO_EVP_CIPHER_CTX_PTR
 	kind      cipherKind
 	blockSize int
@@ -184,6 +186,8 @@ func (c *evpCipher) encrypt(dst, src []byte) error {
 	if inexactOverlap(dst[:c.blockSize], src[:c.blockSize]) {
 		return errors.New("invalid buffer overlap")
 	}
+	c.encLock.Lock()
+	defer c.encLock.Unlock()
 	if c.enc_ctx == nil {
 		var err error
 		c.enc_ctx, err = newCipherCtx(c.kind, cipherModeECB, cipherOpEncrypt, c.key, nil)
@@ -211,6 +215,8 @@ func (c *evpCipher) decrypt(dst, src []byte) error {
 	if inexactOverlap(dst[:c.blockSize], src[:c.blockSize]) {
 		return errors.New("invalid buffer overlap")
 	}
+	c.decLock.Lock()
+	defer c.decLock.Unlock()
 	if c.dec_ctx == nil {
 		var err error
 		c.dec_ctx, err = newCipherCtx(c.kind, cipherModeECB, cipherOpDecrypt, c.key, nil)
@@ -229,6 +235,7 @@ func (c *evpCipher) decrypt(dst, src []byte) error {
 
 type cipherCBC struct {
 	ctx       C.GO_EVP_CIPHER_CTX_PTR
+	ctxLock   sync.Mutex
 	blockSize int
 }
 
@@ -249,6 +256,8 @@ func (x *cipherCBC) CryptBlocks(dst, src []byte) {
 		panic("crypto/cipher: output smaller than input")
 	}
 	if len(src) > 0 {
+		x.ctxLock.Lock()
+		defer x.ctxLock.Unlock()
 		if C.go_openssl_EVP_CipherUpdate_wrapper(x.ctx, base(dst), base(src), C.int(len(src))) != 1 {
 			panic("crypto/cipher: CipherUpdate failed")
 		}
@@ -260,6 +269,8 @@ func (x *cipherCBC) SetIV(iv []byte) {
 	if len(iv) != x.blockSize {
 		panic("cipher: incorrect length IV")
 	}
+	x.ctxLock.Lock()
+	defer x.ctxLock.Unlock()
 	if C.go_openssl_EVP_CipherInit_ex(x.ctx, nil, nil, nil, base(iv), C.int(cipherOpNone)) != 1 {
 		panic("cipher: unable to initialize EVP cipher ctx")
 	}
@@ -279,7 +290,8 @@ func (c *evpCipher) newCBC(iv []byte, op cipherOp) cipher.BlockMode {
 }
 
 type cipherCTR struct {
-	ctx C.GO_EVP_CIPHER_CTX_PTR
+	ctx     C.GO_EVP_CIPHER_CTX_PTR
+	ctxLock sync.Mutex
 }
 
 func (x *cipherCTR) XORKeyStream(dst, src []byte) {
@@ -292,6 +304,8 @@ func (x *cipherCTR) XORKeyStream(dst, src []byte) {
 	if len(src) == 0 {
 		return
 	}
+	x.ctxLock.Lock()
+	defer x.ctxLock.Unlock()
 	if C.go_openssl_EVP_EncryptUpdate_wrapper(x.ctx, base(dst), base(src), C.int(len(src))) != 1 {
 		panic("crypto/cipher: EncryptUpdate failed")
 	}
@@ -321,8 +335,9 @@ const (
 )
 
 type cipherGCM struct {
-	ctx C.GO_EVP_CIPHER_CTX_PTR
-	tls cipherGCMTLS
+	ctx     C.GO_EVP_CIPHER_CTX_PTR
+	ctxLock sync.Mutex
+	tls     cipherGCMTLS
 	// minNextNonce is the minimum value that the next nonce can be, enforced by
 	// all TLS modes.
 	minNextNonce uint64
@@ -471,6 +486,8 @@ func (g *cipherGCM) Seal(dst, nonce, plaintext, additionalData []byte) []byte {
 	// relying in the explicit nonce being securely set externally,
 	// and it also gives some interesting speed gains.
 	// Unfortunately we can't use it because Go expects AEAD.Seal to honor the provided nonce.
+	g.ctxLock.Lock()
+	defer g.ctxLock.Unlock()
 	if C.go_openssl_EVP_CIPHER_CTX_seal_wrapper(g.ctx, base(out), base(nonce),
 		base(plaintext), C.int(len(plaintext)),
 		base(additionalData), C.int(len(additionalData))) != 1 {
@@ -506,6 +523,8 @@ func (g *cipherGCM) Open(dst, nonce, ciphertext, additionalData []byte) ([]byte,
 		panic("cipher: invalid buffer overlap")
 	}
 
+	g.ctxLock.Lock()
+	defer g.ctxLock.Unlock()
 	ok := C.go_openssl_EVP_CIPHER_CTX_open_wrapper(
 		g.ctx, base(out), base(nonce),
 		base(ciphertext), C.int(len(ciphertext)),
