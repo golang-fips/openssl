@@ -421,14 +421,6 @@ func TestDecryptInvariantReusableNonce(t *testing.T) {
 	testDecrypt(t, true)
 }
 
-func Test_aesCipher_finalize(t *testing.T) {
-	// Test that aesCipher.finalize does not panic if neither Encrypt nor Decrypt have been called.
-	// This test is important because aesCipher.finalize contains logic that is normally not exercided while testing.
-	// We can't used NewAESCipher here because the returned object will be automatically finalized by the GC
-	// in case test execution takes long enough, and it can't be finalized twice.
-	openssl.EVPCipherFinalize()
-}
-
 func TestCipherEncryptDecrypt(t *testing.T) {
 	key := []byte{0x2b, 0x7e, 0x15, 0x16, 0x28, 0xae, 0xd2, 0xa6, 0xab, 0xf7, 0x15, 0x88, 0x09, 0xcf, 0x4f, 0x3c}
 	pt := []byte{0x32, 0x43, 0xf6, 0xa8, 0x88, 0x5a, 0x30, 0x8d, 0x31, 0x31, 0x98, 0xa2, 0xe0, 0x37, 0x07, 0x34}
@@ -541,7 +533,7 @@ func BenchmarkAESGCM_Open(b *testing.B) {
 	b.ReportAllocs()
 	b.SetBytes(int64(len(buf)))
 
-	var key = make([]byte, keySize)
+	key := make([]byte, keySize)
 	var nonce [12]byte
 	var ad [13]byte
 	c, _ := openssl.NewAESCipher(key)
@@ -564,7 +556,7 @@ func BenchmarkAESGCM_Seal(b *testing.B) {
 	b.ReportAllocs()
 	b.SetBytes(int64(len(buf)))
 
-	var key = make([]byte, keySize)
+	key := make([]byte, keySize)
 	var nonce [12]byte
 	var ad [13]byte
 	c, _ := openssl.NewAESCipher(key)

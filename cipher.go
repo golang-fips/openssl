@@ -4,6 +4,7 @@ package openssl
 
 // #include "goopenssl.h"
 import "C"
+
 import (
 	"crypto/cipher"
 	"encoding/binary"
@@ -145,8 +146,6 @@ func loadCipher(k cipherKind, mode cipherMode) (cipher C.GO_EVP_CIPHER_PTR) {
 
 type evpCipher struct {
 	key       []byte
-	enc_ctx   C.GO_EVP_CIPHER_CTX_PTR
-	dec_ctx   C.GO_EVP_CIPHER_CTX_PTR
 	kind      cipherKind
 	blockSize int
 }
@@ -159,17 +158,7 @@ func newEVPCipher(key []byte, kind cipherKind) (*evpCipher, error) {
 	c := &evpCipher{key: make([]byte, len(key)), kind: kind}
 	copy(c.key, key)
 	c.blockSize = int(C.go_openssl_EVP_CIPHER_get_block_size(cipher))
-	runtime.SetFinalizer(c, (*evpCipher).finalize)
 	return c, nil
-}
-
-func (c *evpCipher) finalize() {
-	if c.enc_ctx != nil {
-		C.go_openssl_EVP_CIPHER_CTX_free(c.enc_ctx)
-	}
-	if c.dec_ctx != nil {
-		C.go_openssl_EVP_CIPHER_CTX_free(c.dec_ctx)
-	}
 }
 
 func (c *evpCipher) encrypt(dst, src []byte) error {
@@ -184,15 +173,13 @@ func (c *evpCipher) encrypt(dst, src []byte) error {
 	if inexactOverlap(dst[:c.blockSize], src[:c.blockSize]) {
 		return errors.New("invalid buffer overlap")
 	}
-	if c.enc_ctx == nil {
-		var err error
-		c.enc_ctx, err = newCipherCtx(c.kind, cipherModeECB, cipherOpEncrypt, c.key, nil)
-		if err != nil {
-			return err
-		}
+	enc_ctx, err := newCipherCtx(c.kind, cipherModeECB, cipherOpEncrypt, c.key, nil)
+	if err != nil {
+		return err
 	}
+	defer C.go_openssl_EVP_CIPHER_CTX_free(enc_ctx)
 
-	if C.go_openssl_EVP_EncryptUpdate_wrapper(c.enc_ctx, base(dst), base(src), C.int(c.blockSize)) != 1 {
+	if C.go_openssl_EVP_EncryptUpdate_wrapper(enc_ctx, base(dst), base(src), C.int(c.blockSize)) != 1 {
 		return errors.New("EncryptUpdate failed")
 	}
 	runtime.KeepAlive(c)
@@ -211,18 +198,17 @@ func (c *evpCipher) decrypt(dst, src []byte) error {
 	if inexactOverlap(dst[:c.blockSize], src[:c.blockSize]) {
 		return errors.New("invalid buffer overlap")
 	}
-	if c.dec_ctx == nil {
-		var err error
-		c.dec_ctx, err = newCipherCtx(c.kind, cipherModeECB, cipherOpDecrypt, c.key, nil)
-		if err != nil {
-			return err
-		}
-		if C.go_openssl_EVP_CIPHER_CTX_set_padding(c.dec_ctx, 0) != 1 {
-			return errors.New("could not disable cipher padding")
-		}
+	dec_ctx, err := newCipherCtx(c.kind, cipherModeECB, cipherOpDecrypt, c.key, nil)
+	if err != nil {
+		return err
+	}
+	defer C.go_openssl_EVP_CIPHER_CTX_free(dec_ctx)
+
+	if C.go_openssl_EVP_CIPHER_CTX_set_padding(dec_ctx, 0) != 1 {
+		return errors.New("could not disable cipher padding")
 	}
 
-	C.go_openssl_EVP_DecryptUpdate_wrapper(c.dec_ctx, base(dst), base(src), C.int(c.blockSize))
+	C.go_openssl_EVP_DecryptUpdate_wrapper(dec_ctx, base(dst), base(src), C.int(c.blockSize))
 	runtime.KeepAlive(c)
 	return nil
 }
@@ -321,7 +307,7 @@ const (
 )
 
 type cipherGCM struct {
-	ctx C.GO_EVP_CIPHER_CTX_PTR
+	c   *evpCipher
 	tls cipherGCMTLS
 	// minNextNonce is the minimum value that the next nonce can be, enforced by
 	// all TLS modes.
@@ -379,17 +365,8 @@ func (c *evpCipher) newGCMChecked(nonceSize, tagSize int) (cipher.AEAD, error) {
 }
 
 func (c *evpCipher) newGCM(tls cipherGCMTLS) (cipher.AEAD, error) {
-	ctx, err := newCipherCtx(c.kind, cipherModeGCM, cipherOpNone, c.key, nil)
-	if err != nil {
-		return nil, err
-	}
-	g := &cipherGCM{ctx: ctx, tls: tls, blockSize: c.blockSize}
-	runtime.SetFinalizer(g, (*cipherGCM).finalize)
+	g := &cipherGCM{c: c, tls: tls, blockSize: c.blockSize}
 	return g, nil
-}
-
-func (g *cipherGCM) finalize() {
-	C.go_openssl_EVP_CIPHER_CTX_free(g.ctx)
 }
 
 func (g *cipherGCM) NonceSize() int {
@@ -464,6 +441,11 @@ func (g *cipherGCM) Seal(dst, nonce, plaintext, additionalData []byte) []byte {
 		panic("cipher: invalid buffer overlap")
 	}
 
+	ctx, err := newCipherCtx(g.c.kind, cipherModeGCM, cipherOpNone, g.c.key, nil)
+	if err != nil {
+		panic(err)
+	}
+	defer C.go_openssl_EVP_CIPHER_CTX_free(ctx)
 	// Encrypt additional data.
 	// When sealing a TLS payload, OpenSSL app sets the additional data using
 	// 'EVP_CIPHER_CTX_ctrl(g.ctx, C.EVP_CTRL_AEAD_TLS1_AAD, C.EVP_AEAD_TLS1_AAD_LEN, base(additionalData))'.
@@ -471,7 +453,7 @@ func (g *cipherGCM) Seal(dst, nonce, plaintext, additionalData []byte) []byte {
 	// relying in the explicit nonce being securely set externally,
 	// and it also gives some interesting speed gains.
 	// Unfortunately we can't use it because Go expects AEAD.Seal to honor the provided nonce.
-	if C.go_openssl_EVP_CIPHER_CTX_seal_wrapper(g.ctx, base(out), base(nonce),
+	if C.go_openssl_EVP_CIPHER_CTX_seal_wrapper(ctx, base(out), base(nonce),
 		base(plaintext), C.int(len(plaintext)),
 		base(additionalData), C.int(len(additionalData))) != 1 {
 
@@ -506,8 +488,13 @@ func (g *cipherGCM) Open(dst, nonce, ciphertext, additionalData []byte) ([]byte,
 		panic("cipher: invalid buffer overlap")
 	}
 
+	ctx, err := newCipherCtx(g.c.kind, cipherModeGCM, cipherOpNone, g.c.key, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer C.go_openssl_EVP_CIPHER_CTX_free(ctx)
 	ok := C.go_openssl_EVP_CIPHER_CTX_open_wrapper(
-		g.ctx, base(out), base(nonce),
+		ctx, base(out), base(nonce),
 		base(ciphertext), C.int(len(ciphertext)),
 		base(additionalData), C.int(len(additionalData)), base(tag))
 	runtime.KeepAlive(g)
