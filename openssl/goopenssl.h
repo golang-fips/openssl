@@ -1054,6 +1054,17 @@ enum {
 	GO_EVP_PKEY_CTRL_RSA_KEYGEN_BITS = EVP_PKEY_CTRL_RSA_KEYGEN_BITS,
 };
 
+#if OPENSSL_VERSION_NUMBER >= 0x30000000
+DEFINEFUNC(int, EVP_PKEY_CTX_set_ec_paramgen_curve_nid, (GO_EVP_PKEY_CTX *ctx, int nid), (ctx, nid))
+#else
+static int
+_goboringcrypto_EVP_PKEY_CTX_set_ec_paramgen_curve_nid(GO_EVP_PKEY_CTX *ctx, int nid)
+{
+	return _goboringcrypto_EVP_PKEY_CTX_ctrl(ctx, GO_EVP_PKEY_EC, -1,
+						 GO_EVP_PKEY_CTRL_EC_PARAMGEN_CURVE_NID, nid, NULL);
+}
+#endif
+
 DEFINEFUNC(int, EC_POINT_mul, (const GO_EC_GROUP *group, GO_EC_POINT *r, const GO_BIGNUM *n, const GO_EC_POINT *q, const GO_BIGNUM *m, GO_BN_CTX *ctx), (group, r, n, q, m, ctx))
 #if OPENSSL_VERSION_NUMBER >= 0x30000000
 DEFINEFUNC(int, EVP_PKEY_get_bits, (const GO_EVP_PKEY *pkey), (pkey));
