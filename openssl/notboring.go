@@ -12,6 +12,7 @@ import (
 	"crypto/cipher"
 	"hash"
 	"io"
+	"math/big"
 )
 
 var enabled = false
