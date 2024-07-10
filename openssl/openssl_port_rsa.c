@@ -8,15 +8,42 @@
 #include "goopenssl.h"
 
 // Only in BoringSSL.
-int _goboringcrypto_RSA_generate_key_fips(GO_RSA *rsa, int size,
-                                          GO_BN_GENCB *cb) {
+GO_RSA *_goboringcrypto_RSA_generate_key_fips(int bits) {
+  GO_EVP_PKEY_CTX *ctx = NULL;
+  GO_EVP_PKEY *pkey = NULL;
+  GO_BIGNUM *e = NULL;
+  GO_RSA *ret = NULL;
+
+  ctx = _goboringcrypto_EVP_PKEY_CTX_new_id(EVP_PKEY_RSA, NULL);
+  if (!ctx)
+    return NULL;
+
+  if (_goboringcrypto_EVP_PKEY_keygen_init(ctx) <= 0)
+    goto err;
+
+  if (_goboringcrypto_EVP_PKEY_CTX_set_rsa_keygen_bits(ctx, bits) <= 0)
+    goto err;
+
   // BoringSSL's RSA_generate_key_fips hard-codes e to 65537.
-  BIGNUM *e = _goboringcrypto_BN_new();
-  if (e == NULL)
-    return 0;
-  int ret = _goboringcrypto_BN_set_word(e, RSA_F4) &&
-            _goboringcrypto_RSA_generate_key_ex(rsa, size, e, cb);
+  e = _goboringcrypto_BN_new();
+  if (!e)
+    goto err;
+
+  if (_goboringcrypto_BN_set_word(e, RSA_F4) <= 0)
+    goto err;
+
+  if (_goboringcrypto_EVP_PKEY_CTX_set_rsa_keygen_pubexp(ctx, e) <= 0)
+    goto err;
+
+  if (_goboringcrypto_EVP_PKEY_keygen(ctx, &pkey) <= 0)
+    goto err;
+
+  ret = _goboringcrypto_EVP_PKEY_get1_RSA(pkey);
+
+err:
   _goboringcrypto_BN_free(e);
+  _goboringcrypto_EVP_PKEY_free(pkey);
+  _goboringcrypto_EVP_PKEY_CTX_free(ctx);
   return ret;
 }
 
@@ -182,9 +209,9 @@ err:
   return ret;
 }
 
-int _goboringcrypto_EVP_RSA_sign(EVP_MD *md, const uint8_t *msg,
-                                 unsigned int msgLen, uint8_t *sig,
-                                 size_t *slen, RSA *rsa) {
+int _goboringcrypto_RSA_sign(EVP_MD *md, const uint8_t *msg,
+			     unsigned int msgLen, uint8_t *sig,
+			     size_t *slen, RSA *rsa) {
   int result;
   EVP_PKEY *key = _goboringcrypto_EVP_PKEY_new();
   if (!key) {
@@ -200,9 +227,9 @@ err:
   return result;
 }
 
-int _goboringcrypto_EVP_RSA_verify(EVP_MD *md, const uint8_t *msg,
-                                   unsigned int msgLen, const uint8_t *sig,
-                                   unsigned int slen, GO_RSA *rsa) {
+int _goboringcrypto_RSA_verify(EVP_MD *md, const uint8_t *msg,
+			       unsigned int msgLen, const uint8_t *sig,
+			       unsigned int slen, GO_RSA *rsa) {
   int result;
   EVP_PKEY *key = _goboringcrypto_EVP_PKEY_new();
   if (!key) {
@@ -216,4 +243,85 @@ int _goboringcrypto_EVP_RSA_verify(EVP_MD *md, const uint8_t *msg,
 err:
   _goboringcrypto_EVP_PKEY_free(key);
   return result;
+}
+
+int _goboringcrypto_RSA_sign_raw(EVP_MD *md, const uint8_t *msg,
+				 size_t msgLen, uint8_t *sig, size_t *slen,
+				 GO_RSA *rsa_key) {
+  int ret = 0;
+  GO_EVP_PKEY_CTX *ctx = NULL;
+  GO_EVP_PKEY *pk = NULL;
+
+  pk = _goboringcrypto_EVP_PKEY_new();
+  if (!pk)
+    goto err;
+
+  if (1 != _goboringcrypto_EVP_PKEY_assign_RSA(pk, rsa_key))
+    goto err;
+
+  ctx = _goboringcrypto_EVP_PKEY_CTX_new(pk, NULL);
+  if (!ctx)
+    goto err;
+
+  if (1 != _goboringcrypto_EVP_PKEY_sign_init(ctx))
+    goto err;
+
+  if (md && 1 != _goboringcrypto_EVP_PKEY_CTX_set_signature_md(ctx, md))
+    goto err;
+
+  if (_goboringcrypto_EVP_PKEY_CTX_set_rsa_padding(ctx, RSA_PKCS1_PADDING) <= 0)
+    goto err;
+
+  if (1 != _goboringcrypto_EVP_PKEY_sign(ctx, sig, slen, msg, msgLen))
+    goto err;
+
+  /* Success */
+  ret = 1;
+
+err:
+  if (ctx)
+    _goboringcrypto_EVP_PKEY_CTX_free(ctx);
+
+  return ret;
+}
+
+int _goboringcrypto_RSA_verify_raw(EVP_MD *md,
+				   const uint8_t *msg, size_t msgLen,
+				   const uint8_t *sig, unsigned int slen,
+				   GO_RSA *rsa_key) {
+  int ret = 0;
+  GO_EVP_PKEY_CTX *ctx = NULL;
+  GO_EVP_PKEY *pk = NULL;
+
+  pk = _goboringcrypto_EVP_PKEY_new();
+  if (!pk)
+    goto err;
+
+  if (1 != _goboringcrypto_EVP_PKEY_assign_RSA(pk, rsa_key))
+    goto err;
+
+  ctx = _goboringcrypto_EVP_PKEY_CTX_new(pk, NULL);
+  if (!ctx)
+    goto err;
+
+  if (1 != _goboringcrypto_EVP_PKEY_verify_init(ctx))
+    goto err;
+
+  if (md && 1 != _goboringcrypto_EVP_PKEY_CTX_set_signature_md(ctx, md))
+    goto err;
+
+  if (_goboringcrypto_EVP_PKEY_CTX_set_rsa_padding(ctx, RSA_PKCS1_PADDING) <= 0)
+    goto err;
+
+  if (1 != _goboringcrypto_EVP_PKEY_verify(ctx, sig, slen, msg, msgLen))
+    goto err;
+
+  /* Success */
+  ret = 1;
+
+err:
+  if (ctx)
+    _goboringcrypto_EVP_PKEY_CTX_free(ctx);
+
+  return ret;
 }
