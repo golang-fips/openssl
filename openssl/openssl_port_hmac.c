@@ -14,7 +14,12 @@ DEFINEFUNCINTERNAL(EVP_PKEY *,
 		   (int type, ENGINE *e, const unsigned char *key, int keylen),
 		   (type, e, key, keylen))
 DEFINEFUNCINTERNAL(int, EVP_MD_CTX_reset, (EVP_MD_CTX *ctx), (ctx))
+
+#if OPENSSL_VERSION_NUMBER >= 0x30000000L
 DEFINEFUNCINTERNAL(const EVP_MD *, EVP_MD_CTX_get0_md, (const EVP_MD_CTX *ctx), (ctx))
+#else
+DEFINEFUNCINTERNAL(const EVP_MD *, EVP_MD_CTX_md, (const EVP_MD_CTX *ctx), (ctx))
+#endif
 DEFINEFUNCINTERNAL(int, EVP_MD_CTX_copy_ex, (EVP_MD_CTX *out, const EVP_MD_CTX *in), (out, in))
 
 /* EVP_DigestSignUpdate is converted from a macro in 3.0 */
@@ -79,7 +84,13 @@ int _goboringcrypto_HMAC_CTX_reset(GO_HMAC_CTX *ctx)
   int ret;
   const EVP_MD *md;
 
+
+#if OPENSSL_VERSION_NUMBER >= 0x30000000L
   md = _goboringcrypto_internal_EVP_MD_CTX_get0_md(ctx->mdctx);
+#else
+  md = _goboringcrypto_internal_EVP_MD_CTX_md(ctx->mdctx);
+#endif
+
   if (!md)
     return -1;
 
