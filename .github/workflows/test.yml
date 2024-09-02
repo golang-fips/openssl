@@ -81,3 +81,12 @@ jobs:
       run: go test -gcflags=all=-d=checkptr -count 10 -v ./...
       env:
         GO_OPENSSL_VERSION_OVERRIDE: ${{ matrix.openssl-version }}
+  azurelinux:
+    runs-on: ubuntu-latest
+    container: mcr.microsoft.com/oss/go/microsoft/golang:1.23-azurelinux3.0
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+    - name: Run Test
+      run: go test -v ./...
+      continue-on-error: true # Azure Linux is currently not supported, so we ignore failures
