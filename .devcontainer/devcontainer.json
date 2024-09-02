@@ -5,5 +5,10 @@
 	"containerEnv": {
 		"GO_OPENSSL_VERSION_OVERRIDE": "3.3.1"
 	},
-    "image": "mcr.microsoft.com/azurelinux/base/core:3.0"
+	"customizations": {
+    	"vscode": {
+			"extensions": ["golang.go"]
+		}
+	},
+   // "image": "mcr.microsoft.com/azurelinux/base/core:3.0"
 }
