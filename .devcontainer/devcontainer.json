@@ -1,0 +1,13 @@
+// For format details, see https://aka.ms/devcontainer.json.
+
+{
+	"name": "Go",
+	"containerEnv": {
+		"GO_OPENSSL_VERSION_OVERRIDE": "3.3.1"
+	},
+	"features": {
+		"ghcr.io/devcontainers/features/go:1": {}
+	},
+	"onCreateCommand": "sudo sh ${containerWorkspaceFolder}/scripts/openssl.sh ${GO_OPENSSL_VERSION_OVERRIDE}",
+    "image": "mcr.microsoft.com/azurelinux/base/core:3.0"
+}
