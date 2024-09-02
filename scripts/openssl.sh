@@ -51,6 +51,46 @@ case "$version" in
         make="build_libs"
         install="install_fips"
         ;;
+    "3.0.13")
+        tag="openssl-3.0.13";
+        sha256="e74504ed7035295ec7062b1da16c15b57ff2a03cd2064a28d8c39458cacc45fc"
+        fipsmodule_version=""
+        config="enable-fips"
+        make="build_libs"
+        install="install_fips"
+        ;;
+    "3.1.5")
+        tag="openssl-3.1.5";
+        sha256="299ddfd0a506a6d37de56386d15ce30d344d91884dfc98ab3330b7c009029931"
+        fipsmodule_version=""
+        config="enable-fips"
+        make="build_libs"
+        install="install_fips"
+        ;;
+    "3.2.1")
+        tag="openssl-3.2.1";
+        sha256="75cc6803ffac92625c06ea3c677fb32ef20d15a1b41ecc8dddbc6b9d6a2da84c"
+        fipsmodule_version=""
+        config="enable-fips"
+        make="build_libs"
+        install="install_fips"
+        ;;
+    "3.3.0")
+        tag="openssl-3.3.0";
+        sha256="1a47bdc46fac256a0dc8efb696f7f76fa5f96049ba1b60fded5478bd3165c6d2"
+        fipsmodule_version=""
+        config="enable-fips"
+        make="build_libs"
+        install="install_fips"
+        ;;
+    "3.3.1")
+        tag="openssl-3.3.1";
+        sha256="133bf39b8d1635ac94a8483042cc448251b770a0d12c7af0c05ea895ddd98f1d"
+        fipsmodule_version=""
+        config="enable-fips"
+        make="build_libs"
+        install="install_fips"
+        ;;
     *)
         echo >&2 "error: unsupported OpenSSL version '$version'"
         exit 1 ;;
