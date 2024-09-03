@@ -127,9 +127,8 @@ func newECDHPkey(curve string, bytes []byte, isPrivate bool) (C.GO_EVP_PKEY_PTR,
 }
 
 func newECDHPkey1(nid C.int, bytes []byte, isPrivate bool) (pkey C.GO_EVP_PKEY_PTR, err error) {
-	if vMajor != 1 {
-		panic("incorrect vMajor version")
-	}
+	checkMajorVersion(1)
+
 	key := C.go_openssl_EC_KEY_new_by_curve_name(nid)
 	if key == nil {
 		return nil, newOpenSSLError("EC_KEY_new_by_curve_name")
@@ -166,9 +165,8 @@ func newECDHPkey1(nid C.int, bytes []byte, isPrivate bool) (pkey C.GO_EVP_PKEY_P
 }
 
 func newECDHPkey3(nid C.int, bytes []byte, isPrivate bool) (C.GO_EVP_PKEY_PTR, error) {
-	if vMajor != 3 {
-		panic("incorrect vMajor version")
-	}
+	checkMajorVersion(3)
+
 	bld := C.go_openssl_OSSL_PARAM_BLD_new()
 	if bld == nil {
 		return nil, newOpenSSLError("OSSL_PARAM_BLD_new")

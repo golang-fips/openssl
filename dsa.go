@@ -196,9 +196,8 @@ func newDSA(params DSAParameters, X, Y BigInt) (C.GO_EVP_PKEY_PTR, error) {
 }
 
 func newDSA1(params DSAParameters, X, Y BigInt) (C.GO_EVP_PKEY_PTR, error) {
-	if vMajor != 1 {
-		panic("incorrect vMajor version")
-	}
+	checkMajorVersion(1)
+
 	dsa := C.go_openssl_DSA_new()
 	p, q, g := bigToBN(params.P), bigToBN(params.Q), bigToBN(params.G)
 	var ret C.int
@@ -247,9 +246,8 @@ func newDSA1(params DSAParameters, X, Y BigInt) (C.GO_EVP_PKEY_PTR, error) {
 }
 
 func newDSA3(params DSAParameters, X, Y BigInt) (C.GO_EVP_PKEY_PTR, error) {
-	if vMajor != 3 {
-		panic("incorrect vMajor version")
-	}
+	checkMajorVersion(3)
+
 	bld := C.go_openssl_OSSL_PARAM_BLD_new()
 	if bld == nil {
 		return nil, newOpenSSLError("OSSL_PARAM_BLD_new")
