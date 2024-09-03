@@ -20,15 +20,15 @@ var cacheMD sync.Map
 func hashToMD(h hash.Hash) C.GO_EVP_MD_PTR {
 	var ch crypto.Hash
 	switch h.(type) {
-	case *sha1Hash:
+	case *sha1Hash, *sha1Marshal:
 		ch = crypto.SHA1
-	case *sha224Hash:
+	case *sha224Hash, *sha224Marshal:
 		ch = crypto.SHA224
-	case *sha256Hash:
+	case *sha256Hash, *sha256Marshal:
 		ch = crypto.SHA256
-	case *sha384Hash:
+	case *sha384Hash, *sha384Marshal:
 		ch = crypto.SHA384
-	case *sha512Hash:
+	case *sha512Hash, *sha512Marshal:
 		ch = crypto.SHA512
 	case *sha3_224Hash:
 		ch = crypto.SHA3_224
