@@ -13,11 +13,6 @@ import (
 
 var OSSL_MAC_PARAM_DIGEST = C.CString("digest")
 
-var (
-	fetchHMACOnce sync.Once
-	evpHMAC       C.GO_EVP_MAC_PTR
-)
-
 // NewHMAC returns a new HMAC using OpenSSL.
 // The function h must return a hash implemented by
 // OpenSSL (for example, h could be openssl.NewSHA256).
@@ -38,14 +33,29 @@ func NewHMAC(h func() hash.Hash, key []byte) hash.Hash {
 		key = make([]byte, C.GO_EVP_MAX_MD_SIZE)
 	}
 
+	hmac := &opensslHMAC{
+		size:      ch.Size(),
+		blockSize: ch.BlockSize(),
+	}
+
 	switch vMajor {
 	case 1:
-		return newHMAC1(key, ch, md)
+		ctx := newHMAC1(key, md)
+		if ctx.ctx == nil {
+			return nil
+		}
+		hmac.ctx1 = ctx
 	case 3:
-		return newHMAC3(key, ch, md)
+		ctx := newHMAC3(key, md)
+		if ctx.ctx == nil {
+			return nil
+		}
+		hmac.ctx3 = ctx
 	default:
 		panic(errUnsupportedVersion())
 	}
+	runtime.SetFinalizer(hmac, (*opensslHMAC).finalize)
+	return hmac
 }
 
 // hmacCtx3 is used for OpenSSL 1.
@@ -67,7 +77,7 @@ type opensslHMAC struct {
 	sum       []byte
 }
 
-func newHMAC1(key []byte, h hash.Hash, md C.GO_EVP_MD_PTR) *opensslHMAC {
+func newHMAC1(key []byte, md C.GO_EVP_MD_PTR) hmacCtx1 {
 	ctx := hmacCtxNew()
 	if ctx == nil {
 		panic("openssl: EVP_MAC_CTX_new failed")
@@ -75,42 +85,76 @@ func newHMAC1(key []byte, h hash.Hash, md C.GO_EVP_MD_PTR) *opensslHMAC {
 	if C.go_openssl_HMAC_Init_ex(ctx, unsafe.Pointer(&key[0]), C.int(len(key)), md, nil) == 0 {
 		panic(newOpenSSLError("HMAC_Init_ex failed"))
 	}
-	hmac := &opensslHMAC{
-		size:      h.Size(),
-		blockSize: h.BlockSize(),
-		ctx1:      hmacCtx1{ctx},
-	}
-	runtime.SetFinalizer(hmac, (*opensslHMAC).finalize)
-	return hmac
+	return hmacCtx1{ctx}
 }
 
-func newHMAC3(key []byte, h hash.Hash, md C.GO_EVP_MD_PTR) *opensslHMAC {
-	fetchHMACOnce.Do(func() {
-		name := C.CString("HMAC")
-		evpHMAC = C.go_openssl_EVP_MAC_fetch(nil, name, nil)
-		C.free(unsafe.Pointer(name))
-	})
-	if evpHMAC == nil {
+var hmacDigestsSupported sync.Map
+var fetchHMAC3 = sync.OnceValue(func() C.GO_EVP_MAC_PTR {
+	name := C.CString("HMAC")
+	mac := C.go_openssl_EVP_MAC_fetch(nil, name, nil)
+	C.free(unsafe.Pointer(name))
+	if mac == nil {
 		panic("openssl: HMAC not supported")
 	}
-	ctx := C.go_openssl_EVP_MAC_CTX_new(evpHMAC)
-	if ctx == nil {
-		panic("openssl: EVP_MAC_CTX_new failed")
-	}
-	digest := C.go_openssl_EVP_MD_get0_name(md)
+	return mac
+})
+
+func buildHMAC3Params(digest *C.char) C.GO_OSSL_PARAM_PTR {
 	bld := C.go_openssl_OSSL_PARAM_BLD_new()
 	if bld == nil {
 		panic(newOpenSSLError("OSSL_PARAM_BLD_new"))
 	}
 	defer C.go_openssl_OSSL_PARAM_BLD_free(bld)
 	C.go_openssl_OSSL_PARAM_BLD_push_utf8_string(bld, OSSL_MAC_PARAM_DIGEST, digest, 0)
-	params := C.go_openssl_OSSL_PARAM_BLD_to_param(bld)
+	return C.go_openssl_OSSL_PARAM_BLD_to_param(bld)
+}
+
+func isHMAC3DigestSupported(digest string) bool {
+	if _, ok := hmacDigestsSupported.Load(digest); ok {
+		return true
+	}
+	ctx := C.go_openssl_EVP_MAC_CTX_new(fetchHMAC3())
+	if ctx == nil {
+		panic(newOpenSSLError("EVP_MAC_CTX_new"))
+	}
+	defer C.go_openssl_EVP_MAC_CTX_free(ctx)
+
+	cdigest := C.CString(digest)
+	defer C.free(unsafe.Pointer(cdigest))
+	params := buildHMAC3Params(cdigest)
 	if params == nil {
 		panic(newOpenSSLError("OSSL_PARAM_BLD_to_param"))
 	}
 	defer C.go_openssl_OSSL_PARAM_free(params)
+
+	supported := C.go_openssl_EVP_MAC_CTX_set_params(ctx, params) != 0
+	hmacDigestsSupported.Store(digest, supported)
+	return supported
+}
+
+func newHMAC3(key []byte, md C.GO_EVP_MD_PTR) hmacCtx3 {
+	digest := C.go_openssl_EVP_MD_get0_name(md)
+	if !isHMAC3DigestSupported(C.GoString(digest)) {
+		// The digest is not supported by the HMAC provider.
+		// Don't panic here so the Go standard library to
+		// fall back to the Go implementation.
+		// See https://github.com/golang-fips/openssl/issues/153.
+		return hmacCtx3{}
+	}
+	params := buildHMAC3Params(digest)
+	if params == nil {
+		panic(newOpenSSLError("OSSL_PARAM_BLD_to_param"))
+	}
+	defer C.go_openssl_OSSL_PARAM_free(params)
+
+	ctx := C.go_openssl_EVP_MAC_CTX_new(fetchHMAC3())
+	if ctx == nil {
+		panic(newOpenSSLError("EVP_MAC_CTX_new"))
+	}
+
 	if C.go_openssl_EVP_MAC_init(ctx, base(key), C.size_t(len(key)), params) == 0 {
-		panic(newOpenSSLError("EVP_MAC_init failed"))
+		C.go_openssl_EVP_MAC_CTX_free(ctx)
+		panic(newOpenSSLError("EVP_MAC_init"))
 	}
 	var hkey []byte
 	if vMinor == 0 && vPatch <= 2 {
@@ -122,13 +166,7 @@ func newHMAC3(key []byte, h hash.Hash, md C.GO_EVP_MD_PTR) *opensslHMAC {
 		hkey = make([]byte, len(key))
 		copy(hkey, key)
 	}
-	hmac := &opensslHMAC{
-		size:      h.Size(),
-		blockSize: h.BlockSize(),
-		ctx3:      hmacCtx3{ctx, hkey},
-	}
-	runtime.SetFinalizer(hmac, (*opensslHMAC).finalize)
-	return hmac
+	return hmacCtx3{ctx, hkey}
 }
 
 func (h *opensslHMAC) Reset() {
