@@ -22,7 +22,7 @@ enum {
     GO_EVP_PKEY_DSA = 116,
     /* This is defined differently in OpenSSL 3 (1 << 11), but in our
      * code it is only used in OpenSSL 1.
-    */
+     */
     GO1_EVP_PKEY_OP_DERIVE = (1 << 10),
     GO_EVP_MAX_MD_SIZE = 64,
 

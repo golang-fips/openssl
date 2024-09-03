@@ -147,8 +147,7 @@ func TestDSASignAndVerify(t *testing.T) {
 }
 
 func TestDSANewPrivateKeyWithDegenerateKeys(t *testing.T) {
-	// Signing with degenerate private keys should not cause an infinite
-	// loop.
+	// Signing with degenerate private keys should not cause an infinite loop
 	badKeys := []struct {
 		p, q, g, y, x string
 	}{
