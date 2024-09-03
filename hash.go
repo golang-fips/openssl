@@ -10,6 +10,7 @@ import (
 	"hash"
 	"runtime"
 	"strconv"
+	"sync"
 	"unsafe"
 )
 
@@ -108,6 +109,37 @@ func SHA3_512(p []byte) (sum [64]byte) {
 		panic("openssl: SHA3_512 failed")
 	}
 	return
+}
+
+var isMarshallableMap sync.Map
+
+// isHashMarshallable returns true if its memory layout
+// is known by this library, therefore it can be marshalled.
+func isHashMarshallable(cb crypto.Hash) bool {
+	if vMajor == 1 {
+		return true
+	}
+	if v, ok := isMarshallableMap.Load(cb); ok {
+		return v.(bool)
+	}
+	md := cryptoHashToMD(cb)
+	if md == nil {
+		return false
+	}
+	prov := C.go_openssl_EVP_MD_get0_provider(md)
+	if prov == nil {
+		return false
+	}
+	cname := C.go_openssl_OSSL_PROVIDER_get0_name(prov)
+	if cname == nil {
+		return false
+	}
+	name := C.GoString(cname)
+	// We only known the memory layout of the built-in providers.
+	// See evpHash.hashState for more details.
+	marshallable := name == "default" || name == "fips"
+	isMarshallableMap.Store(cb, marshallable)
+	return marshallable
 }
 
 // evpHash implements generic hash methods.
@@ -244,9 +276,11 @@ func (h *md4Hash) Sum(in []byte) []byte {
 
 // NewMD5 returns a new MD5 hash.
 func NewMD5() hash.Hash {
-	return &md5Hash{
-		evpHash: newEvpHash(crypto.MD5, 16, 64),
+	h := newEvpHash(crypto.MD5, 16, 64)
+	if isHashMarshallable(crypto.MD5) {
+		return &md5Marshal{md5Hash{evpHash: h}}
 	}
+	return &md5Hash{evpHash: h}
 }
 
 // md5State layout is taken from
@@ -273,7 +307,11 @@ const (
 	md5MarshaledSize = len(md5Magic) + 4*4 + 64 + 8
 )
 
-func (h *md5Hash) MarshalBinary() ([]byte, error) {
+type md5Marshal struct {
+	md5Hash
+}
+
+func (h *md5Marshal) MarshalBinary() ([]byte, error) {
 	d := (*md5State)(h.hashState())
 	if d == nil {
 		return nil, errors.New("crypto/md5: can't retrieve hash state")
@@ -290,7 +328,7 @@ func (h *md5Hash) MarshalBinary() ([]byte, error) {
 	return b, nil
 }
 
-func (h *md5Hash) UnmarshalBinary(b []byte) error {
+func (h *md5Marshal) UnmarshalBinary(b []byte) error {
 	if len(b) < len(md5Magic) || string(b[:len(md5Magic)]) != md5Magic {
 		return errors.New("crypto/md5: invalid hash state identifier")
 	}
@@ -316,9 +354,11 @@ func (h *md5Hash) UnmarshalBinary(b []byte) error {
 
 // NewSHA1 returns a new SHA1 hash.
 func NewSHA1() hash.Hash {
-	return &sha1Hash{
-		evpHash: newEvpHash(crypto.SHA1, 20, 64),
+	h := newEvpHash(crypto.SHA1, 20, 64)
+	if isHashMarshallable(crypto.SHA1) {
+		return &sha1Marshal{sha1Hash{evpHash: h}}
 	}
+	return &sha1Hash{evpHash: h}
 }
 
 type sha1Hash struct {
@@ -345,7 +385,11 @@ const (
 	sha1MarshaledSize = len(sha1Magic) + 5*4 + 64 + 8
 )
 
-func (h *sha1Hash) MarshalBinary() ([]byte, error) {
+type sha1Marshal struct {
+	sha1Hash
+}
+
+func (h *sha1Marshal) MarshalBinary() ([]byte, error) {
 	d := (*sha1State)(h.hashState())
 	if d == nil {
 		return nil, errors.New("crypto/sha1: can't retrieve hash state")
@@ -363,7 +407,7 @@ func (h *sha1Hash) MarshalBinary() ([]byte, error) {
 	return b, nil
 }
 
-func (h *sha1Hash) UnmarshalBinary(b []byte) error {
+func (h *sha1Marshal) UnmarshalBinary(b []byte) error {
 	if len(b) < len(sha1Magic) || string(b[:len(sha1Magic)]) != sha1Magic {
 		return errors.New("crypto/sha1: invalid hash state identifier")
 	}
@@ -390,9 +434,11 @@ func (h *sha1Hash) UnmarshalBinary(b []byte) error {
 
 // NewSHA224 returns a new SHA224 hash.
 func NewSHA224() hash.Hash {
-	return &sha224Hash{
-		evpHash: newEvpHash(crypto.SHA224, 224/8, 64),
+	h := newEvpHash(crypto.SHA224, 224/8, 64)
+	if isHashMarshallable(crypto.SHA224) {
+		return &sha224Marshal{sha224Hash{evpHash: h}}
 	}
+	return &sha224Hash{evpHash: h}
 }
 
 type sha224Hash struct {
@@ -407,9 +453,11 @@ func (h *sha224Hash) Sum(in []byte) []byte {
 
 // NewSHA256 returns a new SHA256 hash.
 func NewSHA256() hash.Hash {
-	return &sha256Hash{
-		evpHash: newEvpHash(crypto.SHA256, 256/8, 64),
+	h := newEvpHash(crypto.SHA256, 256/8, 64)
+	if isHashMarshallable(crypto.SHA256) {
+		return &sha256Marshal{sha256Hash{evpHash: h}}
 	}
+	return &sha256Hash{evpHash: h}
 }
 
 type sha256Hash struct {
@@ -437,7 +485,15 @@ type sha256State struct {
 	nx     uint32
 }
 
-func (h *sha224Hash) MarshalBinary() ([]byte, error) {
+type sha224Marshal struct {
+	sha224Hash
+}
+
+type sha256Marshal struct {
+	sha256Hash
+}
+
+func (h *sha224Marshal) MarshalBinary() ([]byte, error) {
 	d := (*sha256State)(h.hashState())
 	if d == nil {
 		return nil, errors.New("crypto/sha256: can't retrieve hash state")
@@ -458,7 +514,7 @@ func (h *sha224Hash) MarshalBinary() ([]byte, error) {
 	return b, nil
 }
 
-func (h *sha256Hash) MarshalBinary() ([]byte, error) {
+func (h *sha256Marshal) MarshalBinary() ([]byte, error) {
 	d := (*sha256State)(h.hashState())
 	if d == nil {
 		return nil, errors.New("crypto/sha256: can't retrieve hash state")
@@ -479,7 +535,7 @@ func (h *sha256Hash) MarshalBinary() ([]byte, error) {
 	return b, nil
 }
 
-func (h *sha224Hash) UnmarshalBinary(b []byte) error {
+func (h *sha224Marshal) UnmarshalBinary(b []byte) error {
 	if len(b) < len(magic224) || string(b[:len(magic224)]) != magic224 {
 		return errors.New("crypto/sha256: invalid hash state identifier")
 	}
@@ -507,7 +563,7 @@ func (h *sha224Hash) UnmarshalBinary(b []byte) error {
 	return nil
 }
 
-func (h *sha256Hash) UnmarshalBinary(b []byte) error {
+func (h *sha256Marshal) UnmarshalBinary(b []byte) error {
 	if len(b) < len(magic256) || string(b[:len(magic256)]) != magic256 {
 		return errors.New("crypto/sha256: invalid hash state identifier")
 	}
@@ -537,9 +593,11 @@ func (h *sha256Hash) UnmarshalBinary(b []byte) error {
 
 // NewSHA384 returns a new SHA384 hash.
 func NewSHA384() hash.Hash {
-	return &sha384Hash{
-		evpHash: newEvpHash(crypto.SHA384, 384/8, 128),
+	h := newEvpHash(crypto.SHA384, 384/8, 128)
+	if isHashMarshallable(crypto.SHA384) {
+		return &sha384Marshal{sha384Hash{evpHash: h}}
 	}
+	return &sha384Hash{evpHash: h}
 }
 
 type sha384Hash struct {
@@ -554,9 +612,11 @@ func (h *sha384Hash) Sum(in []byte) []byte {
 
 // NewSHA512 returns a new SHA512 hash.
 func NewSHA512() hash.Hash {
-	return &sha512Hash{
-		evpHash: newEvpHash(crypto.SHA512, 512/8, 128),
+	h := newEvpHash(crypto.SHA512, 512/8, 128)
+	if isHashMarshallable(crypto.SHA512) {
+		return &sha512Marshal{sha512Hash{evpHash: h}}
 	}
+	return &sha512Hash{evpHash: h}
 }
 
 type sha512Hash struct {
@@ -586,7 +646,15 @@ const (
 	marshaledSize512 = len(magic512) + 8*8 + 128 + 8
 )
 
-func (h *sha384Hash) MarshalBinary() ([]byte, error) {
+type sha384Marshal struct {
+	sha384Hash
+}
+
+type sha512Marshal struct {
+	sha512Hash
+}
+
+func (h *sha384Marshal) MarshalBinary() ([]byte, error) {
 	d := (*sha512State)(h.hashState())
 	if d == nil {
 		return nil, errors.New("crypto/sha512: can't retrieve hash state")
@@ -607,7 +675,7 @@ func (h *sha384Hash) MarshalBinary() ([]byte, error) {
 	return b, nil
 }
 
-func (h *sha512Hash) MarshalBinary() ([]byte, error) {
+func (h *sha512Marshal) MarshalBinary() ([]byte, error) {
 	d := (*sha512State)(h.hashState())
 	if d == nil {
 		return nil, errors.New("crypto/sha512: can't retrieve hash state")
@@ -628,7 +696,7 @@ func (h *sha512Hash) MarshalBinary() ([]byte, error) {
 	return b, nil
 }
 
-func (h *sha384Hash) UnmarshalBinary(b []byte) error {
+func (h *sha384Marshal) UnmarshalBinary(b []byte) error {
 	if len(b) < len(magic512) {
 		return errors.New("crypto/sha512: invalid hash state identifier")
 	}
@@ -659,7 +727,7 @@ func (h *sha384Hash) UnmarshalBinary(b []byte) error {
 	return nil
 }
 
-func (h *sha512Hash) UnmarshalBinary(b []byte) error {
+func (h *sha512Marshal) UnmarshalBinary(b []byte) error {
 	if len(b) < len(magic512) {
 		return errors.New("crypto/sha512: invalid hash state identifier")
 	}
