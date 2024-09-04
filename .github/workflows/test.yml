@@ -81,3 +81,14 @@ jobs:
       run: go test -gcflags=all=-d=checkptr -count 10 -v ./...
       env:
         GO_OPENSSL_VERSION_OVERRIDE: ${{ matrix.openssl-version }}
+  azurelinux:
+    runs-on: ubuntu-latest
+    container: mcr.microsoft.com/oss/go/microsoft/golang:1.23-azurelinux3.0
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+    - name: Run Test
+      run: go test -v ./...
+      # Go with FIPs / OpenSSL support on Azure Linux 3.0 is currently broken due to symcrypt change, so we ignore failures.
+      # See https://github.com/golang-fips/openssl/issues/158.
+      continue-on-error: true 
