@@ -400,11 +400,16 @@ func newRSAKey3(isPriv bool, n, e, d, p, q, dp, dq, qinv BigInt) (C.GO_EVP_PKEY_
 	// P and Q are present. See:
 	// https://github.com/openssl/openssl/pull/22334
 	if vMinor >= 2 || (p != nil && q != nil && dp != nil && dq != nil && qinv != nil) {
-		precomputed := [...]bigIntParam{
-			{OSSL_PKEY_PARAM_RSA_FACTOR1, p}, {OSSL_PKEY_PARAM_RSA_FACTOR2, q},
-			{OSSL_PKEY_PARAM_RSA_EXPONENT1, dp}, {OSSL_PKEY_PARAM_RSA_EXPONENT2, dq}, {OSSL_PKEY_PARAM_RSA_COEFFICIENT1, qinv},
+		if p != nil && q != nil {
+			comps = append(comps, bigIntParam{OSSL_PKEY_PARAM_RSA_FACTOR1, p}, bigIntParam{OSSL_PKEY_PARAM_RSA_FACTOR2, q})
 		}
-		comps = append(comps, precomputed[:]...)
+		if dp != nil && dq != nil && qinv != nil {
+			comps = append(comps,
+				bigIntParam{OSSL_PKEY_PARAM_RSA_EXPONENT1, dp},
+				bigIntParam{OSSL_PKEY_PARAM_RSA_EXPONENT2, dq},
+				bigIntParam{OSSL_PKEY_PARAM_RSA_COEFFICIENT1, qinv},
+			)
+		}
 	}
 
 	for _, comp := range comps {
