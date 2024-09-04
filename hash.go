@@ -115,14 +115,14 @@ var isMarshallableMap sync.Map
 
 // isHashMarshallable returns true if the memory layout of cb
 // is known by this library and can therefore be marshalled.
-func isHashMarshallable(cb crypto.Hash) bool {
+func isHashMarshallable(ch crypto.Hash) bool {
 	if vMajor == 1 {
 		return true
 	}
-	if v, ok := isMarshallableMap.Load(cb); ok {
+	if v, ok := isMarshallableMap.Load(ch); ok {
 		return v.(bool)
 	}
-	md := cryptoHashToMD(cb)
+	md := cryptoHashToMD(ch)
 	if md == nil {
 		return false
 	}
@@ -138,7 +138,7 @@ func isHashMarshallable(cb crypto.Hash) bool {
 	// We only know the memory layout of the built-in providers.
 	// See evpHash.hashState for more details.
 	marshallable := name == "default" || name == "fips"
-	isMarshallableMap.Store(cb, marshallable)
+	isMarshallableMap.Store(ch, marshallable)
 	return marshallable
 }
 
@@ -276,11 +276,11 @@ func (h *md4Hash) Sum(in []byte) []byte {
 
 // NewMD5 returns a new MD5 hash.
 func NewMD5() hash.Hash {
-	h := newEvpHash(crypto.MD5, 16, 64)
+	h := md5Hash{evpHash: newEvpHash(crypto.MD5, 16, 64)}
 	if isHashMarshallable(crypto.MD5) {
-		return &md5Marshal{md5Hash{evpHash: h}}
+		return &md5Marshal{h}
 	}
-	return &md5Hash{evpHash: h}
+	return &h
 }
 
 // md5State layout is taken from
@@ -354,11 +354,11 @@ func (h *md5Marshal) UnmarshalBinary(b []byte) error {
 
 // NewSHA1 returns a new SHA1 hash.
 func NewSHA1() hash.Hash {
-	h := newEvpHash(crypto.SHA1, 20, 64)
+	h := sha1Hash{evpHash: newEvpHash(crypto.SHA1, 20, 64)}
 	if isHashMarshallable(crypto.SHA1) {
-		return &sha1Marshal{sha1Hash{evpHash: h}}
+		return &sha1Marshal{h}
 	}
-	return &sha1Hash{evpHash: h}
+	return &h
 }
 
 type sha1Hash struct {
@@ -434,11 +434,11 @@ func (h *sha1Marshal) UnmarshalBinary(b []byte) error {
 
 // NewSHA224 returns a new SHA224 hash.
 func NewSHA224() hash.Hash {
-	h := newEvpHash(crypto.SHA224, 224/8, 64)
+	h := sha224Hash{evpHash: newEvpHash(crypto.SHA224, 224/8, 64)}
 	if isHashMarshallable(crypto.SHA224) {
-		return &sha224Marshal{sha224Hash{evpHash: h}}
+		return &sha224Marshal{h}
 	}
-	return &sha224Hash{evpHash: h}
+	return &h
 }
 
 type sha224Hash struct {
@@ -453,11 +453,11 @@ func (h *sha224Hash) Sum(in []byte) []byte {
 
 // NewSHA256 returns a new SHA256 hash.
 func NewSHA256() hash.Hash {
-	h := newEvpHash(crypto.SHA256, 256/8, 64)
+	h := sha256Hash{evpHash: newEvpHash(crypto.SHA256, 256/8, 64)}
 	if isHashMarshallable(crypto.SHA256) {
-		return &sha256Marshal{sha256Hash{evpHash: h}}
+		return &sha256Marshal{h}
 	}
-	return &sha256Hash{evpHash: h}
+	return &h
 }
 
 type sha256Hash struct {
@@ -593,11 +593,11 @@ func (h *sha256Marshal) UnmarshalBinary(b []byte) error {
 
 // NewSHA384 returns a new SHA384 hash.
 func NewSHA384() hash.Hash {
-	h := newEvpHash(crypto.SHA384, 384/8, 128)
+	h := sha384Hash{evpHash: newEvpHash(crypto.SHA384, 384/8, 128)}
 	if isHashMarshallable(crypto.SHA384) {
-		return &sha384Marshal{sha384Hash{evpHash: h}}
+		return &sha384Marshal{h}
 	}
-	return &sha384Hash{evpHash: h}
+	return &h
 }
 
 type sha384Hash struct {
@@ -612,11 +612,11 @@ func (h *sha384Hash) Sum(in []byte) []byte {
 
 // NewSHA512 returns a new SHA512 hash.
 func NewSHA512() hash.Hash {
-	h := newEvpHash(crypto.SHA512, 512/8, 128)
+	h := sha512Hash{evpHash: newEvpHash(crypto.SHA512, 512/8, 128)}
 	if isHashMarshallable(crypto.SHA512) {
-		return &sha512Marshal{sha512Hash{evpHash: h}}
+		return &sha512Marshal{h}
 	}
-	return &sha512Hash{evpHash: h}
+	return &h
 }
 
 type sha512Hash struct {

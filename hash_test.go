@@ -54,14 +54,14 @@ func TestHash(t *testing.T) {
 		crypto.SHA3_384,
 		crypto.SHA3_512,
 	}
-	for _, cb := range tests {
-		cb := cb
-		t.Run(cb.String(), func(t *testing.T) {
+	for _, ch := range tests {
+		ch := ch
+		t.Run(ch.String(), func(t *testing.T) {
 			t.Parallel()
-			if !openssl.SupportsHash(cb) {
+			if !openssl.SupportsHash(ch) {
 				t.Skip("skipping: not supported")
 			}
-			h := cryptoToHash(cb)()
+			h := cryptoToHash(ch)()
 			initSum := h.Sum(nil)
 			n, err := h.Write(msg)
 			if err != nil {
@@ -82,7 +82,7 @@ func TestHash(t *testing.T) {
 				if err != nil {
 					t.Errorf("could not marshal: %v", err)
 				}
-				h2 := cryptoToHash(cb)()
+				h2 := cryptoToHash(ch)()
 				if err := h2.(encoding.BinaryUnmarshaler).UnmarshalBinary(state); err != nil {
 					t.Errorf("could not unmarshal: %v", err)
 				}
