@@ -113,8 +113,8 @@ func SHA3_512(p []byte) (sum [64]byte) {
 
 var isMarshallableMap sync.Map
 
-// isHashMarshallable returns true if its memory layout
-// is known by this library, therefore it can be marshalled.
+// isHashMarshallable returns true if the memory layout of cb
+// is known by this library and can therefore be marshalled.
 func isHashMarshallable(cb crypto.Hash) bool {
 	if vMajor == 1 {
 		return true
@@ -135,7 +135,7 @@ func isHashMarshallable(cb crypto.Hash) bool {
 		return false
 	}
 	name := C.GoString(cname)
-	// We only known the memory layout of the built-in providers.
+	// We only know the memory layout of the built-in providers.
 	// See evpHash.hashState for more details.
 	marshallable := name == "default" || name == "fips"
 	isMarshallableMap.Store(cb, marshallable)
