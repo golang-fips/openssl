@@ -9,6 +9,9 @@ static pthread_mutex_t *mutex_buf = NULL;
 
 static pthread_key_t destructor_key;
 
+/* Used in pthread_setspecific. See https://github.com/microsoft/go/issues/1305. */
+static char stub;
+
 /* Used by unit tests. */
 volatile unsigned int go_openssl_threads_cleaned_up = 0;
 
@@ -29,7 +32,7 @@ static void thread_id(GO_CRYPTO_THREADID_PTR tid)
     // least once on any thread with associated error state. The thread-local
     // variable needs to be set to a non-NULL value so that the destructor will
     // be called when the thread exits. The actual value does not matter.
-    (void) pthread_setspecific(destructor_key, (void*)1);
+    (void) pthread_setspecific(destructor_key, &stub);
 }
 
 static void cleanup_thread_state(void *ignored)
