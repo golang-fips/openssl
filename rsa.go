@@ -396,14 +396,15 @@ func newRSAKey3(isPriv bool, n, e, d, p, q, dp, dq, qinv BigInt) (C.GO_EVP_PKEY_
 	}
 	comps = append(comps, required[:]...)
 
-	// OpenSSL 3.0 and 3.1 required all the precomputed values if
-	// P and Q are present. See:
-	// https://github.com/openssl/openssl/pull/22334
-	if vMinor >= 2 || (p != nil && q != nil && dp != nil && dq != nil && qinv != nil) {
-		if p != nil && q != nil {
+	if p != nil && q != nil {
+		allPrecomputedExists := dp != nil && dq != nil && qinv != nil
+		// OpenSSL 3.0 and 3.1 required all the precomputed values if
+		// P and Q are present. If they are not, we need to omit also P and Q.
+		// See https://github.com/openssl/openssl/pull/22334
+		if vMinor >= 2 || allPrecomputedExists {
 			comps = append(comps, bigIntParam{OSSL_PKEY_PARAM_RSA_FACTOR1, p}, bigIntParam{OSSL_PKEY_PARAM_RSA_FACTOR2, q})
 		}
-		if dp != nil && dq != nil && qinv != nil {
+		if allPrecomputedExists {
 			comps = append(comps,
 				bigIntParam{OSSL_PKEY_PARAM_RSA_EXPONENT1, dp},
 				bigIntParam{OSSL_PKEY_PARAM_RSA_EXPONENT2, dq},
