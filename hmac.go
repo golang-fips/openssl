@@ -110,8 +110,8 @@ func buildHMAC3Params(digest *C.char) C.GO_OSSL_PARAM_PTR {
 }
 
 func isHMAC3DigestSupported(digest string) bool {
-	if _, ok := hmacDigestsSupported.Load(digest); ok {
-		return true
+	if v, ok := hmacDigestsSupported.Load(digest); ok {
+		return v.(bool)
 	}
 	ctx := C.go_openssl_EVP_MAC_CTX_new(fetchHMAC3())
 	if ctx == nil {
