@@ -28,8 +28,11 @@ static void thread_id(GO_CRYPTO_THREADID_PTR tid)
     // per-thread error state, so this function is guaranteed to be executed at
     // least once on any thread with associated error state. The thread-local
     // variable needs to be set to a non-NULL value so that the destructor will
-    // be called when the thread exits. The actual value does not matter.
-    (void) pthread_setspecific(destructor_key, (void*)1);
+    // be called when the thread exits.
+    // The actual value does not matter, but should be a pointer with a valid size.
+    // See https://github.com/golang-fips/openssl/pull/162
+    static char stub;
+    (void) pthread_setspecific(destructor_key, &stub);
 }
 
 static void cleanup_thread_state(void *ignored)
