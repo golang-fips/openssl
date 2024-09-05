@@ -9,7 +9,7 @@ static pthread_mutex_t *mutex_buf = NULL;
 
 static pthread_key_t destructor_key;
 
-/* Used in pthread_setspecific. See https://github.com/microsoft/go/issues/1305. */
+/* An unused value whose address is passed to pthread_setspecific. It only needs to have a valid size. See https://github.com/golang-fips/openssl/pull/162. */
 static char stub;
 
 /* Used by unit tests. */
