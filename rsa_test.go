@@ -17,7 +17,69 @@ func TestRSAKeyGeneration(t *testing.T) {
 		size := size
 		t.Run(strconv.Itoa(size), func(t *testing.T) {
 			t.Parallel()
+			_, _, _, _, _, _, _, _, err := openssl.GenerateKeyRSA(size)
+			if err != nil {
+				t.Fatal(err)
+			}
+		})
+	}
+}
+
+func testRSAEncryptDecryptPKCS1(t *testing.T, priv *openssl.PrivateKeyRSA, pub *openssl.PublicKeyRSA) {
+	msg := []byte("hi!")
+	enc, err := openssl.EncryptRSAPKCS1(pub, msg)
+	if err != nil {
+		t.Fatalf("EncryptPKCS1v15: %v", err)
+	}
+	dec, err := openssl.DecryptRSAPKCS1(priv, enc)
+	if err != nil {
+		t.Fatalf("DecryptPKCS1v15: %v", err)
+	}
+	if !bytes.Equal(dec, msg) {
+		t.Fatalf("got:%x want:%x", dec, msg)
+	}
+}
+
+func TestRSAEncryptDecryptPKCS1(t *testing.T) {
+	for _, size := range []int{2048, 3072} {
+		size := size
+		t.Run(strconv.Itoa(size), func(t *testing.T) {
+			t.Parallel()
 			priv, pub := newRSAKey(t, size)
+			testRSAEncryptDecryptPKCS1(t, priv, pub)
+		})
+	}
+}
+
+func TestRSAEncryptDecryptPKCS1_MissingPrecomputedValues(t *testing.T) {
+	N, E, D, P, Q, Dp, Dq, Qinv, err := openssl.GenerateKeyRSA(2048)
+	if err != nil {
+		t.Fatalf("GenerateKeyRSA: %v", err)
+	}
+	tt := []struct {
+		name    string
+		wantErr bool
+		fn      func() (*openssl.PrivateKeyRSA, *openssl.PublicKeyRSA)
+	}{
+		{"noDp", false, func() (*openssl.PrivateKeyRSA, *openssl.PublicKeyRSA) {
+			return newRSAKeyFromParams(t, N, E, D, P, Q, nil, Dq, Qinv)
+		}},
+		{"noDq", false, func() (*openssl.PrivateKeyRSA, *openssl.PublicKeyRSA) {
+			return newRSAKeyFromParams(t, N, E, D, P, Q, Dp, nil, Qinv)
+		}},
+		{"noQinv", false, func() (*openssl.PrivateKeyRSA, *openssl.PublicKeyRSA) {
+			return newRSAKeyFromParams(t, N, E, D, P, Q, Dp, Dq, nil)
+		}},
+		{"none", false, func() (*openssl.PrivateKeyRSA, *openssl.PublicKeyRSA) {
+			return newRSAKeyFromParams(t, N, E, D, P, Q, nil, nil, nil)
+		}},
+	}
+	for _, tt := range tt {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			priv, pub := tt.fn()
+			testRSAEncryptDecryptPKCS1(t, priv, pub)
 			msg := []byte("hi!")
 			enc, err := openssl.EncryptRSAPKCS1(pub, msg)
 			if err != nil {
@@ -34,7 +96,7 @@ func TestRSAKeyGeneration(t *testing.T) {
 	}
 }
 
-func TestEncryptDecryptOAEP(t *testing.T) {
+func TestRSAEncryptDecryptOAEP(t *testing.T) {
 	sha256 := openssl.NewSHA256()
 	msg := []byte("hi!")
 	label := []byte("ho!")
@@ -57,7 +119,7 @@ func TestEncryptDecryptOAEP(t *testing.T) {
 	}
 }
 
-func TestEncryptDecryptOAEP_EmptyLabel(t *testing.T) {
+func TestRSAEncryptDecryptOAEP_EmptyLabel(t *testing.T) {
 	sha256 := openssl.NewSHA256()
 	msg := []byte("hi!")
 	label := []byte("")
@@ -80,7 +142,7 @@ func TestEncryptDecryptOAEP_EmptyLabel(t *testing.T) {
 	}
 }
 
-func TestEncryptDecryptOAEP_WithMGF1Hash(t *testing.T) {
+func TestRSAEncryptDecryptOAEP_WithMGF1Hash(t *testing.T) {
 	if openssl.SymCryptProviderAvailable() {
 		t.Skip("SymCrypt provider does not support MGF1 hash")
 	}
@@ -107,7 +169,7 @@ func TestEncryptDecryptOAEP_WithMGF1Hash(t *testing.T) {
 	}
 }
 
-func TestEncryptDecryptOAEP_WrongLabel(t *testing.T) {
+func TestRSAEncryptDecryptOAEP_WrongLabel(t *testing.T) {
 	sha256 := openssl.NewSHA256()
 	msg := []byte("hi!")
 	priv, pub := newRSAKey(t, 2048)
@@ -124,7 +186,7 @@ func TestEncryptDecryptOAEP_WrongLabel(t *testing.T) {
 	}
 }
 
-func TestSignVerifyPKCS1v15(t *testing.T) {
+func TestRSASignVerifyPKCS1v15(t *testing.T) {
 	sha256 := openssl.NewSHA256()
 	priv, pub := newRSAKey(t, 2048)
 	msg := []byte("hi!")
@@ -151,7 +213,7 @@ func TestSignVerifyPKCS1v15(t *testing.T) {
 	}
 }
 
-func TestSignVerifyPKCS1v15_Unhashed(t *testing.T) {
+func TestRSASignVerifyPKCS1v15_Unhashed(t *testing.T) {
 	if openssl.SymCryptProviderAvailable() {
 		t.Skip("SymCrypt provider does not support unhashed PKCS1v15")
 	}
@@ -168,7 +230,7 @@ func TestSignVerifyPKCS1v15_Unhashed(t *testing.T) {
 	}
 }
 
-func TestSignVerifyPKCS1v15_Invalid(t *testing.T) {
+func TestRSASignVerifyPKCS1v15_Invalid(t *testing.T) {
 	sha256 := openssl.NewSHA256()
 	msg := []byte("hi!")
 	priv, pub := newRSAKey(t, 2048)
@@ -184,7 +246,7 @@ func TestSignVerifyPKCS1v15_Invalid(t *testing.T) {
 	}
 }
 
-func TestSignVerifyRSAPSS(t *testing.T) {
+func TestRSASignVerifyRSAPSS(t *testing.T) {
 	// Test cases taken from
 	// https://github.com/golang/go/blob/54182ff54a687272dd7632c3a963e036ce03cb7c/src/crypto/rsa/pss_test.go#L200.
 	const keyBits = 2048
@@ -225,15 +287,18 @@ func newRSAKey(t *testing.T, size int) (*openssl.PrivateKeyRSA, *openssl.PublicK
 	if err != nil {
 		t.Fatalf("GenerateKeyRSA(%d): %v", size, err)
 	}
-	// Exercise omission of precomputed value
-	Dp = nil
+	return newRSAKeyFromParams(t, N, E, D, P, Q, Dp, Dq, Qinv)
+}
+
+func newRSAKeyFromParams(t *testing.T, N, E, D, P, Q, Dp, Dq, Qinv openssl.BigInt) (*openssl.PrivateKeyRSA, *openssl.PublicKeyRSA) {
+	t.Helper()
 	priv, err := openssl.NewPrivateKeyRSA(N, E, D, P, Q, Dp, Dq, Qinv)
 	if err != nil {
-		t.Fatalf("NewPrivateKeyRSA(%d): %v", size, err)
+		t.Fatalf("NewPrivateKeyRSA: %v", err)
 	}
 	pub, err := openssl.NewPublicKeyRSA(N, E)
 	if err != nil {
-		t.Fatalf("NewPublicKeyRSA(%d): %v", size, err)
+		t.Fatalf("NewPublicKeyRSA: %v", err)
 	}
 	return priv, pub
 }
