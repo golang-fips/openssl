@@ -230,6 +230,31 @@ func (h *evpHash) sum(out []byte) {
 	runtime.KeepAlive(h)
 }
 
+func (h *evpHash) clone() (*evpHash, error) {
+	ctx := C.go_openssl_EVP_MD_CTX_new()
+	if ctx == nil {
+		return nil, newOpenSSLError("EVP_MD_CTX_new")
+	}
+	if C.go_openssl_EVP_MD_CTX_copy_ex(ctx, h.ctx) != 1 {
+		C.go_openssl_EVP_MD_CTX_free(ctx)
+		return nil, newOpenSSLError("EVP_MD_CTX_copy")
+	}
+	ctx2 := C.go_openssl_EVP_MD_CTX_new()
+	if ctx2 == nil {
+		C.go_openssl_EVP_MD_CTX_free(ctx)
+		return nil, newOpenSSLError("EVP_MD_CTX_new")
+	}
+	cloned := &evpHash{
+		ctx:          ctx,
+		ctx2:         ctx2,
+		size:         h.size,
+		blockSize:    h.blockSize,
+		marshallable: h.marshallable,
+	}
+	runtime.SetFinalizer(cloned, (*evpHash).finalize)
+	return cloned, nil
+}
+
 // hashState returns a pointer to the internal hash structure.
 //
 // The EVP_MD_CTX memory layout has changed in OpenSSL 3
@@ -280,6 +305,14 @@ func (h *md4Hash) Sum(in []byte) []byte {
 	return append(in, h.out[:]...)
 }
 
+func (h *md4Hash) Clone() (hash.Hash, error) {
+	c, err := h.clone()
+	if err != nil {
+		return nil, err
+	}
+	return &md4Hash{evpHash: c}, nil
+}
+
 // NewMD5 returns a new MD5 hash.
 func NewMD5() hash.Hash {
 	h := md5Hash{evpHash: newEvpHash(crypto.MD5)}
@@ -306,6 +339,14 @@ type md5Hash struct {
 func (h *md5Hash) Sum(in []byte) []byte {
 	h.sum(h.out[:])
 	return append(in, h.out[:]...)
+}
+
+func (h *md5Hash) Clone() (hash.Hash, error) {
+	c, err := h.clone()
+	if err != nil {
+		return nil, err
+	}
+	return &md5Hash{evpHash: c}, nil
 }
 
 const (
@@ -375,6 +416,14 @@ type sha1Hash struct {
 func (h *sha1Hash) Sum(in []byte) []byte {
 	h.sum(h.out[:])
 	return append(in, h.out[:]...)
+}
+
+func (h *sha1Hash) Clone() (hash.Hash, error) {
+	c, err := h.clone()
+	if err != nil {
+		return nil, err
+	}
+	return &sha1Hash{evpHash: c}, nil
 }
 
 // sha1State layout is taken from
@@ -457,6 +506,14 @@ func (h *sha224Hash) Sum(in []byte) []byte {
 	return append(in, h.out[:]...)
 }
 
+func (h *sha224Hash) Clone() (hash.Hash, error) {
+	c, err := h.clone()
+	if err != nil {
+		return nil, err
+	}
+	return &sha224Hash{evpHash: c}, nil
+}
+
 // NewSHA256 returns a new SHA256 hash.
 func NewSHA256() hash.Hash {
 	h := sha256Hash{evpHash: newEvpHash(crypto.SHA256)}
@@ -474,6 +531,14 @@ type sha256Hash struct {
 func (h *sha256Hash) Sum(in []byte) []byte {
 	h.sum(h.out[:])
 	return append(in, h.out[:]...)
+}
+
+func (h *sha256Hash) Clone() (hash.Hash, error) {
+	c, err := h.clone()
+	if err != nil {
+		return nil, err
+	}
+	return &sha256Hash{evpHash: c}, nil
 }
 
 const (
@@ -616,6 +681,14 @@ func (h *sha384Hash) Sum(in []byte) []byte {
 	return append(in, h.out[:]...)
 }
 
+func (h *sha384Hash) Clone() (hash.Hash, error) {
+	c, err := h.clone()
+	if err != nil {
+		return nil, err
+	}
+	return &sha384Hash{evpHash: c}, nil
+}
+
 // NewSHA512 returns a new SHA512 hash.
 func NewSHA512() hash.Hash {
 	h := sha512Hash{evpHash: newEvpHash(crypto.SHA512)}
@@ -633,6 +706,14 @@ type sha512Hash struct {
 func (h *sha512Hash) Sum(in []byte) []byte {
 	h.sum(h.out[:])
 	return append(in, h.out[:]...)
+}
+
+func (h *sha512Hash) Clone() (hash.Hash, error) {
+	c, err := h.clone()
+	if err != nil {
+		return nil, err
+	}
+	return &sha512Hash{evpHash: c}, nil
 }
 
 // sha512State layout is taken from
@@ -781,6 +862,14 @@ func (h *sha3_224Hash) Sum(in []byte) []byte {
 	return append(in, h.out[:]...)
 }
 
+func (h *sha3_224Hash) Clone() (hash.Hash, error) {
+	c, err := h.clone()
+	if err != nil {
+		return nil, err
+	}
+	return &sha3_224Hash{evpHash: c}, nil
+}
+
 // NewSHA3_256 returns a new SHA3-256 hash.
 func NewSHA3_256() hash.Hash {
 	return &sha3_256Hash{
@@ -796,6 +885,14 @@ type sha3_256Hash struct {
 func (h *sha3_256Hash) Sum(in []byte) []byte {
 	h.sum(h.out[:])
 	return append(in, h.out[:]...)
+}
+
+func (h *sha3_256Hash) Clone() (hash.Hash, error) {
+	c, err := h.clone()
+	if err != nil {
+		return nil, err
+	}
+	return &sha3_256Hash{evpHash: c}, nil
 }
 
 // NewSHA3_384 returns a new SHA3-384 hash.
@@ -815,6 +912,14 @@ func (h *sha3_384Hash) Sum(in []byte) []byte {
 	return append(in, h.out[:]...)
 }
 
+func (h *sha3_384Hash) Clone() (hash.Hash, error) {
+	c, err := h.clone()
+	if err != nil {
+		return nil, err
+	}
+	return &sha3_384Hash{evpHash: c}, nil
+}
+
 // NewSHA3_512 returns a new SHA3-512 hash.
 func NewSHA3_512() hash.Hash {
 	return &sha3_512Hash{
@@ -830,6 +935,14 @@ type sha3_512Hash struct {
 func (h *sha3_512Hash) Sum(in []byte) []byte {
 	h.sum(h.out[:])
 	return append(in, h.out[:]...)
+}
+
+func (h *sha3_512Hash) Clone() (hash.Hash, error) {
+	c, err := h.clone()
+	if err != nil {
+		return nil, err
+	}
+	return &sha3_512Hash{evpHash: c}, nil
 }
 
 // appendUint64 appends x into b as a big endian byte sequence.
