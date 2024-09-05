@@ -11,7 +11,7 @@ import (
 	"unsafe"
 )
 
-var paramDigest = C.CString("digest")
+var OSSL_MAC_PARAM_DIGEST = C.CString("digest")
 
 var (
 	fetchHMACOnce sync.Once
@@ -103,7 +103,7 @@ func newHMAC3(key []byte, h hash.Hash, md C.GO_EVP_MD_PTR) *opensslHMAC {
 		panic(newOpenSSLError("OSSL_PARAM_BLD_new"))
 	}
 	defer C.go_openssl_OSSL_PARAM_BLD_free(bld)
-	C.go_openssl_OSSL_PARAM_BLD_push_utf8_string(bld, paramDigest, digest, 0)
+	C.go_openssl_OSSL_PARAM_BLD_push_utf8_string(bld, OSSL_MAC_PARAM_DIGEST, digest, 0)
 	params := C.go_openssl_OSSL_PARAM_BLD_to_param(bld)
 	if params == nil {
 		panic(newOpenSSLError("OSSL_PARAM_BLD_to_param"))

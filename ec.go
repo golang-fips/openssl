@@ -6,11 +6,11 @@ package openssl
 import "C"
 
 var (
-	paramPubKey  = C.CString("pub")
-	paramPrivKey = C.CString("priv")
-	paramGroup   = C.CString("group")
-	paramECPubX  = C.CString("qx")
-	paramECPubY  = C.CString("qy")
+	OSSL_PKEY_PARAM_PUB_KEY    = C.CString("pub")
+	OSSL_PKEY_PARAM_PRIV_KEY   = C.CString("priv")
+	OSSL_PKEY_PARAM_GROUP_NAME = C.CString("group")
+	OSSL_PKEY_PARAM_EC_PUB_X   = C.CString("qx")
+	OSSL_PKEY_PARAM_EC_PUB_Y   = C.CString("qy")
 )
 
 func curveNID(curve string) (C.int, error) {

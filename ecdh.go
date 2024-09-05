@@ -174,7 +174,7 @@ func newECDHPkey3(nid C.int, bytes []byte, isPrivate bool) (C.GO_EVP_PKEY_PTR, e
 		return nil, newOpenSSLError("OSSL_PARAM_BLD_new")
 	}
 	defer C.go_openssl_OSSL_PARAM_BLD_free(bld)
-	C.go_openssl_OSSL_PARAM_BLD_push_utf8_string(bld, paramGroup, C.go_openssl_OBJ_nid2sn(nid), 0)
+	C.go_openssl_OSSL_PARAM_BLD_push_utf8_string(bld, OSSL_PKEY_PARAM_GROUP_NAME, C.go_openssl_OBJ_nid2sn(nid), 0)
 	var selection C.int
 	if isPrivate {
 		priv := C.go_openssl_BN_bin2bn(base(bytes), C.int(len(bytes)), nil)
@@ -182,14 +182,14 @@ func newECDHPkey3(nid C.int, bytes []byte, isPrivate bool) (C.GO_EVP_PKEY_PTR, e
 			return nil, newOpenSSLError("BN_bin2bn")
 		}
 		defer C.go_openssl_BN_clear_free(priv)
-		if C.go_openssl_OSSL_PARAM_BLD_push_BN(bld, paramPrivKey, priv) != 1 {
+		if C.go_openssl_OSSL_PARAM_BLD_push_BN(bld, OSSL_PKEY_PARAM_PRIV_KEY, priv) != 1 {
 			return nil, newOpenSSLError("OSSL_PARAM_BLD_push_BN")
 		}
 		selection = C.GO_EVP_PKEY_KEYPAIR
 	} else {
 		cbytes := C.CBytes(bytes)
 		defer C.free(cbytes)
-		C.go_openssl_OSSL_PARAM_BLD_push_octet_string(bld, paramPubKey, cbytes, C.size_t(len(bytes)))
+		C.go_openssl_OSSL_PARAM_BLD_push_octet_string(bld, OSSL_PKEY_PARAM_PUB_KEY, cbytes, C.size_t(len(bytes)))
 		selection = C.GO_EVP_PKEY_PUBLIC_KEY
 	}
 	params := C.go_openssl_OSSL_PARAM_BLD_to_param(bld)
@@ -235,7 +235,7 @@ func deriveEcdhPublicKey(pkey C.GO_EVP_PKEY_PTR, curve string) error {
 		}
 	case 3:
 		var priv C.GO_BIGNUM_PTR
-		if C.go_openssl_EVP_PKEY_get_bn_param(pkey, paramPrivKey, &priv) != 1 {
+		if C.go_openssl_EVP_PKEY_get_bn_param(pkey, OSSL_PKEY_PARAM_PRIV_KEY, &priv) != 1 {
 			return newOpenSSLError("EVP_PKEY_get_bn_param")
 		}
 		defer C.go_openssl_BN_clear_free(priv)
@@ -300,7 +300,7 @@ func GenerateKeyECDH(curve string) (*PrivateKeyECDH, []byte, error) {
 			return nil, nil, newOpenSSLError("EC_KEY_get0_private_key")
 		}
 	case 3:
-		if C.go_openssl_EVP_PKEY_get_bn_param(pkey, paramPrivKey, &priv) != 1 {
+		if C.go_openssl_EVP_PKEY_get_bn_param(pkey, OSSL_PKEY_PARAM_PRIV_KEY, &priv) != 1 {
 			return nil, nil, newOpenSSLError("EVP_PKEY_get_bn_param")
 		}
 		defer C.go_openssl_BN_clear_free(priv)

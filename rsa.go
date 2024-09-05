@@ -14,14 +14,14 @@ import (
 )
 
 var (
-	paramRSA_N    = C.CString("n")
-	paramRSA_E    = C.CString("e")
-	paramRSA_D    = C.CString("d")
-	paramRSA_P    = C.CString("rsa-factor1")
-	paramRSA_Q    = C.CString("rsa-factor2")
-	paramRSA_Dp   = C.CString("rsa-exponent1")
-	paramRSA_Dq   = C.CString("rsa-exponent2")
-	paramRSA_Qinv = C.CString("rsa-coefficient1")
+	OSSL_PKEY_PARAM_RSA_N            = C.CString("n")
+	OSSL_PKEY_PARAM_RSA_E            = C.CString("e")
+	OSSL_PKEY_PARAM_RSA_D            = C.CString("d")
+	OSSL_PKEY_PARAM_RSA_FACTOR1      = C.CString("rsa-factor1")
+	OSSL_PKEY_PARAM_RSA_FACTOR2      = C.CString("rsa-factor2")
+	OSSL_PKEY_PARAM_RSA_EXPONENT1    = C.CString("rsa-exponent1")
+	OSSL_PKEY_PARAM_RSA_EXPONENT2    = C.CString("rsa-exponent2")
+	OSSL_PKEY_PARAM_RSA_COEFFICIENT1 = C.CString("rsa-coefficient1")
 )
 
 func GenerateKeyRSA(bits int) (N, E, D, P, Q, Dp, Dq, Qinv BigInt, err error) {
@@ -73,14 +73,14 @@ func GenerateKeyRSA(bits int) (N, E, D, P, Q, Dp, Dq, Qinv BigInt, err error) {
 			C.go_openssl_BN_clear(tmp)
 			return true
 		}
-		if !(setBigInt(&N, paramRSA_N) &&
-			setBigInt(&E, paramRSA_E) &&
-			setBigInt(&D, paramRSA_D) &&
-			setBigInt(&P, paramRSA_P) &&
-			setBigInt(&Q, paramRSA_Q) &&
-			setBigInt(&Dp, paramRSA_Dp) &&
-			setBigInt(&Dq, paramRSA_Dq) &&
-			setBigInt(&Qinv, paramRSA_Qinv)) {
+		if !(setBigInt(&N, OSSL_PKEY_PARAM_RSA_N) &&
+			setBigInt(&E, OSSL_PKEY_PARAM_RSA_E) &&
+			setBigInt(&D, OSSL_PKEY_PARAM_RSA_D) &&
+			setBigInt(&P, OSSL_PKEY_PARAM_RSA_FACTOR1) &&
+			setBigInt(&Q, OSSL_PKEY_PARAM_RSA_FACTOR2) &&
+			setBigInt(&Dp, OSSL_PKEY_PARAM_RSA_EXPONENT1) &&
+			setBigInt(&Dq, OSSL_PKEY_PARAM_RSA_EXPONENT2) &&
+			setBigInt(&Qinv, OSSL_PKEY_PARAM_RSA_COEFFICIENT1)) {
 			return bad(err)
 		}
 	default:
@@ -385,7 +385,7 @@ func newRSAKey3(isPriv bool, N, E, D, P, Q, Dp, Dq, Qinv BigInt) (C.GO_EVP_PKEY_
 	}
 	defer C.go_openssl_OSSL_PARAM_BLD_free(bld)
 
-	type bigIntParam struct{
+	type bigIntParam struct {
 		name *C.char
 		num  BigInt
 	}
@@ -393,7 +393,7 @@ func newRSAKey3(isPriv bool, N, E, D, P, Q, Dp, Dq, Qinv BigInt) (C.GO_EVP_PKEY_
 	comps := make([]bigIntParam, 0, 8)
 
 	required := [...]bigIntParam{
-		{paramRSA_N, N}, {paramRSA_E, E}, {paramRSA_D, D},
+		{OSSL_PKEY_PARAM_RSA_N, N}, {OSSL_PKEY_PARAM_RSA_E, E}, {OSSL_PKEY_PARAM_RSA_D, D},
 	}
 	comps = append(comps, required[:]...)
 
@@ -402,8 +402,8 @@ func newRSAKey3(isPriv bool, N, E, D, P, Q, Dp, Dq, Qinv BigInt) (C.GO_EVP_PKEY_
 	// https://github.com/openssl/openssl/pull/22334
 	if P != nil && Q != nil && Dp != nil && Dq != nil && Qinv != nil {
 		precomputed := [...]bigIntParam{
-			{paramRSA_P, P}, {paramRSA_Q, Q},
-			{paramRSA_Dp, Dp}, {paramRSA_Dq, Dq}, {paramRSA_Qinv, Qinv},
+			{OSSL_PKEY_PARAM_RSA_FACTOR1, P}, {OSSL_PKEY_PARAM_RSA_FACTOR2, Q},
+			{OSSL_PKEY_PARAM_RSA_EXPONENT1, Dp}, {OSSL_PKEY_PARAM_RSA_EXPONENT2, Dq}, {OSSL_PKEY_PARAM_RSA_COEFFICIENT1, Qinv},
 		}
 		comps = append(comps, precomputed[:]...)
 	}
