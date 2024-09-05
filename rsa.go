@@ -398,9 +398,12 @@ func newRSAKey3(isPriv bool, n, e, d, p, q, dp, dq, qinv BigInt) (C.GO_EVP_PKEY_
 
 	if p != nil && q != nil {
 		allPrecomputedExists := dp != nil && dq != nil && qinv != nil
-		// OpenSSL 3.0 and 3.1 required all the precomputed values if
-		// P and Q are present. If they are not, we need to omit also P and Q.
-		// See https://github.com/openssl/openssl/pull/22334
+		// The precomputed values should only be passed if P and Q are present
+		// and every precomputed value is present. (If any precomputed value is
+		// missing, don't pass any of them.)
+		//
+		// In OpenSSL 3.0 and 3.1, we must also omit P and Q if any precomputed
+		// value is missing. See https://github.com/openssl/openssl/pull/22334
 		if vMinor >= 2 || allPrecomputedExists {
 			comps = append(comps, bigIntParam{OSSL_PKEY_PARAM_RSA_FACTOR1, p}, bigIntParam{OSSL_PKEY_PARAM_RSA_FACTOR2, q})
 		}
