@@ -454,7 +454,7 @@ func getECKey(pkey C.GO_EVP_PKEY_PTR) (key C.GO_EC_KEY_PTR) {
 	return key
 }
 
-func newEvpFromParams(id C.int, selection C.int, params C.GO_OSSL_PARAM_PTR) (C.GO_EVP_PKEY_PTR, error) {
+func newEvpFromParams(id C.int, selection C.int, bld *paramBuilder) (C.GO_EVP_PKEY_PTR, error) {
 	ctx := C.go_openssl_EVP_PKEY_CTX_new_id(id, nil)
 	if ctx == nil {
 		return nil, newOpenSSLError("EVP_PKEY_CTX_new_id")
@@ -463,6 +463,11 @@ func newEvpFromParams(id C.int, selection C.int, params C.GO_OSSL_PARAM_PTR) (C.
 	if C.go_openssl_EVP_PKEY_fromdata_init(ctx) != 1 {
 		return nil, newOpenSSLError("EVP_PKEY_fromdata_init")
 	}
+	params, err := bld.build()
+	if err != nil {
+		return nil, err
+	}
+	defer C.go_openssl_OSSL_PARAM_free(params)
 	var pkey C.GO_EVP_PKEY_PTR
 	if C.go_openssl_EVP_PKEY_fromdata(ctx, &pkey, selection, params) != 1 {
 		return nil, newOpenSSLError("EVP_PKEY_fromdata")

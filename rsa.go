@@ -379,11 +379,11 @@ func rsaSetCRTParams(key C.GO_RSA_PTR, dmp1, dmq1, iqmp BigInt) bool {
 
 func newRSAKey3(isPriv bool, N, E, D, P, Q, Dp, Dq, Qinv BigInt) (C.GO_EVP_PKEY_PTR, error) {
 	// Construct the parameters.
-	bld := C.go_openssl_OSSL_PARAM_BLD_new()
-	if bld == nil {
-		return nil, newOpenSSLError("OSSL_PARAM_BLD_new")
+	bld, err := newParamBuilder()
+	if err != nil {
+		return nil, err
 	}
-	defer C.go_openssl_OSSL_PARAM_BLD_free(bld)
+	defer bld.free()
 
 	type bigIntParam struct {
 		name *C.char
@@ -418,18 +418,11 @@ func newRSAKey3(isPriv bool, N, E, D, P, Q, Dp, Dq, Qinv BigInt) (C.GO_EVP_PKEY_
 		}
 		// b must remain valid until OSSL_PARAM_BLD_to_param has been called.
 		defer C.go_openssl_BN_clear_free(b)
-		if C.go_openssl_OSSL_PARAM_BLD_push_BN(bld, comp.name, b) != 1 {
-			return nil, newOpenSSLError("OSSL_PARAM_BLD_push_BN")
-		}
+		bld.addBN(comp.name, b)
 	}
-	params := C.go_openssl_OSSL_PARAM_BLD_to_param(bld)
-	if params == nil {
-		return nil, newOpenSSLError("OSSL_PARAM_BLD_to_param")
-	}
-	defer C.go_openssl_OSSL_PARAM_free(params)
 	selection := C.GO_EVP_PKEY_PUBLIC_KEY
 	if isPriv {
 		selection = C.GO_EVP_PKEY_KEYPAIR
 	}
-	return newEvpFromParams(C.GO_EVP_PKEY_RSA, C.int(selection), params)
+	return newEvpFromParams(C.GO_EVP_PKEY_RSA, C.int(selection), bld)
 }

@@ -97,16 +97,15 @@ func newHMAC3(key []byte, h hash.Hash, md C.GO_EVP_MD_PTR) *opensslHMAC {
 	if ctx == nil {
 		panic("openssl: EVP_MAC_CTX_new failed")
 	}
-	digest := C.go_openssl_EVP_MD_get0_name(md)
-	bld := C.go_openssl_OSSL_PARAM_BLD_new()
-	if bld == nil {
-		panic(newOpenSSLError("OSSL_PARAM_BLD_new"))
+	bld, err := newParamBuilder()
+	if err != nil {
+		panic(err)
 	}
-	defer C.go_openssl_OSSL_PARAM_BLD_free(bld)
-	C.go_openssl_OSSL_PARAM_BLD_push_utf8_string(bld, OSSL_MAC_PARAM_DIGEST, digest, 0)
-	params := C.go_openssl_OSSL_PARAM_BLD_to_param(bld)
-	if params == nil {
-		panic(newOpenSSLError("OSSL_PARAM_BLD_to_param"))
+	defer bld.free()
+	bld.addUtf8String(OSSL_MAC_PARAM_DIGEST, C.go_openssl_EVP_MD_get0_name(md), 0)
+	params, err := bld.build()
+	if err != nil {
+		panic(err)
 	}
 	defer C.go_openssl_OSSL_PARAM_free(params)
 	if C.go_openssl_EVP_MAC_init(ctx, base(key), C.size_t(len(key)), params) == 0 {
