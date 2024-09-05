@@ -64,7 +64,7 @@ func (b *paramBuilder) build() (C.GO_OSSL_PARAM_PTR, error) {
 func (b *paramBuilder) addUtf8String(name *C.char, value *C.char, size C.size_t) {
 	b.check()
 	if C.go_openssl_OSSL_PARAM_BLD_push_utf8_string(b.bld, name, value, size) != 1 {
-		b.err = newOpenSSLError("OSSL_PARAM_BLD_push_utf8_string")
+		b.err = newOpenSSLError("OSSL_PARAM_BLD_push_utf8_string(" + C.GoString(name) + ")")
 	}
 }
 
@@ -76,13 +76,13 @@ func (b *paramBuilder) addOctetString(name *C.char, value []byte) {
 		b.pinner.Pin(&value[0])
 	}
 	if C.go_openssl_OSSL_PARAM_BLD_push_octet_string(b.bld, name, unsafe.Pointer(sbase(value)), C.size_t(len(value))) != 1 {
-		b.err = newOpenSSLError("OSSL_PARAM_BLD_push_octet_string")
+		b.err = newOpenSSLError("OSSL_PARAM_BLD_push_octet_string(" + C.GoString(name) + ")")
 	}
 }
 
 func (b *paramBuilder) addBN(name *C.char, value C.GO_BIGNUM_PTR) {
 	b.check()
 	if C.go_openssl_OSSL_PARAM_BLD_push_BN(b.bld, name, value) != 1 {
-		b.err = newOpenSSLError("OSSL_PARAM_BLD_push_BN")
+		b.err = newOpenSSLError("OSSL_PARAM_BLD_push_BN(" + C.GoString(name) + ")")
 	}
 }
