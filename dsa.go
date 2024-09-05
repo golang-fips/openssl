@@ -27,6 +27,7 @@ type PrivateKeyDSA struct {
 	DSAParameters
 	X, Y BigInt
 
+	// _pkey MUST NOT be accessed directly. Instead, use the withKey method.
 	_pkey C.GO_EVP_PKEY_PTR
 }
 
@@ -44,6 +45,7 @@ type PublicKeyDSA struct {
 	DSAParameters
 	Y BigInt
 
+	// _pkey MUST NOT be accessed directly. Instead, use the withKey method.
 	_pkey C.GO_EVP_PKEY_PTR
 }
 
