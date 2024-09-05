@@ -41,30 +41,27 @@ func cryptoToHash(h crypto.Hash) func() hash.Hash {
 
 func TestHash(t *testing.T) {
 	msg := []byte("testing")
-	var tests = []struct {
-		h            crypto.Hash
-		hasMarshaler bool
-	}{
-		{crypto.MD4, false},
-		{crypto.MD5, true},
-		{crypto.SHA1, true},
-		{crypto.SHA224, true},
-		{crypto.SHA256, true},
-		{crypto.SHA384, true},
-		{crypto.SHA512, true},
-		{crypto.SHA3_224, false},
-		{crypto.SHA3_256, false},
-		{crypto.SHA3_384, false},
-		{crypto.SHA3_512, false},
+	var tests = []crypto.Hash{
+		crypto.MD4,
+		crypto.MD5,
+		crypto.SHA1,
+		crypto.SHA224,
+		crypto.SHA256,
+		crypto.SHA384,
+		crypto.SHA512,
+		crypto.SHA3_224,
+		crypto.SHA3_256,
+		crypto.SHA3_384,
+		crypto.SHA3_512,
 	}
-	for _, tt := range tests {
-		tt := tt
-		t.Run(tt.h.String(), func(t *testing.T) {
+	for _, ch := range tests {
+		ch := ch
+		t.Run(ch.String(), func(t *testing.T) {
 			t.Parallel()
-			if !openssl.SupportsHash(tt.h) {
+			if !openssl.SupportsHash(ch) {
 				t.Skip("skipping: not supported")
 			}
-			h := cryptoToHash(tt.h)()
+			h := cryptoToHash(ch)()
 			initSum := h.Sum(nil)
 			n, err := h.Write(msg)
 			if err != nil {
@@ -80,12 +77,12 @@ func TestHash(t *testing.T) {
 			if bytes.Equal(sum, initSum) {
 				t.Error("Write didn't change internal hash state")
 			}
-			if tt.hasMarshaler {
+			if _, ok := h.(encoding.BinaryMarshaler); ok {
 				state, err := h.(encoding.BinaryMarshaler).MarshalBinary()
 				if err != nil {
 					t.Errorf("could not marshal: %v", err)
 				}
-				h2 := cryptoToHash(tt.h)()
+				h2 := cryptoToHash(ch)()
 				if err := h2.(encoding.BinaryUnmarshaler).UnmarshalBinary(state); err != nil {
 					t.Errorf("could not unmarshal: %v", err)
 				}
