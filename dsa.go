@@ -10,11 +10,11 @@ import (
 )
 
 var (
-	paramPbits = C.CString("pbits")
-	paramQbits = C.CString("qbits")
-	paramP     = C.CString("p")
-	paramQ     = C.CString("q")
-	paramG     = C.CString("g")
+	OSSL_PKEY_PARAM_FFC_PBITS = C.CString("pbits")
+	OSSL_PKEY_PARAM_FFC_QBITS = C.CString("qbits")
+	OSSL_PKEY_PARAM_FFC_P     = C.CString("p")
+	OSSL_PKEY_PARAM_FFC_Q     = C.CString("q")
+	OSSL_PKEY_PARAM_FFC_G     = C.CString("g")
 )
 
 // DSAParameters contains the DSA parameters.
@@ -98,9 +98,9 @@ func GenerateDSAParameters(l, n int) (DSAParameters, error) {
 			C.go_openssl_BN_free(q)
 			C.go_openssl_BN_free(g)
 		}()
-		if C.go_openssl_EVP_PKEY_get_bn_param(pkey, paramP, &p) != 1 ||
-			C.go_openssl_EVP_PKEY_get_bn_param(pkey, paramQ, &q) != 1 ||
-			C.go_openssl_EVP_PKEY_get_bn_param(pkey, paramG, &g) != 1 {
+		if C.go_openssl_EVP_PKEY_get_bn_param(pkey, OSSL_PKEY_PARAM_FFC_P, &p) != 1 ||
+			C.go_openssl_EVP_PKEY_get_bn_param(pkey, OSSL_PKEY_PARAM_FFC_Q, &q) != 1 ||
+			C.go_openssl_EVP_PKEY_get_bn_param(pkey, OSSL_PKEY_PARAM_FFC_G, &g) != 1 {
 			return DSAParameters{}, newOpenSSLError("EVP_PKEY_get_bn_param")
 		}
 	default:
@@ -259,9 +259,9 @@ func newDSA3(params DSAParameters, x, y BigInt) (C.GO_EVP_PKEY_PTR, error) {
 		C.go_openssl_BN_free(q)
 		C.go_openssl_BN_free(g)
 	}()
-	if C.go_openssl_OSSL_PARAM_BLD_push_BN(bld, paramP, p) != 1 ||
-		C.go_openssl_OSSL_PARAM_BLD_push_BN(bld, paramQ, q) != 1 ||
-		C.go_openssl_OSSL_PARAM_BLD_push_BN(bld, paramG, g) != 1 {
+	if C.go_openssl_OSSL_PARAM_BLD_push_BN(bld, OSSL_PKEY_PARAM_FFC_P, p) != 1 ||
+		C.go_openssl_OSSL_PARAM_BLD_push_BN(bld, OSSL_PKEY_PARAM_FFC_Q, q) != 1 ||
+		C.go_openssl_OSSL_PARAM_BLD_push_BN(bld, OSSL_PKEY_PARAM_FFC_G, g) != 1 {
 		return nil, newOpenSSLError("OSSL_PARAM_BLD_push_BN")
 	}
 	selection := C.int(C.GO_EVP_PKEY_KEYPAIR)
