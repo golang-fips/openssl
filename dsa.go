@@ -264,6 +264,7 @@ func newDSA3(params DSAParameters, x, y BigInt) (C.GO_EVP_PKEY_PTR, error) {
 	if C.go_openssl_OSSL_PARAM_BLD_push_BN(bld, OSSL_PKEY_PARAM_FFC_P, p) != 1 ||
 		C.go_openssl_OSSL_PARAM_BLD_push_BN(bld, OSSL_PKEY_PARAM_FFC_Q, q) != 1 ||
 		C.go_openssl_OSSL_PARAM_BLD_push_BN(bld, OSSL_PKEY_PARAM_FFC_G, g) != 1 {
+
 		return nil, newOpenSSLError("OSSL_PARAM_BLD_push_BN")
 	}
 	selection := C.int(C.GO_EVP_PKEY_KEYPAIR)
@@ -296,9 +297,9 @@ func newDSA3(params DSAParameters, x, y BigInt) (C.GO_EVP_PKEY_PTR, error) {
 	if y != nil {
 		return pkey, nil
 	}
-	// pkey doesn't contain the public component, but the crypto/dsa expects
-	// it to be always there. Generate a new key using pkey as domain parameters
-	// placeholder.
+	// pkey doesn't contain the public component, but the crypto/dsa package
+	// expects it to be always there. Generate a new key using pkey as domain
+	// parameters placeholder.
 	defer C.go_openssl_EVP_PKEY_free(pkey)
 	ctx := C.go_openssl_EVP_PKEY_CTX_new_from_pkey(nil, pkey, nil)
 	if ctx == nil {
