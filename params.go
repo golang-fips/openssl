@@ -29,6 +29,8 @@ func newParamBuilder() (*paramBuilder, error) {
 	return &paramBuilder{bld: bld}, nil
 }
 
+// free frees the builder.
+// It is safe to call free multiple times.
 func (b *paramBuilder) free() {
 	if b.bld != nil {
 		b.pinner.Unpin()
