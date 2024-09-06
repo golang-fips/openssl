@@ -230,6 +230,9 @@ func (h *evpHash) sum(out []byte) {
 	runtime.KeepAlive(h)
 }
 
+// clone returns a new evpHash object that is a deep clone of itself.
+// The duplicate object contains all state and data contained in the
+// original object at the point of duplication.
 func (h *evpHash) clone() (*evpHash, error) {
 	ctx := C.go_openssl_EVP_MD_CTX_new()
 	if ctx == nil {
@@ -305,6 +308,9 @@ func (h *md4Hash) Sum(in []byte) []byte {
 	return append(in, h.out[:]...)
 }
 
+// Clone returns a new [hash.Hash] object that is a deep clone of itself.
+// The duplicate object contains all state and data contained in the
+// original object at the point of duplication.
 func (h *md4Hash) Clone() (hash.Hash, error) {
 	c, err := h.clone()
 	if err != nil {
@@ -341,6 +347,9 @@ func (h *md5Hash) Sum(in []byte) []byte {
 	return append(in, h.out[:]...)
 }
 
+// Clone returns a new [hash.Hash] object that is a deep clone of itself.
+// The duplicate object contains all state and data contained in the
+// original object at the point of duplication.
 func (h *md5Hash) Clone() (hash.Hash, error) {
 	c, err := h.clone()
 	if err != nil {
@@ -418,6 +427,9 @@ func (h *sha1Hash) Sum(in []byte) []byte {
 	return append(in, h.out[:]...)
 }
 
+// Clone returns a new [hash.Hash] object that is a deep clone of itself.
+// The duplicate object contains all state and data contained in the
+// original object at the point of duplication.
 func (h *sha1Hash) Clone() (hash.Hash, error) {
 	c, err := h.clone()
 	if err != nil {
@@ -506,6 +518,9 @@ func (h *sha224Hash) Sum(in []byte) []byte {
 	return append(in, h.out[:]...)
 }
 
+// Clone returns a new [hash.Hash] object that is a deep clone of itself.
+// The duplicate object contains all state and data contained in the
+// original object at the point of duplication.
 func (h *sha224Hash) Clone() (hash.Hash, error) {
 	c, err := h.clone()
 	if err != nil {
@@ -533,6 +548,9 @@ func (h *sha256Hash) Sum(in []byte) []byte {
 	return append(in, h.out[:]...)
 }
 
+// Clone returns a new [hash.Hash] object that is a deep clone of itself.
+// The duplicate object contains all state and data contained in the
+// original object at the point of duplication.
 func (h *sha256Hash) Clone() (hash.Hash, error) {
 	c, err := h.clone()
 	if err != nil {
@@ -681,6 +699,9 @@ func (h *sha384Hash) Sum(in []byte) []byte {
 	return append(in, h.out[:]...)
 }
 
+// Clone returns a new [hash.Hash] object that is a deep clone of itself.
+// The duplicate object contains all state and data contained in the
+// original object at the point of duplication.
 func (h *sha384Hash) Clone() (hash.Hash, error) {
 	c, err := h.clone()
 	if err != nil {
@@ -708,6 +729,9 @@ func (h *sha512Hash) Sum(in []byte) []byte {
 	return append(in, h.out[:]...)
 }
 
+// Clone returns a new [hash.Hash] object that is a deep clone of itself.
+// The duplicate object contains all state and data contained in the
+// original object at the point of duplication.
 func (h *sha512Hash) Clone() (hash.Hash, error) {
 	c, err := h.clone()
 	if err != nil {
@@ -862,6 +886,9 @@ func (h *sha3_224Hash) Sum(in []byte) []byte {
 	return append(in, h.out[:]...)
 }
 
+// Clone returns a new [hash.Hash] object that is a deep clone of itself.
+// The duplicate object contains all state and data contained in the
+// original object at the point of duplication.
 func (h *sha3_224Hash) Clone() (hash.Hash, error) {
 	c, err := h.clone()
 	if err != nil {
@@ -887,6 +914,9 @@ func (h *sha3_256Hash) Sum(in []byte) []byte {
 	return append(in, h.out[:]...)
 }
 
+// Clone returns a new [hash.Hash] object that is a deep clone of itself.
+// The duplicate object contains all state and data contained in the
+// original object at the point of duplication.
 func (h *sha3_256Hash) Clone() (hash.Hash, error) {
 	c, err := h.clone()
 	if err != nil {
@@ -912,6 +942,9 @@ func (h *sha3_384Hash) Sum(in []byte) []byte {
 	return append(in, h.out[:]...)
 }
 
+// Clone returns a new [hash.Hash] object that is a deep clone of itself.
+// The duplicate object contains all state and data contained in the
+// original object at the point of duplication.
 func (h *sha3_384Hash) Clone() (hash.Hash, error) {
 	c, err := h.clone()
 	if err != nil {
@@ -937,6 +970,9 @@ func (h *sha3_512Hash) Sum(in []byte) []byte {
 	return append(in, h.out[:]...)
 }
 
+// Clone returns a new [hash.Hash] object that is a deep clone of itself.
+// The duplicate object contains all state and data contained in the
+// original object at the point of duplication.
 func (h *sha3_512Hash) Clone() (hash.Hash, error) {
 	c, err := h.clone()
 	if err != nil {
