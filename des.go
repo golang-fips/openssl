@@ -33,27 +33,22 @@ func NewDESCipher(key []byte) (cipher.Block, error) {
 	if len(key) != 8 {
 		return nil, errors.New("crypto/des: invalid key size")
 	}
-	c, err := newEVPCipher(key, cipherDES)
-	if err != nil {
-		return nil, err
-	}
-	// Should always be true for stock OpenSSL.
-	if loadCipher(cipherDES, cipherModeCBC) == nil {
-		return &desCipherWithoutCBC{c}, nil
-	}
-	return &desCipher{c}, nil
+	return newDESCipher(key, cipherDES)
 }
 
 func NewTripleDESCipher(key []byte) (cipher.Block, error) {
 	if len(key) != 24 {
 		return nil, errors.New("crypto/des: invalid key size")
 	}
-	c, err := newEVPCipher(key, cipherDES3)
+	return newDESCipher(key, cipherDES3)
+}
+
+func newDESCipher(key []byte, kind cipherKind) (cipher.Block, error) {
+	c, err := newEVPCipher(key, kind)
 	if err != nil {
 		return nil, err
 	}
-	// Should always be true for stock OpenSSL.
-	if loadCipher(cipherDES, cipherModeCBC) != nil {
+	if loadCipher(kind, cipherModeCBC) == nil {
 		return &desCipherWithoutCBC{c}, nil
 	}
 	return &desCipher{c}, nil
