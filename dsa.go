@@ -197,10 +197,19 @@ func newDSA(params DSAParameters, x, y BigInt) (C.GO_EVP_PKEY_PTR, error) {
 	}
 }
 
-func newDSA1(params DSAParameters, x, y BigInt) (C.GO_EVP_PKEY_PTR, error) {
+func newDSA1(params DSAParameters, x, y BigInt) (pkey C.GO_EVP_PKEY_PTR, err error) {
 	checkMajorVersion(1)
 
 	dsa := C.go_openssl_DSA_new()
+	if dsa == nil {
+		return nil, newOpenSSLError("DSA_new failed")
+	}
+	defer func() {
+		if pkey == nil {
+			C.go_openssl_DSA_free(dsa)
+		}
+	}()
+
 	p, q, g := bigToBN(params.P), bigToBN(params.Q), bigToBN(params.G)
 	var ret C.int
 	if vMinor == 0 {
@@ -212,7 +221,6 @@ func newDSA1(params DSAParameters, x, y BigInt) (C.GO_EVP_PKEY_PTR, error) {
 		C.go_openssl_BN_free(p)
 		C.go_openssl_BN_free(q)
 		C.go_openssl_BN_free(g)
-		C.go_openssl_DSA_free(dsa)
 		return nil, newOpenSSLError("DSA_set0_pqg failed")
 	}
 	if y != nil {
@@ -225,22 +233,18 @@ func newDSA1(params DSAParameters, x, y BigInt) (C.GO_EVP_PKEY_PTR, error) {
 		if ret != 1 {
 			C.go_openssl_BN_free(pub)
 			C.go_openssl_BN_clear_free(priv)
-			C.go_openssl_DSA_free(dsa)
 			return nil, newOpenSSLError("DSA_set0_key failed")
 		}
 	} else {
 		if C.go_openssl_DSA_generate_key(dsa) != 1 {
-			C.go_openssl_DSA_free(dsa)
 			return nil, newOpenSSLError("DSA_generate_key failed")
 		}
 	}
-	pkey := C.go_openssl_EVP_PKEY_new()
+	pkey = C.go_openssl_EVP_PKEY_new()
 	if pkey == nil {
-		C.go_openssl_DSA_free(dsa)
 		return nil, newOpenSSLError("EVP_PKEY_new failed")
 	}
 	if C.go_openssl_EVP_PKEY_assign(pkey, C.GO_EVP_PKEY_DSA, unsafe.Pointer(dsa)) != 1 {
-		C.go_openssl_DSA_free(dsa)
 		C.go_openssl_EVP_PKEY_free(pkey)
 		return nil, newOpenSSLError("EVP_PKEY_assign failed")
 	}
