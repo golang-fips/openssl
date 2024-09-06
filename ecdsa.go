@@ -91,9 +91,9 @@ func GenerateKeyECDSA(curve string) (X, Y, D BigInt, err error) {
 		// Get Z. We don't need to free it, get0 does not increase the reference count.
 		bd = C.go_openssl_EC_KEY_get0_private_key(key)
 	case 3:
-		if C.go_openssl_EVP_PKEY_get_bn_param(pkey, paramECPubX, &bx) != 1 ||
-			C.go_openssl_EVP_PKEY_get_bn_param(pkey, paramECPubY, &by) != 1 ||
-			C.go_openssl_EVP_PKEY_get_bn_param(pkey, paramPrivKey, &bd) != 1 {
+		if C.go_openssl_EVP_PKEY_get_bn_param(pkey, OSSL_PKEY_PARAM_EC_PUB_X, &bx) != 1 ||
+			C.go_openssl_EVP_PKEY_get_bn_param(pkey, OSSL_PKEY_PARAM_EC_PUB_Y, &by) != 1 ||
+			C.go_openssl_EVP_PKEY_get_bn_param(pkey, OSSL_PKEY_PARAM_PRIV_KEY, &bd) != 1 {
 			return nil, nil, nil, newOpenSSLError("EVP_PKEY_get_bn_param")
 		}
 		defer C.go_openssl_BN_clear_free(bd)
@@ -195,13 +195,13 @@ func newECDSAKey3(nid C.int, bx, by, bd C.GO_BIGNUM_PTR) (C.GO_EVP_PKEY_PTR, err
 		return nil, newOpenSSLError("OSSL_PARAM_BLD_new")
 	}
 	defer C.go_openssl_OSSL_PARAM_BLD_free(bld)
-	C.go_openssl_OSSL_PARAM_BLD_push_utf8_string(bld, paramGroup, C.go_openssl_OBJ_nid2sn(nid), 0)
+	C.go_openssl_OSSL_PARAM_BLD_push_utf8_string(bld, OSSL_PKEY_PARAM_GROUP_NAME, C.go_openssl_OBJ_nid2sn(nid), 0)
 	cbytes := C.CBytes(pubBytes)
 	defer C.free(cbytes)
-	C.go_openssl_OSSL_PARAM_BLD_push_octet_string(bld, paramPubKey, cbytes, C.size_t(len(pubBytes)))
+	C.go_openssl_OSSL_PARAM_BLD_push_octet_string(bld, OSSL_PKEY_PARAM_PUB_KEY, cbytes, C.size_t(len(pubBytes)))
 	var selection C.int
 	if bd != nil {
-		if C.go_openssl_OSSL_PARAM_BLD_push_BN(bld, paramPrivKey, bd) != 1 {
+		if C.go_openssl_OSSL_PARAM_BLD_push_BN(bld, OSSL_PKEY_PARAM_PRIV_KEY, bd) != 1 {
 			return nil, newOpenSSLError("OSSL_PARAM_BLD_push_BN")
 		}
 		selection = C.GO_EVP_PKEY_KEYPAIR
