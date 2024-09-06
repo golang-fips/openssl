@@ -70,10 +70,10 @@ func testECDSASignAndVerify(t *testing.T, c elliptic.Curve) {
 	if !openssl.VerifyECDSA(pub, hashed[:], signed) {
 		t.Errorf("Verify failed")
 	}
-	// Alter the last byte of the signature to make it invalid
-	// without corrupting the DER encoding, which would cause
-	// some OpenSSL providers, such as SymCrypt-OpenSSL, to write
-	// a noisy warning to stderr.
+	// Alter the signature to intentionally make it invalid. Change the last
+	// byte (rather than the first) to avoid corrupting the DER encoding, which
+	// would cause some OpenSSL providers, such as SymCrypt-OpenSSL, to write a
+	// noisy warning to stderr.
 	signed[len(signed)-1] ^= 0xff
 	if openssl.VerifyECDSA(pub, hashed[:], signed) {
 		t.Errorf("Verify succeeded despite intentionally invalid hash!")
