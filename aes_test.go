@@ -3,35 +3,20 @@ package openssl_test
 import (
 	"bytes"
 	"crypto/cipher"
+	"fmt"
 	"math"
 	"testing"
 
 	"github.com/golang-fips/openssl/v2"
 )
 
-func TestAESShortBlocks(t *testing.T) {
-	bytes := func(n int) []byte { return make([]byte, n) }
-
-	c, _ := openssl.NewAESCipher(bytes(16))
-
-	mustPanic(t, "crypto/aes: input not full block", func() { c.Encrypt(bytes(1), bytes(1)) })
-	mustPanic(t, "crypto/aes: input not full block", func() { c.Decrypt(bytes(1), bytes(1)) })
-	mustPanic(t, "crypto/aes: input not full block", func() { c.Encrypt(bytes(100), bytes(1)) })
-	mustPanic(t, "crypto/aes: input not full block", func() { c.Decrypt(bytes(100), bytes(1)) })
-	mustPanic(t, "crypto/aes: output not full block", func() { c.Encrypt(bytes(1), bytes(100)) })
-	mustPanic(t, "crypto/aes: output not full block", func() { c.Decrypt(bytes(1), bytes(100)) })
-}
-
-func mustPanic(t *testing.T, msg string, f func()) {
-	defer func() {
-		err := recover()
-		if err == nil {
-			t.Errorf("function did not panic, wanted %q", msg)
-		} else if err != msg {
-			t.Errorf("got panic %v, wanted %q", err, msg)
-		}
-	}()
-	f()
+// Test AES against the general cipher.Block interface tester.
+func TestAESBlock(t *testing.T) {
+	for _, keylen := range []int{128, 192, 256} {
+		t.Run(fmt.Sprintf("AES-%d", keylen), func(t *testing.T) {
+			testBlock(t, keylen/8, openssl.NewAESCipher)
+		})
+	}
 }
 
 func TestNewGCMNonce(t *testing.T) {
