@@ -112,7 +112,7 @@ func FIPS() bool {
 }
 
 // isProviderAvailable checks if the provider with the given name is available.
-// This function is used in export_test.go, as test files can't access C functions.
+// This function is used in export_test.go, but must be defined here as test files can't access C functions.
 func isProviderAvailable(name string) bool {
 	providerName := C.CString(name)
 	defer C.free(unsafe.Pointer(providerName))
