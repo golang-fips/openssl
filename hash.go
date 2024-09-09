@@ -6,7 +6,6 @@ package openssl
 import "C"
 import (
 	"crypto"
-	"encoding/hex"
 	"errors"
 	"hash"
 	"runtime"
@@ -417,16 +416,6 @@ func (h *md5Marshal) AppendBinary(buf []byte) ([]byte, error) {
 	return append(buf, binaryData...), nil
 }
 
-func (h *md5Marshal) AppendText(buf []byte) ([]byte, error) {
-	binaryData, err := h.MarshalBinary()
-	if err != nil {
-		return nil, err
-	}
-	hexData := make([]byte, hex.EncodedLen(len(binaryData)))
-	hex.Encode(hexData, binaryData)
-	return append(buf, hexData...), nil
-}
-
 // NewSHA1 returns a new SHA1 hash.
 func NewSHA1() hash.Hash {
 	h := sha1Hash{evpHash: newEvpHash(crypto.SHA1)}
@@ -524,16 +513,6 @@ func (h *sha1Marshal) AppendBinary(buf []byte) ([]byte, error) {
 		return nil, err
 	}
 	return append(buf, binaryData...), nil
-}
-
-func (h *sha1Marshal) AppendText(buf []byte) ([]byte, error) {
-	binaryData, err := h.MarshalBinary()
-	if err != nil {
-		return nil, err
-	}
-	hexData := make([]byte, hex.EncodedLen(len(binaryData)))
-	hex.Encode(hexData, binaryData)
-	return append(buf, hexData...), nil
 }
 
 // NewSHA224 returns a new SHA224 hash.
@@ -731,26 +710,6 @@ func (h *sha256Marshal) AppendBinary(buf []byte) ([]byte, error) {
 		return nil, err
 	}
 	return append(buf, binaryData...), nil
-}
-
-func (h *sha224Marshal) AppendText(buf []byte) ([]byte, error) {
-	binaryData, err := h.MarshalBinary()
-	if err != nil {
-		return nil, err
-	}
-	hexData := make([]byte, hex.EncodedLen(len(binaryData)))
-	hex.Encode(hexData, binaryData)
-	return append(buf, hexData...), nil
-}
-
-func (h *sha256Marshal) AppendText(buf []byte) ([]byte, error) {
-	binaryData, err := h.MarshalBinary()
-	if err != nil {
-		return nil, err
-	}
-	hexData := make([]byte, hex.EncodedLen(len(binaryData)))
-	hex.Encode(hexData, binaryData)
-	return append(buf, hexData...), nil
 }
 
 // NewSHA384 returns a new SHA384 hash.
@@ -956,26 +915,6 @@ func (h *sha512Marshal) AppendBinary(buf []byte) ([]byte, error) {
 		return nil, err
 	}
 	return append(buf, binaryData...), nil
-}
-
-func (h *sha384Marshal) AppendText(buf []byte) ([]byte, error) {
-	binaryData, err := h.MarshalBinary()
-	if err != nil {
-		return nil, err
-	}
-	hexData := make([]byte, hex.EncodedLen(len(binaryData)))
-	hex.Encode(hexData, binaryData)
-	return append(buf, hexData...), nil
-}
-
-func (h *sha512Marshal) AppendText(buf []byte) ([]byte, error) {
-	binaryData, err := h.MarshalBinary()
-	if err != nil {
-		return nil, err
-	}
-	hexData := make([]byte, hex.EncodedLen(len(binaryData)))
-	hex.Encode(hexData, binaryData)
-	return append(buf, hexData...), nil
 }
 
 // NewSHA3_224 returns a new SHA3-224 hash.
