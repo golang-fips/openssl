@@ -150,7 +150,6 @@ func TestTLS1PRF(t *testing.T) {
 		t.Skip("TLS PRF is not supported")
 	}
 	for _, tt := range tls1prfTests {
-		tt := tt
 		t.Run(tt.hash.String(), func(t *testing.T) {
 			if !openssl.SupportsHash(tt.hash) {
 				t.Skip("skipping: hash not supported")

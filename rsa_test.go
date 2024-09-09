@@ -14,7 +14,6 @@ import (
 
 func TestRSAKeyGeneration(t *testing.T) {
 	for _, size := range []int{2048, 3072} {
-		size := size
 		t.Run(strconv.Itoa(size), func(t *testing.T) {
 			t.Parallel()
 			priv, pub := newRSAKey(t, size)
