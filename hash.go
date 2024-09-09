@@ -368,20 +368,8 @@ type md5Marshal struct {
 }
 
 func (h *md5Marshal) MarshalBinary() ([]byte, error) {
-	d := (*md5State)(h.hashState())
-	if d == nil {
-		return nil, errors.New("crypto/md5: can't retrieve hash state")
-	}
-	b := make([]byte, 0, md5MarshaledSize)
-	b = append(b, md5Magic...)
-	b = appendUint32(b, d.h[0])
-	b = appendUint32(b, d.h[1])
-	b = appendUint32(b, d.h[2])
-	b = appendUint32(b, d.h[3])
-	b = append(b, d.x[:d.nx]...)
-	b = b[:len(b)+len(d.x)-int(d.nx)] // already zero
-	b = appendUint64(b, uint64(d.nl)>>3|uint64(d.nh)<<29)
-	return b, nil
+	buf := make([]byte, 0, md5MarshaledSize)
+	return h.AppendBinary(buf)
 }
 
 func (h *md5Marshal) UnmarshalBinary(b []byte) error {
@@ -409,11 +397,20 @@ func (h *md5Marshal) UnmarshalBinary(b []byte) error {
 }
 
 func (h *md5Marshal) AppendBinary(buf []byte) ([]byte, error) {
-	binaryData, err := h.MarshalBinary()
-	if err != nil {
-		return nil, err
+	d := (*md5State)(h.hashState())
+	if d == nil {
+		return nil, errors.New("crypto/md5: can't retrieve hash state")
 	}
-	return append(buf, binaryData...), nil
+
+	buf = append(buf, md5Magic...)
+	buf = appendUint32(buf, d.h[0])
+	buf = appendUint32(buf, d.h[1])
+	buf = appendUint32(buf, d.h[2])
+	buf = appendUint32(buf, d.h[3])
+	buf = append(buf, d.x[:d.nx]...)
+	buf = buf[:len(buf)+len(d.x)-int(d.nx)] // already zero
+	buf = appendUint64(buf, uint64(d.nl)>>3|uint64(d.nh)<<29)
+	return buf, nil
 }
 
 // NewSHA1 returns a new SHA1 hash.
@@ -465,21 +462,7 @@ type sha1Marshal struct {
 }
 
 func (h *sha1Marshal) MarshalBinary() ([]byte, error) {
-	d := (*sha1State)(h.hashState())
-	if d == nil {
-		return nil, errors.New("crypto/sha1: can't retrieve hash state")
-	}
-	b := make([]byte, 0, sha1MarshaledSize)
-	b = append(b, sha1Magic...)
-	b = appendUint32(b, d.h[0])
-	b = appendUint32(b, d.h[1])
-	b = appendUint32(b, d.h[2])
-	b = appendUint32(b, d.h[3])
-	b = appendUint32(b, d.h[4])
-	b = append(b, d.x[:d.nx]...)
-	b = b[:len(b)+len(d.x)-int(d.nx)] // already zero
-	b = appendUint64(b, uint64(d.nl)>>3|uint64(d.nh)<<29)
-	return b, nil
+	return h.AppendBinary(nil)
 }
 
 func (h *sha1Marshal) UnmarshalBinary(b []byte) error {
@@ -508,11 +491,20 @@ func (h *sha1Marshal) UnmarshalBinary(b []byte) error {
 }
 
 func (h *sha1Marshal) AppendBinary(buf []byte) ([]byte, error) {
-	binaryData, err := h.MarshalBinary()
-	if err != nil {
-		return nil, err
+	d := (*sha1State)(h.hashState())
+	if d == nil {
+		return nil, errors.New("crypto/sha1: can't retrieve hash state")
 	}
-	return append(buf, binaryData...), nil
+	buf = append(buf, sha1Magic...)
+	buf = appendUint32(buf, d.h[0])
+	buf = appendUint32(buf, d.h[1])
+	buf = appendUint32(buf, d.h[2])
+	buf = appendUint32(buf, d.h[3])
+	buf = appendUint32(buf, d.h[4])
+	buf = append(buf, d.x[:d.nx]...)
+	buf = buf[:len(buf)+len(d.x)-int(d.nx)] // already zero
+	buf = appendUint64(buf, uint64(d.nl)>>3|uint64(d.nh)<<29)
+	return buf, nil
 }
 
 // NewSHA224 returns a new SHA224 hash.
@@ -599,45 +591,13 @@ type sha256Marshal struct {
 }
 
 func (h *sha224Marshal) MarshalBinary() ([]byte, error) {
-	d := (*sha256State)(h.hashState())
-	if d == nil {
-		return nil, errors.New("crypto/sha256: can't retrieve hash state")
-	}
-	b := make([]byte, 0, marshaledSize256)
-	b = append(b, magic224...)
-	b = appendUint32(b, d.h[0])
-	b = appendUint32(b, d.h[1])
-	b = appendUint32(b, d.h[2])
-	b = appendUint32(b, d.h[3])
-	b = appendUint32(b, d.h[4])
-	b = appendUint32(b, d.h[5])
-	b = appendUint32(b, d.h[6])
-	b = appendUint32(b, d.h[7])
-	b = append(b, d.x[:d.nx]...)
-	b = b[:len(b)+len(d.x)-int(d.nx)] // already zero
-	b = appendUint64(b, uint64(d.nl)>>3|uint64(d.nh)<<29)
-	return b, nil
+	buf := make([]byte, 0, marshaledSize256)
+	return h.AppendBinary(buf)
 }
 
 func (h *sha256Marshal) MarshalBinary() ([]byte, error) {
-	d := (*sha256State)(h.hashState())
-	if d == nil {
-		return nil, errors.New("crypto/sha256: can't retrieve hash state")
-	}
-	b := make([]byte, 0, marshaledSize256)
-	b = append(b, magic256...)
-	b = appendUint32(b, d.h[0])
-	b = appendUint32(b, d.h[1])
-	b = appendUint32(b, d.h[2])
-	b = appendUint32(b, d.h[3])
-	b = appendUint32(b, d.h[4])
-	b = appendUint32(b, d.h[5])
-	b = appendUint32(b, d.h[6])
-	b = appendUint32(b, d.h[7])
-	b = append(b, d.x[:d.nx]...)
-	b = b[:len(b)+len(d.x)-int(d.nx)] // already zero
-	b = appendUint64(b, uint64(d.nl)>>3|uint64(d.nh)<<29)
-	return b, nil
+	buf := make([]byte, 0, marshaledSize256)
+	return h.AppendBinary(buf)
 }
 
 func (h *sha224Marshal) UnmarshalBinary(b []byte) error {
@@ -697,19 +657,43 @@ func (h *sha256Marshal) UnmarshalBinary(b []byte) error {
 }
 
 func (h *sha224Marshal) AppendBinary(buf []byte) ([]byte, error) {
-	binaryData, err := h.MarshalBinary()
-	if err != nil {
-		return nil, err
+	d := (*sha256State)(h.hashState())
+	if d == nil {
+		return nil, errors.New("crypto/sha256: can't retrieve hash state")
 	}
-	return append(buf, binaryData...), nil
+	buf = append(buf, magic224...)
+	buf = appendUint32(buf, d.h[0])
+	buf = appendUint32(buf, d.h[1])
+	buf = appendUint32(buf, d.h[2])
+	buf = appendUint32(buf, d.h[3])
+	buf = appendUint32(buf, d.h[4])
+	buf = appendUint32(buf, d.h[5])
+	buf = appendUint32(buf, d.h[6])
+	buf = appendUint32(buf, d.h[7])
+	buf = append(buf, d.x[:d.nx]...)
+	buf = buf[:len(buf)+len(d.x)-int(d.nx)] // already zero
+	buf = appendUint64(buf, uint64(d.nl)>>3|uint64(d.nh)<<29)
+	return buf, nil
 }
 
 func (h *sha256Marshal) AppendBinary(buf []byte) ([]byte, error) {
-	binaryData, err := h.MarshalBinary()
-	if err != nil {
-		return nil, err
+	d := (*sha256State)(h.hashState())
+	if d == nil {
+		return nil, errors.New("crypto/sha256: can't retrieve hash state")
 	}
-	return append(buf, binaryData...), nil
+	buf = append(buf, magic256...)
+	buf = appendUint32(buf, d.h[0])
+	buf = appendUint32(buf, d.h[1])
+	buf = appendUint32(buf, d.h[2])
+	buf = appendUint32(buf, d.h[3])
+	buf = appendUint32(buf, d.h[4])
+	buf = appendUint32(buf, d.h[5])
+	buf = appendUint32(buf, d.h[6])
+	buf = appendUint32(buf, d.h[7])
+	buf = append(buf, d.x[:d.nx]...)
+	buf = buf[:len(buf)+len(d.x)-int(d.nx)] // already zero
+	buf = appendUint64(buf, uint64(d.nl)>>3|uint64(d.nh)<<29)
+	return buf, nil
 }
 
 // NewSHA384 returns a new SHA384 hash.
@@ -798,45 +782,13 @@ type sha512Marshal struct {
 }
 
 func (h *sha384Marshal) MarshalBinary() ([]byte, error) {
-	d := (*sha512State)(h.hashState())
-	if d == nil {
-		return nil, errors.New("crypto/sha512: can't retrieve hash state")
-	}
-	b := make([]byte, 0, marshaledSize512)
-	b = append(b, magic384...)
-	b = appendUint64(b, d.h[0])
-	b = appendUint64(b, d.h[1])
-	b = appendUint64(b, d.h[2])
-	b = appendUint64(b, d.h[3])
-	b = appendUint64(b, d.h[4])
-	b = appendUint64(b, d.h[5])
-	b = appendUint64(b, d.h[6])
-	b = appendUint64(b, d.h[7])
-	b = append(b, d.x[:d.nx]...)
-	b = b[:len(b)+len(d.x)-int(d.nx)] // already zero
-	b = appendUint64(b, d.nl>>3|d.nh<<61)
-	return b, nil
+	buf := make([]byte, 0, marshaledSize512)
+	return h.AppendBinary(buf)
 }
 
 func (h *sha512Marshal) MarshalBinary() ([]byte, error) {
-	d := (*sha512State)(h.hashState())
-	if d == nil {
-		return nil, errors.New("crypto/sha512: can't retrieve hash state")
-	}
-	b := make([]byte, 0, marshaledSize512)
-	b = append(b, magic512...)
-	b = appendUint64(b, d.h[0])
-	b = appendUint64(b, d.h[1])
-	b = appendUint64(b, d.h[2])
-	b = appendUint64(b, d.h[3])
-	b = appendUint64(b, d.h[4])
-	b = appendUint64(b, d.h[5])
-	b = appendUint64(b, d.h[6])
-	b = appendUint64(b, d.h[7])
-	b = append(b, d.x[:d.nx]...)
-	b = b[:len(b)+len(d.x)-int(d.nx)] // already zero
-	b = appendUint64(b, d.nl>>3|d.nh<<61)
-	return b, nil
+	buf := make([]byte, 0, marshaledSize512)
+	return h.AppendBinary(buf)
 }
 
 func (h *sha384Marshal) UnmarshalBinary(b []byte) error {
@@ -902,19 +854,43 @@ func (h *sha512Marshal) UnmarshalBinary(b []byte) error {
 }
 
 func (h *sha384Marshal) AppendBinary(buf []byte) ([]byte, error) {
-	binaryData, err := h.MarshalBinary()
-	if err != nil {
-		return nil, err
+	d := (*sha512State)(h.hashState())
+	if d == nil {
+		return nil, errors.New("crypto/sha512: can't retrieve hash state")
 	}
-	return append(buf, binaryData...), nil
+	buf = append(buf, magic384...)
+	buf = appendUint64(buf, d.h[0])
+	buf = appendUint64(buf, d.h[1])
+	buf = appendUint64(buf, d.h[2])
+	buf = appendUint64(buf, d.h[3])
+	buf = appendUint64(buf, d.h[4])
+	buf = appendUint64(buf, d.h[5])
+	buf = appendUint64(buf, d.h[6])
+	buf = appendUint64(buf, d.h[7])
+	buf = append(buf, d.x[:d.nx]...)
+	buf = buf[:len(buf)+len(d.x)-int(d.nx)] // already zero
+	buf = appendUint64(buf, d.nl>>3|d.nh<<61)
+	return buf, nil
 }
 
 func (h *sha512Marshal) AppendBinary(buf []byte) ([]byte, error) {
-	binaryData, err := h.MarshalBinary()
-	if err != nil {
-		return nil, err
+	d := (*sha512State)(h.hashState())
+	if d == nil {
+		return nil, errors.New("crypto/sha512: can't retrieve hash state")
 	}
-	return append(buf, binaryData...), nil
+	buf = append(buf, magic512...)
+	buf = appendUint64(buf, d.h[0])
+	buf = appendUint64(buf, d.h[1])
+	buf = appendUint64(buf, d.h[2])
+	buf = appendUint64(buf, d.h[3])
+	buf = appendUint64(buf, d.h[4])
+	buf = appendUint64(buf, d.h[5])
+	buf = appendUint64(buf, d.h[6])
+	buf = appendUint64(buf, d.h[7])
+	buf = append(buf, d.x[:d.nx]...)
+	buf = buf[:len(buf)+len(d.x)-int(d.nx)] // already zero
+	buf = appendUint64(buf, d.nl>>3|d.nh<<61)
+	return buf, nil
 }
 
 // NewSHA3_224 returns a new SHA3-224 hash.
