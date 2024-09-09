@@ -408,7 +408,7 @@ func (h *md5Marshal) AppendBinary(buf []byte) ([]byte, error) {
 	buf = appendUint32(buf, d.h[2])
 	buf = appendUint32(buf, d.h[3])
 	buf = append(buf, d.x[:d.nx]...)
-	buf = buf[:len(buf)+len(d.x)-int(d.nx)] // already zero
+	buf = append(buf, make([]byte, len(d.x)-int(d.nx))...) // already zero
 	buf = appendUint64(buf, uint64(d.nl)>>3|uint64(d.nh)<<29)
 	return buf, nil
 }
@@ -462,7 +462,8 @@ type sha1Marshal struct {
 }
 
 func (h *sha1Marshal) MarshalBinary() ([]byte, error) {
-	return h.AppendBinary(nil)
+	buf := make([]byte, 0, sha1MarshaledSize)
+	return h.AppendBinary(buf)
 }
 
 func (h *sha1Marshal) UnmarshalBinary(b []byte) error {
@@ -502,7 +503,7 @@ func (h *sha1Marshal) AppendBinary(buf []byte) ([]byte, error) {
 	buf = appendUint32(buf, d.h[3])
 	buf = appendUint32(buf, d.h[4])
 	buf = append(buf, d.x[:d.nx]...)
-	buf = buf[:len(buf)+len(d.x)-int(d.nx)] // already zero
+	buf = append(buf, make([]byte, len(d.x)-int(d.nx))...) // already zero
 	buf = appendUint64(buf, uint64(d.nl)>>3|uint64(d.nh)<<29)
 	return buf, nil
 }
@@ -671,7 +672,7 @@ func (h *sha224Marshal) AppendBinary(buf []byte) ([]byte, error) {
 	buf = appendUint32(buf, d.h[6])
 	buf = appendUint32(buf, d.h[7])
 	buf = append(buf, d.x[:d.nx]...)
-	buf = buf[:len(buf)+len(d.x)-int(d.nx)] // already zero
+	buf = append(buf, make([]byte, len(d.x)-int(d.nx))...) // already zero
 	buf = appendUint64(buf, uint64(d.nl)>>3|uint64(d.nh)<<29)
 	return buf, nil
 }
@@ -691,7 +692,7 @@ func (h *sha256Marshal) AppendBinary(buf []byte) ([]byte, error) {
 	buf = appendUint32(buf, d.h[6])
 	buf = appendUint32(buf, d.h[7])
 	buf = append(buf, d.x[:d.nx]...)
-	buf = buf[:len(buf)+len(d.x)-int(d.nx)] // already zero
+	buf = append(buf, make([]byte, len(d.x)-int(d.nx))...) // already zero
 	buf = appendUint64(buf, uint64(d.nl)>>3|uint64(d.nh)<<29)
 	return buf, nil
 }
@@ -868,7 +869,7 @@ func (h *sha384Marshal) AppendBinary(buf []byte) ([]byte, error) {
 	buf = appendUint64(buf, d.h[6])
 	buf = appendUint64(buf, d.h[7])
 	buf = append(buf, d.x[:d.nx]...)
-	buf = buf[:len(buf)+len(d.x)-int(d.nx)] // already zero
+	buf = append(buf, make([]byte, len(d.x)-int(d.nx))...) // already zero
 	buf = appendUint64(buf, d.nl>>3|d.nh<<61)
 	return buf, nil
 }
@@ -888,7 +889,7 @@ func (h *sha512Marshal) AppendBinary(buf []byte) ([]byte, error) {
 	buf = appendUint64(buf, d.h[6])
 	buf = appendUint64(buf, d.h[7])
 	buf = append(buf, d.x[:d.nx]...)
-	buf = buf[:len(buf)+len(d.x)-int(d.nx)] // already zero
+	buf = append(buf, make([]byte, len(d.x)-int(d.nx))...) // already zero
 	buf = appendUint64(buf, d.nl>>3|d.nh<<61)
 	return buf, nil
 }
