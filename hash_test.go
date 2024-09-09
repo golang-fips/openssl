@@ -160,7 +160,7 @@ func TestHash_ByteWriter(t *testing.T) {
 			h := cryptoToHash(ch)()
 			initSum := h.Sum(nil)
 			bw := h.(io.ByteWriter)
-			for i := 0; i < len(msg); i++ {
+			for i := range len(msg) {
 				bw.WriteByte(msg[i])
 			}
 			h.Reset()

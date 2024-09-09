@@ -298,7 +298,7 @@ const wordBytes = bits.UintSize / 8
 func (z BigInt) byteSwap() {
 	for i, d := range z {
 		var n uint = 0
-		for j := 0; j < wordBytes; j++ {
+		for j := range wordBytes {
 			n |= uint(byte(d)) << (8 * (wordBytes - j - 1))
 			d >>= 8
 		}
@@ -400,7 +400,7 @@ func bnToBinPad(bn C.GO_BIGNUM_PTR, to []byte) error {
 		if pad < 0 {
 			return errors.New("openssl: destination buffer too small")
 		}
-		for i := 0; i < pad; i++ {
+		for i := range pad {
 			to[i] = 0
 		}
 		if int(C.go_openssl_BN_bn2bin(bn, base(to[pad:]))) != n {
