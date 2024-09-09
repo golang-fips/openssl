@@ -344,6 +344,7 @@ DEFINEFUNC(GO_EC_GROUP_PTR, EC_GROUP_new_by_curve_name, (int nid), (nid)) \
 DEFINEFUNC(void, EC_GROUP_free, (GO_EC_GROUP_PTR group), (group)) \
 DEFINEFUNC_3_0(GO_EVP_MAC_PTR, EVP_MAC_fetch, (GO_OSSL_LIB_CTX_PTR ctx, const char *algorithm, const char *properties), (ctx, algorithm, properties)) \
 DEFINEFUNC_3_0(GO_EVP_MAC_CTX_PTR, EVP_MAC_CTX_new, (GO_EVP_MAC_PTR arg0), (arg0)) \
+DEFINEFUNC_3_0(int, EVP_MAC_CTX_set_params, (GO_EVP_MAC_CTX_PTR ctx, const GO_OSSL_PARAM_PTR params), (ctx, params)) \
 DEFINEFUNC_3_0(void, EVP_MAC_CTX_free, (GO_EVP_MAC_CTX_PTR arg0), (arg0)) \
 DEFINEFUNC_3_0(GO_EVP_MAC_CTX_PTR, EVP_MAC_CTX_dup, (const GO_EVP_MAC_CTX_PTR arg0), (arg0)) \
 DEFINEFUNC_3_0(int, EVP_MAC_init, (GO_EVP_MAC_CTX_PTR ctx, const unsigned char *key, size_t keylen, const GO_OSSL_PARAM_PTR params), (ctx, key, keylen, params)) \
