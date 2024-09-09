@@ -350,7 +350,7 @@ func TestHKDFMultiRead(t *testing.T) {
 		hkdf := newHKDF(tt.hash, tt.master, tt.salt, tt.info)
 		out := make([]byte, len(tt.out))
 
-		for b := 0; b < len(tt.out); b++ {
+		for b := range len(tt.out) {
 			n, err := io.ReadFull(hkdf, out[b:b+1])
 			if n != 1 || err != nil {
 				t.Errorf("test %d.%d: not enough output bytes: have %d, need %d .", i, b, n, len(tt.out))

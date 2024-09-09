@@ -56,7 +56,6 @@ var hashes = [...]crypto.Hash{
 func TestHash(t *testing.T) {
 	msg := []byte("testing")
 	for _, ch := range hashes {
-		ch := ch
 		t.Run(ch.String(), func(t *testing.T) {
 			t.Parallel()
 			if !openssl.SupportsHash(ch) {
@@ -90,7 +89,6 @@ func TestHash(t *testing.T) {
 func TestHash_BinaryMarshaler(t *testing.T) {
 	msg := []byte("testing")
 	for _, ch := range hashes {
-		ch := ch
 		t.Run(ch.String(), func(t *testing.T) {
 			t.Parallel()
 			if !openssl.SupportsHash(ch) {
@@ -122,7 +120,6 @@ func TestHash_BinaryMarshaler(t *testing.T) {
 func TestHash_Clone(t *testing.T) {
 	msg := []byte("testing")
 	for _, ch := range hashes {
-		ch := ch
 		t.Run(ch.String(), func(t *testing.T) {
 			t.Parallel()
 			if !openssl.SupportsHash(ch) {
@@ -163,7 +160,7 @@ func TestHash_ByteWriter(t *testing.T) {
 			h := cryptoToHash(ch)()
 			initSum := h.Sum(nil)
 			bw := h.(io.ByteWriter)
-			for i := 0; i < len(msg); i++ {
+			for i := range len(msg) {
 				bw.WriteByte(msg[i])
 			}
 			h.Reset()

@@ -58,7 +58,7 @@ func TestMain(m *testing.M) {
 	fmt.Println("OpenSSL version:", openssl.VersionText())
 	fmt.Println("FIPS enabled:", openssl.FIPS())
 	status := m.Run()
-	for i := 0; i < 5; i++ {
+	for range 5 {
 		// Run GC a few times to avoid false positives in leak detection.
 		runtime.GC()
 		// Sleep a bit to let the finalizers run.
