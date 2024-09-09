@@ -94,7 +94,7 @@ type PublicKeyRSA struct {
 	_pkey C.GO_EVP_PKEY_PTR
 }
 
-func NewPublicKeyRSA(N, E BigInt) (*PublicKeyRSA, error) {
+func NewPublicKeyRSA(n, e BigInt) (*PublicKeyRSA, error) {
 	var pkey C.GO_EVP_PKEY_PTR
 	switch vMajor {
 	case 1:
@@ -102,7 +102,7 @@ func NewPublicKeyRSA(N, E BigInt) (*PublicKeyRSA, error) {
 		if key == nil {
 			return nil, newOpenSSLError("RSA_new failed")
 		}
-		if !rsaSetKey(key, N, E, nil) {
+		if !rsaSetKey(key, n, e, nil) {
 			return nil, fail("RSA_set0_key")
 		}
 		pkey = C.go_openssl_EVP_PKEY_new()
@@ -117,7 +117,7 @@ func NewPublicKeyRSA(N, E BigInt) (*PublicKeyRSA, error) {
 		}
 	case 3:
 		var err error
-		if pkey, err = newRSAKey3(false, N, E, nil, nil, nil, nil, nil, nil); err != nil {
+		if pkey, err = newRSAKey3(false, n, e, nil, nil, nil, nil, nil, nil); err != nil {
 			return nil, err
 		}
 	default:
@@ -145,7 +145,7 @@ type PrivateKeyRSA struct {
 	_pkey C.GO_EVP_PKEY_PTR
 }
 
-func NewPrivateKeyRSA(N, E, D, P, Q, Dp, Dq, Qinv BigInt) (*PrivateKeyRSA, error) {
+func NewPrivateKeyRSA(n, e, d, p, q, dp, dq, qinv BigInt) (*PrivateKeyRSA, error) {
 	var pkey C.GO_EVP_PKEY_PTR
 	switch vMajor {
 	case 1:
@@ -153,16 +153,16 @@ func NewPrivateKeyRSA(N, E, D, P, Q, Dp, Dq, Qinv BigInt) (*PrivateKeyRSA, error
 		if key == nil {
 			return nil, newOpenSSLError("RSA_new failed")
 		}
-		if !rsaSetKey(key, N, E, D) {
+		if !rsaSetKey(key, n, e, d) {
 			return nil, fail("RSA_set0_key")
 		}
-		if P != nil && Q != nil {
-			if !rsaSetFactors(key, P, Q) {
+		if p != nil && q != nil {
+			if !rsaSetFactors(key, p, q) {
 				return nil, fail("RSA_set0_factors")
 			}
 		}
-		if Dp != nil && Dq != nil && Qinv != nil {
-			if !rsaSetCRTParams(key, Dp, Dq, Qinv) {
+		if dp != nil && dq != nil && qinv != nil {
+			if !rsaSetCRTParams(key, dp, dq, qinv) {
 				return nil, fail("RSA_set0_crt_params")
 			}
 		}
@@ -178,7 +178,7 @@ func NewPrivateKeyRSA(N, E, D, P, Q, Dp, Dq, Qinv BigInt) (*PrivateKeyRSA, error
 		}
 	case 3:
 		var err error
-		if pkey, err = newRSAKey3(true, N, E, D, P, Q, Dp, Dq, Qinv); err != nil {
+		if pkey, err = newRSAKey3(true, n, e, d, p, q, dp, dq, qinv); err != nil {
 			return nil, err
 		}
 	default:
@@ -334,7 +334,7 @@ func bnSet(b1 *C.GO_BIGNUM_PTR, b2 BigInt) {
 func rsaSetKey(key C.GO_RSA_PTR, n, e, d BigInt) bool {
 	if vMajor == 1 && vMinor == 0 {
 		r := (*rsa_st_1_0_2)(unsafe.Pointer(key))
-		//r.d and d will be nil for public keys.
+		// r.d and d will be nil for public keys.
 		if (r.n == nil && n == nil) ||
 			(r.e == nil && e == nil) {
 			return false
@@ -376,8 +376,7 @@ func rsaSetCRTParams(key C.GO_RSA_PTR, dmp1, dmq1, iqmp BigInt) bool {
 	}
 	return C.go_openssl_RSA_set0_crt_params(key, bigToBN(dmp1), bigToBN(dmq1), bigToBN(iqmp)) == 1
 }
-
-func newRSAKey3(isPriv bool, N, E, D, P, Q, Dp, Dq, Qinv BigInt) (C.GO_EVP_PKEY_PTR, error) {
+func newRSAKey3(isPriv bool, n, e, d, p, q, dp, dq, qinv BigInt) (C.GO_EVP_PKEY_PTR, error) {
 	// Construct the parameters.
 	bld := C.go_openssl_OSSL_PARAM_BLD_new()
 	if bld == nil {
@@ -393,17 +392,17 @@ func newRSAKey3(isPriv bool, N, E, D, P, Q, Dp, Dq, Qinv BigInt) (C.GO_EVP_PKEY_
 	comps := make([]bigIntParam, 0, 8)
 
 	required := [...]bigIntParam{
-		{OSSL_PKEY_PARAM_RSA_N, N}, {OSSL_PKEY_PARAM_RSA_E, E}, {OSSL_PKEY_PARAM_RSA_D, D},
+		{OSSL_PKEY_PARAM_RSA_N, n}, {OSSL_PKEY_PARAM_RSA_E, e}, {OSSL_PKEY_PARAM_RSA_D, d},
 	}
 	comps = append(comps, required[:]...)
 
 	// OpenSSL 3.0 and 3.1 required all the precomputed values if
 	// P and Q are present. See:
 	// https://github.com/openssl/openssl/pull/22334
-	if P != nil && Q != nil && Dp != nil && Dq != nil && Qinv != nil {
+	if p != nil && q != nil && dp != nil && dq != nil && qinv != nil {
 		precomputed := [...]bigIntParam{
-			{OSSL_PKEY_PARAM_RSA_FACTOR1, P}, {OSSL_PKEY_PARAM_RSA_FACTOR2, Q},
-			{OSSL_PKEY_PARAM_RSA_EXPONENT1, Dp}, {OSSL_PKEY_PARAM_RSA_EXPONENT2, Dq}, {OSSL_PKEY_PARAM_RSA_COEFFICIENT1, Qinv},
+			{OSSL_PKEY_PARAM_RSA_FACTOR1, p}, {OSSL_PKEY_PARAM_RSA_FACTOR2, q},
+			{OSSL_PKEY_PARAM_RSA_EXPONENT1, dp}, {OSSL_PKEY_PARAM_RSA_EXPONENT2, dq}, {OSSL_PKEY_PARAM_RSA_COEFFICIENT1, qinv},
 		}
 		comps = append(comps, precomputed[:]...)
 	}

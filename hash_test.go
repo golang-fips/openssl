@@ -248,7 +248,7 @@ func TestHash_OneShot(t *testing.T) {
 			h := cryptoToHash(tt.h)()
 			h.Write(msg)
 			want := h.Sum(nil)
-			if !bytes.Equal(got[:], want) {
+			if !bytes.Equal(got, want) {
 				t.Errorf("got:%x want:%x", got, want)
 			}
 		})

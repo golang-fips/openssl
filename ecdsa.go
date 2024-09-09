@@ -40,8 +40,8 @@ func (k *PublicKeyECDSA) withKey(f func(C.GO_EVP_PKEY_PTR) C.int) C.int {
 
 var errUnknownCurve = errors.New("openssl: unknown elliptic curve")
 
-func NewPublicKeyECDSA(curve string, X, Y BigInt) (*PublicKeyECDSA, error) {
-	pkey, err := newECDSAKey(curve, X, Y, nil)
+func NewPublicKeyECDSA(curve string, x, y BigInt) (*PublicKeyECDSA, error) {
+	pkey, err := newECDSAKey(curve, x, y, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -50,8 +50,8 @@ func NewPublicKeyECDSA(curve string, X, Y BigInt) (*PublicKeyECDSA, error) {
 	return k, nil
 }
 
-func NewPrivateKeyECDSA(curve string, X, Y, D BigInt) (*PrivateKeyECDSA, error) {
-	pkey, err := newECDSAKey(curve, X, Y, D)
+func NewPrivateKeyECDSA(curve string, x, y, d BigInt) (*PrivateKeyECDSA, error) {
+	pkey, err := newECDSAKey(curve, x, y, d)
 	if err != nil {
 		return nil, err
 	}
@@ -60,7 +60,7 @@ func NewPrivateKeyECDSA(curve string, X, Y, D BigInt) (*PrivateKeyECDSA, error) 
 	return k, nil
 }
 
-func GenerateKeyECDSA(curve string) (X, Y, D BigInt, err error) {
+func GenerateKeyECDSA(curve string) (x, y, d BigInt, err error) {
 	// Generate the private key.
 	pkey, err := generateEVPPKey(C.GO_EVP_PKEY_EC, 0, curve)
 	if err != nil {
@@ -121,7 +121,7 @@ func HashVerifyECDSA(pub *PublicKeyECDSA, h crypto.Hash, msg, sig []byte) bool {
 	return evpHashVerify(pub.withKey, h, msg, sig) == nil
 }
 
-func newECDSAKey(curve string, X, Y, D BigInt) (C.GO_EVP_PKEY_PTR, error) {
+func newECDSAKey(curve string, x, y, d BigInt) (C.GO_EVP_PKEY_PTR, error) {
 	nid, err := curveNID(curve)
 	if err != nil {
 		return nil, err
@@ -132,10 +132,10 @@ func newECDSAKey(curve string, X, Y, D BigInt) (C.GO_EVP_PKEY_PTR, error) {
 		C.go_openssl_BN_free(by)
 		C.go_openssl_BN_clear_free(bd)
 	}()
-	bx = bigToBN(X)
-	by = bigToBN(Y)
-	bd = bigToBN(D)
-	if bx == nil || by == nil || (D != nil && bd == nil) {
+	bx = bigToBN(x)
+	by = bigToBN(y)
+	bd = bigToBN(d)
+	if bx == nil || by == nil || (d != nil && bd == nil) {
 		return nil, newOpenSSLError("BN_lebin2bn failed")
 	}
 	switch vMajor {
