@@ -1,21 +1,22 @@
-package openssl_test
+// Copyright 2024 The Go Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
+package cryptotest
 
 import (
 	"bytes"
 	"crypto/cipher"
-	"io"
-	"math/rand"
 	"testing"
-	"time"
 )
 
 // This file is a copy of https://github.com/golang/go/blob/9e9b1f57c26a6d13fdaebef67136718b8042cdba/src/crypto/internal/cryptotest/block.go.
 
 type MakeBlock func(key []byte) (cipher.Block, error)
 
-// testBlock performs a set of tests on cipher.Block implementations, checking
+// TestBlock performs a set of tests on cipher.Block implementations, checking
 // the documented requirements of BlockSize, Encrypt, and Decrypt.
-func testBlock(t *testing.T, keySize int, mb MakeBlock) {
+func TestBlock(t *testing.T, keySize int, mb MakeBlock) {
 	// Generate random key
 	key := make([]byte, keySize)
 	newRandReader(t).Read(key)
@@ -237,12 +238,6 @@ func testCipher(t *testing.T, cipher func(dst, src []byte), blockSize int) {
 		mustPanic(t, "input not full block", func() { cipher(byteSlice(100), byteSlice(1)) })
 		mustPanic(t, "output not full block", func() { cipher(byteSlice(1), byteSlice(100)) })
 	})
-}
-
-func newRandReader(t *testing.T) io.Reader {
-	seed := time.Now().UnixNano()
-	t.Logf("Deterministic RNG seed: 0x%x", seed)
-	return rand.New(rand.NewSource(seed))
 }
 
 func mustPanic(t *testing.T, msg string, f func()) {

@@ -8,13 +8,14 @@ import (
 	"testing"
 
 	"github.com/golang-fips/openssl/v2"
+	"github.com/golang-fips/openssl/v2/internal/cryptotest"
 )
 
 // Test AES against the general cipher.Block interface tester.
 func TestAESBlock(t *testing.T) {
 	for _, keylen := range []int{128, 192, 256} {
 		t.Run(fmt.Sprintf("AES-%d", keylen), func(t *testing.T) {
-			testBlock(t, keylen/8, openssl.NewAESCipher)
+			cryptotest.TestBlock(t, keylen/8, openssl.NewAESCipher)
 		})
 	}
 }

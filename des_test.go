@@ -5,6 +5,7 @@ import (
 	"crypto/cipher"
 	"testing"
 
+	"github.com/golang-fips/openssl/v2/internal/cryptotest"
 	"github.com/golang-fips/openssl/v2"
 )
 
@@ -1671,14 +1672,14 @@ func TestDESBlock(t *testing.T) {
 		if !openssl.SupportsDESCipher() {
 			t.Skip("DES is not supported")
 		}
-		testBlock(t, 8, openssl.NewDESCipher)
+		cryptotest.TestBlock(t, 8, openssl.NewDESCipher)
 	})
 
 	t.Run("TripleDES", func(t *testing.T) {
 		if !openssl.SupportsTripleDESCipher() {
 			t.Skip("3DES is not supported")
 		}
-		testBlock(t, 24, openssl.NewTripleDESCipher)
+		cryptotest.TestBlock(t, 24, openssl.NewTripleDESCipher)
 	})
 }
 
