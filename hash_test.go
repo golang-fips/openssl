@@ -39,22 +39,23 @@ func cryptoToHash(h crypto.Hash) func() hash.Hash {
 	return nil
 }
 
+var hashes = [...]crypto.Hash{
+	crypto.MD4,
+	crypto.MD5,
+	crypto.SHA1,
+	crypto.SHA224,
+	crypto.SHA256,
+	crypto.SHA384,
+	crypto.SHA512,
+	crypto.SHA3_224,
+	crypto.SHA3_256,
+	crypto.SHA3_384,
+	crypto.SHA3_512,
+}
+
 func TestHash(t *testing.T) {
 	msg := []byte("testing")
-	var tests = []crypto.Hash{
-		crypto.MD4,
-		crypto.MD5,
-		crypto.SHA1,
-		crypto.SHA224,
-		crypto.SHA256,
-		crypto.SHA384,
-		crypto.SHA512,
-		crypto.SHA3_224,
-		crypto.SHA3_256,
-		crypto.SHA3_384,
-		crypto.SHA3_512,
-	}
-	for _, ch := range tests {
+	for _, ch := range hashes {
 		ch := ch
 		t.Run(ch.String(), func(t *testing.T) {
 			t.Parallel()
@@ -77,38 +78,117 @@ func TestHash(t *testing.T) {
 			if bytes.Equal(sum, initSum) {
 				t.Error("Write didn't change internal hash state")
 			}
-			if _, ok := h.(encoding.BinaryMarshaler); ok {
-				state, err := h.(encoding.BinaryMarshaler).MarshalBinary()
-				if err != nil {
-					t.Errorf("could not marshal: %v", err)
-				}
-				h2 := cryptoToHash(ch)()
-				if err := h2.(encoding.BinaryUnmarshaler).UnmarshalBinary(state); err != nil {
-					t.Errorf("could not unmarshal: %v", err)
-				}
-				if actual, actual2 := h.Sum(nil), h2.Sum(nil); !bytes.Equal(actual, actual2) {
-					t.Errorf("0x%x != marshaled 0x%x", actual, actual2)
-				}
-			}
 			h.Reset()
 			sum = h.Sum(nil)
 			if !bytes.Equal(sum, initSum) {
 				t.Errorf("got:%x want:%x", sum, initSum)
 			}
+		})
+	}
+}
 
+func TestHash_BinaryMarshaler(t *testing.T) {
+	msg := []byte("testing")
+	for _, ch := range hashes {
+		ch := ch
+		t.Run(ch.String(), func(t *testing.T) {
+			t.Parallel()
+			if !openssl.SupportsHash(ch) {
+				t.Skip("skipping: not supported")
+			}
+			h := cryptoToHash(ch)()
+			if _, ok := h.(encoding.BinaryMarshaler); !ok {
+				t.Skip("skipping: not supported")
+			}
+			_, err := h.Write(msg)
+			if err != nil {
+				t.Fatal(err)
+			}
+			state, err := h.(encoding.BinaryMarshaler).MarshalBinary()
+			if err != nil {
+				t.Errorf("could not marshal: %v", err)
+			}
+			h2 := cryptoToHash(ch)()
+			if err := h2.(encoding.BinaryUnmarshaler).UnmarshalBinary(state); err != nil {
+				t.Errorf("could not unmarshal: %v", err)
+			}
+			if actual, actual2 := h.Sum(nil), h2.Sum(nil); !bytes.Equal(actual, actual2) {
+				t.Errorf("0x%x != marshaled 0x%x", actual, actual2)
+			}
+		})
+	}
+}
+
+func TestHash_Clone(t *testing.T) {
+	msg := []byte("testing")
+	for _, ch := range hashes {
+		ch := ch
+		t.Run(ch.String(), func(t *testing.T) {
+			t.Parallel()
+			if !openssl.SupportsHash(ch) {
+				t.Skip("skipping: not supported")
+			}
+			h := cryptoToHash(ch)()
+			if _, ok := h.(encoding.BinaryMarshaler); !ok {
+				t.Skip("skipping: not supported")
+			}
+			_, err := h.Write(msg)
+			if err != nil {
+				t.Fatal(err)
+			}
+			// We don't define an interface for the Clone method to avoid other
+			// packages from depending on it. Use type assertion to call it.
+			h2, err := h.(interface{ Clone() (hash.Hash, error) }).Clone()
+			if err != nil {
+				t.Fatal(err)
+			}
+			h.Write(msg)
+			h2.Write(msg)
+			if actual, actual2 := h.Sum(nil), h2.Sum(nil); !bytes.Equal(actual, actual2) {
+				t.Errorf("%s(%q) = 0x%x != cloned 0x%x", ch.String(), msg, actual, actual2)
+			}
+		})
+	}
+}
+
+func TestHash_ByteWriter(t *testing.T) {
+	msg := []byte("testing")
+	for _, ch := range hashes {
+		ch := ch
+		t.Run(ch.String(), func(t *testing.T) {
+			t.Parallel()
+			if !openssl.SupportsHash(ch) {
+				t.Skip("skipping: not supported")
+			}
+			h := cryptoToHash(ch)()
+			initSum := h.Sum(nil)
 			bw := h.(io.ByteWriter)
 			for i := 0; i < len(msg); i++ {
 				bw.WriteByte(msg[i])
 			}
 			h.Reset()
-			sum = h.Sum(nil)
+			sum := h.Sum(nil)
 			if !bytes.Equal(sum, initSum) {
 				t.Errorf("got:%x want:%x", sum, initSum)
 			}
+		})
+	}
+}
 
+func TestHash_StringWriter(t *testing.T) {
+	msg := []byte("testing")
+	for _, ch := range hashes {
+		ch := ch
+		t.Run(ch.String(), func(t *testing.T) {
+			t.Parallel()
+			if !openssl.SupportsHash(ch) {
+				t.Skip("skipping: not supported")
+			}
+			h := cryptoToHash(ch)()
+			initSum := h.Sum(nil)
 			h.(io.StringWriter).WriteString(string(msg))
 			h.Reset()
-			sum = h.Sum(nil)
+			sum := h.Sum(nil)
 			if !bytes.Equal(sum, initSum) {
 				t.Errorf("got:%x want:%x", sum, initSum)
 			}
