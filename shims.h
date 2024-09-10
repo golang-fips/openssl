@@ -99,6 +99,7 @@ typedef void* GO_BN_CTX_PTR;
 typedef void* GO_EVP_MAC_PTR;
 typedef void* GO_EVP_MAC_CTX_PTR;
 typedef void* GO_OSSL_PARAM_BLD_PTR;
+typedef void* GO_OSSL_PARAM_PTR;
 typedef void* GO_CRYPTO_THREADID_PTR;
 typedef void* GO_EVP_SIGNATURE_PTR;
 
@@ -110,7 +111,6 @@ typedef void* GO_SHA_CTX_PTR;
 
 // #include <openssl/core.h>
 typedef struct ossl_param_st GO_OSSL_PARAM;
-typedef struct ossl_param_st* GO_OSSL_PARAM_PTR;
 struct ossl_param_st {
     const char *key;             /* the name of the parameter */
     unsigned char data_type;     /* declare what kind of content is in data */
