@@ -109,7 +109,9 @@ typedef void* GO_MD5_CTX_PTR;
 // #include <openssl/sha.h>
 typedef void* GO_SHA_CTX_PTR;
 
+// #if OPENSSL_VERSION_NUMBER >= 0x30000000L
 // #include <openssl/core.h>
+// #endif
 typedef struct ossl_param_st GO_OSSL_PARAM;
 struct ossl_param_st {
     const char *key;             /* the name of the parameter */
