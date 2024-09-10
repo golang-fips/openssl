@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto"
 	"crypto/rsa"
+	"fmt"
 	"math/big"
 	"strconv"
 	"testing"
@@ -52,33 +53,40 @@ func TestRSAEncryptDecryptPKCS1(t *testing.T) {
 }
 
 func TestRSAEncryptDecryptPKCS1_MissingPrecomputedValues(t *testing.T) {
-	N, E, D, P, Q, Dp, Dq, Qinv, err := openssl.GenerateKeyRSA(2048)
+	n, e, d, p, q, dp, dq, qinv, err := openssl.GenerateKeyRSA(2048)
 	if err != nil {
 		t.Fatalf("GenerateKeyRSA: %v", err)
 	}
 	tt := []struct {
-		name    string
-		wantErr bool
-		fn      func() (*openssl.PrivateKeyRSA, *openssl.PublicKeyRSA)
+		withDp   bool
+		withDq   bool
+		withQinv bool
 	}{
-		{"noDp", false, func() (*openssl.PrivateKeyRSA, *openssl.PublicKeyRSA) {
-			return newRSAKeyFromParams(t, N, E, D, P, Q, nil, Dq, Qinv)
-		}},
-		{"noDq", false, func() (*openssl.PrivateKeyRSA, *openssl.PublicKeyRSA) {
-			return newRSAKeyFromParams(t, N, E, D, P, Q, Dp, nil, Qinv)
-		}},
-		{"noQinv", false, func() (*openssl.PrivateKeyRSA, *openssl.PublicKeyRSA) {
-			return newRSAKeyFromParams(t, N, E, D, P, Q, Dp, Dq, nil)
-		}},
-		{"none", false, func() (*openssl.PrivateKeyRSA, *openssl.PublicKeyRSA) {
-			return newRSAKeyFromParams(t, N, E, D, P, Q, nil, nil, nil)
-		}},
+		{true, true, false},
+		{true, false, true},
+		{false, true, true},
+		{false, false, false},
+		{false, false, true},
+		{false, true, false},
+		{true, false, false},
+		{true, true, true},
 	}
 	for _, tt := range tt {
 		tt := tt
-		t.Run(tt.name, func(t *testing.T) {
+		t.Run(fmt.Sprintf("dp=%v,dq=%v,qinv=%v", tt.withDp, tt.withDq, tt.withQinv), func(t *testing.T) {
 			t.Parallel()
-			priv, pub := tt.fn()
+			dp1, dq1, qinv1 := dp, dq, qinv
+			if !tt.withDp {
+				dp1 = nil
+			}
+			if !tt.withDq {
+				dq1 = nil
+			}
+			if !tt.withQinv {
+				qinv1 = nil
+			}
+
+			priv, pub := newRSAKeyFromParams(t, n, e, d, p, q, dp1, dq1, qinv1)
 			testRSAEncryptDecryptPKCS1(t, priv, pub)
 			msg := []byte("hi!")
 			enc, err := openssl.EncryptRSAPKCS1(pub, msg)
