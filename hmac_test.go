@@ -21,6 +21,9 @@ func TestHMAC(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			h := NewHMAC(tt.fn, nil)
+			if h == nil {
+				t.Skip("digest not supported")
+			}
 			h.Write([]byte("hello"))
 			sumHello := h.Sum(nil)
 
