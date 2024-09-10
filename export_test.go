@@ -2,4 +2,6 @@ package openssl
 
 var ErrOpen = errOpen
 
-var MajorVersion = vMajor
+func MajorVersion() uint {
+	return vMajor
+}

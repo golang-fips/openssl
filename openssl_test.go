@@ -80,7 +80,7 @@ func TestCheckVersion(t *testing.T) {
 }
 
 func TestProvider(t *testing.T) {
-	if openssl.MajorVersion == 1 {
+	if openssl.MajorVersion() == 1 {
 		t.Skip("Provider is not supported in OpenSSL 1")
 	}
 	tests := []struct {
