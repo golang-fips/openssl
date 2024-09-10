@@ -108,7 +108,7 @@ typedef void* GO_MD5_CTX_PTR;
 // #include <openssl/sha.h>
 typedef void* GO_SHA_CTX_PTR;
 
-// #include <openssl/code.h>
+// #include <openssl/core.h>
 typedef struct ossl_param_st GO_OSSL_PARAM;
 typedef struct ossl_param_st* GO_OSSL_PARAM_PTR;
 struct ossl_param_st {
