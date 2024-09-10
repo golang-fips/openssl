@@ -140,6 +140,14 @@ func (k *PublicKeyRSA) withKey(f func(C.GO_EVP_PKEY_PTR) C.int) C.int {
 	return f(k._pkey)
 }
 
+func (k *PublicKeyRSA) provider() (prov C.GO_OSSL_PROVIDER_PTR) {
+	k.withKey(func(pkey C.GO_EVP_PKEY_PTR) C.int {
+		prov = C.go_openssl_EVP_PKEY_get0_provider(pkey)
+		return 1
+	})
+	return prov
+}
+
 type PrivateKeyRSA struct {
 	// _pkey MUST NOT be accessed directly. Instead, use the withKey method.
 	_pkey C.GO_EVP_PKEY_PTR
@@ -199,6 +207,14 @@ func (k *PrivateKeyRSA) withKey(f func(C.GO_EVP_PKEY_PTR) C.int) C.int {
 	// collected (and finalized) before the cgo call returns.
 	defer runtime.KeepAlive(k)
 	return f(k._pkey)
+}
+
+func (k *PrivateKeyRSA) provider() (prov C.GO_OSSL_PROVIDER_PTR) {
+	k.withKey(func(pkey C.GO_EVP_PKEY_PTR) C.int {
+		prov = C.go_openssl_EVP_PKEY_get0_provider(pkey)
+		return 1
+	})
+	return prov
 }
 
 func DecryptRSAOAEP(h, mgfHash hash.Hash, priv *PrivateKeyRSA, ciphertext, label []byte) ([]byte, error) {

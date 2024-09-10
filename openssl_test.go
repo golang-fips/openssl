@@ -78,3 +78,33 @@ func TestCheckVersion(t *testing.T) {
 		t.Fatalf("FIPS mismatch: want %v, got %v", want, fips)
 	}
 }
+
+func TestProvider(t *testing.T) {
+	if openssl.MajorVersion == 1 {
+		t.Skip("Provider is not supported in OpenSSL 1")
+	}
+	tests := []struct {
+		name string
+		fn   func() any
+	}{
+		{"sha256", func() any { return openssl.NewSHA256() }},
+		{"rsaPub", func() any {
+			_, pub := newRSAKey(t, 1024)
+			return pub
+		}},
+		{"rsaPriv", func() any {
+			priv, _ := newRSAKey(t, 1024)
+			return priv
+		}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			md := openssl.NewSHA256()
+			name, _, _ := openssl.Provider(md)
+			if name == "" {
+				t.Fatal("Provider: empty name")
+			}
+		})
+	}
+}

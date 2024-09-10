@@ -99,7 +99,6 @@ typedef void* GO_BN_CTX_PTR;
 typedef void* GO_EVP_MAC_PTR;
 typedef void* GO_EVP_MAC_CTX_PTR;
 typedef void* GO_OSSL_PARAM_BLD_PTR;
-typedef void* GO_OSSL_PARAM_PTR;
 typedef void* GO_CRYPTO_THREADID_PTR;
 typedef void* GO_EVP_SIGNATURE_PTR;
 
@@ -108,6 +107,21 @@ typedef void* GO_MD5_CTX_PTR;
 
 // #include <openssl/sha.h>
 typedef void* GO_SHA_CTX_PTR;
+
+// #include <openssl/code.h>
+typedef struct ossl_param_st GO_OSSL_PARAM;
+typedef struct ossl_param_st* GO_OSSL_PARAM_PTR;
+struct ossl_param_st {
+    const char *key;             /* the name of the parameter */
+    unsigned char data_type;     /* declare what kind of content is in data */
+    void *data;                  /* value being passed in or out */
+    size_t data_size;            /* data size */
+    size_t return_size;          /* returned size */
+};
+
+enum {
+    GO_OSSL_PARAM_UTF8 = 6
+};
 
 // FOR_ALL_OPENSSL_FUNCTIONS is the list of all functions from libcrypto that are used in this package.
 // Forgetting to add a function here results in build failure with message reporting the function
@@ -191,6 +205,7 @@ DEFINEFUNC_3_0(int, EVP_default_properties_enable_fips, (GO_OSSL_LIB_CTX_PTR lib
 DEFINEFUNC_3_0(int, OSSL_PROVIDER_available, (GO_OSSL_LIB_CTX_PTR libctx, const char *name), (libctx, name)) \
 DEFINEFUNC_3_0(GO_OSSL_PROVIDER_PTR, OSSL_PROVIDER_load, (GO_OSSL_LIB_CTX_PTR libctx, const char *name), (libctx, name)) \
 DEFINEFUNC_3_0(const char *, OSSL_PROVIDER_get0_name, (const GO_OSSL_PROVIDER_PTR prov), (prov)) \
+DEFINEFUNC_3_0(int, OSSL_PROVIDER_get_params, (GO_OSSL_PROVIDER_PTR prov, GO_OSSL_PARAM_PTR param), (prov, param)) \
 DEFINEFUNC_3_0(GO_EVP_MD_PTR, EVP_MD_fetch, (GO_OSSL_LIB_CTX_PTR ctx, const char *algorithm, const char *properties), (ctx, algorithm, properties)) \
 DEFINEFUNC_3_0(void, EVP_MD_free, (GO_EVP_MD_PTR md), (md)) \
 DEFINEFUNC_3_0(const char *, EVP_MD_get0_name, (const GO_EVP_MD_PTR md), (md)) \
@@ -199,6 +214,7 @@ DEFINEFUNC_RENAMED_3_0(int, EVP_MD_get_block_size, EVP_MD_block_size, (const GO_
 DEFINEFUNC(int, RAND_bytes, (unsigned char *arg0, int arg1), (arg0, arg1)) \
 DEFINEFUNC_RENAMED_1_1(GO_EVP_MD_CTX_PTR, EVP_MD_CTX_new, EVP_MD_CTX_create, (void), ()) \
 DEFINEFUNC_RENAMED_1_1(void, EVP_MD_CTX_free, EVP_MD_CTX_destroy, (GO_EVP_MD_CTX_PTR ctx), (ctx)) \
+DEFINEFUNC_3_0(const GO_EVP_MD_PTR, EVP_MD_CTX_get0_md, (const GO_EVP_MD_CTX_PTR ctx), (ctx)) \
 DEFINEFUNC(int, EVP_MD_CTX_copy, (GO_EVP_MD_CTX_PTR out, const GO_EVP_MD_CTX_PTR in), (out, in)) \
 DEFINEFUNC(int, EVP_MD_CTX_copy_ex, (GO_EVP_MD_CTX_PTR out, const GO_EVP_MD_CTX_PTR in), (out, in)) \
 DEFINEFUNC(int, EVP_Digest, (const void *data, size_t count, unsigned char *md, unsigned int *size, const GO_EVP_MD_PTR type, GO_ENGINE_PTR impl), (data, count, md, size, type, impl)) \
@@ -272,6 +288,7 @@ DEFINEFUNC(int, EVP_CIPHER_CTX_set_key_length, (GO_EVP_CIPHER_CTX_PTR x, int key
 DEFINEFUNC(void, EVP_CIPHER_CTX_free, (GO_EVP_CIPHER_CTX_PTR arg0), (arg0)) \
 DEFINEFUNC(int, EVP_CIPHER_CTX_ctrl, (GO_EVP_CIPHER_CTX_PTR ctx, int type, int arg, void *ptr), (ctx, type, arg, ptr)) \
 DEFINEFUNC(GO_EVP_PKEY_PTR, EVP_PKEY_new, (void), ()) \
+DEFINEFUNC_3_0(const GO_OSSL_PROVIDER_PTR, EVP_PKEY_get0_provider, (const GO_EVP_PKEY_PTR ctx), (ctx)) \
 DEFINEFUNC_1_1_1(GO_EVP_PKEY_PTR, EVP_PKEY_new_raw_private_key, (int type, GO_ENGINE_PTR e, const unsigned char *key, size_t keylen), (type, e, key, keylen)) \
 DEFINEFUNC_1_1_1(GO_EVP_PKEY_PTR, EVP_PKEY_new_raw_public_key, (int type, GO_ENGINE_PTR e, const unsigned char *key, size_t keylen), (type, e, key, keylen)) \
 /* EVP_PKEY_size and EVP_PKEY_get_bits pkey parameter is const since OpenSSL 1.1.1. */ \

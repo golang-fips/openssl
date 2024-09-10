@@ -182,6 +182,10 @@ func (h *evpHash) finalize() {
 	C.go_openssl_EVP_MD_CTX_free(h.ctx2)
 }
 
+func (h *evpHash) provider() C.GO_OSSL_PROVIDER_PTR {
+	return C.go_openssl_EVP_MD_get0_provider(C.go_openssl_EVP_MD_CTX_get0_md(h.ctx))
+}
+
 func (h *evpHash) Reset() {
 	// There is no need to reset h.ctx2 because it is always reset after
 	// use in evpHash.sum.

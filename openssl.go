@@ -111,14 +111,6 @@ func FIPS() bool {
 	}
 }
 
-// isProviderAvailable checks if the provider with the given name is available.
-// This function is used in export_test.go, but must be defined here as test files can't access C functions.
-func isProviderAvailable(name string) bool {
-	providerName := C.CString(name)
-	defer C.free(unsafe.Pointer(providerName))
-	return C.go_openssl_OSSL_PROVIDER_available(nil, providerName) == 1
-}
-
 // SetFIPS enables or disables FIPS mode.
 //
 // For OpenSSL 3, the `fips` provider is loaded if enabled is true,
@@ -424,4 +416,46 @@ func CheckLeaks() {
 // compared lexicographically.
 func versionAtOrAbove(major, minor, patch uint) bool {
 	return vMajor > major || (vMajor == major && vMinor > minor) || (vMajor == major && vMinor == minor && vPatch >= patch)
+}
+
+var (
+	OSSL_PROV_PARAM_NAME      = C.CString("name")
+	OSSL_PROV_PARAM_VERSION   = C.CString("version")
+	OSSL_PROV_PARAM_BUILDINFO = C.CString("buildinfo")
+)
+
+// Provider returns the name, version and build info of the provider of the given object.
+// The returned values are empty if using OpenSSL 1 or if the object doesn't
+// implement the provider method.
+func Provider(obj any) (name, version, buildinfo string) {
+	if vMajor != 3 {
+		return "", "", ""
+	}
+	v, ok := obj.(interface{ provider() C.GO_OSSL_PROVIDER_PTR })
+	if !ok {
+		return "", "", ""
+	}
+	prov := v.provider()
+	if prov == nil {
+		return "", "", ""
+	}
+	var cname, cversion, cbuildinfo *C.char
+	var pinner runtime.Pinner
+	defer pinner.Unpin()
+	pinner.Pin(&cname)
+	pinner.Pin(&cversion)
+	pinner.Pin(&cbuildinfo)
+	params := []C.GO_OSSL_PARAM{
+		{OSSL_PROV_PARAM_NAME, C.GO_OSSL_PARAM_UTF8, unsafe.Pointer(&cname), 0, 0},
+		{OSSL_PROV_PARAM_VERSION, C.GO_OSSL_PARAM_UTF8, unsafe.Pointer(&cversion), 0, 0},
+		{OSSL_PROV_PARAM_BUILDINFO, C.GO_OSSL_PARAM_UTF8, unsafe.Pointer(&cbuildinfo), 0, 0},
+		{nil, 0, nil, 0, 0},
+	}
+	if C.go_openssl_OSSL_PROVIDER_get_params(prov, &params[0]) != 1 {
+		return "", "", ""
+	}
+	name = C.GoString(cname)
+	version = C.GoString(cversion)
+	buildinfo = C.GoString(cbuildinfo)
+	return name, version, buildinfo
 }

@@ -150,7 +150,8 @@ func TestRSAEncryptDecryptOAEP_EmptyLabel(t *testing.T) {
 }
 
 func TestRSAEncryptDecryptOAEP_WithMGF1Hash(t *testing.T) {
-	if openssl.SymCryptProviderAvailable() {
+	priv, pub := newRSAKey(t, 2048)
+	if provName, _, _ := openssl.Provider(priv); provName == "symcryptprovider" {
 		t.Skip("SymCrypt provider does not support MGF1 hash")
 	}
 
@@ -158,7 +159,6 @@ func TestRSAEncryptDecryptOAEP_WithMGF1Hash(t *testing.T) {
 	sha256 := openssl.NewSHA256()
 	msg := []byte("hi!")
 	label := []byte("ho!")
-	priv, pub := newRSAKey(t, 2048)
 	enc, err := openssl.EncryptRSAOAEP(sha256, sha1, pub, msg, label)
 	if err != nil {
 		t.Fatal(err)
@@ -221,12 +221,12 @@ func TestRSASignVerifyPKCS1v15(t *testing.T) {
 }
 
 func TestRSASignVerifyPKCS1v15_Unhashed(t *testing.T) {
-	if openssl.SymCryptProviderAvailable() {
+	priv, pub := newRSAKey(t, 2048)
+	if provName, _, _ := openssl.Provider(priv); provName == "symcryptprovider" {
 		t.Skip("SymCrypt provider does not support unhashed PKCS1v15")
 	}
 
 	msg := []byte("hi!")
-	priv, pub := newRSAKey(t, 2048)
 	signed, err := openssl.SignRSAPKCS1v15(priv, 0, msg)
 	if err != nil {
 		t.Fatal(err)
