@@ -117,7 +117,7 @@ func TestHash_BinaryMarshaler(t *testing.T) {
 	}
 }
 
-func TesHash_BinaryAppender(t *testing.T) {
+func TestHash_BinaryAppender(t *testing.T) {
 	for _, ch := range hashes {
 		t.Run(ch.String(), func(t *testing.T) {
 			t.Parallel()
@@ -160,6 +160,8 @@ func TesHash_BinaryAppender(t *testing.T) {
 				if actual, actual2 := h.Sum(nil), h2.Sum(nil); !bytes.Equal(actual, actual2) {
 					t.Errorf("0x%x != appended 0x%x", actual, actual2)
 				}
+			} else {
+				t.Skip("skipping: not supported")
 			}
 		})
 	}
