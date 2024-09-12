@@ -19,9 +19,10 @@ enum {
     GO_EVP_PKEY_TLS1_PRF = 1021,
     GO_EVP_PKEY_HKDF = 1036,
     GO_EVP_PKEY_ED25519 = 1087,
+    GO_EVP_PKEY_DSA = 116,
     /* This is defined differently in OpenSSL 3 (1 << 11), but in our
      * code it is only used in OpenSSL 1.
-    */
+     */
     GO1_EVP_PKEY_OP_DERIVE = (1 << 10),
     GO_EVP_MAX_MD_SIZE = 64,
 
@@ -76,7 +77,9 @@ enum {
     GO_EVP_PKEY_CTRL_RSA_KEYGEN_BITS = 0x1003,
     GO_EVP_PKEY_CTRL_RSA_MGF1_MD = 0x1005,
     GO_EVP_PKEY_CTRL_RSA_OAEP_MD = 0x1009,
-    GO_EVP_PKEY_CTRL_RSA_OAEP_LABEL = 0x100A
+    GO_EVP_PKEY_CTRL_RSA_OAEP_LABEL = 0x100A,
+    GO_EVP_PKEY_CTRL_DSA_PARAMGEN_BITS = 0x1001,
+    GO_EVP_PKEY_CTRL_DSA_PARAMGEN_Q_BITS = 0x1002
 };
 
 typedef void* GO_OPENSSL_INIT_SETTINGS_PTR;
@@ -102,6 +105,7 @@ typedef void* GO_OSSL_PARAM_BLD_PTR;
 typedef void* GO_OSSL_PARAM_PTR;
 typedef void* GO_CRYPTO_THREADID_PTR;
 typedef void* GO_EVP_SIGNATURE_PTR;
+typedef void* GO_DSA_PTR;
 
 // #include <openssl/md5.h>
 typedef void* GO_MD5_CTX_PTR;
@@ -158,6 +162,7 @@ typedef void* GO_SHA_CTX_PTR;
 // #include <openssl/ec.h>
 // #include <openssl/rand.h>
 // #include <openssl/evp.h>
+// #include <openssl/dsa.h>
 // #if OPENSSL_VERSION_NUMBER >= 0x30000000L
 // #include <openssl/provider.h>
 // #include <openssl/param_build.h>
@@ -284,6 +289,9 @@ DEFINEFUNC_LEGACY_1(int, EVP_PKEY_assign, (GO_EVP_PKEY_PTR pkey, int type, void 
 DEFINEFUNC(int, EVP_PKEY_verify, (GO_EVP_PKEY_CTX_PTR ctx, const unsigned char *sig, size_t siglen, const unsigned char *tbs, size_t tbslen), (ctx, sig, siglen, tbs, tbslen)) \
 DEFINEFUNC(GO_EVP_PKEY_CTX_PTR, EVP_PKEY_CTX_new, (GO_EVP_PKEY_PTR arg0, GO_ENGINE_PTR arg1), (arg0, arg1)) \
 DEFINEFUNC(GO_EVP_PKEY_CTX_PTR, EVP_PKEY_CTX_new_id, (int id, GO_ENGINE_PTR e), (id, e)) \
+DEFINEFUNC_3_0(GO_EVP_PKEY_CTX_PTR, EVP_PKEY_CTX_new_from_pkey, (GO_OSSL_LIB_CTX_PTR libctx, GO_EVP_PKEY_PTR pkey, const char *propquery), (libctx, pkey, propquery)) \
+DEFINEFUNC(int, EVP_PKEY_paramgen_init, (GO_EVP_PKEY_CTX_PTR ctx), (ctx)) \
+DEFINEFUNC(int, EVP_PKEY_paramgen, (GO_EVP_PKEY_CTX_PTR ctx, GO_EVP_PKEY_PTR *ppkey), (ctx, ppkey)) \
 DEFINEFUNC(int, EVP_PKEY_keygen_init, (GO_EVP_PKEY_CTX_PTR ctx), (ctx)) \
 DEFINEFUNC(int, EVP_PKEY_keygen, (GO_EVP_PKEY_CTX_PTR ctx, GO_EVP_PKEY_PTR *ppkey), (ctx, ppkey)) \
 DEFINEFUNC(void, EVP_PKEY_CTX_free, (GO_EVP_PKEY_CTX_PTR arg0), (arg0)) \
@@ -300,6 +308,7 @@ DEFINEFUNC(int, EVP_PKEY_derive_set_peer, (GO_EVP_PKEY_CTX_PTR ctx, GO_EVP_PKEY_
 DEFINEFUNC(int, EVP_PKEY_derive, (GO_EVP_PKEY_CTX_PTR ctx, unsigned char *key, size_t *keylen), (ctx, key, keylen)) \
 DEFINEFUNC_LEGACY_1_0(void*, EVP_PKEY_get0, (GO_EVP_PKEY_PTR pkey), (pkey)) \
 DEFINEFUNC_LEGACY_1_1(GO_EC_KEY_PTR, EVP_PKEY_get0_EC_KEY, (GO_EVP_PKEY_PTR pkey), (pkey)) \
+DEFINEFUNC_LEGACY_1_1(GO_DSA_PTR, EVP_PKEY_get0_DSA, (GO_EVP_PKEY_PTR pkey), (pkey)) \
 DEFINEFUNC_3_0(int, EVP_PKEY_fromdata_init, (GO_EVP_PKEY_CTX_PTR ctx), (ctx)) \
 DEFINEFUNC_3_0(int, EVP_PKEY_fromdata, (GO_EVP_PKEY_CTX_PTR ctx, GO_EVP_PKEY_PTR *pkey, int selection, GO_OSSL_PARAM_PTR params), (ctx, pkey, selection, params)) \
 DEFINEFUNC_3_0(int, EVP_PKEY_set1_encoded_public_key, (GO_EVP_PKEY_PTR pkey, const unsigned char *pub, size_t publen), (pkey, pub, publen)) \
@@ -373,4 +382,11 @@ DEFINEFUNC_1_1_1(int, EVP_PKEY_get_raw_public_key, (const GO_EVP_PKEY_PTR pkey, 
 DEFINEFUNC_1_1_1(int, EVP_PKEY_get_raw_private_key, (const GO_EVP_PKEY_PTR pkey, unsigned char *priv, size_t *len), (pkey, priv, len)) \
 DEFINEFUNC_3_0(GO_EVP_SIGNATURE_PTR, EVP_SIGNATURE_fetch, (GO_OSSL_LIB_CTX_PTR ctx, const char *algorithm, const char *properties), (ctx, algorithm, properties)) \
 DEFINEFUNC_3_0(void, EVP_SIGNATURE_free, (GO_EVP_SIGNATURE_PTR signature), (signature)) \
+DEFINEFUNC_LEGACY_1(GO_DSA_PTR, DSA_new, (void), ()) \
+DEFINEFUNC_LEGACY_1(void, DSA_free, (GO_DSA_PTR r), (r)) \
+DEFINEFUNC_LEGACY_1(int, DSA_generate_key, (GO_DSA_PTR a), (a)) \
+DEFINEFUNC_LEGACY_1_1(void, DSA_get0_pqg, (const GO_DSA_PTR d, const GO_BIGNUM_PTR *p, const GO_BIGNUM_PTR *q, const GO_BIGNUM_PTR *g), (d, p, q, g)) \
+DEFINEFUNC_LEGACY_1_1(int, DSA_set0_pqg, (GO_DSA_PTR d, GO_BIGNUM_PTR p, GO_BIGNUM_PTR q, GO_BIGNUM_PTR g), (d, p, q, g)) \
+DEFINEFUNC_LEGACY_1_1(void, DSA_get0_key, (const GO_DSA_PTR d, const GO_BIGNUM_PTR *pub_key, const GO_BIGNUM_PTR *priv_key), (d, pub_key, priv_key)) \
+DEFINEFUNC_LEGACY_1_1(int, DSA_set0_key, (GO_DSA_PTR d, GO_BIGNUM_PTR pub_key, GO_BIGNUM_PTR priv_key), (d, pub_key, priv_key)) \
 
