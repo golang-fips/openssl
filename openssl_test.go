@@ -78,3 +78,16 @@ func TestCheckVersion(t *testing.T) {
 		t.Fatalf("FIPS mismatch: want %v, got %v", want, fips)
 	}
 }
+
+func TestFIPS(t *testing.T) {
+	wantFIPS := os.Getenv("GO_OPENSSL_TEST_WANT_FIPS")
+	if wantFIPS == "" {
+		// FIPS mode is platform dependent.
+		// We can't test it if we don't know what to expect.
+		t.Skip("skipping test; GO_OPENSSL_TEST_WANT_FIPS not set")
+	}
+	want := wantFIPS == "1"
+	if got := openssl.FIPS(); got != want {
+		t.Fatalf("FIPS mode mismatch: want %v, got %v", want, got)
+	}
+}
