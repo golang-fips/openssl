@@ -87,5 +87,8 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+    - name: Prove FIPS
+      run: |
+        go test -v -count 0 . | grep -q "FIPS enabled: true"
     - name: Run Test
       run: go test -v ./...

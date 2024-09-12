@@ -89,6 +89,9 @@ func VersionText() string {
 var (
 	providerNameFips    = C.CString("fips")
 	providerNameDefault = C.CString("default")
+
+	propertyFipsYes = C.CString("fips=yes")
+	algorithmSHA256 = C.CString("SHA2-256")
 )
 
 // FIPS returns true if OpenSSL is running in FIPS mode, else returns false.
@@ -97,15 +100,53 @@ func FIPS() bool {
 	case 1:
 		return C.go_openssl_FIPS_mode() == 1
 	case 3:
-		// If FIPS is not enabled via default properties, then we are sure FIPS is not used.
-		if C.go_openssl_EVP_default_properties_is_fips_enabled(nil) == 0 {
+		// OpenSSL 3 doesn't have a direct way to check if we are in FIPS mode because the FIPS knowledge is
+		// implemented by a provider. We have to try different methods.
+		// See https://docs.openssl.org/3.0/man7/crypto/#explicit-fetching for information about how to fetch algorithms from providers.
+
+		// First check the common case of the default properties containing `fips=yes` and the built-in FIPS provider being available.
+		fipsEnabledByDefault := C.go_openssl_EVP_default_properties_is_fips_enabled(nil) == 1
+		if fipsEnabledByDefault {
+			if C.go_openssl_OSSL_PROVIDER_available(nil, providerNameFips) == 1 {
+				return true
+			}
+		}
+
+		// There are at least two cases not covered by the above check:
+		// 1. The built-in FIPS provider is the only provider available and `fips=yes` is not set as default properties,
+		//    in which case we would still be in FIPS mode, as all algorithms will be fetched from the built-in FIPS provider.
+		// 2. The FIPS implementation is not provided by the built-in FIPS provider, but by an available third-party provider
+		//    that sets the `fips=yes` property to its FIPS-compliant algorithms. This provider will be used by default if
+		//    EVP_default_properties_is_fips_enabled returns true (aka `fips=yes`) or if it is marked as default provider
+		//    in the default properties, i.e. `?provider={providername}`.
+
+		// We will have to infer the previous cases by checking if the SHA-256 algorithm is available with the `fips=yes` property
+		// and if the provider of the fetched algorithm is the same as the provider of the algorithm fetched with the default properties.
+		// Note that this approach has a small chance of false negative if the FIPS provider doesn't provide the SHA-256 algorithm,
+		// but that is highly unlikely because SHA-256 is one of the most common algorithms and fundamental to many cryptographic operations.
+		// It also has a small chance of false positive if the FIPS provider provides the SHA-256 algorithm but not others used by the
+		// caller application, but that is also unlikely because the FIPS provider should provide all common algorithms.
+		mdFIPS := C.go_openssl_EVP_MD_fetch(nil, algorithmSHA256, propertyFipsYes)
+		if mdFIPS == nil {
+			// Can't fetch the algorithm with the `fips=yes` property, not in FIPS mode.
 			return false
 		}
-		// EVP_default_properties_is_fips_enabled can return true even if the FIPS provider isn't loaded,
-		// it is only based on the default properties.
-		// We can be sure that the FIPS provider is available if we can fetch an algorithm, e.g., SHA2-256,
-		// explicitly setting `fips=yes`.
-		return C.go_openssl_OSSL_PROVIDER_available(nil, providerNameFips) == 1
+		defer C.go_openssl_EVP_MD_free(mdFIPS)
+
+		mdDefault := C.go_openssl_EVP_MD_fetch(nil, algorithmSHA256, nil)
+		if mdDefault == nil {
+			// We can't fetch the algorithm with the default properties, but we could fetch it with the `fips=yes` property.
+			// This means that the default properties doesn't contain `?provider={providername}`.
+			// We are only in FIPS mode if the default properties contain `fips=yes`.
+			return fipsEnabledByDefault
+		}
+		defer C.go_openssl_EVP_MD_free(mdDefault)
+
+		// Check if the providers of the fetched algorithms are the same,
+		// in which case the default properties contain `?provider={providername}`.
+		provFIPS := C.go_openssl_EVP_MD_get0_provider(mdFIPS)
+		provDefault := C.go_openssl_EVP_MD_get0_provider(mdDefault)
+		return provFIPS == provDefault
 	default:
 		panic(errUnsupportedVersion())
 	}
