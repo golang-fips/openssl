@@ -95,6 +95,9 @@ var (
 )
 
 // FIPS returns true if OpenSSL is running in FIPS mode, else returns false.
+// For OpenSSL 1, it calls FIPS_mode.
+// For OpenSSL 3, it checks if the default properties contain `fips=yes` and the built-in FIPS provider is available
+// or if the SHA-256 algorithm is implemented by a provider that responds to the `fips=yes` property.
 func FIPS() bool {
 	switch vMajor {
 	case 1:
@@ -106,10 +109,8 @@ func FIPS() bool {
 
 		// First check the common case of the default properties containing `fips=yes` and the built-in FIPS provider being available.
 		fipsEnabledByDefault := C.go_openssl_EVP_default_properties_is_fips_enabled(nil) == 1
-		if fipsEnabledByDefault {
-			if C.go_openssl_OSSL_PROVIDER_available(nil, providerNameFips) == 1 {
-				return true
-			}
+		if fipsEnabledByDefault && C.go_openssl_OSSL_PROVIDER_available(nil, providerNameFips) == 1 {
+			return true
 		}
 
 		// There are at least two cases not covered by the above check:
