@@ -104,15 +104,11 @@ func FIPS() bool {
 	case 1:
 		return C.go_openssl_FIPS_mode() == 1
 	case 3:
-		// If FIPS is not enabled via default properties, then we are sure FIPS is not used.
-		if C.go_openssl_EVP_default_properties_is_fips_enabled(nil) == 0 {
-			return false
-		}
-		// EVP_default_properties_is_fips_enabled can return true even if the FIPS provider isn't loaded,
-		// it is only based on the default properties.
-		// We can be sure that the FIPS provider is available if we can fetch an algorithm, e.g., SHA2-256,
-		// explicitly setting `fips=yes`.
-		return C.go_openssl_OSSL_PROVIDER_available(nil, providerNameFips) == 1
+		// EVP_default_properties_is_fips_enabled returns 1 if the default properties contain `fips=1`.
+		// It doesn't check if there is a provider available that matches that property, but we can be sure
+		// that any algorithm fetching will fail in that case. So this check is enough to tell if OpenSSL
+		// will only use FIPS-approved algorithms.
+		return C.go_openssl_EVP_default_properties_is_fips_enabled(nil) == 1
 	default:
 		panic(errUnsupportedVersion())
 	}
