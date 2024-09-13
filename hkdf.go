@@ -13,7 +13,12 @@ import (
 )
 
 func SupportsHKDF() bool {
-	return versionAtOrAbove(1, 1, 1)
+	ctx := C.go_openssl_EVP_PKEY_CTX_new_id(C.GO_EVP_PKEY_HKDF, nil)
+	if ctx == nil {
+		return false
+	}
+	C.go_openssl_EVP_PKEY_CTX_free(ctx)
+	return false
 }
 
 func newHKDF(h func() hash.Hash, mode C.int) (*hkdf, error) {
