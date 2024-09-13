@@ -32,9 +32,12 @@ func TestNewGCMNonce(t *testing.T) {
 		gcmStandardNonceSize = 12
 	)
 
-	c := ci.(interface {
+	c, ok := ci.(interface {
 		NewGCM(nonceSize, tagSize int) (cipher.AEAD, error)
 	})
+	if !ok {
+		t.Fatal("cipher does not support NewGCM")
+	}
 	g, err := c.NewGCM(gcmStandardNonceSize, gcmTagSize)
 	if err != nil {
 		t.Errorf("expected no error for standard nonce size with standard tag size, got: %#v", err)
