@@ -17,6 +17,16 @@ var (
 	OSSL_PKEY_PARAM_FFC_G     = C.CString("g")
 )
 
+// SupportsDSA returns true if the OpenSSL library supports DSA.
+func SupportsDSA() bool {
+	ctx := C.go_openssl_EVP_PKEY_CTX_new_id(C.GO_EVP_PKEY_DSA, nil)
+	if ctx == nil {
+		return false
+	}
+	C.go_openssl_EVP_PKEY_CTX_free(ctx)
+	return true
+}
+
 // DSAParameters contains the DSA parameters.
 type DSAParameters struct {
 	P, Q, G BigInt
