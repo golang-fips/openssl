@@ -167,8 +167,15 @@ func TestHash_BinaryAppender(t *testing.T) {
 			// Use only the newly appended part of the slice
 			appendedState := state[10:]
 
-			h2 := cryptoToHash(ch)()
-			if err := h2.(encoding.BinaryUnmarshaler).UnmarshalBinary(appendedState); err != nil {
+			h2, ok := cryptoToHash(ch)().(interface {
+				hash.Hash
+				encoding.BinaryUnmarshaler
+			})
+			if !ok {
+				t.Skip("not supported")
+			}
+
+			if err := h2.UnmarshalBinary(appendedState); err != nil {
 				t.Errorf("could not unmarshal: %v", err)
 			}
 			if actual, actual2 := hashWithBinaryAppender.Sum(nil), h2.Sum(nil); !bytes.Equal(actual, actual2) {
