@@ -65,6 +65,8 @@ func NewAESCipher(key []byte) (cipher.Block, error) {
 		block = cipherWithGCM{aes}
 	case !cbcSupportes && !ctrSupportes && !gcmSupportes:
 		block = aes
+	default:
+		panic("unreachable")
 	}
 
 	return block, nil
