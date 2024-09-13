@@ -92,26 +92,36 @@ func TestHash_BinaryMarshaler(t *testing.T) {
 		t.Run(ch.String(), func(t *testing.T) {
 			t.Parallel()
 			if !openssl.SupportsHash(ch) {
-				t.Skip("skipping: not supported")
+				t.Skip("hash not supported")
 			}
-			h := cryptoToHash(ch)()
-			if _, ok := h.(encoding.BinaryMarshaler); !ok {
-				t.Skip("skipping: not supported")
+
+			hashMarshaler, ok := cryptoToHash(ch)().(interface {
+				hash.Hash
+				encoding.BinaryMarshaler
+			})
+			if !ok {
+				t.Skip("BinaryMarshaler not supported")
 			}
-			_, err := h.Write(msg)
+
+			if _, err := hashMarshaler.Write(msg); err != nil {
+				t.Fatalf("Write failed: %v", err)
+			}
+
+			state, err := hashMarshaler.MarshalBinary()
 			if err != nil {
-				t.Fatal(err)
+				t.Fatalf("MarshalBinary failed: %v", err)
 			}
-			state, err := h.(encoding.BinaryMarshaler).MarshalBinary()
-			if err != nil {
-				t.Errorf("could not marshal: %v", err)
+
+			hashUnmarshaler := cryptoToHash(ch)().(interface {
+				hash.Hash
+				encoding.BinaryUnmarshaler
+			})
+			if err := hashUnmarshaler.UnmarshalBinary(state); err != nil {
+				t.Fatalf("UnmarshalBinary failed: %v", err)
 			}
-			h2 := cryptoToHash(ch)()
-			if err := h2.(encoding.BinaryUnmarshaler).UnmarshalBinary(state); err != nil {
-				t.Errorf("could not unmarshal: %v", err)
-			}
-			if actual, actual2 := h.Sum(nil), h2.Sum(nil); !bytes.Equal(actual, actual2) {
-				t.Errorf("0x%x != marshaled 0x%x", actual, actual2)
+
+			if actual, actual2 := hashMarshaler.Sum(nil), hashUnmarshaler.Sum(nil); !bytes.Equal(actual, actual2) {
+				t.Errorf("0x%x != appended 0x%x", actual, actual2)
 			}
 		})
 	}
@@ -124,44 +134,45 @@ func TestHash_BinaryAppender(t *testing.T) {
 			if !openssl.SupportsHash(ch) {
 				t.Skip("skipping: not supported")
 			}
-			h := cryptoToHash(ch)()
-			if h, ok := h.(interface {
+
+			hashWithBinaryAppender, ok := cryptoToHash(ch)().(interface {
+				hash.Hash
 				AppendBinary(b []byte) ([]byte, error)
-				Sum(b []byte) []byte
-			}); ok {
-				// Create a slice with 10 elements
-				prebuiltSlice := make([]byte, 10)
-				// Fill the slice with some data
-				for i := range prebuiltSlice {
-					prebuiltSlice[i] = byte(i)
-				}
-
-				// Clone the prebuilt slice for comparison
-				prebuiltSliceClone := append([]byte(nil), prebuiltSlice...)
-
-				// Append binary data to the prebuilt slice
-				state, err := h.AppendBinary(prebuiltSlice)
-				if err != nil {
-					t.Errorf("could not append binary: %v", err)
-				}
-
-				// Ensure the first 10 elements are still the same
-				if !bytes.Equal(state[:10], prebuiltSliceClone) {
-					t.Errorf("prebuilt slice modified: got %v, want %v", state[:10], prebuiltSliceClone)
-				}
-
-				// Use only the newly appended part of the slice
-				appendedState := state[10:]
-
-				h2 := cryptoToHash(ch)()
-				if err := h2.(encoding.BinaryUnmarshaler).UnmarshalBinary(appendedState); err != nil {
-					t.Errorf("could not unmarshal: %v", err)
-				}
-				if actual, actual2 := h.Sum(nil), h2.Sum(nil); !bytes.Equal(actual, actual2) {
-					t.Errorf("0x%x != appended 0x%x", actual, actual2)
-				}
-			} else {
+			})
+			if !ok {
 				t.Skip("skipping: not supported")
+			}
+
+			// Create a slice with 10 elements
+			prebuiltSlice := make([]byte, 10)
+			// Fill the slice with some data
+			for i := range prebuiltSlice {
+				prebuiltSlice[i] = byte(i)
+			}
+
+			// Clone the prebuilt slice for comparison
+			prebuiltSliceClone := append([]byte(nil), prebuiltSlice...)
+
+			// Append binary data to the prebuilt slice
+			state, err := hashWithBinaryAppender.AppendBinary(prebuiltSlice)
+			if err != nil {
+				t.Errorf("could not append binary: %v", err)
+			}
+
+			// Ensure the first 10 elements are still the same
+			if !bytes.Equal(state[:10], prebuiltSliceClone) {
+				t.Errorf("prebuilt slice modified: got %v, want %v", state[:10], prebuiltSliceClone)
+			}
+
+			// Use only the newly appended part of the slice
+			appendedState := state[10:]
+
+			h2 := cryptoToHash(ch)()
+			if err := h2.(encoding.BinaryUnmarshaler).UnmarshalBinary(appendedState); err != nil {
+				t.Errorf("could not unmarshal: %v", err)
+			}
+			if actual, actual2 := hashWithBinaryAppender.Sum(nil), h2.Sum(nil); !bytes.Equal(actual, actual2) {
+				t.Errorf("0x%x != appended 0x%x", actual, actual2)
 			}
 		})
 	}
@@ -201,20 +212,21 @@ func TestHash_Clone(t *testing.T) {
 func TestHash_ByteWriter(t *testing.T) {
 	msg := []byte("testing")
 	for _, ch := range hashes {
-		ch := ch
 		t.Run(ch.String(), func(t *testing.T) {
 			t.Parallel()
 			if !openssl.SupportsHash(ch) {
 				t.Skip("skipping: not supported")
 			}
-			h := cryptoToHash(ch)()
-			initSum := h.Sum(nil)
-			bw := h.(io.ByteWriter)
+			bwh := cryptoToHash(ch)().(interface {
+				hash.Hash
+				io.ByteWriter
+			})
+			initSum := bwh.Sum(nil)
 			for i := range len(msg) {
-				bw.WriteByte(msg[i])
+				bwh.WriteByte(msg[i])
 			}
-			h.Reset()
-			sum := h.Sum(nil)
+			bwh.Reset()
+			sum := bwh.Sum(nil)
 			if !bytes.Equal(sum, initSum) {
 				t.Errorf("got:%x want:%x", sum, initSum)
 			}
@@ -225,7 +237,6 @@ func TestHash_ByteWriter(t *testing.T) {
 func TestHash_StringWriter(t *testing.T) {
 	msg := []byte("testing")
 	for _, ch := range hashes {
-		ch := ch
 		t.Run(ch.String(), func(t *testing.T) {
 			t.Parallel()
 			if !openssl.SupportsHash(ch) {
