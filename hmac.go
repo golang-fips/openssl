@@ -18,7 +18,7 @@ var OSSL_MAC_PARAM_DIGEST = C.CString("digest")
 // OpenSSL (for example, h could be openssl.NewSHA256).
 // If h is not recognized, NewHMAC returns nil.
 func NewHMAC(h func() hash.Hash, key []byte) hash.Hash {
-	ch := h()
+	ch := hashFuncHash(h)
 	md := hashToMD(ch)
 	if md == nil {
 		return nil

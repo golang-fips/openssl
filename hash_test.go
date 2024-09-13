@@ -351,3 +351,16 @@ func BenchmarkSHA256(b *testing.B) {
 		openssl.SHA256(buf)
 	}
 }
+
+// stubHash is a hash.Hash implementation that does nothing.
+type stubHash struct{}
+
+func newStubHash() hash.Hash {
+	return new(stubHash)
+}
+
+func (h *stubHash) Write(p []byte) (int, error) { return 0, nil }
+func (h *stubHash) Sum(in []byte) []byte        { return in }
+func (h *stubHash) Reset()                      {}
+func (h *stubHash) Size() int                   { return 0 }
+func (h *stubHash) BlockSize() int              { return 0 }

@@ -10,7 +10,7 @@ import (
 )
 
 func PBKDF2(password, salt []byte, iter, keyLen int, h func() hash.Hash) ([]byte, error) {
-	md := hashToMD(h())
+	md := hashToMD(hashFuncHash(h))
 	if md == nil {
 		return nil, errors.New("unsupported hash function")
 	}

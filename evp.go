@@ -16,6 +16,17 @@ import (
 // cacheMD is a cache of crypto.Hash to GO_EVP_MD_PTR.
 var cacheMD sync.Map
 
+// hashFuncHash return fn(). If fn panics, it returns nil.
+// This is used to avoid aborting the program when calling
+// an unsupported hash function. It is the caller's responsibility
+// to check the returned value.
+func hashFuncHash(fn func() hash.Hash) hash.Hash {
+	defer func() {
+		_ = recover()
+	}()
+	return fn()
+}
+
 // hashToMD converts a hash.Hash implementation from this package to a GO_EVP_MD_PTR.
 func hashToMD(h hash.Hash) C.GO_EVP_MD_PTR {
 	var ch crypto.Hash

@@ -21,7 +21,7 @@ func newHKDF(h func() hash.Hash, mode C.int) (*hkdf, error) {
 		return nil, errUnsupportedVersion()
 	}
 
-	ch := h()
+	ch := hashFuncHash(h)
 	md := hashToMD(ch)
 	if md == nil {
 		return nil, errors.New("unsupported hash function")

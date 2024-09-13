@@ -29,7 +29,7 @@ func TLS1PRF(result, secret, label, seed []byte, h func() hash.Hash) error {
 		// function is MD5SHA1.
 		md = cryptoHashToMD(crypto.MD5SHA1)
 	} else {
-		md = hashToMD(h())
+		md = hashToMD(hashFuncHash(h))
 	}
 	if md == nil {
 		return errors.New("unsupported hash function")

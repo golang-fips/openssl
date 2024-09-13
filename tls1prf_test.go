@@ -165,3 +165,17 @@ func TestTLS1PRF(t *testing.T) {
 		})
 	}
 }
+
+func TestTLS1PRFUnsupportedHash(t *testing.T) {
+	if !openssl.SupportsTLS1PRF() {
+		t.Skip("TLS PRF is not supported")
+	}
+
+	tt := tls1prfTests[0]
+	result := make([]byte, len(tt.out))
+	// Test that TLS1PRF returns an error for unsupported hashes instead of panicking.
+	err := openssl.TLS1PRF(result, tt.secret, tt.label, tt.seed, cryptoToHash(tt.hash))
+	if err == nil {
+		t.Errorf("expected an error for unsupported hash")
+	}
+}
