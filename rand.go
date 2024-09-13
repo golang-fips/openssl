@@ -4,9 +4,12 @@ package openssl
 
 // #include "goopenssl.h"
 import "C"
-import "unsafe"
+import (
+	"io"
+	"unsafe"
+)
 
-type randReader int
+type randReader struct{}
 
 func (randReader) Read(b []byte) (int, error) {
 	// Note: RAND_bytes should never fail; the return value exists only for historical reasons.
@@ -17,4 +20,6 @@ func (randReader) Read(b []byte) (int, error) {
 	return len(b), nil
 }
 
-const RandReader = randReader(0)
+func NewRandReader() io.Reader {
+	return randReader{}
+}

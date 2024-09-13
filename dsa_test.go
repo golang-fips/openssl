@@ -111,7 +111,7 @@ func testDSASignAndVerify(t *testing.T, priv *openssl.PrivateKeyDSA) {
 	if !dsa.Verify(&priv1.PublicKey, hashed[:], esig.R, esig.S) {
 		t.Error("compat: crypto/dsa can't verify OpenSSL signature")
 	}
-	r1, s1, err := dsa.Sign(openssl.RandReader, &priv1, hashed[:])
+	r1, s1, err := dsa.Sign(openssl.NewRandReader(), &priv1, hashed[:])
 	if err != nil {
 		t.Errorf("error signing: %s", err)
 		return

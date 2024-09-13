@@ -7,7 +7,7 @@ import (
 )
 
 func TestRand(t *testing.T) {
-	_, err := openssl.RandReader.Read(make([]byte, 5))
+	_, err := openssl.NewRandReader().Read(make([]byte, 5))
 	if err != nil {
 		t.Fatal(err)
 	}
