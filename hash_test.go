@@ -59,7 +59,7 @@ func TestHash(t *testing.T) {
 		t.Run(ch.String(), func(t *testing.T) {
 			t.Parallel()
 			if !openssl.SupportsHash(ch) {
-				t.Skip("skipping: not supported")
+				t.Skip("not supported")
 			}
 			h := cryptoToHash(ch)()
 			initSum := h.Sum(nil)
@@ -132,7 +132,7 @@ func TestHash_BinaryAppender(t *testing.T) {
 		t.Run(ch.String(), func(t *testing.T) {
 			t.Parallel()
 			if !openssl.SupportsHash(ch) {
-				t.Skip("skipping: not supported")
+				t.Skip("not supported")
 			}
 
 			hashWithBinaryAppender, ok := cryptoToHash(ch)().(interface {
@@ -140,7 +140,7 @@ func TestHash_BinaryAppender(t *testing.T) {
 				AppendBinary(b []byte) ([]byte, error)
 			})
 			if !ok {
-				t.Skip("skipping: not supported")
+				t.Skip("not supported")
 			}
 
 			// Create a slice with 10 elements
@@ -184,11 +184,11 @@ func TestHash_Clone(t *testing.T) {
 		t.Run(ch.String(), func(t *testing.T) {
 			t.Parallel()
 			if !openssl.SupportsHash(ch) {
-				t.Skip("skipping: not supported")
+				t.Skip("not supported")
 			}
 			h := cryptoToHash(ch)()
 			if _, ok := h.(encoding.BinaryMarshaler); !ok {
-				t.Skip("skipping: not supported")
+				t.Skip("not supported")
 			}
 			_, err := h.Write(msg)
 			if err != nil {
@@ -215,7 +215,7 @@ func TestHash_ByteWriter(t *testing.T) {
 		t.Run(ch.String(), func(t *testing.T) {
 			t.Parallel()
 			if !openssl.SupportsHash(ch) {
-				t.Skip("skipping: not supported")
+				t.Skip("not supported")
 			}
 			bwh := cryptoToHash(ch)().(interface {
 				hash.Hash
@@ -240,7 +240,7 @@ func TestHash_StringWriter(t *testing.T) {
 		t.Run(ch.String(), func(t *testing.T) {
 			t.Parallel()
 			if !openssl.SupportsHash(ch) {
-				t.Skip("skipping: not supported")
+				t.Skip("not supported")
 			}
 			h := cryptoToHash(ch)()
 			initSum := h.Sum(nil)
@@ -300,7 +300,7 @@ func TestHash_OneShot(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.h.String(), func(t *testing.T) {
 			if !openssl.SupportsHash(tt.h) {
-				t.Skip("skipping: not supported")
+				t.Skip("not supported")
 			}
 			got := tt.oneShot(msg)
 			h := cryptoToHash(tt.h)()
