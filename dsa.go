@@ -164,8 +164,8 @@ func GenerateKeyDSA(params DSAParameters) (*PrivateKeyDSA, error) {
 			C.go_openssl_BN_clear_free(x)
 			C.go_openssl_BN_free(y)
 		}()
-		if C.go_openssl_EVP_PKEY_get_bn_param(pkey, paramPubKey, &y) != 1 ||
-			C.go_openssl_EVP_PKEY_get_bn_param(pkey, paramPrivKey, &x) != 1 {
+		if C.go_openssl_EVP_PKEY_get_bn_param(pkey, OSSL_PKEY_PARAM_PUB_KEY, &y) != 1 ||
+			C.go_openssl_EVP_PKEY_get_bn_param(pkey, OSSL_PKEY_PARAM_PRIV_KEY, &x) != 1 {
 			return nil, newOpenSSLError("EVP_PKEY_get_bn_param")
 		}
 	default:
@@ -275,7 +275,7 @@ func newDSA3(params DSAParameters, x, y BigInt) (C.GO_EVP_PKEY_PTR, error) {
 	if y != nil {
 		pub := bigToBN(y)
 		defer C.go_openssl_BN_free(pub)
-		if C.go_openssl_OSSL_PARAM_BLD_push_BN(bld, paramPubKey, pub) != 1 {
+		if C.go_openssl_OSSL_PARAM_BLD_push_BN(bld, OSSL_PKEY_PARAM_PUB_KEY, pub) != 1 {
 			return nil, newOpenSSLError("OSSL_PARAM_BLD_push_BN")
 		}
 		if x == nil {
@@ -285,7 +285,7 @@ func newDSA3(params DSAParameters, x, y BigInt) (C.GO_EVP_PKEY_PTR, error) {
 	if x != nil {
 		priv := bigToBN(x)
 		defer C.go_openssl_BN_clear_free(priv)
-		if C.go_openssl_OSSL_PARAM_BLD_push_BN(bld, paramPrivKey, priv) != 1 {
+		if C.go_openssl_OSSL_PARAM_BLD_push_BN(bld, OSSL_PKEY_PARAM_PRIV_KEY, priv) != 1 {
 			return nil, newOpenSSLError("OSSL_PARAM_BLD_push_BN")
 		}
 	}
