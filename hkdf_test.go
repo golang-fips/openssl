@@ -398,7 +398,7 @@ func TestHKDFLimit(t *testing.T) {
 }
 
 func TestHKDFUnsupportedHash(t *testing.T) {
-	// Test that newHKDF returns and error instead of panicking.
+	// Test that newHKDF returns an error instead of panicking.
 	_, err := newHKDF(newStubHash, []byte{0x00, 0x01, 0x02, 0x03}, nil, []byte{})
 	if err == nil {
 		t.Error("expected error for unsupported hash")
