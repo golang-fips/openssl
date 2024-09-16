@@ -139,7 +139,7 @@ func tls1PRF3(result, secret, label, seed []byte, md C.GO_EVP_MD_PTR) error {
 	if err != nil {
 		return err
 	}
-	bld.addUtf8String(_OSSL_KDF_PARAM_DIGEST, C.go_openssl_EVP_MD_get0_name(md), 0)
+	bld.addUTF8String(_OSSL_KDF_PARAM_DIGEST, C.go_openssl_EVP_MD_get0_name(md), 0)
 	bld.addOctetString(_OSSL_KDF_PARAM_SECRET, secret)
 	bld.addOctetString(_OSSL_KDF_PARAM_SEED, label)
 	bld.addOctetString(_OSSL_KDF_PARAM_SEED, seed)

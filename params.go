@@ -73,9 +73,9 @@ func (b *paramBuilder) build() (C.GO_OSSL_PARAM_PTR, error) {
 	return param, nil
 }
 
-// addUtf8String adds a UTF-8 string to the builder.
+// addUTF8String adds a UTF-8 string to the builder.
 // size should not include the terminating NUL byte. If it is zero then it will be calculated.
-func (b *paramBuilder) addUtf8String(name *C.char, value *C.char, size C.size_t) {
+func (b *paramBuilder) addUTF8String(name *C.char, value *C.char, size C.size_t) {
 	if !b.check() {
 		return
 	}
