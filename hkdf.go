@@ -12,13 +12,24 @@ import (
 	"unsafe"
 )
 
+// SupprtHKDF reports whether the current OpenSSL version supports HKDF.
 func SupportsHKDF() bool {
-	ctx := C.go_openssl_EVP_PKEY_CTX_new_id(C.GO_EVP_PKEY_HKDF, nil)
-	if ctx == nil {
-		return false
+	switch vMajor {
+	case 1:
+		return versionAtOrAbove(1, 1, 1)
+	case 3:
+		// Some OpenSSL 3 providers don't support HKDF or don't support it via
+		// the EVP_PKEY API, which is the one we use.
+		// See https://github.com/golang-fips/openssl/issues/189.
+		ctx := C.go_openssl_EVP_PKEY_CTX_new_id(C.GO_EVP_PKEY_HKDF, nil)
+		if ctx == nil {
+			return false
+		}
+		C.go_openssl_EVP_PKEY_CTX_free(ctx)
+		return true
+	default:
+		panic(errUnsupportedVersion())
 	}
-	C.go_openssl_EVP_PKEY_CTX_free(ctx)
-	return false
 }
 
 func newHKDF(h func() hash.Hash, mode C.int) (*hkdf, error) {
