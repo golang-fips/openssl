@@ -96,19 +96,36 @@ func VersionText() string {
 var (
 	providerNameFips    = C.CString("fips")
 	providerNameDefault = C.CString("default")
+
+	algorithmSHA256 = C.CString("SHA2-256")
 )
 
-// FIPS returns true if OpenSSL is running in FIPS mode, else returns false.
+// FIPS returns true if OpenSSL is running in FIPS mode and there is
+// a provider available that supports FIPS. It returns false otherwise.
 func FIPS() bool {
 	switch vMajor {
 	case 1:
 		return C.go_openssl_FIPS_mode() == 1
 	case 3:
-		// EVP_default_properties_is_fips_enabled returns 1 if the default properties contain `fips=1`.
-		// It doesn't check if there is a provider available that matches that property, but we can be sure
-		// that any algorithm fetching will fail in that case. So this check is enough to tell if OpenSSL
-		// will only use FIPS-approved algorithms.
-		return C.go_openssl_EVP_default_properties_is_fips_enabled(nil) == 1
+		// FIPS is not enabled via default properties (i.e. `fips=1`), then we are sure FIPS is not used.
+		// Note that it is still possible that the provider used by default is FIPS-compliant,
+		// but that wouldn't be a system or user requirement.
+		if C.go_openssl_EVP_default_properties_is_fips_enabled(nil) != 1 {
+			return false
+		}
+		// Check if the SHA-256 algorithm is available. If it is, then we can be sure that there is a provider available that matches
+		// the `fips=1` query. Most notably, this works for the common case of using the built-in FIPS provider.
+		//
+		// Note that this approach has a small chance of false negative if the FIPS provider doesn't provide the SHA-256 algorithm,
+		// but that is highly unlikely because SHA-256 is one of the most common algorithms and fundamental to many cryptographic operations.
+		// It also has a small chance of false positive if the FIPS provider implements the SHA-256 algorithm but not the other algorithms
+		// used by the caller application, but that is also unlikely because the FIPS provider should provide all common algorithms.
+		md := C.go_openssl_EVP_MD_fetch(nil, algorithmSHA256, nil)
+		if md == nil {
+			return false
+		}
+		C.go_openssl_EVP_MD_free(md)
+		return true
 	default:
 		panic(errUnsupportedVersion())
 	}
