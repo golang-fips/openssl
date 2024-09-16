@@ -31,39 +31,39 @@ func NewAESCipher(key []byte) (cipher.Block, error) {
 		return nil, err
 	}
 	var block cipher.Block
-	cbcSupportes := loadCipher(kind, cipherModeCBC) != nil
-	ctrSupportes := loadCipher(kind, cipherModeCTR) != nil
-	gcmSupportes := loadCipher(kind, cipherModeGCM) != nil
+	cbcSupported := loadCipher(kind, cipherModeCBC) != nil
+	ctrSupported := loadCipher(kind, cipherModeCTR) != nil
+	gcmSupported := loadCipher(kind, cipherModeGCM) != nil
 	aes := aesCipher{c}
 	switch {
-	case cbcSupportes && ctrSupportes && gcmSupportes:
+	case cbcSupported && ctrSupported && gcmSupported:
 		block = cipherWithCBC_CTR_GCM{aes,
 			cipherWithCBC{aes},
 			cipherWithCTR{aes},
 			cipherWithGCM{aes},
 		}
-	case cbcSupportes && ctrSupportes && !gcmSupportes:
+	case cbcSupported && ctrSupported && !gcmSupported:
 		block = cipherWithCBC_CTR{aes,
 			cipherWithCBC{aes},
 			cipherWithCTR{aes},
 		}
-	case cbcSupportes && !ctrSupportes && gcmSupportes:
+	case cbcSupported && !ctrSupported && gcmSupported:
 		block = cipherWithCBC_GCM{aes,
 			cipherWithCBC{aes},
 			cipherWithGCM{aes},
 		}
-	case !cbcSupportes && ctrSupportes && gcmSupportes:
+	case !cbcSupported && ctrSupported && gcmSupported:
 		block = cipherWithCTR_GCM{aes,
 			cipherWithCTR{aes},
 			cipherWithGCM{aes},
 		}
-	case cbcSupportes && !ctrSupportes && !gcmSupportes:
+	case cbcSupported && !ctrSupported && !gcmSupported:
 		block = cipherWithCBC{aes}
-	case !cbcSupportes && ctrSupportes && !gcmSupportes:
+	case !cbcSupported && ctrSupported && !gcmSupported:
 		block = cipherWithCTR{aes}
-	case !cbcSupportes && !ctrSupportes && gcmSupportes:
+	case !cbcSupported && !ctrSupported && gcmSupported:
 		block = cipherWithGCM{aes}
-	case !cbcSupportes && !ctrSupportes && !gcmSupportes:
+	case !cbcSupported && !ctrSupported && !gcmSupported:
 		block = aes
 	default:
 		panic("unreachable")
