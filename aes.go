@@ -12,7 +12,7 @@ import (
 // NewAESCipher creates and returns a new AES cipher.Block.
 // The key argument should be the AES key, either 16, 24, or 32 bytes to select
 // AES-128, AES-192, or AES-256.
-// The returned cipher.Block can implement the CBC, CTR, and/or GCM modes if
+// The returned cipher.Block implements the CBC, CTR, and/or GCM modes if
 // the underlying OpenSSL library supports them.
 func NewAESCipher(key []byte) (cipher.Block, error) {
 	var kind cipherKind
