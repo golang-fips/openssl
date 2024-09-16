@@ -16,13 +16,16 @@ func SupportsHKDF() bool {
 	return versionAtOrAbove(1, 1, 1)
 }
 
-func newHKDF(h func() hash.Hash, mode C.int) (*hkdf, error) {
+func newHKDF(fh func() hash.Hash, mode C.int) (*hkdf, error) {
 	if !SupportsHKDF() {
 		return nil, errUnsupportedVersion()
 	}
 
-	ch := hashFuncHash(h)
-	md := hashToMD(ch)
+	h, err := hashFuncHash(fh)
+	if err != nil {
+		return nil, err
+	}
+	md := hashToMD(h)
 	if md == nil {
 		return nil, errors.New("unsupported hash function")
 	}
@@ -59,7 +62,7 @@ func newHKDF(h func() hash.Hash, mode C.int) (*hkdf, error) {
 		}
 	}
 
-	c := &hkdf{ctx: ctx, hashLen: ch.Size()}
+	c := &hkdf{ctx: ctx, hashLen: h.Size()}
 	ctx = nil
 
 	runtime.SetFinalizer(c, (*hkdf).finalize)

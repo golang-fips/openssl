@@ -17,9 +17,9 @@ var OSSL_MAC_PARAM_DIGEST = C.CString("digest")
 // The function h must return a hash implemented by
 // OpenSSL (for example, h could be openssl.NewSHA256).
 // If h is not recognized, NewHMAC returns nil.
-func NewHMAC(h func() hash.Hash, key []byte) hash.Hash {
-	ch := hashFuncHash(h)
-	md := hashToMD(ch)
+func NewHMAC(fh func() hash.Hash, key []byte) hash.Hash {
+	h, _ := hashFuncHash(fh)
+	md := hashToMD(h)
 	if md == nil {
 		return nil
 	}
@@ -34,8 +34,8 @@ func NewHMAC(h func() hash.Hash, key []byte) hash.Hash {
 	}
 
 	hmac := &opensslHMAC{
-		size:      ch.Size(),
-		blockSize: ch.BlockSize(),
+		size:      h.Size(),
+		blockSize: h.BlockSize(),
 	}
 
 	switch vMajor {

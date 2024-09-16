@@ -19,9 +19,9 @@ func SupportsTLS1PRF() bool {
 // TLS1PRF implements the TLS 1.0/1.1 pseudo-random function if h is nil,
 // else it implements the TLS 1.2 pseudo-random function.
 // The pseudo-random number will be written to result and will be of length len(result).
-func TLS1PRF(result, secret, label, seed []byte, h func() hash.Hash) error {
+func TLS1PRF(result, secret, label, seed []byte, fh func() hash.Hash) error {
 	var md C.GO_EVP_MD_PTR
-	if h == nil {
+	if fh == nil {
 		// TLS 1.0/1.1 PRF doesn't allow to specify the hash function,
 		// it always uses MD5SHA1. If h is nil, then assume
 		// that the caller wants to use TLS 1.0/1.1 PRF.
@@ -29,7 +29,11 @@ func TLS1PRF(result, secret, label, seed []byte, h func() hash.Hash) error {
 		// function is MD5SHA1.
 		md = cryptoHashToMD(crypto.MD5SHA1)
 	} else {
-		md = hashToMD(hashFuncHash(h))
+		h, err := hashFuncHash(fh)
+		if err != nil {
+			return err
+		}
+		md = hashToMD(h)
 	}
 	if md == nil {
 		return errors.New("unsupported hash function")
