@@ -59,9 +59,11 @@ func (b *paramBuilder) check() bool {
 
 // build creates an OSSL_PARAM from the builder.
 // The returned OSSL_PARAM must be freed with OSSL_PARAM_free.
-// If an error occurred during building, it is returned.
-// The builder is freed and cannot be reused.
+// If an error occurred while adding parameters, the error is returned
+// and the OSSL_PARAM is nil. Once build() is called, the builder is finalized
+// and cannot be reused.
 func (b *paramBuilder) build() (C.GO_OSSL_PARAM_PTR, error) {
+	defer b.finalize()
 	if !b.check() {
 		return nil, b.err
 	}
