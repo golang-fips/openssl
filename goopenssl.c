@@ -57,11 +57,24 @@ go_openssl_fips_enabled(void* handle)
         return FIPS_mode();
 
     // For OpenSSL 3.x.
-    int (*EVP_default_properties_is_fips_enabled)(void*) = (int (*)(void*))dlsym(handle, "EVP_default_properties_is_fips_enabled"); 
-    if (EVP_default_properties_is_fips_enabled != NULL && EVP_default_properties_is_fips_enabled(NULL) == 1)
-            return 1;
+    int (*EVP_default_properties_is_fips_enabled)(void*) = (int (*)(void*))dlsym(handle, "EVP_default_properties_is_fips_enabled");
+    void *(*EVP_MD_fetch)(void*, const char*, const char*) = (void* (*)(void*, const char*, const char*))dlsym(handle, "EVP_MD_fetch");
+    void (*EVP_MD_free)(void*) = (void (*)(void*))dlsym(handle, "EVP_MD_free");
 
-    return 0;
+    if (EVP_default_properties_is_fips_enabled == NULL || EVP_MD_fetch == NULL || EVP_MD_free == NULL) {
+        // Shouldn't happen, but if it does, we can't determine if FIPS mode is enabled.
+        return 0;
+    }
+
+    if (EVP_default_properties_is_fips_enabled(NULL) != 1)
+        return 0;
+
+    void *md = EVP_MD_fetch(NULL, "SHA2-256", NULL);
+    if (md == NULL)
+        return 0;
+
+    EVP_MD_free(md);
+    return 1;
 }
 
 // Load all the functions stored in FOR_ALL_OPENSSL_FUNCTIONS
