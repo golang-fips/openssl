@@ -187,3 +187,69 @@ type cipherWithCBC_CTR_GCM struct {
 	cipherWithCTR
 	cipherWithGCM
 }
+
+// The following interfaces have been copied out of crypto/aes/modes.go.
+
+// gcmAble is implemented by cipher.Blocks that can provide an optimized
+// implementation of GCM through the AEAD interface.
+// See crypto/cipher/gcm.go.
+type gcmAble interface {
+	NewGCM(nonceSize, tagSize int) (cipher.AEAD, error)
+}
+
+// cbcEncAble is implemented by cipher.Blocks that can provide an optimized
+// implementation of CBC encryption through the cipher.BlockMode interface.
+// See crypto/cipher/cbc.go.
+type cbcEncAble interface {
+	NewCBCEncrypter(iv []byte) cipher.BlockMode
+}
+
+// cbcDecAble is implemented by cipher.Blocks that can provide an optimized
+// implementation of CBC decryption through the cipher.BlockMode interface.
+// See crypto/cipher/cbc.go.
+type cbcDecAble interface {
+	NewCBCDecrypter(iv []byte) cipher.BlockMode
+}
+
+// ctrAble is implemented by cipher.Blocks that can provide an optimized
+// implementation of CTR through the cipher.Stream interface.
+// See crypto/cipher/ctr.go.
+type ctrAble interface {
+	NewCTR(iv []byte) cipher.Stream
+}
+
+// Test that the interfaces are implemented.
+
+var (
+	_ cipher.Block = (*aesCipher)(nil)
+
+	_ cipher.Block = (*cipherWithCBC)(nil)
+	_ cbcEncAble   = (*cipherWithCBC)(nil)
+	_ cbcDecAble   = (*cipherWithCBC)(nil)
+
+	_ cipher.Block = (*cipherWithCTR)(nil)
+	_ ctrAble      = (*cipherWithCTR)(nil)
+
+	_ cipher.Block = (*cipherWithGCM)(nil)
+	_ gcmAble      = (*cipherWithGCM)(nil)
+
+	_ cipher.Block = (*cipherWithCBC_CTR)(nil)
+	_ cbcEncAble   = (*cipherWithCBC_CTR)(nil)
+	_ cbcDecAble   = (*cipherWithCBC_CTR)(nil)
+	_ ctrAble      = (*cipherWithCBC_CTR)(nil)
+
+	_ cipher.Block = (*cipherWithCBC_GCM)(nil)
+	_ cbcEncAble   = (*cipherWithCBC_GCM)(nil)
+	_ cbcDecAble   = (*cipherWithCBC_GCM)(nil)
+	_ gcmAble      = (*cipherWithCBC_GCM)(nil)
+
+	_ cipher.Block = (*cipherWithCTR_GCM)(nil)
+	_ ctrAble      = (*cipherWithCTR_GCM)(nil)
+	_ gcmAble      = (*cipherWithCTR_GCM)(nil)
+
+	_ cipher.Block = (*cipherWithCBC_CTR_GCM)(nil)
+	_ cbcEncAble   = (*cipherWithCBC_CTR_GCM)(nil)
+	_ cbcDecAble   = (*cipherWithCBC_CTR_GCM)(nil)
+	_ ctrAble      = (*cipherWithCBC_CTR_GCM)(nil)
+	_ gcmAble      = (*cipherWithCBC_CTR_GCM)(nil)
+)
