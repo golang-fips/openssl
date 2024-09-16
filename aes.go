@@ -52,13 +52,13 @@ func NewAESCipher(key []byte) (cipher.Block, error) {
 			cipherWithCBC{aes},
 			cipherWithGCM{aes},
 		}
+	case cbcSupported && !ctrSupported && !gcmSupported:
+		block = cipherWithCBC{aes}
 	case !cbcSupported && ctrSupported && gcmSupported:
 		block = cipherWithCTR_GCM{aes,
 			cipherWithCTR{aes},
 			cipherWithGCM{aes},
 		}
-	case cbcSupported && !ctrSupported && !gcmSupported:
-		block = cipherWithCBC{aes}
 	case !cbcSupported && ctrSupported && !gcmSupported:
 		block = cipherWithCTR{aes}
 	case !cbcSupported && !ctrSupported && gcmSupported:
