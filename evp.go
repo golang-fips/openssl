@@ -7,8 +7,8 @@ import "C"
 import (
 	"crypto"
 	"errors"
+	"fmt"
 	"hash"
-	"strconv"
 	"sync"
 	"unsafe"
 )
@@ -372,7 +372,7 @@ func evpVerify(withKey withKeyFunc, padding C.int, saltLen C.int, h crypto.Hash,
 func evpHashSign(withKey withKeyFunc, h crypto.Hash, msg []byte) ([]byte, error) {
 	md := cryptoHashToMD(h)
 	if md == nil {
-		return nil, errors.New("unsupported hash function: " + strconv.Itoa(int(h)))
+		return nil, fmt.Errorf("unsupported hash function: %d", int(h))
 	}
 	var out []byte
 	var outLen C.size_t
@@ -404,7 +404,7 @@ func evpHashSign(withKey withKeyFunc, h crypto.Hash, msg []byte) ([]byte, error)
 func evpHashVerify(withKey withKeyFunc, h crypto.Hash, msg, sig []byte) error {
 	md := cryptoHashToMD(h)
 	if md == nil {
-		return errors.New("unsupported hash function: " + strconv.Itoa(int(h)))
+		return fmt.Errorf("unsupported hash function: %d", int(h))
 	}
 	ctx := C.go_openssl_EVP_MD_CTX_new()
 	if ctx == nil {

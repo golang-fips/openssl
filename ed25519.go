@@ -6,6 +6,7 @@ package openssl
 import "C"
 import (
 	"errors"
+	"fmt"
 	"runtime"
 	"strconv"
 	"sync"
@@ -150,7 +151,7 @@ func extractPKEYPubEd25519(pkey C.GO_EVP_PKEY_PTR, pub []byte) error {
 		return newOpenSSLError("EVP_PKEY_get_raw_public_key")
 	}
 	if r.len != publicKeySizeEd25519 {
-		return errors.New("ed25519: bad public key length: " + strconv.Itoa(int(r.len)))
+		return fmt.Errorf("ed25519: bad public key length: %d", int(r.len))
 	}
 	return nil
 }
@@ -164,7 +165,7 @@ func extractPKEYPrivEd25519(pkey C.GO_EVP_PKEY_PTR, priv []byte) error {
 		return newOpenSSLError("EVP_PKEY_get_raw_private_key")
 	}
 	if r.len != seedSizeEd25519 {
-		return errors.New("ed25519: bad private key length: " + strconv.Itoa(int(r.len)))
+		return fmt.Errorf("ed25519: bad private key length: %d", int(r.len))
 	}
 	return nil
 }
@@ -195,7 +196,7 @@ func signEd25519(priv *PrivateKeyEd25519, sig, message []byte) error {
 		return newOpenSSLError("EVP_DigestSign")
 	}
 	if r.siglen != signatureSizeEd25519 {
-		return errors.New("ed25519: bad signature length: " + strconv.Itoa(int(r.siglen)))
+		return fmt.Errorf("ed25519: bad signature length: %d", int(r.siglen))
 	}
 	return nil
 }

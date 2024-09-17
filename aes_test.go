@@ -526,7 +526,7 @@ func BenchmarkAESGCM_Open(b *testing.B) {
 	aesgcm, _ := cipher.NewGCM(c)
 	var out []byte
 
-	ct := aesgcm.Seal(nil, nonce[:], buf[:], ad[:])
+	ct := aesgcm.Seal(nil, nonce[:], buf, ad[:])
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
