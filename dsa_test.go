@@ -80,7 +80,7 @@ func testGenerateDSAParameters(t *testing.T, L, N int) {
 
 func testDSASignAndVerify(t *testing.T, priv *openssl.PrivateKeyDSA) {
 	hashed := []byte("testing")
-	sig, err := openssl.SignDSA(priv, hashed[:])
+	sig, err := openssl.SignDSA(priv, hashed)
 	if err != nil {
 		t.Errorf("error signing: %s", err)
 		return
@@ -90,7 +90,7 @@ func testDSASignAndVerify(t *testing.T, priv *openssl.PrivateKeyDSA) {
 		t.Errorf("error getting public key: %s", err)
 		return
 	}
-	if !openssl.VerifyDSA(pub, hashed[:], sig) {
+	if !openssl.VerifyDSA(pub, hashed, sig) {
 		t.Error("error verifying")
 		return
 	}
@@ -112,10 +112,10 @@ func testDSASignAndVerify(t *testing.T, priv *openssl.PrivateKeyDSA) {
 		t.Error(err)
 		return
 	}
-	if !dsa.Verify(&priv1.PublicKey, hashed[:], esig.R, esig.S) {
+	if !dsa.Verify(&priv1.PublicKey, hashed, esig.R, esig.S) {
 		t.Error("compat: crypto/dsa can't verify OpenSSL signature")
 	}
-	r1, s1, err := dsa.Sign(openssl.RandReader, &priv1, hashed[:])
+	r1, s1, err := dsa.Sign(openssl.RandReader, &priv1, hashed)
 	if err != nil {
 		t.Errorf("error signing: %s", err)
 		return
@@ -125,7 +125,7 @@ func testDSASignAndVerify(t *testing.T, priv *openssl.PrivateKeyDSA) {
 		t.Error(err)
 		return
 	}
-	if !openssl.VerifyDSA(pub, hashed[:], sig) {
+	if !openssl.VerifyDSA(pub, hashed, sig) {
 		t.Error("compat: OpenSSL can't verify crypto/dsa signature")
 		return
 	}
