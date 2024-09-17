@@ -41,7 +41,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 // This function is reimplemented here because openssl.FIPS assumes that
 // all the OpenSSL bindings are loaded, that is, go_openssl_load_functions has
 // already been called. On the other hand, go_openssl_fips_enabled is called from
-// openssl.CheckFIPS, which is used to check if a given OpenSSL shared library
+// openssl.CheckVersion, which is used to check if a given OpenSSL shared library
 // exists and is FIPS compliant. That shared library might not be the one that
 // was passed to go_openssl_load_functions, or it might not even have been called at all.
 //
