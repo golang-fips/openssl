@@ -7,7 +7,7 @@
 
 #include "goopenssl.h"
 
-#if OPENSSL_VERSION_NUMBER >= 0x10100000L
+#if OPENSSL_VERSION_NUMBER >= OPENSSL_VERSION_1_1_0
 
 DEFINEFUNCINTERNAL(EVP_PKEY *,
 		   EVP_PKEY_new_mac_key,
@@ -15,7 +15,7 @@ DEFINEFUNCINTERNAL(EVP_PKEY *,
 		   (type, e, key, keylen))
 DEFINEFUNCINTERNAL(int, EVP_MD_CTX_reset, (EVP_MD_CTX *ctx), (ctx))
 
-#if OPENSSL_VERSION_NUMBER >= 0x30000000L
+#if OPENSSL_VERSION_NUMBER >= OPENSSL_VERSION_3_0_0
 DEFINEFUNCINTERNAL(const EVP_MD *, EVP_MD_CTX_get0_md, (const EVP_MD_CTX *ctx), (ctx))
 #else
 DEFINEFUNCINTERNAL(const EVP_MD *, EVP_MD_CTX_md, (const EVP_MD_CTX *ctx), (ctx))
@@ -23,7 +23,7 @@ DEFINEFUNCINTERNAL(const EVP_MD *, EVP_MD_CTX_md, (const EVP_MD_CTX *ctx), (ctx)
 DEFINEFUNCINTERNAL(int, EVP_MD_CTX_copy_ex, (EVP_MD_CTX *out, const EVP_MD_CTX *in), (out, in))
 
 /* EVP_DigestSignUpdate is converted from a macro in 3.0 */
-#if OPENSSL_VERSION_NUMBER >= 0x30000000L
+#if OPENSSL_VERSION_NUMBER >= OPENSSL_VERSION_3_0_0
 DEFINEFUNCINTERNAL(int, EVP_DigestSignUpdate,
 		   (EVP_MD_CTX* ctx, const void *d, size_t cnt),
 		   (ctx, d, cnt))
@@ -72,7 +72,7 @@ _goboringcrypto_HMAC_CTX_new(const unsigned char *key, int keylen,
 int _goboringcrypto_HMAC_Update(GO_HMAC_CTX *ctx,
 				const unsigned char *data, size_t len)
 {
-#if OPENSSL_VERSION_NUMBER >= 0x30000000L
+#if OPENSSL_VERSION_NUMBER >= OPENSSL_VERSION_3_0_0
   return _goboringcrypto_internal_EVP_DigestSignUpdate(ctx->mdctx, data, len);
 #else
   return _goboringcrypto_EVP_DigestUpdate(ctx->mdctx, data, len);
@@ -85,7 +85,7 @@ int _goboringcrypto_HMAC_CTX_reset(GO_HMAC_CTX *ctx)
   const EVP_MD *md;
 
 
-#if OPENSSL_VERSION_NUMBER >= 0x30000000L
+#if OPENSSL_VERSION_NUMBER >= OPENSSL_VERSION_3_0_0
   md = _goboringcrypto_internal_EVP_MD_CTX_get0_md(ctx->mdctx);
 #else
   md = _goboringcrypto_internal_EVP_MD_CTX_md(ctx->mdctx);
