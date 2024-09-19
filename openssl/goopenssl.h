@@ -9,13 +9,17 @@
 
 // This header file describes the OpenSSL ABI as built for use in Go.
 
+#define OPENSSL_VERSION_3_0_0 0x30000000L
+#define OPENSSL_VERSION_1_1_0 0x10100000L
+#define OPENSSL_VERSION_1_1_1 0x10101000L
+
 #include <stdlib.h> // size_t
 #include <stdint.h> // uint8_t
 #include <string.h> // memset
 
 #include <openssl/ossl_typ.h>
 
-#if OPENSSL_VERSION_NUMBER < 0x30000000
+#if OPENSSL_VERSION_NUMBER < OPENSSL_VERSION_3_0_0
 #define OPENSSL_DLSYM_CALL(handle, func) dlsym(handle, func)
 #else
 #define __USE_GNU
@@ -64,9 +68,9 @@ _goboringcrypto_DLOPEN_OPENSSL(void)
 	{
 		return handle;
 	}
-#if OPENSSL_VERSION_NUMBER < 0x10100000L
+#if OPENSSL_VERSION_NUMBER < OPENSSL_VERSION_1_1_0
 	handle = dlopen("libcrypto.so.10", RTLD_NOW | RTLD_GLOBAL);
-#elif OPENSSL_VERSION_NUMBER < 0x30000000L
+#elif OPENSSL_VERSION_NUMBER < OPENSSL_VERSION_3_0_0
 	handle = dlopen("libcrypto.so.1.1", RTLD_NOW | RTLD_GLOBAL);
 #else
 	handle = dlopen("libcrypto.so.3", RTLD_NOW | RTLD_GLOBAL);
@@ -90,7 +94,7 @@ _goboringcrypto_OPENSSL_setup(void) {
 
 #include <openssl/err.h>
 DEFINEFUNCINTERNAL(void, ERR_print_errors_fp, (FILE* fp), (fp))
-#if OPENSSL_VERSION_NUMBER < 0x30000000
+#if OPENSSL_VERSION_NUMBER < OPENSSL_VERSION_3_0_0
 DEFINEFUNCINTERNAL(unsigned long, ERR_get_error_line_data,
 		   (const char **file, int *line, const char **data, int *flags),
 		   (file, line, data, flags))
@@ -112,7 +116,7 @@ DEFINEFUNCINTERNAL(void, ERR_error_string_n, (unsigned long e, unsigned char *bu
 
 #include <openssl/crypto.h>
 
-#if OPENSSL_VERSION_NUMBER < 0x10100000L
+#if OPENSSL_VERSION_NUMBER < OPENSSL_VERSION_1_1_0
 DEFINEFUNC(int, CRYPTO_num_locks, (void), ())
 #else
 static inline int
@@ -120,7 +124,7 @@ _goboringcrypto_CRYPTO_num_locks(void) {
 	return CRYPTO_num_locks(); /* defined as macro */
 }
 #endif
-#if OPENSSL_VERSION_NUMBER < 0x10100000L
+#if OPENSSL_VERSION_NUMBER < OPENSSL_VERSION_1_1_0
 DEFINEFUNC(void, CRYPTO_set_id_callback, (unsigned long (*id_function)(void)), (id_function))
 #else
 static inline void
@@ -128,7 +132,7 @@ _goboringcrypto_CRYPTO_set_id_callback(unsigned long (*id_function)(void)) {
 	CRYPTO_set_id_callback(id_function); /* defined as macro */
 }
 #endif
-#if OPENSSL_VERSION_NUMBER < 0x10100000L
+#if OPENSSL_VERSION_NUMBER < OPENSSL_VERSION_1_1_0
 DEFINEFUNC(void, CRYPTO_set_locking_callback,
 	(void (*locking_function)(int mode, int n, const char *file, int line)), 
 	(locking_function))
@@ -141,7 +145,7 @@ _goboringcrypto_CRYPTO_set_locking_callback(void (*locking_function)(int mode, i
 
 int _goboringcrypto_OPENSSL_thread_setup(void);
 
-#if OPENSSL_VERSION_NUMBER < 0x30000000L
+#if OPENSSL_VERSION_NUMBER < OPENSSL_VERSION_3_0_0
 DEFINEFUNC(int, FIPS_mode, (void), ())
 DEFINEFUNC(int, FIPS_mode_set, (int r), (r))
 #else
@@ -217,7 +221,7 @@ DEFINEFUNC(const GO_EVP_MD *, EVP_sha256, (void), ())
 DEFINEFUNC(const GO_EVP_MD *, EVP_sha384, (void), ())
 DEFINEFUNC(const GO_EVP_MD *, EVP_sha512, (void), ())
 DEFINEFUNC(const GO_EVP_MD *, EVP_md_null, (void), ())
-#if OPENSSL_VERSION_NUMBER < 0x30000000L
+#if OPENSSL_VERSION_NUMBER < OPENSSL_VERSION_3_0_0
 DEFINEFUNCINTERNAL(int, EVP_MD_type, (const GO_EVP_MD *arg0), (arg0))
 DEFINEFUNCINTERNAL(int, EVP_MD_size, (const GO_EVP_MD *arg0), (arg0))
 static inline int
@@ -238,7 +242,7 @@ DEFINEFUNCINTERNAL(int, MD5_Final, (unsigned char *md, MD5_CTX *c), (md, c))
 
 static inline int
 _goboringcrypto_EVP_MD_type(const GO_EVP_MD *md) {
-#if OPENSSL_VERSION_NUMBER < 0x30000000L
+#if OPENSSL_VERSION_NUMBER < OPENSSL_VERSION_3_0_0
 	return _goboringcrypto_internal_EVP_MD_type(md);
 #else
 	return _goboringcrypto_internal_EVP_MD_get_type(md);
@@ -248,7 +252,7 @@ _goboringcrypto_EVP_MD_type(const GO_EVP_MD *md) {
 const GO_EVP_MD* _goboringcrypto_backport_EVP_md5_sha1(void);
 static inline const GO_EVP_MD*
 _goboringcrypto_EVP_md5_sha1(void) {
-#if OPENSSL_VERSION_NUMBER < 0x10100000L
+#if OPENSSL_VERSION_NUMBER < OPENSSL_VERSION_1_1_0
 	return _goboringcrypto_backport_EVP_md5_sha1();
 #else
 	return _goboringcrypto_internal_EVP_md5_sha1();
@@ -318,7 +322,7 @@ _goboringcrypto_BN_num_bytes(const GO_BIGNUM* a) {
 	return ((_goboringcrypto_BN_num_bits(a)+7)/8);
 }
 
-#if OPENSSL_VERSION_NUMBER >= 0x10100000L
+#if OPENSSL_VERSION_NUMBER >= OPENSSL_VERSION_1_1_0
 DEFINEFUNC(GO_BIGNUM *, BN_lebin2bn, (const unsigned char *s, int len, GO_BIGNUM *ret), (s, len, ret))
 DEFINEFUNC(int, BN_bn2lebinpad, (const GO_BIGNUM *a, unsigned char *to, int tolen), (a, to, tolen))
 DEFINEFUNC(int, BN_bn2binpad, (const GO_BIGNUM *a, unsigned char *to, int tolen), (a, to, tolen))
@@ -418,7 +422,7 @@ DEFINEFUNC(const GO_EC_POINT *, EC_KEY_get0_public_key, (const GO_EC_KEY *arg0),
 DEFINEFUNC(size_t, EC_POINT_point2oct, (const GO_EC_GROUP *group, const GO_EC_POINT *p, point_conversion_form_t form, unsigned char *buf, size_t len, GO_BN_CTX *ctx), (group, p, form, buf, len, ctx))
 DEFINEFUNC(int, EC_POINT_oct2point, (const GO_EC_GROUP *group, GO_EC_POINT *p, const unsigned char *buf, size_t len, GO_BN_CTX *ctx), (group, p, buf, len, ctx))
 
-#if OPENSSL_VERSION_NUMBER >= 0x10100000L
+#if OPENSSL_VERSION_NUMBER >= OPENSSL_VERSION_1_1_0
 DEFINEFUNC(int, EC_KEY_oct2key, (GO_EC_KEY *arg0, const unsigned char *arg1, size_t arg2, BN_CTX *arg3), (arg0, arg1, arg2, arg3))
 #else
 static inline int
@@ -447,7 +451,7 @@ _goboringcrypto_EC_KEY_oct2key(GO_EC_KEY *eckey, const unsigned char *buf, size_
 
 DEFINEFUNC(size_t, ECDSA_size, (const GO_EC_KEY *arg0), (arg0))
 
-#if OPENSSL_VERSION_NUMBER < 0x10100000L
+#if OPENSSL_VERSION_NUMBER < OPENSSL_VERSION_1_1_0
 DEFINEFUNC(EVP_MD_CTX*, EVP_MD_CTX_create, (void), ())
 #else
 DEFINEFUNCINTERNAL(EVP_MD_CTX*, EVP_MD_CTX_new, (void), ())
@@ -493,7 +497,7 @@ typedef RSA GO_RSA;
 int _goboringcrypto_EVP_sign(EVP_MD* md, EVP_PKEY_CTX *ctx, const uint8_t *msg, size_t msgLen, uint8_t *sig, size_t *slen, EVP_PKEY *eckey);
 int _goboringcrypto_EVP_verify(EVP_MD* md, EVP_PKEY_CTX *ctx, const uint8_t *msg, size_t msgLen, const uint8_t *sig, unsigned int slen, EVP_PKEY *key);
 
-#if OPENSSL_VERSION_NUMBER < 0x10100000L
+#if OPENSSL_VERSION_NUMBER < OPENSSL_VERSION_1_1_0
 DEFINEFUNCINTERNAL(void, EVP_MD_CTX_destroy, (EVP_MD_CTX *ctx), (ctx))
 static inline void _goboringcrypto_EVP_MD_CTX_free(EVP_MD_CTX *ctx) {
 	return _goboringcrypto_internal_EVP_MD_CTX_destroy(ctx);
@@ -533,7 +537,7 @@ DEFINEFUNCINTERNAL(int, RSA_set0_factors,
 
 static inline int
 _goboringcrypto_RSA_set0_factors(GO_RSA * r, GO_BIGNUM *p, GO_BIGNUM *q) {
-#if OPENSSL_VERSION_NUMBER < 0x10100000L
+#if OPENSSL_VERSION_NUMBER < OPENSSL_VERSION_1_1_0
     /* If the fields p and q in r are NULL, the corresponding input
      * parameters MUST be non-NULL.
      */
@@ -562,7 +566,7 @@ DEFINEFUNCINTERNAL(int, RSA_set0_crt_params,
 
 static inline int
 _goboringcrypto_RSA_set0_crt_params(GO_RSA * r, GO_BIGNUM *dmp1, GO_BIGNUM *dmq1, GO_BIGNUM *iqmp) {
-#if OPENSSL_VERSION_NUMBER < 0x10100000L
+#if OPENSSL_VERSION_NUMBER < OPENSSL_VERSION_1_1_0
     /* If the fields dmp1, dmq1 and iqmp in r are NULL, the corresponding input
      * parameters MUST be non-NULL.
      */
@@ -595,7 +599,7 @@ DEFINEFUNCINTERNAL(void, RSA_get0_crt_params,
 		   (r, dmp1, dmq1, iqmp))
 static inline void
 _goboringcrypto_RSA_get0_crt_params(const GO_RSA *r, const GO_BIGNUM **dmp1, const GO_BIGNUM **dmq1, const GO_BIGNUM **iqmp) {
-#if OPENSSL_VERSION_NUMBER < 0x10100000L
+#if OPENSSL_VERSION_NUMBER < OPENSSL_VERSION_1_1_0
     if (dmp1 != NULL)
         *dmp1 = r->dmp1;
     if (dmq1 != NULL)
@@ -613,7 +617,7 @@ DEFINEFUNCINTERNAL(int, RSA_set0_key,
 		   (r, n, e, d))
 static inline int
 _goboringcrypto_RSA_set0_key(GO_RSA * r, GO_BIGNUM *n, GO_BIGNUM *e, GO_BIGNUM *d) {
-#if OPENSSL_VERSION_NUMBER < 0x10100000L
+#if OPENSSL_VERSION_NUMBER < OPENSSL_VERSION_1_1_0
     /* If the fields n and e in r are NULL, the corresponding input
      * parameters MUST be non-NULL for n and e.  d may be
      * left NULL (in case only the public key is used).
@@ -646,7 +650,7 @@ DEFINEFUNCINTERNAL(void, RSA_get0_factors,
 		   (rsa, p, q))
 static inline void 
 _goboringcrypto_RSA_get0_factors(const GO_RSA *rsa, const GO_BIGNUM **p, const GO_BIGNUM **q) {
-#if OPENSSL_VERSION_NUMBER < 0x10100000L
+#if OPENSSL_VERSION_NUMBER < OPENSSL_VERSION_1_1_0
 	if (p)
 		*p = rsa->p;
 	if (q)
@@ -661,7 +665,7 @@ DEFINEFUNCINTERNAL(void, RSA_get0_key,
 		   (rsa, n, e, d))
 static inline void 
 _goboringcrypto_RSA_get0_key(const GO_RSA *rsa, const GO_BIGNUM **n, const GO_BIGNUM **e, const GO_BIGNUM **d) {
-#if OPENSSL_VERSION_NUMBER < 0x10100000L
+#if OPENSSL_VERSION_NUMBER < OPENSSL_VERSION_1_1_0
 	if (n)
 		*n = rsa->n;
 	if (e)
@@ -772,14 +776,14 @@ DEFINEFUNCINTERNAL(int, RSA_pkey_ctx_ctrl,
 
 static inline int
 _goboringcrypto_EVP_PKEY_CTX_set_rsa_padding(GO_EVP_PKEY_CTX* ctx, int pad) {
-#if OPENSSL_VERSION_NUMBER < 0x10100000L
+#if OPENSSL_VERSION_NUMBER < OPENSSL_VERSION_1_1_0
 	return _goboringcrypto_EVP_PKEY_CTX_ctrl(ctx, EVP_PKEY_RSA, -1, EVP_PKEY_CTRL_RSA_PADDING, pad, NULL);
 #else
     return _goboringcrypto_internal_RSA_pkey_ctx_ctrl(ctx, -1, EVP_PKEY_CTRL_RSA_PADDING, pad, NULL);
 #endif
 }
 
-#if OPENSSL_VERSION_NUMBER < 0x30000000
+#if OPENSSL_VERSION_NUMBER < OPENSSL_VERSION_3_0_0
 static inline int
 _goboringcrypto_EVP_PKEY_CTX_set0_rsa_oaep_label(GO_EVP_PKEY_CTX *ctx, uint8_t *l, int llen)
 {
@@ -856,11 +860,11 @@ DEFINEFUNC(int, EVP_PKEY_sign,
 
 DEFINEFUNC(int, EVP_PKEY_derive_init, (GO_EVP_PKEY_CTX *arg0), (arg0))
 DEFINEFUNC(int, EVP_PKEY_derive, (GO_EVP_PKEY_CTX *arg0, unsigned char *arg1, size_t *arg2), (arg0, arg1, arg2))
-#if OPENSSL_VERSION_NUMBER >= 0x30000000L
+#if OPENSSL_VERSION_NUMBER >= OPENSSL_VERSION_3_0_0
 DEFINEFUNC(int, EVP_PKEY_derive_set_peer_ex, (GO_EVP_PKEY_CTX *arg0, GO_EVP_PKEY *arg1, int arg2), (arg0, arg1, arg2));
 #else
 DEFINEFUNCINTERNAL(int, EVP_PKEY_derive_set_peer, (EVP_PKEY_CTX *ctx, EVP_PKEY *peer), (ctx, peer))
-# if OPENSSL_VERSION_NUMBER >= 0x10100000L
+# if OPENSSL_VERSION_NUMBER >= OPENSSL_VERSION_1_1_0
 DEFINEFUNC(int, EVP_PKEY_public_check, (EVP_PKEY_CTX *arg0), (arg0))
 
 static inline int
@@ -888,7 +892,7 @@ _goboringcrypto_EVP_PKEY_derive_set_peer_ex(GO_EVP_PKEY_CTX *ctx, GO_EVP_PKEY *k
 # endif
 #endif
 
-#if OPENSSL_VERSION_NUMBER >= 0x10101000L
+#if OPENSSL_VERSION_NUMBER >= OPENSSL_VERSION_1_1_1
 #include <openssl/kdf.h>
 
 enum {
@@ -900,7 +904,7 @@ enum {
 	GO_EVP_PKEY_HKDEF_MODE_EXPAND_ONLY = EVP_PKEY_HKDEF_MODE_EXPAND_ONLY,
 };
 
-#if OPENSSL_VERSION_NUMBER >= 0x30000000
+#if OPENSSL_VERSION_NUMBER >= OPENSSL_VERSION_3_0_0
 DEFINEFUNC(int, EVP_PKEY_CTX_set_hkdf_mode, (GO_EVP_PKEY_CTX *arg0, int arg1), (arg0, arg1))
 DEFINEFUNC(int, EVP_PKEY_CTX_set_hkdf_md, (GO_EVP_PKEY_CTX *arg0, const GO_EVP_MD *arg1), (arg0, arg1))
 DEFINEFUNC(int, EVP_PKEY_CTX_set1_hkdf_salt, (GO_EVP_PKEY_CTX *arg0, unsigned char *arg1, int arg2), (arg0, arg1, arg2))
@@ -1011,7 +1015,7 @@ enum {
 };
 
 DEFINEFUNC(int, EC_POINT_mul, (const GO_EC_GROUP *group, GO_EC_POINT *r, const GO_BIGNUM *n, const GO_EC_POINT *q, const GO_BIGNUM *m, GO_BN_CTX *ctx), (group, r, n, q, m, ctx))
-#if OPENSSL_VERSION_NUMBER >= 0x30000000
+#if OPENSSL_VERSION_NUMBER >= OPENSSL_VERSION_3_0_0
 DEFINEFUNC(int, EVP_PKEY_get_bits, (const GO_EVP_PKEY *pkey), (pkey));
 #else
 DEFINEFUNCINTERNAL(int, EVP_PKEY_bits, (const GO_EVP_PKEY *pkey), (pkey));
@@ -1030,7 +1034,7 @@ enum {
 	GO_POINT_CONVERSION_UNCOMPRESSED = 4,
 };
 
-#if OPENSSL_VERSION_NUMBER >= 0x10100000L
+#if OPENSSL_VERSION_NUMBER >= OPENSSL_VERSION_1_1_0
 DEFINEFUNC(int, EVP_PKEY_set1_encoded_public_key, (GO_EVP_PKEY *pkey, const unsigned char *pub, size_t publen), (pkey, pub, publen))
 DEFINEFUNC(size_t, EVP_PKEY_get1_encoded_public_key, (GO_EVP_PKEY *pkey, unsigned char **ppub), (pkey, ppub))
 #endif

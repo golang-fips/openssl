@@ -53,7 +53,7 @@ encode_point(const GO_EC_GROUP *group, const GO_EC_POINT *point,
 	return len;
 }
 
-#if OPENSSL_VERSION_NUMBER >= 0x30000000
+#if OPENSSL_VERSION_NUMBER >= OPENSSL_VERSION_3_0_0
 
 DEFINEFUNCINTERNAL(const char *, OBJ_nid2sn, (int n), (n))
 DEFINEFUNCINTERNAL(OSSL_PARAM_BLD *, OSSL_PARAM_BLD_new, (void), ())
