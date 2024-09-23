@@ -9,8 +9,12 @@ import (
 	"hash"
 )
 
-func PBKDF2(password, salt []byte, iter, keyLen int, h func() hash.Hash) ([]byte, error) {
-	md := hashToMD(h())
+func PBKDF2(password, salt []byte, iter, keyLen int, fh func() hash.Hash) ([]byte, error) {
+	h, err := hashFuncHash(fh)
+	if err != nil {
+		return nil, err
+	}
+	md := hashToMD(h)
 	if md == nil {
 		return nil, errors.New("unsupported hash function")
 	}

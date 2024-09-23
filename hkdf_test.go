@@ -289,16 +289,16 @@ var hkdfTests = []hkdfTest{
 	},
 }
 
-func newHKDF(hash func() hash.Hash, secret, salt, info []byte) io.Reader {
+func newHKDF(hash func() hash.Hash, secret, salt, info []byte) (io.Reader, error) {
 	prk, err := openssl.ExtractHKDF(hash, secret, salt)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	r, err := openssl.ExpandHKDF(hash, prk, info)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
-	return r
+	return r, nil
 }
 
 func TestHKDF(t *testing.T) {
@@ -314,7 +314,11 @@ func TestHKDF(t *testing.T) {
 			t.Errorf("test %d: incorrect PRK: have %v, need %v.", i, prk, tt.prk)
 		}
 
-		hkdf := newHKDF(tt.hash, tt.master, tt.salt, tt.info)
+		hkdf, err := newHKDF(tt.hash, tt.master, tt.salt, tt.info)
+		if err != nil {
+			t.Errorf("test %d: error creating HKDF: %v.", i, err)
+			continue
+		}
 		out := make([]byte, len(tt.out))
 
 		n, err := io.ReadFull(hkdf, out)
@@ -347,7 +351,10 @@ func TestHKDFMultiRead(t *testing.T) {
 		t.Skip("HKDF is not supported")
 	}
 	for i, tt := range hkdfTests {
-		hkdf := newHKDF(tt.hash, tt.master, tt.salt, tt.info)
+		hkdf, err := newHKDF(tt.hash, tt.master, tt.salt, tt.info)
+		if err != nil {
+			t.Errorf("test %d: error creating HKDF: %v.", i, err)
+		}
 		out := make([]byte, len(tt.out))
 
 		for b := range len(tt.out) {
@@ -371,7 +378,10 @@ func TestHKDFLimit(t *testing.T) {
 	master := []byte{0x00, 0x01, 0x02, 0x03}
 	info := []byte{}
 
-	hkdf := newHKDF(hash, master, nil, info)
+	hkdf, err := newHKDF(hash, master, nil, info)
+	if err != nil {
+		t.Fatalf("error creating HKDF: %v.", err)
+	}
 	limit := hash().Size() * 255
 	out := make([]byte, limit)
 
@@ -385,5 +395,13 @@ func TestHKDFLimit(t *testing.T) {
 	n, err = io.ReadFull(hkdf, make([]byte, 1))
 	if n > 0 || err == nil {
 		t.Errorf("key expansion overflowed: n = %d, err = %v", n, err)
+	}
+}
+
+func TestHKDFUnsupportedHash(t *testing.T) {
+	// Test that newHKDF returns an error instead of panicking.
+	_, err := newHKDF(newStubHash, []byte{0x00, 0x01, 0x02, 0x03}, nil, []byte{})
+	if err == nil {
+		t.Error("expected error for unsupported hash")
 	}
 }

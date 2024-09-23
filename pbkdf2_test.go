@@ -158,6 +158,14 @@ func TestWithHMACSHA256(t *testing.T) {
 	testHash(t, openssl.NewSHA256, "SHA256", sha256TestVectors)
 }
 
+func TestWithUnsupportedHash(t *testing.T) {
+	// Test that PBKDF2 returns an error for unsupported hashes instead of panicking.
+	_, err := openssl.PBKDF2([]byte{1, 2}, []byte{3, 4}, 0, 2, newStubHash)
+	if err == nil {
+		t.Fatal("expected error")
+	}
+}
+
 var sink uint8
 
 func benchmark(b *testing.B, h func() hash.Hash) {
