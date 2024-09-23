@@ -15,7 +15,7 @@ import (
 func SupportsTLS1PRF() bool {
 	switch vMajor {
 	case 1:
-		return vMajor > 1 || (vMajor >= 1 && vMinor >= 1)
+		return vMinor >= 1
 	case 3:
 		_, err := fetchTLS1PRF()
 		return err == nil
