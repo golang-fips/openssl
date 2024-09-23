@@ -317,6 +317,7 @@ func TestHKDF(t *testing.T) {
 		hkdf, err := newHKDF(tt.hash, tt.master, tt.salt, tt.info)
 		if err != nil {
 			t.Errorf("test %d: error creating HKDF: %v.", i, err)
+			continue
 		}
 		out := make([]byte, len(tt.out))
 
