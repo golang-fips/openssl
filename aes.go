@@ -9,6 +9,14 @@ import (
 	"errors"
 )
 
+//go:generate go run github.com/golang-fips/openssl/v2/cmd/genaesmodes -in aes.go -modes CBC,CTR,GCM -out zaes.go
+//go:generate go run github.com/golang-fips/openssl/v2/cmd/gentestvectors -out vectors_test.go
+
+// Steps to support a new AES mode, e.g. `FOO`:
+// 1. Add `FOO` to the list of modes in the `genaesmodes` command.
+// 2. Run `go generate` to update the generated code.
+// 3. Implement the necessary interfaces for the new struct, which will be named `cipherWithFOO`.
+
 // NewAESCipher creates and returns a new AES cipher.Block.
 // The key argument should be the AES key, either 16, 24, or 32 bytes to select
 // AES-128, AES-192, or AES-256.
@@ -30,46 +38,7 @@ func NewAESCipher(key []byte) (cipher.Block, error) {
 	if err != nil {
 		return nil, err
 	}
-	var block cipher.Block
-	cbcSupported := loadCipher(kind, cipherModeCBC) != nil
-	ctrSupported := loadCipher(kind, cipherModeCTR) != nil
-	gcmSupported := loadCipher(kind, cipherModeGCM) != nil
-	aes := aesCipher{c}
-	switch {
-	case cbcSupported && ctrSupported && gcmSupported:
-		block = cipherWithCBC_CTR_GCM{aes,
-			cipherWithCBC{aes},
-			cipherWithCTR{aes},
-			cipherWithGCM{aes},
-		}
-	case cbcSupported && ctrSupported && !gcmSupported:
-		block = cipherWithCBC_CTR{aes,
-			cipherWithCBC{aes},
-			cipherWithCTR{aes},
-		}
-	case cbcSupported && !ctrSupported && gcmSupported:
-		block = cipherWithCBC_GCM{aes,
-			cipherWithCBC{aes},
-			cipherWithGCM{aes},
-		}
-	case cbcSupported && !ctrSupported && !gcmSupported:
-		block = cipherWithCBC{aes}
-	case !cbcSupported && ctrSupported && gcmSupported:
-		block = cipherWithCTR_GCM{aes,
-			cipherWithCTR{aes},
-			cipherWithGCM{aes},
-		}
-	case !cbcSupported && ctrSupported && !gcmSupported:
-		block = cipherWithCTR{aes}
-	case !cbcSupported && !ctrSupported && gcmSupported:
-		block = cipherWithGCM{aes}
-	case !cbcSupported && !ctrSupported && !gcmSupported:
-		block = aes
-	default:
-		panic("unreachable")
-	}
-
-	return block, nil
+	return newAESBlock(c, kind), nil
 }
 
 // NewGCMTLS returns a GCM cipher specific to TLS
@@ -117,10 +86,7 @@ func (c aesCipher) Decrypt(dst, src []byte) {
 	}
 }
 
-// cipherWithCBC implements the cipher.Block, aes.cbcEncAble and aes.cbcDecAble interfaces.
-type cipherWithCBC struct {
-	aesCipher
-}
+// Implement optional interfaces for AES modes.
 
 func (c cipherWithCBC) NewCBCEncrypter(iv []byte) cipher.BlockMode {
 	return c.cipher.newCBC(iv, cipherOpEncrypt)
@@ -130,18 +96,8 @@ func (c cipherWithCBC) NewCBCDecrypter(iv []byte) cipher.BlockMode {
 	return c.cipher.newCBC(iv, cipherOpDecrypt)
 }
 
-// cipherWithCTR implements the cipher.Block and aes.ctrAble interfaces.
-type cipherWithCTR struct {
-	aesCipher
-}
-
 func (c cipherWithCTR) NewCTR(iv []byte) cipher.Stream {
 	return c.cipher.newCTR(iv)
-}
-
-// cipherWithGCM implements the cipher.Block and aes.gcmAble interface.
-type cipherWithGCM struct {
-	aesCipher
 }
 
 func (c cipherWithGCM) NewGCM(nonceSize, tagSize int) (cipher.AEAD, error) {
@@ -156,64 +112,20 @@ func (c cipherWithGCM) NewGCMTLS13() (cipher.AEAD, error) {
 	return c.cipher.newGCM(cipherGCMTLS13)
 }
 
-// cipherWithCBC_CTR implements the cipher.Block, aes.cbcEncAble, aes.cbcDecAble,
-// and aes.ctrAble interfaces.
-type cipherWithCBC_CTR struct {
-	aesCipher
-	cipherWithCBC
-	cipherWithCTR
-}
-
-// cipherWithCBC_GCM implements the cipher.Block, aes.cbcEncAble, aes.cbcDecAble,
-// and aes.gcmAble interfaces.
-type cipherWithCBC_GCM struct {
-	aesCipher
-	cipherWithCBC
-	cipherWithGCM
-}
-
-// cipherWithCTR_GCM implements the cipher.Block, aes.ctrAble, and aes.gcmAble interfaces.
-type cipherWithCTR_GCM struct {
-	aesCipher
-	cipherWithCTR
-	cipherWithGCM
-}
-
-// cipherWithCBC_CTR_GCM implements the cipher.Block, aes.cbcEncAble, aes.cbcDecAble,
-// aes.ctrAble, and aes.gcmAble interfaces.
-type cipherWithCBC_CTR_GCM struct {
-	aesCipher
-	cipherWithCBC
-	cipherWithCTR
-	cipherWithGCM
-}
-
 // The following interfaces have been copied out of crypto/aes/modes.go.
 
-// gcmAble is implemented by cipher.Blocks that can provide an optimized
-// implementation of GCM through the AEAD interface.
-// See crypto/cipher/gcm.go.
 type gcmAble interface {
 	NewGCM(nonceSize, tagSize int) (cipher.AEAD, error)
 }
 
-// cbcEncAble is implemented by cipher.Blocks that can provide an optimized
-// implementation of CBC encryption through the cipher.BlockMode interface.
-// See crypto/cipher/cbc.go.
 type cbcEncAble interface {
 	NewCBCEncrypter(iv []byte) cipher.BlockMode
 }
 
-// cbcDecAble is implemented by cipher.Blocks that can provide an optimized
-// implementation of CBC decryption through the cipher.BlockMode interface.
-// See crypto/cipher/cbc.go.
 type cbcDecAble interface {
 	NewCBCDecrypter(iv []byte) cipher.BlockMode
 }
 
-// ctrAble is implemented by cipher.Blocks that can provide an optimized
-// implementation of CTR through the cipher.Stream interface.
-// See crypto/cipher/ctr.go.
 type ctrAble interface {
 	NewCTR(iv []byte) cipher.Stream
 }
@@ -232,24 +144,4 @@ var (
 
 	_ cipher.Block = (*cipherWithGCM)(nil)
 	_ gcmAble      = (*cipherWithGCM)(nil)
-
-	_ cipher.Block = (*cipherWithCBC_CTR)(nil)
-	_ cbcEncAble   = (*cipherWithCBC_CTR)(nil)
-	_ cbcDecAble   = (*cipherWithCBC_CTR)(nil)
-	_ ctrAble      = (*cipherWithCBC_CTR)(nil)
-
-	_ cipher.Block = (*cipherWithCBC_GCM)(nil)
-	_ cbcEncAble   = (*cipherWithCBC_GCM)(nil)
-	_ cbcDecAble   = (*cipherWithCBC_GCM)(nil)
-	_ gcmAble      = (*cipherWithCBC_GCM)(nil)
-
-	_ cipher.Block = (*cipherWithCTR_GCM)(nil)
-	_ ctrAble      = (*cipherWithCTR_GCM)(nil)
-	_ gcmAble      = (*cipherWithCTR_GCM)(nil)
-
-	_ cipher.Block = (*cipherWithCBC_CTR_GCM)(nil)
-	_ cbcEncAble   = (*cipherWithCBC_CTR_GCM)(nil)
-	_ cbcDecAble   = (*cipherWithCBC_CTR_GCM)(nil)
-	_ ctrAble      = (*cipherWithCBC_CTR_GCM)(nil)
-	_ gcmAble      = (*cipherWithCBC_CTR_GCM)(nil)
 )
