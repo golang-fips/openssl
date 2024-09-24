@@ -17,7 +17,7 @@ func SupportsTLS1PRF() bool {
 	case 1:
 		return vMinor >= 1
 	case 3:
-		_, err := fetchTLS1PRF()
+		_, err := fetchTLS1PRF3()
 		return err == nil
 	default:
 		panic(errUnsupportedVersion())
@@ -106,10 +106,10 @@ func tls1PRF1(result, secret, label, seed []byte, md C.GO_EVP_MD_PTR) error {
 	return nil
 }
 
-// fetchTLS1PRF fetches the TLS1-PRF KDF algorithm.
+// fetchTLS1PRF3 fetches the TLS1-PRF KDF algorithm.
 // It is safe to call this function concurrently.
 // The returned EVP_KDF_PTR shouldn't be freed.
-var fetchTLS1PRF = sync.OnceValues(func() (C.GO_EVP_KDF_PTR, error) {
+var fetchTLS1PRF3 = sync.OnceValues(func() (C.GO_EVP_KDF_PTR, error) {
 	checkMajorVersion(3)
 
 	name := C.CString("TLS1-PRF")
@@ -125,7 +125,7 @@ var fetchTLS1PRF = sync.OnceValues(func() (C.GO_EVP_KDF_PTR, error) {
 func tls1PRF3(result, secret, label, seed []byte, md C.GO_EVP_MD_PTR) error {
 	checkMajorVersion(3)
 
-	kdf, err := fetchTLS1PRF()
+	kdf, err := fetchTLS1PRF3()
 	if err != nil {
 		return err
 	}

@@ -75,16 +75,16 @@ func (b *paramBuilder) build() (C.GO_OSSL_PARAM_PTR, error) {
 	if param == nil {
 		return nil, newOpenSSLError("OSSL_PARAM_BLD_build")
 	}
-	b.finalize() // we shouldn't reuse the builder once we've built the params
 	return param, nil
 }
 
-// addUTF8String adds a UTF-8 string to the builder.
-// size should not include the terminating NUL byte. If it is zero then it will be calculated.
+// addUTF8String adds a NUL-terminated UTF-8 string to the builder.
+// size should not include the terminating NUL byte. If size is zero, then it will be calculated.
 func (b *paramBuilder) addUTF8String(name *C.char, value *C.char, size C.size_t) {
 	if !b.check() {
 		return
 	}
+	// OSSL_PARAM_BLD_push_utf8_string calculates the size if it is zero.
 	if C.go_openssl_OSSL_PARAM_BLD_push_utf8_string(b.bld, name, value, size) != 1 {
 		b.err = newOpenSSLError("OSSL_PARAM_BLD_push_utf8_string(" + C.GoString(name) + ")")
 	}
