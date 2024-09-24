@@ -38,8 +38,14 @@ func CheckVersion(version string) (exists, fips bool) {
 		return false, false
 	}
 	defer dlclose(handle)
-	fips = C.go_openssl_fips_enabled(handle) == 1
-	return true, fips
+	enabled := C.go_openssl_fips_enabled(handle)
+	fips = enabled == 1
+	// If go_openssl_fips_enabled returns -1, it means that all or some of the necessary
+	// functions are not available. This can be due to the version of OpenSSL being too old,
+	// too incompatible, or the shared library not being an OpenSSL library. In any case,
+	// we shouldn't consider this library to be valid for our purposes.
+	exists = enabled != -1
+	return
 }
 
 // Init loads and initializes OpenSSL from the shared library at path.

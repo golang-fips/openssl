@@ -36,6 +36,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #undef DEFINEFUNC_RENAMED_3_0
 
 // go_openssl_fips_enabled returns 1 if FIPS mode is enabled, 0 otherwise.
+// As a special case, it returns -1 if it cannot determine if FIPS mode is enabled.
 // See openssl.FIPS for details about its implementation.
 //
 // This function is reimplemented here because openssl.FIPS assumes that
@@ -63,7 +64,7 @@ go_openssl_fips_enabled(void* handle)
 
     if (EVP_default_properties_is_fips_enabled == NULL || EVP_MD_fetch == NULL || EVP_MD_free == NULL) {
         // Shouldn't happen, but if it does, we can't determine if FIPS mode is enabled.
-        return 0;
+        return -1;
     }
 
     if (EVP_default_properties_is_fips_enabled(NULL) != 1)
