@@ -38,7 +38,7 @@ func newParamBuilder() (*paramBuilder, error) {
 	return pb, nil
 }
 
-// free frees the builder.
+// finalize frees the builder.
 func (b *paramBuilder) finalize() {
 	if b.bld != nil {
 		b.pinner.Unpin()
@@ -47,6 +47,10 @@ func (b *paramBuilder) finalize() {
 	}
 }
 
+// check is used internally to enforce invariants and should not be called by users of paramBuilder.
+// Returns true if it's ok to add parameters to the builder or build it.
+// Returns false if there has been an error while adding a parameter.
+// Panics if the paramBuilder has been freed, e.g. if it has already been built.
 func (b *paramBuilder) check() bool {
 	if b.err != nil {
 		return false

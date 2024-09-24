@@ -109,7 +109,6 @@ typedef void* GO_DSA_PTR;
 typedef void* GO_EVP_KDF_PTR;
 typedef void* GO_EVP_KDF_CTX_PTR;
 
-
 // #include <openssl/md5.h>
 typedef void* GO_MD5_CTX_PTR;
 
