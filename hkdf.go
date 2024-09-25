@@ -47,7 +47,7 @@ func newHKDF1(md C.GO_EVP_MD_PTR, mode C.int, secret, salt, pseudorandomKey, inf
 		if len(data) == 0 {
 			return 1 // No data to set.
 		}
-		return C.go_openssl_EVP_PKEY_CTX_ctrl(ctx, -1, C.GO1_EVP_PKEY_OP_DERIVE, C.int(ctrl), C.int(len(salt)), unsafe.Pointer(base(data)))
+		return C.go_openssl_EVP_PKEY_CTX_ctrl(ctx, -1, C.GO1_EVP_PKEY_OP_DERIVE, C.int(ctrl), C.int(len(data)), unsafe.Pointer(base(data)))
 	}
 
 	if C.go_openssl_EVP_PKEY_CTX_ctrl(ctx, -1, C.GO1_EVP_PKEY_OP_DERIVE, C.GO_EVP_PKEY_CTRL_HKDF_MODE, mode, nil) != 1 {
