@@ -69,6 +69,20 @@ func hashToMD(h hash.Hash) C.GO_EVP_MD_PTR {
 	return nil
 }
 
+// hashFuncToMD converts a hash.Hash function to a GO_EVP_MD_PTR.
+// See [hashFuncHash] for details on error handling.
+func hashFuncToMD(fn func() hash.Hash) (C.GO_EVP_MD_PTR, error) {
+	h, err := hashFuncHash(fn)
+	if err != nil {
+		return nil, err
+	}
+	md := hashToMD(h)
+	if md == nil {
+		return nil, errors.New("unsupported hash function")
+	}
+	return md, nil
+}
+
 // cryptoHashToMD converts a crypto.Hash to a GO_EVP_MD_PTR.
 func cryptoHashToMD(ch crypto.Hash) (md C.GO_EVP_MD_PTR) {
 	if v, ok := cacheMD.Load(ch); ok {
