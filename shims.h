@@ -106,6 +106,8 @@ typedef void* GO_OSSL_PARAM_PTR;
 typedef void* GO_CRYPTO_THREADID_PTR;
 typedef void* GO_EVP_SIGNATURE_PTR;
 typedef void* GO_DSA_PTR;
+typedef void* GO_EVP_KDF_PTR;
+typedef void* GO_EVP_KDF_CTX_PTR;
 
 // #include <openssl/md5.h>
 typedef void* GO_MD5_CTX_PTR;
@@ -375,9 +377,6 @@ DEFINEFUNC_3_0(int, EVP_PKEY_up_ref, (GO_EVP_PKEY_PTR key), (key)) \
 DEFINEFUNC_LEGACY_1(int, EVP_PKEY_set1_EC_KEY, (GO_EVP_PKEY_PTR pkey, GO_EC_KEY_PTR key), (pkey, key)) \
 DEFINEFUNC_3_0(int, EVP_PKEY_CTX_set0_rsa_oaep_label, (GO_EVP_PKEY_CTX_PTR ctx, void *label, int len), (ctx, label, len)) \
 DEFINEFUNC(int, PKCS5_PBKDF2_HMAC, (const char *pass, int passlen, const unsigned char *salt, int saltlen, int iter, const GO_EVP_MD_PTR digest, int keylen, unsigned char *out), (pass, passlen, salt, saltlen, iter, digest, keylen, out)) \
-DEFINEFUNC_3_0(int, EVP_PKEY_CTX_set_tls1_prf_md, (GO_EVP_PKEY_CTX_PTR arg0, const GO_EVP_MD_PTR arg1), (arg0, arg1)) \
-DEFINEFUNC_3_0(int, EVP_PKEY_CTX_set1_tls1_prf_secret, (GO_EVP_PKEY_CTX_PTR arg0, const unsigned char *arg1, int arg2), (arg0, arg1, arg2)) \
-DEFINEFUNC_3_0(int, EVP_PKEY_CTX_add1_tls1_prf_seed, (GO_EVP_PKEY_CTX_PTR arg0, const unsigned char *arg1, int arg2), (arg0, arg1, arg2)) \
 DEFINEFUNC_1_1_1(int, EVP_PKEY_get_raw_public_key, (const GO_EVP_PKEY_PTR pkey, unsigned char *pub, size_t *len), (pkey, pub, len)) \
 DEFINEFUNC_1_1_1(int, EVP_PKEY_get_raw_private_key, (const GO_EVP_PKEY_PTR pkey, unsigned char *priv, size_t *len), (pkey, priv, len)) \
 DEFINEFUNC_3_0(GO_EVP_SIGNATURE_PTR, EVP_SIGNATURE_fetch, (GO_OSSL_LIB_CTX_PTR ctx, const char *algorithm, const char *properties), (ctx, algorithm, properties)) \
@@ -389,4 +388,9 @@ DEFINEFUNC_LEGACY_1_1(void, DSA_get0_pqg, (const GO_DSA_PTR d, const GO_BIGNUM_P
 DEFINEFUNC_LEGACY_1_1(int, DSA_set0_pqg, (GO_DSA_PTR d, GO_BIGNUM_PTR p, GO_BIGNUM_PTR q, GO_BIGNUM_PTR g), (d, p, q, g)) \
 DEFINEFUNC_LEGACY_1_1(void, DSA_get0_key, (const GO_DSA_PTR d, const GO_BIGNUM_PTR *pub_key, const GO_BIGNUM_PTR *priv_key), (d, pub_key, priv_key)) \
 DEFINEFUNC_LEGACY_1_1(int, DSA_set0_key, (GO_DSA_PTR d, GO_BIGNUM_PTR pub_key, GO_BIGNUM_PTR priv_key), (d, pub_key, priv_key)) \
+DEFINEFUNC_3_0(GO_EVP_KDF_PTR, EVP_KDF_fetch, (GO_OSSL_LIB_CTX_PTR libctx, const char *algorithm, const char *properties), (libctx, algorithm, properties)) \
+DEFINEFUNC_3_0(void, EVP_KDF_free, (GO_EVP_KDF_PTR kdf), (kdf)) \
+DEFINEFUNC_3_0(GO_EVP_KDF_CTX_PTR, EVP_KDF_CTX_new, (GO_EVP_KDF_PTR kdf), (kdf)) \
+DEFINEFUNC_3_0(void, EVP_KDF_CTX_free, (GO_EVP_KDF_CTX_PTR ctx), (ctx)) \
+DEFINEFUNC_3_0(int, EVP_KDF_derive, (GO_EVP_KDF_CTX_PTR ctx, unsigned char *key, size_t keylen, const GO_OSSL_PARAM_PTR params), (ctx, key, keylen, params)) \
 

@@ -147,7 +147,7 @@ var tls1prfTests = []tls1prfTest{
 
 func TestTLS1PRF(t *testing.T) {
 	if !openssl.SupportsTLS1PRF() {
-		t.Skip("TLS PRF is not supported")
+		t.Skip("TLS1 PRF is not supported")
 	}
 	for _, tt := range tls1prfTests {
 		t.Run(tt.hash.String(), func(t *testing.T) {
