@@ -93,10 +93,6 @@ jobs:
     runs-on: ubuntu-latest
     container: mcr.microsoft.com/cbl-mariner/base/core:2.0
     steps:
-    - name: Install Go
-      run: |
-        tdnf install -y golang
-        go version
     - name: Checkout code
       uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
     - name: Run Test
