@@ -30,9 +30,6 @@ jobs:
       env:
         GO_OPENSSL_VERSION_OVERRIDE: ${{ matrix.openssl-version }}
     - name: Run Test
-      # Run each test 10 times so the garbage collector chimes in 
-      # and exercises the multiple finalizers we use.
-      # This can detect use-after-free and double-free issues.
       run: go test -gcflags=all=-d=checkptr -count 10 -v ./...
       env:
         GO_OPENSSL_VERSION_OVERRIDE: ${{ matrix.openssl-version }}
@@ -85,6 +82,18 @@ jobs:
     runs-on: ubuntu-latest
     container: mcr.microsoft.com/oss/go/microsoft/golang:1.23-azurelinux3.0
     steps:
+    - name: Checkout code
+      uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+    - name: Run Test
+      run: go test -v ./...
+  mariner2:
+    runs-on: ubuntu-latest
+    container: mcr.microsoft.com/cbl-mariner/base/core:2.0
+    steps:
+    - name: Install Go
+      run: |
+        tdnf install -y golang
+        go version
     - name: Checkout code
       uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
     - name: Run Test
