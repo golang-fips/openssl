@@ -30,6 +30,9 @@ jobs:
       env:
         GO_OPENSSL_VERSION_OVERRIDE: ${{ matrix.openssl-version }}
     - name: Run Test
+      # Run each test 10 times so the garbage collector chimes in 
+      # and exercises the multiple finalizers we use.
+      # This can detect use-after-free and double-free issues.
       run: go test -gcflags=all=-d=checkptr -count 10 -v ./...
       env:
         GO_OPENSSL_VERSION_OVERRIDE: ${{ matrix.openssl-version }}
