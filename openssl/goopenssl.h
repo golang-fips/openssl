@@ -268,7 +268,7 @@ int _goboringcrypto_HMAC_Update(GO_HMAC_CTX *ctx,
 int _goboringcrypto_HMAC_CTX_reset(GO_HMAC_CTX *ctx);
 void _goboringcrypto_HMAC_CTX_free(GO_HMAC_CTX *ctx);
 int _goboringcrypto_HMAC_Final(GO_HMAC_CTX *ctx,
-			       unsigned char *md, unsigned int *len);
+			       unsigned char *md, unsigned int len);
 
 #include <openssl/evp.h>
 #include <openssl/aes.h>

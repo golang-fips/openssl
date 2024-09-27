@@ -136,10 +136,10 @@ func (h *boringHMAC) BlockSize() int {
 }
 
 func (h *boringHMAC) Sum(in []byte) []byte {
+	size := h.Size()
 	if h.sum == nil {
-		size := h.Size()
 		h.sum = make([]byte, size)
 	}
-	C._goboringcrypto_HMAC_Final(h.ctx, (*C.uint8_t)(unsafe.Pointer(&h.sum[0])), nil)
+	C._goboringcrypto_HMAC_Final(h.ctx, (*C.uint8_t)(unsafe.Pointer(&h.sum[0])), C.uint(size))
 	return append(in, h.sum...)
 }
