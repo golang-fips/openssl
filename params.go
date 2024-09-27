@@ -108,7 +108,7 @@ func (b *paramBuilder) addOctetString(name *C.char, value []byte) {
 	}
 }
 
-// addIn32 adds a int32 to the builder.
+// addInt32 adds an int32 to the builder.
 func (b *paramBuilder) addInt32(name *C.char, value int32) {
 	if !b.check() {
 		return
