@@ -26,7 +26,7 @@ func SupportsHKDF() bool {
 	}
 }
 
-func newHKDF1(md C.GO_EVP_MD_PTR, mode C.int, secret, salt, pseudorandomKey, info []byte) (ctx C.GO_EVP_PKEY_CTX_PTR, err error) {
+func newHKDFCtx1(md C.GO_EVP_MD_PTR, mode C.int, secret, salt, pseudorandomKey, info []byte) (ctx C.GO_EVP_PKEY_CTX_PTR, err error) {
 	checkMajorVersion(1)
 
 	ctx = C.go_openssl_EVP_PKEY_CTX_new_id(C.GO_EVP_PKEY_HKDF, nil)
@@ -121,7 +121,7 @@ func ExtractHKDF(h func() hash.Hash, secret, salt []byte) ([]byte, error) {
 
 	switch vMajor {
 	case 1:
-		ctx, err := newHKDF1(md, C.GO_EVP_KDF_HKDF_MODE_EXTRACT_ONLY, secret, salt, nil, nil)
+		ctx, err := newHKDFCtx1(md, C.GO_EVP_KDF_HKDF_MODE_EXTRACT_ONLY, secret, salt, nil, nil)
 		if err != nil {
 			return nil, err
 		}
@@ -136,7 +136,7 @@ func ExtractHKDF(h func() hash.Hash, secret, salt []byte) ([]byte, error) {
 		}
 		return out[:r.keylen], nil
 	case 3:
-		ctx, err := newHKDF3(md, C.GO_EVP_KDF_HKDF_MODE_EXTRACT_ONLY, secret, salt, nil, nil)
+		ctx, err := newHKDFCtx3(md, C.GO_EVP_KDF_HKDF_MODE_EXTRACT_ONLY, secret, salt, nil, nil)
 		if err != nil {
 			return nil, err
 		}
@@ -163,7 +163,7 @@ func ExpandHKDF(h func() hash.Hash, pseudorandomKey, info []byte) (io.Reader, er
 
 	switch vMajor {
 	case 1:
-		ctx, err := newHKDF1(md, C.GO_EVP_KDF_HKDF_MODE_EXPAND_ONLY, nil, nil, pseudorandomKey, info)
+		ctx, err := newHKDFCtx1(md, C.GO_EVP_KDF_HKDF_MODE_EXPAND_ONLY, nil, nil, pseudorandomKey, info)
 		if err != nil {
 			return nil, err
 		}
@@ -171,7 +171,7 @@ func ExpandHKDF(h func() hash.Hash, pseudorandomKey, info []byte) (io.Reader, er
 		runtime.SetFinalizer(c, (*hkdf1).finalize)
 		return c, nil
 	case 3:
-		ctx, err := newHKDF3(md, C.GO_EVP_KDF_HKDF_MODE_EXPAND_ONLY, nil, nil, pseudorandomKey, info)
+		ctx, err := newHKDFCtx3(md, C.GO_EVP_KDF_HKDF_MODE_EXPAND_ONLY, nil, nil, pseudorandomKey, info)
 		if err != nil {
 			return nil, err
 		}
@@ -211,8 +211,8 @@ var fetchHKDF3 = sync.OnceValues(func() (C.GO_EVP_KDF_PTR, error) {
 	return kdf, nil
 })
 
-// newHKDF3 implements HKDF for OpenSSL 3 using the EVP_KDF API.
-func newHKDF3(md C.GO_EVP_MD_PTR, mode C.int, secret, salt, pseudorandomKey, info []byte) (C.GO_EVP_KDF_CTX_PTR, error) {
+// newHKDFCtx3 implements HKDF for OpenSSL 3 using the EVP_KDF API.
+func newHKDFCtx3(md C.GO_EVP_MD_PTR, mode C.int, secret, salt, pseudorandomKey, info []byte) (C.GO_EVP_KDF_CTX_PTR, error) {
 	checkMajorVersion(3)
 
 	kdf, err := fetchHKDF3()
@@ -223,10 +223,15 @@ func newHKDF3(md C.GO_EVP_MD_PTR, mode C.int, secret, salt, pseudorandomKey, inf
 	if ctx == nil {
 		return nil, newOpenSSLError("EVP_KDF_CTX_new")
 	}
+	defer func() {
+		if err != nil {
+			C.go_openssl_EVP_KDF_CTX_free(ctx)
+		}
+	}()
 
 	bld, err := newParamBuilder()
 	if err != nil {
-		return nil, err
+		return ctx, err
 	}
 	bld.addUTF8String(_OSSL_KDF_PARAM_DIGEST, C.go_openssl_EVP_MD_get0_name(md), 0)
 	bld.addInt32(_OSSL_KDF_PARAM_MODE, int32(mode))
@@ -244,14 +249,12 @@ func newHKDF3(md C.GO_EVP_MD_PTR, mode C.int, secret, salt, pseudorandomKey, inf
 	}
 	params, err := bld.build()
 	if err != nil {
-		C.go_openssl_EVP_KDF_CTX_free(ctx)
-		return nil, err
+		return ctx, err
 	}
 	defer C.go_openssl_OSSL_PARAM_free(params)
 
 	if C.go_openssl_EVP_KDF_CTX_set_params(ctx, params) != 1 {
-		C.go_openssl_EVP_KDF_CTX_free(ctx)
-		return nil, newOpenSSLError("EVP_KDF_CTX_set_params")
+		return ctx, newOpenSSLError("EVP_KDF_CTX_set_params")
 	}
 	return ctx, nil
 }
