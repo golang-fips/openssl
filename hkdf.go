@@ -212,7 +212,7 @@ var fetchHKDF3 = sync.OnceValues(func() (C.GO_EVP_KDF_PTR, error) {
 })
 
 // newHKDFCtx3 implements HKDF for OpenSSL 3 using the EVP_KDF API.
-func newHKDFCtx3(md C.GO_EVP_MD_PTR, mode C.int, secret, salt, pseudorandomKey, info []byte) (C.GO_EVP_KDF_CTX_PTR, error) {
+func newHKDFCtx3(md C.GO_EVP_MD_PTR, mode C.int, secret, salt, pseudorandomKey, info []byte) (_ C.GO_EVP_KDF_CTX_PTR, err error) {
 	checkMajorVersion(3)
 
 	kdf, err := fetchHKDF3()
