@@ -62,7 +62,7 @@ func NewPublicKeyECDSA(curve string, X, Y BigInt) (*PublicKeyECDSA, error) {
 func HashSignECDSA(priv *PrivateKeyECDSA, hash []byte, h crypto.Hash) (r, s BigInt, err error) {
 	panic("boringcrypto: not available")
 }
-func HashVerifyECDSA(pub *PublicKeyECDSA, msg []byte, r, s *big.Int, h crypto.Hash) bool {
+func HashVerifyECDSA(pub *PublicKeyECDSA, msg []byte, r, s *BigInt, h crypto.Hash) bool {
 	panic("boringcrypto: not available")
 }
 func SignMarshalECDSA(priv *PrivateKeyECDSA, hash []byte) ([]byte, error) {
