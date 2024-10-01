@@ -80,14 +80,19 @@ func cryptoHashToMD(ch crypto.Hash) (md C.GO_EVP_MD_PTR) {
 	if ch == crypto.MD5SHA1 {
 		if vMajor == 1 && vMinor == 0 {
 			return C.go_openssl_EVP_md5_sha1_backport()
+		} else {
+			return C.go_openssl_EVP_md5_sha1()
 		}
-		return C.go_openssl_EVP_md5_sha1()
 	}
 	switch ch {
 	case crypto.MD4:
-		return C.go_openssl_EVP_md4()
+		if versionAtOrAbove(1, 1, 0) || !FIPS() {
+			return C.go_openssl_EVP_md4()
+		}
 	case crypto.MD5:
-		return C.go_openssl_EVP_md5()
+		if versionAtOrAbove(1, 1, 0) || !FIPS() {
+			return C.go_openssl_EVP_md5()
+		}
 	case crypto.SHA1:
 		return C.go_openssl_EVP_sha1()
 	case crypto.SHA224:
@@ -99,13 +104,21 @@ func cryptoHashToMD(ch crypto.Hash) (md C.GO_EVP_MD_PTR) {
 	case crypto.SHA512:
 		return C.go_openssl_EVP_sha512()
 	case crypto.SHA3_224:
-		return C.go_openssl_EVP_sha3_224()
+		if versionAtOrAbove(1, 1, 1) {
+			return C.go_openssl_EVP_sha3_224()
+		}
 	case crypto.SHA3_256:
-		return C.go_openssl_EVP_sha3_256()
+		if versionAtOrAbove(1, 1, 1) {
+			return C.go_openssl_EVP_sha3_256()
+		}
 	case crypto.SHA3_384:
-		return C.go_openssl_EVP_sha3_384()
+		if versionAtOrAbove(1, 1, 1) {
+			return C.go_openssl_EVP_sha3_384()
+		}
 	case crypto.SHA3_512:
-		return C.go_openssl_EVP_sha3_512()
+		if versionAtOrAbove(1, 1, 1) {
+			return C.go_openssl_EVP_sha3_512()
+		}
 	}
 	return nil
 }
