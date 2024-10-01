@@ -115,10 +115,10 @@ void _goboringcrypto_HMAC_CTX_free(GO_HMAC_CTX *ctx)
 }
 
 int _goboringcrypto_HMAC_Final(GO_HMAC_CTX *ctx,
-			       unsigned char *md, unsigned int *len)
+			       unsigned char *md, unsigned int len)
 {
   EVP_MD_CTX *mdctx = NULL;
-  size_t slen;
+  size_t slen = len;
   int ret = 0;
 
   mdctx = _goboringcrypto_EVP_MD_CTX_create();
@@ -128,9 +128,10 @@ int _goboringcrypto_HMAC_Final(GO_HMAC_CTX *ctx,
   if (_goboringcrypto_internal_EVP_MD_CTX_copy_ex(mdctx, ctx->mdctx) != 1)
     goto err;
 
-  ret = _goboringcrypto_EVP_DigestSignFinal(mdctx, md, &slen);
-  if (ret == 1 && len)
-    *len = slen;
+  if (_goboringcrypto_EVP_DigestSignFinal(mdctx, md, &slen) != 1)
+    goto err;
+
+  ret = 1;
 
  err:
   _goboringcrypto_EVP_MD_CTX_free(mdctx);
@@ -219,7 +220,7 @@ void _goboringcrypto_HMAC_CTX_free(GO_HMAC_CTX *ctx)
 }
 
 int _goboringcrypto_HMAC_Final(GO_HMAC_CTX *ctx,
-			       unsigned char *md, unsigned int *len)
+			       unsigned char *md, unsigned int len)
 {
   HMAC_CTX hctx;
   int ret;
@@ -228,7 +229,7 @@ int _goboringcrypto_HMAC_Final(GO_HMAC_CTX *ctx,
   if (ret != 1)
     return ret;
 
-  ret = _goboringcrypto_internal_HMAC_Final(&hctx, md, len);
+  ret = _goboringcrypto_internal_HMAC_Final(&hctx, md, &len);
   _goboringcrypto_internal_HMAC_CTX_cleanup(&hctx);
   return ret;
 }
