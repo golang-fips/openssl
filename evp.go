@@ -75,12 +75,26 @@ func cryptoHashToMD(ch crypto.Hash) (md C.GO_EVP_MD_PTR) {
 		return v.(C.GO_EVP_MD_PTR)
 	}
 	defer func() {
-		if md != nil && vMajor == 3 {
-			// On OpenSSL 3, directly operating on a EVP_MD object
-			// not created by EVP_MD_fetch has negative performance
-			// implications, as digest operations will have
-			// to fetch it on every call. Better to just fetch it once here.
-			md = C.go_openssl_EVP_MD_fetch(nil, C.go_openssl_EVP_MD_get0_name(md), nil)
+		if md != nil {
+			switch vMajor {
+			case 1:
+				// On OpenSSL 1 EVP_MD objects can be not-nil even
+				// when they are not supported. We need to pass the md
+				// to a EVP_MD_CTX to really know if they can be used.
+				ctx := C.go_openssl_EVP_MD_CTX_new()
+				if C.go_openssl_EVP_DigestInit_ex(ctx, md, nil) != 1 {
+					md = nil
+				}
+				C.go_openssl_EVP_MD_CTX_free(ctx)
+			case 3:
+				// On OpenSSL 3, directly operating on a EVP_MD object
+				// not created by EVP_MD_fetch has negative performance
+				// implications, as digest operations will have
+				// to fetch it on every call. Better to just fetch it once here.
+				md = C.go_openssl_EVP_MD_fetch(nil, C.go_openssl_EVP_MD_get0_name(md), nil)
+			default:
+				panic(errUnsupportedVersion())
+			}
 		}
 		cacheMD.Store(ch, md)
 	}()
@@ -96,13 +110,9 @@ func cryptoHashToMD(ch crypto.Hash) (md C.GO_EVP_MD_PTR) {
 	}
 	switch ch {
 	case crypto.MD4:
-		if versionAtOrAbove(1, 1, 0) || !FIPS() {
-			return C.go_openssl_EVP_md4()
-		}
+		return C.go_openssl_EVP_md4()
 	case crypto.MD5:
-		if versionAtOrAbove(1, 1, 0) || !FIPS() {
-			return C.go_openssl_EVP_md5()
-		}
+		return C.go_openssl_EVP_md5()
 	case crypto.SHA1:
 		return C.go_openssl_EVP_sha1()
 	case crypto.SHA224:
