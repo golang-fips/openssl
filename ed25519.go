@@ -37,12 +37,13 @@ func SupportsEd25519() bool {
 	onceSupportsEd25519.Do(func() {
 		switch vMajor {
 		case 1:
-			ctx := C.go_openssl_EVP_PKEY_CTX_new_id(C.GO_EVP_PKEY_ED25519, nil)
-			if ctx != nil {
-				defer C.go_openssl_EVP_PKEY_CTX_free(ctx)
+			if versionAtOrAbove(1, 1, 1) {
+				ctx := C.go_openssl_EVP_PKEY_CTX_new_id(C.GO_EVP_PKEY_ED25519, nil)
+				if ctx != nil {
+					C.go_openssl_EVP_PKEY_CTX_free(ctx)
+					supportsEd25519 = true
+				}
 			}
-
-			supportsEd25519 = versionAtOrAbove(1, 1, 1) && ctx != nil
 		case 3:
 			name := C.CString("ED25519")
 			defer C.free(unsafe.Pointer(name))
