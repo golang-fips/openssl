@@ -96,6 +96,4 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
     - name: Run Test
-      # This line is temporary. We are currently working on a fix to fully support Mariner 2.0. Once the fix is merged, we will remove this line.    
-      continue-on-error: true
       run: go test -v ./...
