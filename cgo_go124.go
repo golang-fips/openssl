@@ -1,6 +1,7 @@
 //go:build go1.24 && !cmd_go_bootstrap
 
 package openssl
+
 // The following noescape and nocallback directives are used to prevent the Go
 // compiler from allocating function parameters on the heap. See
 // https://github.com/golang/go/blob/0733682e5ff4cd294f5eccb31cbe87a543147bc6/src/cmd/cgo/doc.go#L439-L461
