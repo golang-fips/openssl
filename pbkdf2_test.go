@@ -166,8 +166,6 @@ func TestWithUnsupportedHash(t *testing.T) {
 	}
 }
 
-var sink uint8
-
 func benchmark(b *testing.B, h func() hash.Hash) {
 	password := make([]byte, h().Size())
 	salt := make([]byte, 8)
