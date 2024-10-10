@@ -26,35 +26,32 @@ const (
 // TODO: Add support for Ed25519ph and Ed25519ctx when OpenSSL supports them,
 // which will probably be in 3.2.0 (https://github.com/openssl/openssl/issues/20418).
 
-var (
-	onceSupportsEd25519 sync.Once
-	supportsEd25519     bool
-)
+var supportsEd25519 = sync.OnceValue(func() bool {
+	switch vMajor {
+	case 1:
+		if versionAtOrAbove(1, 1, 1) {
+			ctx := C.go_openssl_EVP_PKEY_CTX_new_id(C.GO_EVP_PKEY_ED25519, nil)
+			if ctx != nil {
+				C.go_openssl_EVP_PKEY_CTX_free(ctx)
+				return true
+			}
+		}
+	case 3:
+		name := C.CString("ED25519")
+		defer C.free(unsafe.Pointer(name))
+		sig := C.go_openssl_EVP_SIGNATURE_fetch(nil, name, nil)
+		if sig != nil {
+			C.go_openssl_EVP_SIGNATURE_free(sig)
+			return true
+		}
+	}
+	return false
+})
 
 // SupportsEd25519 returns true if the current OpenSSL version supports
 // GenerateKeyEd25519, NewKeyFromSeedEd25519, SignEd25519 and VerifyEd25519.
 func SupportsEd25519() bool {
-	onceSupportsEd25519.Do(func() {
-		switch vMajor {
-		case 1:
-			if versionAtOrAbove(1, 1, 1) {
-				ctx := C.go_openssl_EVP_PKEY_CTX_new_id(C.GO_EVP_PKEY_ED25519, nil)
-				if ctx != nil {
-					C.go_openssl_EVP_PKEY_CTX_free(ctx)
-					supportsEd25519 = true
-				}
-			}
-		case 3:
-			name := C.CString("ED25519")
-			defer C.free(unsafe.Pointer(name))
-			sig := C.go_openssl_EVP_SIGNATURE_fetch(nil, name, nil)
-			if sig != nil {
-				C.go_openssl_EVP_SIGNATURE_free(sig)
-				supportsEd25519 = true
-			}
-		}
-	})
-	return supportsEd25519
+	return supportsEd25519()
 }
 
 type PublicKeyEd25519 struct {
