@@ -14,6 +14,10 @@ var (
 	_OSSL_KDF_PARAM_DIGEST = C.CString("digest")
 	_OSSL_KDF_PARAM_SECRET = C.CString("secret")
 	_OSSL_KDF_PARAM_SEED   = C.CString("seed")
+	_OSSL_KDF_PARAM_KEY    = C.CString("key")
+	_OSSL_KDF_PARAM_INFO   = C.CString("info")
+	_OSSL_KDF_PARAM_SALT   = C.CString("salt")
+	_OSSL_KDF_PARAM_MODE   = C.CString("mode")
 )
 
 // paramBuilder is a helper for building OSSL_PARAMs.
@@ -101,5 +105,15 @@ func (b *paramBuilder) addOctetString(name *C.char, value []byte) {
 	}
 	if C.go_openssl_OSSL_PARAM_BLD_push_octet_string(b.bld, name, unsafe.Pointer(sbase(value)), C.size_t(len(value))) != 1 {
 		b.err = newOpenSSLError("OSSL_PARAM_BLD_push_octet_string(" + C.GoString(name) + ")")
+	}
+}
+
+// addInt32 adds an int32 to the builder.
+func (b *paramBuilder) addInt32(name *C.char, value int32) {
+	if !b.check() {
+		return
+	}
+	if C.go_openssl_OSSL_PARAM_BLD_push_int32(b.bld, name, C.int32_t(value)) != 1 {
+		b.err = newOpenSSLError("OSSL_PARAM_BLD_push_int32(" + C.GoString(name) + ")")
 	}
 }
