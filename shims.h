@@ -202,6 +202,7 @@ DEFINEFUNC_3_0(GO_EVP_MD_PTR, EVP_MD_fetch, (GO_OSSL_LIB_CTX_PTR ctx, const char
 DEFINEFUNC_3_0(void, EVP_MD_free, (GO_EVP_MD_PTR md), (md)) \
 DEFINEFUNC_3_0(const char *, EVP_MD_get0_name, (const GO_EVP_MD_PTR md), (md)) \
 DEFINEFUNC_3_0(const GO_OSSL_PROVIDER_PTR, EVP_MD_get0_provider, (const GO_EVP_MD_PTR md), (md)) \
+DEFINEFUNC_RENAMED_3_0(int, EVP_MD_get_size, EVP_MD_size, (const GO_EVP_MD_PTR md), (md)) \
 DEFINEFUNC_RENAMED_3_0(int, EVP_MD_get_block_size, EVP_MD_block_size, (const GO_EVP_MD_PTR md), (md)) \
 DEFINEFUNC(int, RAND_bytes, (unsigned char *arg0, int arg1), (arg0, arg1)) \
 DEFINEFUNC_RENAMED_1_1(GO_EVP_MD_CTX_PTR, EVP_MD_CTX_new, EVP_MD_CTX_create, (void), ()) \
@@ -368,6 +369,7 @@ DEFINEFUNC_3_0(GO_OSSL_PARAM_PTR, OSSL_PARAM_BLD_to_param, (GO_OSSL_PARAM_BLD_PT
 DEFINEFUNC_3_0(int, OSSL_PARAM_BLD_push_utf8_string, (GO_OSSL_PARAM_BLD_PTR bld, const char *key, const char *buf, size_t bsize), (bld, key, buf, bsize)) \
 DEFINEFUNC_3_0(int, OSSL_PARAM_BLD_push_octet_string, (GO_OSSL_PARAM_BLD_PTR bld, const char *key, const void *buf, size_t bsize), (bld, key, buf, bsize)) \
 DEFINEFUNC_3_0(int, OSSL_PARAM_BLD_push_BN, (GO_OSSL_PARAM_BLD_PTR bld, const char *key, const GO_BIGNUM_PTR bn), (bld, key, bn)) \
+DEFINEFUNC_3_0(int, OSSL_PARAM_BLD_push_int32, (GO_OSSL_PARAM_BLD_PTR bld, const char *key, int32_t num), (bld, key, num)) \
 DEFINEFUNC_3_0(int, EVP_PKEY_CTX_set_hkdf_mode, (GO_EVP_PKEY_CTX_PTR arg0, int arg1), (arg0, arg1)) \
 DEFINEFUNC_3_0(int, EVP_PKEY_CTX_set_hkdf_md, (GO_EVP_PKEY_CTX_PTR arg0, const GO_EVP_MD_PTR arg1), (arg0, arg1)) \
 DEFINEFUNC_3_0(int, EVP_PKEY_CTX_set1_hkdf_salt, (GO_EVP_PKEY_CTX_PTR arg0, const unsigned char *arg1, int arg2), (arg0, arg1, arg2)) \
@@ -391,6 +393,8 @@ DEFINEFUNC_LEGACY_1_1(int, DSA_set0_key, (GO_DSA_PTR d, GO_BIGNUM_PTR pub_key, G
 DEFINEFUNC_3_0(GO_EVP_KDF_PTR, EVP_KDF_fetch, (GO_OSSL_LIB_CTX_PTR libctx, const char *algorithm, const char *properties), (libctx, algorithm, properties)) \
 DEFINEFUNC_3_0(void, EVP_KDF_free, (GO_EVP_KDF_PTR kdf), (kdf)) \
 DEFINEFUNC_3_0(GO_EVP_KDF_CTX_PTR, EVP_KDF_CTX_new, (GO_EVP_KDF_PTR kdf), (kdf)) \
+DEFINEFUNC_3_0(int, EVP_KDF_CTX_set_params, (GO_EVP_KDF_CTX_PTR ctx, const GO_OSSL_PARAM_PTR params), (ctx, params)) \
 DEFINEFUNC_3_0(void, EVP_KDF_CTX_free, (GO_EVP_KDF_CTX_PTR ctx), (ctx)) \
+DEFINEFUNC_3_0(size_t, EVP_KDF_CTX_get_kdf_size, (GO_EVP_KDF_CTX_PTR ctx), (ctx)) \
 DEFINEFUNC_3_0(int, EVP_KDF_derive, (GO_EVP_KDF_CTX_PTR ctx, unsigned char *key, size_t keylen, const GO_OSSL_PARAM_PTR params), (ctx, key, keylen, params)) \
 
