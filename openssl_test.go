@@ -2,13 +2,18 @@ package openssl_test
 
 import (
 	"fmt"
+	"go/version"
 	"os"
 	"runtime"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/golang-fips/openssl/v2"
 )
+
+// sink is used to prevent the compiler from optimizing out the allocations.
+var sink uint8
 
 // getVersion returns the OpenSSL version to use for testing.
 func getVersion() string {
@@ -77,4 +82,12 @@ func TestCheckVersion(t *testing.T) {
 	if want := openssl.FIPS(); want != fips {
 		t.Fatalf("FIPS mismatch: want %v, got %v", want, fips)
 	}
+}
+
+// compareCurrentVersion compares v with [runtime.Version].
+// See [go/versions.Compare] for information about
+// v format and comparison rules.
+func compareCurrentVersion(v string) int {
+	ver := strings.TrimPrefix(runtime.Version(), "devel ")
+	return version.Compare(ver, v)
 }
