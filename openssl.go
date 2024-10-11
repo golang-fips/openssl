@@ -169,20 +169,23 @@ func SetFIPS(enabled bool) error {
 		} else {
 			provName = providerNameDefault
 		}
-		// Check if there is any provider that matches props.
-		if C.go_openssl_OSSL_PROVIDER_available(nil, provName) != 1 {
-			// If not, fallback to provName provider.
-			if C.go_openssl_OSSL_PROVIDER_load(nil, provName) == nil {
-				return newOpenSSLError("OSSL_PROVIDER_try_load")
-			}
-			// Make sure we now have a provider available.
-			if C.go_openssl_OSSL_PROVIDER_available(nil, provName) != 1 {
-				return fail("SetFIPS(" + strconv.FormatBool(enabled) + ") not supported")
-			}
-		}
+		// Try to load the provider, but don't fail if it's not loaded.
+		// The built-in provides might not be present in the system, e.g. because
+		// third-party providers are being used or because the system is not well-configured.
+		C.go_openssl_OSSL_PROVIDER_try_load(nil, provName, 1)
+		C.go_openssl_ERR_clear_error()
+
+		// Enable FIPS mode in the default properties.
 		if C.go_openssl_EVP_default_properties_enable_fips(nil, mode) != 1 {
-			return newOpenSSLError("openssl: EVP_default_properties_enable_fips")
+			return newOpenSSLError("EVP_default_properties_enable_fips")
 		}
+
+		// See FIPS() for the rationale behind this check.
+		md := C.go_openssl_EVP_MD_fetch(nil, algorithmSHA256, nil)
+		if md == nil {
+			return newOpenSSLError("openssl: EVP_MD_fetch")
+		}
+		C.go_openssl_EVP_MD_free(md)
 		return nil
 	default:
 		panic(errUnsupportedVersion())
