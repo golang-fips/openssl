@@ -35,6 +35,19 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #undef DEFINEFUNC_RENAMED_1_1
 #undef DEFINEFUNC_RENAMED_3_0
 
+// go_openssl_fips_enabled returns 1 if FIPS mode is enabled, 0 otherwise.
+// As a special case, it returns -1 if it cannot determine if FIPS mode is enabled.
+// See openssl.FIPS for details about its implementation.
+//
+// This function is reimplemented here because openssl.FIPS assumes that
+// all the OpenSSL bindings are loaded, that is, go_openssl_load_functions has
+// already been called. On the other hand, go_openssl_fips_enabled is called from
+// openssl.CheckVersion, which is used to check if a given OpenSSL shared library
+// exists and is FIPS compliant. That shared library might not be the one that
+// was passed to go_openssl_load_functions, or it might not even have been called at all.
+//
+// It is written in C because it is not possible to directly call C function pointers
+// retrieved using dlsym from Go.
 int
 go_openssl_fips_enabled(void* handle)
 {
@@ -45,15 +58,24 @@ go_openssl_fips_enabled(void* handle)
         return FIPS_mode();
 
     // For OpenSSL 3.x.
-    int (*EVP_default_properties_is_fips_enabled)(void*);
-    int (*OSSL_PROVIDER_available)(void*, const char*);
-    EVP_default_properties_is_fips_enabled = (int (*)(void*))dlsym(handle, "EVP_default_properties_is_fips_enabled"); 
-    OSSL_PROVIDER_available = (int (*)(void*, const char*))dlsym(handle, "OSSL_PROVIDER_available"); 
-    if (EVP_default_properties_is_fips_enabled != NULL && OSSL_PROVIDER_available != NULL &&
-        EVP_default_properties_is_fips_enabled(NULL) == 1 && OSSL_PROVIDER_available(NULL, "fips") == 1)
-            return 1;
+    int (*EVP_default_properties_is_fips_enabled)(void*) = (int (*)(void*))dlsym(handle, "EVP_default_properties_is_fips_enabled");
+    void *(*EVP_MD_fetch)(void*, const char*, const char*) = (void* (*)(void*, const char*, const char*))dlsym(handle, "EVP_MD_fetch");
+    void (*EVP_MD_free)(void*) = (void (*)(void*))dlsym(handle, "EVP_MD_free");
 
-    return 0;
+    if (EVP_default_properties_is_fips_enabled == NULL || EVP_MD_fetch == NULL || EVP_MD_free == NULL) {
+        // Shouldn't happen, but if it does, we can't determine if FIPS mode is enabled.
+        return -1;
+    }
+
+    if (EVP_default_properties_is_fips_enabled(NULL) != 1)
+        return 0;
+
+    void *md = EVP_MD_fetch(NULL, "SHA2-256", NULL);
+    if (md == NULL)
+        return 0;
+
+    EVP_MD_free(md);
+    return 1;
 }
 
 // Load all the functions stored in FOR_ALL_OPENSSL_FUNCTIONS
