@@ -7,7 +7,36 @@ import "C"
 import (
 	"errors"
 	"hash"
+	"sync"
+	"unsafe"
 )
+
+func SupportsPBKDF2() bool {
+	switch vMajor {
+	case 1:
+		return true
+	case 3:
+		_, err := fetchPBKDF2()
+		return err == nil
+	default:
+		panic(errUnsupportedVersion())
+	}
+}
+
+// fetchPBKDF2 fetches the PBKDF2 algorithm.
+// It is safe to call this function concurrently.
+// The returned EVP_KDF_PTR shouldn't be freed.
+var fetchPBKDF2 = sync.OnceValues(func() (C.GO_EVP_KDF_PTR, error) {
+	checkMajorVersion(3)
+
+	name := C.CString("PBKDF2")
+	kdf := C.go_openssl_EVP_KDF_fetch(nil, name, nil)
+	C.free(unsafe.Pointer(name))
+	if kdf == nil {
+		return nil, newOpenSSLError("EVP_KDF_fetch")
+	}
+	return kdf, nil
+})
 
 func PBKDF2(password, salt []byte, iter, keyLen int, fh func() hash.Hash) ([]byte, error) {
 	h, err := hashFuncHash(fh)
