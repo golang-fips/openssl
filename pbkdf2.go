@@ -11,6 +11,7 @@ import (
 	"unsafe"
 )
 
+// SupportsPBKDF2 reports whether the current OpenSSL version supports PBKDF2.
 func SupportsPBKDF2() bool {
 	switch vMajor {
 	case 1:
