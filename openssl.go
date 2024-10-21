@@ -102,6 +102,7 @@ func VersionText() string {
 var (
 	providerNameFips    = C.CString("fips")
 	providerNameDefault = C.CString("default")
+	propFIPS            = C.CString("fips=yes")
 
 	algorithmSHA256 = C.CString("SHA2-256")
 )
@@ -175,16 +176,21 @@ func SetFIPS(enabled bool) error {
 		C.go_openssl_OSSL_PROVIDER_try_load(nil, provName, 1)
 		C.go_openssl_ERR_clear_error()
 
+		// See FIPS() for the rationale behind this check.
+		md := C.go_openssl_EVP_MD_fetch(nil, algorithmSHA256, propFIPS)
+		if md == nil {
+			// Don't enable FIPS mode if there is no provider that supports it.
+			// This makes it easier for callers to call SetFIPS(true) to do a
+			// best-effort attempt to enable FIPS mode, but not fail if it's not possible.
+			C.go_openssl_ERR_clear_error()
+			return errors.New("openssl: FIPS mode not supported by any provider")
+		}
+
 		// Enable FIPS mode in the default properties.
 		if C.go_openssl_EVP_default_properties_enable_fips(nil, mode) != 1 {
 			return newOpenSSLError("EVP_default_properties_enable_fips")
 		}
 
-		// See FIPS() for the rationale behind this check.
-		md := C.go_openssl_EVP_MD_fetch(nil, algorithmSHA256, nil)
-		if md == nil {
-			return newOpenSSLError("openssl: EVP_MD_fetch")
-		}
 		C.go_openssl_EVP_MD_free(md)
 		return nil
 	default:
