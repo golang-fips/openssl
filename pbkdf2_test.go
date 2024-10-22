@@ -138,6 +138,9 @@ var sha256TestVectors = []testVector{
 }
 
 func testHash(t *testing.T, h func() hash.Hash, hashName string, vectors []testVector) {
+	if !openssl.SupportsPBKDF2() {
+		t.Skip("PBKDF2 is not supported")
+	}
 	for i, v := range vectors {
 		o, err := openssl.PBKDF2([]byte(v.password), []byte(v.salt), v.iter, len(v.output), h)
 		if err != nil {
@@ -150,15 +153,18 @@ func testHash(t *testing.T, h func() hash.Hash, hashName string, vectors []testV
 	}
 }
 
-func TestWithHMACSHA1(t *testing.T) {
+func TestPBKDF2WithHMACSHA1(t *testing.T) {
 	testHash(t, openssl.NewSHA1, "SHA1", sha1TestVectors)
 }
 
-func TestWithHMACSHA256(t *testing.T) {
+func TestPBKDF2WithHMACSHA256(t *testing.T) {
 	testHash(t, openssl.NewSHA256, "SHA256", sha256TestVectors)
 }
 
-func TestWithUnsupportedHash(t *testing.T) {
+func TestPBKDF2WithUnsupportedHash(t *testing.T) {
+	if !openssl.SupportsPBKDF2() {
+		t.Skip("PBKDF2 is not supported")
+	}
 	// Test that PBKDF2 returns an error for unsupported hashes instead of panicking.
 	_, err := openssl.PBKDF2([]byte{1, 2}, []byte{3, 4}, 0, 2, newStubHash)
 	if err == nil {
@@ -179,10 +185,10 @@ func benchmark(b *testing.B, h func() hash.Hash) {
 	sink += password[0]
 }
 
-func BenchmarkHMACSHA1(b *testing.B) {
+func BenchmarkPBKDF2HMACSHA1(b *testing.B) {
 	benchmark(b, sha1.New)
 }
 
-func BenchmarkHMACSHA256(b *testing.B) {
+func BenchmarkPBKDF2HMACSHA256(b *testing.B) {
 	benchmark(b, sha256.New)
 }
