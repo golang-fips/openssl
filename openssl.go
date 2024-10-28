@@ -171,8 +171,9 @@ func SetFIPS(enabled bool) error {
 			provName = providerNameDefault
 		}
 		// Try to load the provider, but don't fail if it's not loaded.
-		// The built-in provides might not be present in the system, e.g. because
-		// third-party providers are being used or because the system is not well-configured.
+		// The built-in provider might not be present in the system.
+		// We don't need the built-in provider if third-party providers are being used: they are already loaded.
+		// If the system is not well-configured and has no FIPS capability, this will be detected by the next steps.
 		C.go_openssl_OSSL_PROVIDER_try_load(nil, provName, 1)
 		C.go_openssl_ERR_clear_error()
 
