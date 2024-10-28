@@ -186,13 +186,12 @@ func SetFIPS(enabled bool) error {
 			C.go_openssl_ERR_clear_error()
 			return errors.New("openssl: FIPS mode not supported by any provider")
 		}
+		C.go_openssl_EVP_MD_free(md)
 
 		// Enable FIPS mode in the default properties.
 		if C.go_openssl_EVP_default_properties_enable_fips(nil, mode) != 1 {
 			return newOpenSSLError("EVP_default_properties_enable_fips")
 		}
-
-		C.go_openssl_EVP_MD_free(md)
 		return nil
 	default:
 		panic(errUnsupportedVersion())
