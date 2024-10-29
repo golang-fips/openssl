@@ -175,6 +175,10 @@ func (b *paramBuilder) addBin(name *C.char, value []byte, private bool) {
 	if !b.check() {
 		return
 	}
+	if value == nil {
+		// Nothing to do.
+		return
+	}
 	bn := C.go_openssl_BN_bin2bn(base(value), C.int(len(value)), nil)
 	if bn == nil {
 		b.err = newOpenSSLError("BN_bin2bn")
@@ -190,6 +194,10 @@ func (b *paramBuilder) addBin(name *C.char, value []byte, private bool) {
 // otherwise it will be freed with BN_free.
 func (b *paramBuilder) addBigInt(name *C.char, value BigInt, private bool) {
 	if !b.check() {
+		return
+	}
+	if value == nil {
+		// Nothing to do.
 		return
 	}
 	bn := bigToBN(value)
