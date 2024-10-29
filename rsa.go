@@ -13,17 +13,6 @@ import (
 	"unsafe"
 )
 
-var (
-	OSSL_PKEY_PARAM_RSA_N            = C.CString("n")
-	OSSL_PKEY_PARAM_RSA_E            = C.CString("e")
-	OSSL_PKEY_PARAM_RSA_D            = C.CString("d")
-	OSSL_PKEY_PARAM_RSA_FACTOR1      = C.CString("rsa-factor1")
-	OSSL_PKEY_PARAM_RSA_FACTOR2      = C.CString("rsa-factor2")
-	OSSL_PKEY_PARAM_RSA_EXPONENT1    = C.CString("rsa-exponent1")
-	OSSL_PKEY_PARAM_RSA_EXPONENT2    = C.CString("rsa-exponent2")
-	OSSL_PKEY_PARAM_RSA_COEFFICIENT1 = C.CString("rsa-coefficient1")
-)
-
 func GenerateKeyRSA(bits int) (N, E, D, P, Q, Dp, Dq, Qinv BigInt, err error) {
 	bad := func(e error) (N, E, D, P, Q, Dp, Dq, Qinv BigInt, err error) {
 		return nil, nil, nil, nil, nil, nil, nil, nil, e
@@ -73,14 +62,14 @@ func GenerateKeyRSA(bits int) (N, E, D, P, Q, Dp, Dq, Qinv BigInt, err error) {
 			C.go_openssl_BN_clear(tmp)
 			return true
 		}
-		if !(setBigInt(&N, OSSL_PKEY_PARAM_RSA_N) &&
-			setBigInt(&E, OSSL_PKEY_PARAM_RSA_E) &&
-			setBigInt(&D, OSSL_PKEY_PARAM_RSA_D) &&
-			setBigInt(&P, OSSL_PKEY_PARAM_RSA_FACTOR1) &&
-			setBigInt(&Q, OSSL_PKEY_PARAM_RSA_FACTOR2) &&
-			setBigInt(&Dp, OSSL_PKEY_PARAM_RSA_EXPONENT1) &&
-			setBigInt(&Dq, OSSL_PKEY_PARAM_RSA_EXPONENT2) &&
-			setBigInt(&Qinv, OSSL_PKEY_PARAM_RSA_COEFFICIENT1)) {
+		if !(setBigInt(&N, _OSSL_PKEY_PARAM_RSA_N) &&
+			setBigInt(&E, _OSSL_PKEY_PARAM_RSA_E) &&
+			setBigInt(&D, _OSSL_PKEY_PARAM_RSA_D) &&
+			setBigInt(&P, _OSSL_PKEY_PARAM_RSA_FACTOR1) &&
+			setBigInt(&Q, _OSSL_PKEY_PARAM_RSA_FACTOR2) &&
+			setBigInt(&Dp, _OSSL_PKEY_PARAM_RSA_EXPONENT1) &&
+			setBigInt(&Dq, _OSSL_PKEY_PARAM_RSA_EXPONENT2) &&
+			setBigInt(&Qinv, _OSSL_PKEY_PARAM_RSA_COEFFICIENT1)) {
 			return bad(err)
 		}
 	default:
@@ -377,22 +366,16 @@ func rsaSetCRTParams(key C.GO_RSA_PTR, dmp1, dmq1, iqmp BigInt) bool {
 	return C.go_openssl_RSA_set0_crt_params(key, bigToBN(dmp1), bigToBN(dmq1), bigToBN(iqmp)) == 1
 }
 func newRSAKey3(isPriv bool, n, e, d, p, q, dp, dq, qinv BigInt) (C.GO_EVP_PKEY_PTR, error) {
-	// Construct the parameters.
-	bld := C.go_openssl_OSSL_PARAM_BLD_new()
-	if bld == nil {
-		return nil, newOpenSSLError("OSSL_PARAM_BLD_new")
-	}
-	defer C.go_openssl_OSSL_PARAM_BLD_free(bld)
-
 	type bigIntParam struct {
-		name *C.char
-		num  BigInt
+		name    *C.char
+		num     BigInt
+		private bool
 	}
 
 	comps := make([]bigIntParam, 0, 8)
 
 	required := [...]bigIntParam{
-		{OSSL_PKEY_PARAM_RSA_N, n}, {OSSL_PKEY_PARAM_RSA_E, e}, {OSSL_PKEY_PARAM_RSA_D, d},
+		{_OSSL_PKEY_PARAM_RSA_N, n, false}, {_OSSL_PKEY_PARAM_RSA_E, e, false}, {_OSSL_PKEY_PARAM_RSA_D, d, false},
 	}
 	comps = append(comps, required[:]...)
 
@@ -405,34 +388,32 @@ func newRSAKey3(isPriv bool, n, e, d, p, q, dp, dq, qinv BigInt) (C.GO_EVP_PKEY_
 		// In OpenSSL 3.0 and 3.1, we must also omit P and Q if any precomputed
 		// value is missing. See https://github.com/openssl/openssl/pull/22334
 		if vMinor >= 2 || allPrecomputedExists {
-			comps = append(comps, bigIntParam{OSSL_PKEY_PARAM_RSA_FACTOR1, p}, bigIntParam{OSSL_PKEY_PARAM_RSA_FACTOR2, q})
+			comps = append(comps, bigIntParam{_OSSL_PKEY_PARAM_RSA_FACTOR1, p, true}, bigIntParam{_OSSL_PKEY_PARAM_RSA_FACTOR2, q, true})
 		}
 		if allPrecomputedExists {
 			comps = append(comps,
-				bigIntParam{OSSL_PKEY_PARAM_RSA_EXPONENT1, dp},
-				bigIntParam{OSSL_PKEY_PARAM_RSA_EXPONENT2, dq},
-				bigIntParam{OSSL_PKEY_PARAM_RSA_COEFFICIENT1, qinv},
+				bigIntParam{_OSSL_PKEY_PARAM_RSA_EXPONENT1, dp, true},
+				bigIntParam{_OSSL_PKEY_PARAM_RSA_EXPONENT2, dq, true},
+				bigIntParam{_OSSL_PKEY_PARAM_RSA_COEFFICIENT1, qinv, true},
 			)
 		}
 	}
+
+	bld, err := newParamBuilder()
+	if err != nil {
+		return nil, err
+	}
+	defer bld.finalize()
 
 	for _, comp := range comps {
 		if comp.num == nil {
 			continue
 		}
-		b := bigToBN(comp.num)
-		if b == nil {
-			return nil, newOpenSSLError("BN_lebin2bn failed")
-		}
-		// b must remain valid until OSSL_PARAM_BLD_to_param has been called.
-		defer C.go_openssl_BN_clear_free(b)
-		if C.go_openssl_OSSL_PARAM_BLD_push_BN(bld, comp.name, b) != 1 {
-			return nil, newOpenSSLError("OSSL_PARAM_BLD_push_BN")
-		}
+		bld.addBigInt(comp.name, comp.num, comp.private)
 	}
-	params := C.go_openssl_OSSL_PARAM_BLD_to_param(bld)
-	if params == nil {
-		return nil, newOpenSSLError("OSSL_PARAM_BLD_to_param")
+	params, err := bld.build()
+	if err != nil {
+		return nil, err
 	}
 	defer C.go_openssl_OSSL_PARAM_free(params)
 	selection := C.GO_EVP_PKEY_PUBLIC_KEY

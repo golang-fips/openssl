@@ -11,8 +11,6 @@ import (
 	"unsafe"
 )
 
-var OSSL_MAC_PARAM_DIGEST = C.CString("digest")
-
 // NewHMAC returns a new HMAC using OpenSSL.
 // The function h must return a hash implemented by
 // OpenSSL (for example, h could be openssl.NewSHA256).
@@ -99,14 +97,14 @@ var fetchHMAC3 = sync.OnceValue(func() C.GO_EVP_MAC_PTR {
 	return mac
 })
 
-func buildHMAC3Params(digest *C.char) C.GO_OSSL_PARAM_PTR {
-	bld := C.go_openssl_OSSL_PARAM_BLD_new()
-	if bld == nil {
-		panic(newOpenSSLError("OSSL_PARAM_BLD_new"))
+func buildHMAC3Params(digest *C.char) (C.GO_OSSL_PARAM_PTR, error) {
+	bld, err := newParamBuilder()
+	if err != nil {
+		return nil, err
 	}
-	defer C.go_openssl_OSSL_PARAM_BLD_free(bld)
-	C.go_openssl_OSSL_PARAM_BLD_push_utf8_string(bld, OSSL_MAC_PARAM_DIGEST, digest, 0)
-	return C.go_openssl_OSSL_PARAM_BLD_to_param(bld)
+	defer bld.finalize()
+	bld.addUTF8String(_OSSL_MAC_PARAM_DIGEST, digest, 0)
+	return bld.build()
 }
 
 func isHMAC3DigestSupported(digest string) bool {
@@ -121,9 +119,9 @@ func isHMAC3DigestSupported(digest string) bool {
 
 	cdigest := C.CString(digest)
 	defer C.free(unsafe.Pointer(cdigest))
-	params := buildHMAC3Params(cdigest)
-	if params == nil {
-		panic(newOpenSSLError("OSSL_PARAM_BLD_to_param"))
+	params, err := buildHMAC3Params(cdigest)
+	if err != nil {
+		panic(err)
 	}
 	defer C.go_openssl_OSSL_PARAM_free(params)
 
@@ -141,9 +139,9 @@ func newHMAC3(key []byte, md C.GO_EVP_MD_PTR) hmacCtx3 {
 		// See https://github.com/golang-fips/openssl/issues/153.
 		return hmacCtx3{}
 	}
-	params := buildHMAC3Params(digest)
-	if params == nil {
-		panic(newOpenSSLError("OSSL_PARAM_BLD_to_param"))
+	params, err := buildHMAC3Params(digest)
+	if err != nil {
+		panic(err)
 	}
 	defer C.go_openssl_OSSL_PARAM_free(params)
 

@@ -5,14 +5,6 @@ package openssl
 // #include "goopenssl.h"
 import "C"
 
-var (
-	OSSL_PKEY_PARAM_PUB_KEY    = C.CString("pub")
-	OSSL_PKEY_PARAM_PRIV_KEY   = C.CString("priv")
-	OSSL_PKEY_PARAM_GROUP_NAME = C.CString("group")
-	OSSL_PKEY_PARAM_EC_PUB_X   = C.CString("qx")
-	OSSL_PKEY_PARAM_EC_PUB_Y   = C.CString("qy")
-)
-
 func curveNID(curve string) (C.int, error) {
 	switch curve {
 	case "P-224":
