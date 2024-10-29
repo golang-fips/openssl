@@ -157,7 +157,7 @@ func (b *paramBuilder) addInt32(name *C.char, value int32) {
 	}
 }
 
-// addBN adds an GO_BIGNUM_PTR to the builder.
+// addBN adds a GO_BIGNUM_PTR to the builder.
 func (b *paramBuilder) addBN(name *C.char, value C.GO_BIGNUM_PTR) {
 	if !b.check() {
 		return
@@ -185,7 +185,7 @@ func (b *paramBuilder) addBin(name *C.char, value []byte, private bool) {
 }
 
 // addBigInt adds a BigInt to the builder.
-// The BigInt is converted to a BIGNUM using bigToBN and freed when the builder is finalized.
+// The BigInt is converted using bigToBN to a BIGNUM that is freed when the builder is finalized.
 // If private is true, the BIGNUM will be cleared with BN_clear_free,
 // otherwise it will be freed with BN_free.
 func (b *paramBuilder) addBigInt(name *C.char, value BigInt, private bool) {
