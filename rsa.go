@@ -366,18 +366,15 @@ func rsaSetCRTParams(key C.GO_RSA_PTR, dmp1, dmq1, iqmp BigInt) bool {
 	return C.go_openssl_RSA_set0_crt_params(key, bigToBN(dmp1), bigToBN(dmq1), bigToBN(iqmp)) == 1
 }
 func newRSAKey3(isPriv bool, n, e, d, p, q, dp, dq, qinv BigInt) (C.GO_EVP_PKEY_PTR, error) {
-	type bigIntParam struct {
-		name    *C.char
-		num     BigInt
-		private bool
+	bld, err := newParamBuilder()
+	if err != nil {
+		return nil, err
 	}
+	defer bld.finalize()
 
-	comps := make([]bigIntParam, 0, 8)
-
-	required := [...]bigIntParam{
-		{_OSSL_PKEY_PARAM_RSA_N, n, false}, {_OSSL_PKEY_PARAM_RSA_E, e, false}, {_OSSL_PKEY_PARAM_RSA_D, d, false},
-	}
-	comps = append(comps, required[:]...)
+	bld.addBigInt(_OSSL_PKEY_PARAM_RSA_N, n, false)
+	bld.addBigInt(_OSSL_PKEY_PARAM_RSA_E, e, false)
+	bld.addBigInt(_OSSL_PKEY_PARAM_RSA_D, d, false)
 
 	if p != nil && q != nil {
 		allPrecomputedExists := dp != nil && dq != nil && qinv != nil
@@ -388,29 +385,16 @@ func newRSAKey3(isPriv bool, n, e, d, p, q, dp, dq, qinv BigInt) (C.GO_EVP_PKEY_
 		// In OpenSSL 3.0 and 3.1, we must also omit P and Q if any precomputed
 		// value is missing. See https://github.com/openssl/openssl/pull/22334
 		if vMinor >= 2 || allPrecomputedExists {
-			comps = append(comps, bigIntParam{_OSSL_PKEY_PARAM_RSA_FACTOR1, p, true}, bigIntParam{_OSSL_PKEY_PARAM_RSA_FACTOR2, q, true})
+			bld.addBigInt(_OSSL_PKEY_PARAM_RSA_FACTOR1, p, true)
+			bld.addBigInt(_OSSL_PKEY_PARAM_RSA_FACTOR2, q, true)
 		}
 		if allPrecomputedExists {
-			comps = append(comps,
-				bigIntParam{_OSSL_PKEY_PARAM_RSA_EXPONENT1, dp, true},
-				bigIntParam{_OSSL_PKEY_PARAM_RSA_EXPONENT2, dq, true},
-				bigIntParam{_OSSL_PKEY_PARAM_RSA_COEFFICIENT1, qinv, true},
-			)
+			bld.addBigInt(_OSSL_PKEY_PARAM_RSA_EXPONENT1, dp, true)
+			bld.addBigInt(_OSSL_PKEY_PARAM_RSA_EXPONENT2, dq, true)
+			bld.addBigInt(_OSSL_PKEY_PARAM_RSA_COEFFICIENT1, qinv, true)
 		}
 	}
 
-	bld, err := newParamBuilder()
-	if err != nil {
-		return nil, err
-	}
-	defer bld.finalize()
-
-	for _, comp := range comps {
-		if comp.num == nil {
-			continue
-		}
-		bld.addBigInt(comp.name, comp.num, comp.private)
-	}
 	params, err := bld.build()
 	if err != nil {
 		return nil, err
