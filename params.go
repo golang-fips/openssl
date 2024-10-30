@@ -175,7 +175,7 @@ func (b *paramBuilder) addBin(name *C.char, value []byte, private bool) {
 	if !b.check() {
 		return
 	}
-	if value == nil {
+	if len(value) == 0 {
 		// Nothing to do.
 		return
 	}
@@ -196,7 +196,7 @@ func (b *paramBuilder) addBigInt(name *C.char, value BigInt, private bool) {
 	if !b.check() {
 		return
 	}
-	if value == nil {
+	if len(value) == 0 {
 		// Nothing to do.
 		return
 	}
