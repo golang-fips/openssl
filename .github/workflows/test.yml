@@ -97,3 +97,14 @@ jobs:
       uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
     - name: Run Test
       run: go test -v ./...
+
+  # The module isn't useful without cgo, but it still needs to successfully build. Broad cgo-less
+  # builds should succeed if they import this module but don't refer to anything requiring cgo. This
+  # may be necessary to build a Go toolset fork, depending on how it's implemented.
+  cgolessbuild:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+    - name: Run Build
+      run: CGO_ENABLED=0 go build ./...
