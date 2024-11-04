@@ -10,6 +10,7 @@ import (
 	"hash"
 	"runtime"
 	"strconv"
+	"sync"
 	"unsafe"
 )
 
@@ -110,6 +111,37 @@ func SHA3_512(p []byte) (sum [64]byte) {
 	return
 }
 
+var isMarshallableCache sync.Map
+
+// isHashMarshallable returns true if the memory layout of cb
+// is known by this library and can therefore be marshalled.
+func isHashMarshallable(ch crypto.Hash) bool {
+	if vMajor == 1 {
+		return true
+	}
+	if v, ok := isMarshallableCache.Load(ch); ok {
+		return v.(bool)
+	}
+	md := cryptoHashToMD(ch)
+	if md == nil {
+		return false
+	}
+	prov := C.go_openssl_EVP_MD_get0_provider(md)
+	if prov == nil {
+		return false
+	}
+	cname := C.go_openssl_OSSL_PROVIDER_get0_name(prov)
+	if cname == nil {
+		return false
+	}
+	name := C.GoString(cname)
+	// We only know the memory layout of the built-in providers.
+	// See evpHash.hashState for more details.
+	marshallable := name == "default" || name == "fips"
+	isMarshallableCache.Store(ch, marshallable)
+	return marshallable
+}
+
 // evpHash implements generic hash methods.
 type evpHash struct {
 	ctx C.GO_EVP_MD_CTX_PTR
@@ -119,6 +151,8 @@ type evpHash struct {
 	ctx2      C.GO_EVP_MD_CTX_PTR
 	size      int
 	blockSize int
+
+	marshallable bool
 }
 
 func newEvpHash(ch crypto.Hash, size, blockSize int) *evpHash {
@@ -137,6 +171,8 @@ func newEvpHash(ch crypto.Hash, size, blockSize int) *evpHash {
 		ctx2:      ctx2,
 		size:      size,
 		blockSize: blockSize,
+
+		marshallable: isHashMarshallable(ch),
 	}
 	runtime.SetFinalizer(h, (*evpHash).finalize)
 	return h
@@ -195,11 +231,16 @@ func (h *evpHash) sum(out []byte) {
 	runtime.KeepAlive(h)
 }
 
+var testNotMarshalable bool // Used in tests.
+
 // hashState returns a pointer to the internal hash structure.
 //
 // The EVP_MD_CTX memory layout has changed in OpenSSL 3
 // and the property holding the internal structure is no longer md_data but algctx.
 func (h *evpHash) hashState() unsafe.Pointer {
+	if !h.marshallable || testNotMarshalable {
+		return nil
+	}
 	switch vMajor {
 	case 1:
 		// https://github.com/openssl/openssl/blob/0418e993c717a6863f206feaa40673a261de7395/crypto/evp/evp_local.h#L12.
