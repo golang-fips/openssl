@@ -62,7 +62,7 @@ func TestMain(m *testing.M) {
 	_ = openssl.SetFIPS(true) // Skip the error as we still want to run the tests on machines without FIPS support.
 	fmt.Println("OpenSSL version:", openssl.VersionText())
 	fmt.Println("FIPS enabled:", openssl.FIPS())
-	fmt.Println("FIPS capable:", openssl.FIPSProvider())
+	fmt.Println("FIPS provider:", openssl.HasFIPSProvider())
 	status := m.Run()
 	for range 5 {
 		// Run GC a few times to avoid false positives in leak detection.
@@ -93,23 +93,14 @@ func compareCurrentVersion(v string) int {
 	return version.Compare(ver, v)
 }
 
-func TestFIPSProvider(t *testing.T) {
-	fipsProv := openssl.FIPSProvider()
-	if openssl.MajorVersion() == 1 {
-		want := openssl.FIPS()
-		if fipsProv != want {
-			t.Fatalf("FIPSProvider mismatch: want %v, got %v", want, fipsProv)
-		}
-		return
+func TestHasFIPSProvider(t *testing.T) {
+	got := openssl.HasFIPSProvider()
+	want := openssl.FIPS()
+	if !want && openssl.SymCryptProviderAvailable() {
+		// The SymCrypt provider is FIPS-capable.
+		want = true
 	}
-
-	if openssl.FIPS() {
-		if !fipsProv {
-			t.Fatal("FIPSProvider should be true when FIPS is enabled")
-		}
-	} else if openssl.SymCryptProviderAvailable() {
-		if !fipsProv {
-			t.Fatal("FIPSProvider should be true when SymCrypt is available")
-		}
+	if got != want {
+		t.Fatalf("HasFIPSProvider mismatch: want %v, got %v", want, got)
 	}
 }

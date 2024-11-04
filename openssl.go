@@ -139,32 +139,36 @@ func FIPS() bool {
 	}
 }
 
-// FIPSProvider returns true if the provider used by the default matches the `fips=yes` query.
+// HasFIPSProvider returns true if the provider used by the default matches the `fips=yes` query.
 // Note that this function can return true even if [FIPS] returns false, because [FIPS] checks
 // whether the default properties contain `fips=1`. It will always return true for OpenSSL 3 if
 // [FIPS] returns true.
 // When using OpenSSL 1, this function always returns the same value as [FIPS].
-func FIPSProvider() bool {
-	if vMajor == 1 {
+func HasFIPSProvider() bool {
+	switch vMajor {
+	case 1:
 		return FIPS()
-	}
-	provFn := func(props *C.char) C.GO_OSSL_PROVIDER_PTR {
-		md := C.go_openssl_EVP_MD_fetch(nil, algorithmSHA256, props)
-		if md == nil {
-			C.go_openssl_ERR_clear_error()
-			return nil
+	case 3:
+		provFn := func(props *C.char) C.GO_OSSL_PROVIDER_PTR {
+			md := C.go_openssl_EVP_MD_fetch(nil, algorithmSHA256, props)
+			if md == nil {
+				C.go_openssl_ERR_clear_error()
+				return nil
+			}
+			C.go_openssl_EVP_MD_free(md)
+			return C.go_openssl_EVP_MD_get0_provider(md)
 		}
-		C.go_openssl_EVP_MD_free(md)
-		return C.go_openssl_EVP_MD_get0_provider(md)
+		// Load the provider with and without the `fips=yes` query.
+		// If the providers are the same, then the default provider is FIPS-capable.
+		provFIPS := provFn(propFIPS)
+		if provFIPS == nil {
+			return false
+		}
+		provDefault := provFn(nil)
+		return provFIPS == provDefault
+	default:
+		panic(errUnsupportedVersion())
 	}
-	// Load the provider with and without the `fips=yes` query.
-	// If the providers are the same, then the default provider is FIPS-capable.
-	provFIPS := provFn(propFIPS)
-	if provFIPS == nil {
-		return false
-	}
-	provDefault := provFn(nil)
-	return provFIPS == provDefault
 }
 
 // isProviderAvailable checks if the provider with the given name is available.

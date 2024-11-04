@@ -10,7 +10,3 @@ var SymCryptProviderAvailable = sync.OnceValue(func() bool {
 	}
 	return isProviderAvailable("symcryptprovider")
 })
-
-func MajorVersion() int {
-	return int(vMajor)
-}
