@@ -96,8 +96,9 @@ func compareCurrentVersion(v string) int {
 func TestFIPSProvider(t *testing.T) {
 	fipsProv := openssl.FIPSProvider()
 	if openssl.MajorVersion() == 1 {
-		if fipsProv {
-			t.Fatal("FIPSProvider should be false for OpenSSL 1")
+		want := openssl.FIPS()
+		if fipsProv != want {
+			t.Fatalf("FIPSProvider mismatch: want %v, got %v", want, fipsProv)
 		}
 		return
 	}

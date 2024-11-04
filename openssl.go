@@ -141,12 +141,12 @@ func FIPS() bool {
 
 // FIPSProvider returns true if the provider used by the default matches the `fips=yes` query.
 // Note that this function can return true even if [FIPS] returns false, because [FIPS] checks
-// whether the default properties contain `fips=1`.
-// It will always return true for OpenSSL 3 if [FIPS] returns true.
-// It will always returns false for OpenSSL 1.
+// whether the default properties contain `fips=1`. It will always return true for OpenSSL 3 if
+// [FIPS] returns true.
+// When using OpenSSL 1, this function always returns the same value as [FIPS].
 func FIPSProvider() bool {
 	if vMajor == 1 {
-		return false
+		return FIPS()
 	}
 	provFn := func(props *C.char) C.GO_OSSL_PROVIDER_PTR {
 		md := C.go_openssl_EVP_MD_fetch(nil, algorithmSHA256, props)
