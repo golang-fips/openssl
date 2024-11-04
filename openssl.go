@@ -134,6 +134,28 @@ func FIPS() bool {
 	}
 }
 
+// FIPSCapable returns true if the provider used by the default matches the `fips=yes` query.
+// Note that this function can return true even if [FIPS] returns false, because [FIPS] also
+// checks whether the default properties contain `fips=yes`.
+// It will always return true for OpenSSL 3 if [FIPS] returns true.
+// When using OpenSSL 1, this function always returns the same value as [FIPS].
+func FIPSCapable() bool {
+	if FIPS() {
+		return true
+	}
+	if vMajor == 3 {
+		// Load the provider with and without the `fips=yes` query.
+		// If the providers are the same, then the default provider is FIPS-capable.
+		provFIPS := sha256Provider(propFIPS)
+		if provFIPS == nil {
+			return false
+		}
+		provDefault := sha256Provider(nil)
+		return provFIPS == provDefault
+	}
+	return false
+}
+
 // isProviderAvailable checks if the provider with the given name is available.
 // This function is used in export_test.go, but must be defined here as test files can't access C functions.
 func isProviderAvailable(name string) bool {
@@ -193,16 +215,22 @@ func SetFIPS(enable bool) error {
 	}
 }
 
-// proveSHA256 checks if the SHA-256 algorithm is available
+// sha256Provider returns the provider for the SHA-256 algorithm
 // using the given properties.
-func proveSHA256(props *C.char) bool {
+func sha256Provider(props *C.char) C.GO_OSSL_PROVIDER_PTR {
 	md := C.go_openssl_EVP_MD_fetch(nil, algorithmSHA256, props)
 	if md == nil {
 		C.go_openssl_ERR_clear_error()
-		return false
+		return nil
 	}
-	C.go_openssl_EVP_MD_free(md)
-	return true
+	defer C.go_openssl_EVP_MD_free(md)
+	return C.go_openssl_EVP_MD_get0_provider(md)
+}
+
+// proveSHA256 checks if the SHA-256 algorithm is available
+// using the given properties.
+func proveSHA256(props *C.char) bool {
+	return sha256Provider(props) != nil
 }
 
 // noescape hides a pointer from escape analysis. noescape is
