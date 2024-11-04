@@ -141,7 +141,7 @@ func FIPS() bool {
 
 // HasFIPSProvider returns true if the provider used by the default matches the `fips=yes` query.
 // Note that this function can return true even if [FIPS] returns false, because [FIPS] checks
-// whether the default properties contain `fips=1`. It will always return true for OpenSSL 3 if
+// whether the default properties contain `fips=yes`. It will always return true for OpenSSL 3 if
 // [FIPS] returns true.
 // When using OpenSSL 1, this function always returns the same value as [FIPS].
 func HasFIPSProvider() bool {
