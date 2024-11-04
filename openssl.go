@@ -129,6 +129,7 @@ func FIPS() bool {
 		// used by the caller application, but that is also unlikely because the FIPS provider should provide all common algorithms.
 		md := C.go_openssl_EVP_MD_fetch(nil, algorithmSHA256, nil)
 		if md == nil {
+			C.go_openssl_ERR_clear_error()
 			return false
 		}
 		C.go_openssl_EVP_MD_free(md)
@@ -136,6 +137,31 @@ func FIPS() bool {
 	default:
 		panic(errUnsupportedVersion())
 	}
+}
+
+// FIPSProvider returns true if the provider used by the default matches the `fips=yes` query.
+// Note that this function can return true even if [FIPS] returns false, because [FIPS] checks
+// whether the default properties contain `fips=1`.
+// It will always return true for OpenSSL 3 if [FIPS] returns true.
+// It will always returns false for OpenSSL 1.
+func FIPSProvider() bool {
+	if vMajor == 1 {
+		return false
+	}
+	provFn := func(props *C.char) C.GO_OSSL_PROVIDER_PTR {
+		md := C.go_openssl_EVP_MD_fetch(nil, algorithmSHA256, props)
+		if md == nil {
+			C.go_openssl_ERR_clear_error()
+			return nil
+		}
+		C.go_openssl_EVP_MD_free(md)
+		return C.go_openssl_EVP_MD_get0_provider(md)
+	}
+	// Load the provider with and without the `fips=yes` query.
+	// If the providers are the same, then the default provider is FIPS-capable.
+	provFIPS := provFn(propFIPS)
+	provDefault := provFn(nil)
+	return provFIPS != nil && provFIPS == provDefault
 }
 
 // isProviderAvailable checks if the provider with the given name is available.

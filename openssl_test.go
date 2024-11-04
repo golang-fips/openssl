@@ -62,6 +62,7 @@ func TestMain(m *testing.M) {
 	_ = openssl.SetFIPS(true) // Skip the error as we still want to run the tests on machines without FIPS support.
 	fmt.Println("OpenSSL version:", openssl.VersionText())
 	fmt.Println("FIPS enabled:", openssl.FIPS())
+	fmt.Println("FIPS capable:", openssl.FIPSProvider())
 	status := m.Run()
 	for range 5 {
 		// Run GC a few times to avoid false positives in leak detection.
@@ -90,4 +91,24 @@ func TestCheckVersion(t *testing.T) {
 func compareCurrentVersion(v string) int {
 	ver := strings.TrimPrefix(runtime.Version(), "devel ")
 	return version.Compare(ver, v)
+}
+
+func TestFIPSProvider(t *testing.T) {
+	fipsProv := openssl.FIPSProvider()
+	if openssl.MajorVersion() == 1 {
+		if fipsProv {
+			t.Fatal("FIPSProvider should be false for OpenSSL 1")
+		}
+		return
+	}
+
+	if openssl.FIPS() {
+		if !fipsProv {
+			t.Fatal("FIPSProvider should be true when FIPS is enabled")
+		}
+	} else if openssl.SymCryptProviderAvailable() {
+		if !fipsProv {
+			t.Fatal("FIPSProvider should be true when SymCrypt is available")
+		}
+	}
 }
