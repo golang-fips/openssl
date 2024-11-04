@@ -160,8 +160,11 @@ func FIPSProvider() bool {
 	// Load the provider with and without the `fips=yes` query.
 	// If the providers are the same, then the default provider is FIPS-capable.
 	provFIPS := provFn(propFIPS)
+	if provFIPS == nil {
+		return false
+	}
 	provDefault := provFn(nil)
-	return provFIPS != nil && provFIPS == provDefault
+	return provFIPS == provDefault
 }
 
 // isProviderAvailable checks if the provider with the given name is available.
