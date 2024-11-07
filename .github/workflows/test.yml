@@ -98,9 +98,18 @@ jobs:
     - name: Run Test
       run: go test -v ./...
 
-  # The module isn't useful without cgo, but it still needs to successfully build. Broad cgo-less
-  # builds should succeed if they import this module but don't refer to anything requiring cgo. This
-  # may be necessary to build a Go toolset fork, depending on how it's implemented.
+  # Verify that golang-fips/openssl builds successfully without cgo enabled.
+  #
+  # A project can avoid attempting to build the openssl package by only
+  # importing it from Go files with a cgo build tag. However, this isn't always
+  # reasonable. In that case, we can help by making sure the openssl package
+  # builds successfully even without cgo.
+  #
+  # For example, the Microsoft Go toolset fork builds this module without cgo
+  # for a cross-platform build.
+  #
+  # The golang-fips/openssl module can't do any crypto when built without cgo,
+  # but it exports a few simple functions and types.
   cgolessbuild:
     runs-on: ubuntu-latest
     steps:
