@@ -60,6 +60,38 @@ func TestHashNotMarshalable(t *testing.T) {
 	}
 }
 
+func TestHash_Clone(t *testing.T) {
+	msg := []byte("testing")
+	for _, ch := range []crypto.Hash{crypto.SHA256, crypto.SHA384, crypto.SHA512} {
+		ch := ch
+		t.Run(ch.String(), func(t *testing.T) {
+			t.Parallel()
+			if !openssl.SupportsHash(ch) {
+				t.Skip("skipping: not supported")
+			}
+			h := cryptoToHash(ch)()
+			if _, ok := h.(encoding.BinaryMarshaler); !ok {
+				t.Skip("skipping: not supported")
+			}
+			_, err := h.Write(msg)
+			if err != nil {
+				t.Fatal(err)
+			}
+			// We don't define an interface for the Clone method to avoid other
+			// packages from depending on it. Use type assertion to call it.
+			h2, err := h.(interface{ Clone() (hash.Hash, error) }).Clone()
+			if err != nil {
+				t.Fatal(err)
+			}
+			h.Write(msg)
+			h2.Write(msg)
+			if actual, actual2 := h.Sum(nil), h2.Sum(nil); !bytes.Equal(actual, actual2) {
+				t.Errorf("%s(%q) = 0x%x != cloned 0x%x", ch.String(), msg, actual, actual2)
+			}
+		})
+	}
+}
+
 func TestHash(t *testing.T) {
 	msg := []byte("testing")
 	var tests = []struct {
