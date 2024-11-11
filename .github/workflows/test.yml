@@ -68,9 +68,11 @@ jobs:
       fail-fast: false
       matrix:
         go-version: [1.22.x, 1.23.x]
-        openssl-version: [/opt/homebrew/opt/openssl@1.1/lib/libcrypto.1.1.dylib]
+        openssl-version: [/opt/homebrew/opt/openssl@3/lib/libcrypto.dylib]
     runs-on: macos-13
     steps:
+    - name: Install OpenSSL@3
+      run: brew install openssl@3
     - name: Install Go
       uses: actions/setup-go@v5
       with:
