@@ -43,6 +43,8 @@ func TestHashNotMarshalable(t *testing.T) {
 	h := openssl.NewSHA256()
 	state, err := h.(encoding.BinaryMarshaler).MarshalBinary()
 	if err != nil {
+		// In the go1.23 support we only test using the built-in providers,
+		// which are all marshalable, so this should never happen.
 		t.Fatal(err)
 	}
 	*openssl.TestNotMarshalable = true
