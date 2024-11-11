@@ -39,6 +39,29 @@ func cryptoToHash(h crypto.Hash) func() hash.Hash {
 	return nil
 }
 
+func TestHashNotMarshalable(t *testing.T) {
+	h := openssl.NewSHA256()
+	state, err := h.(encoding.BinaryMarshaler).MarshalBinary()
+	if err != nil {
+		// In the go1.23 support we only test using the built-in providers,
+		// which are all marshalable, so this should never happen.
+		t.Fatal(err)
+	}
+	*openssl.TestNotMarshalable = true
+	defer func() {
+		*openssl.TestNotMarshalable = false
+	}()
+
+	_, err = h.(encoding.BinaryMarshaler).MarshalBinary()
+	if err == nil {
+		t.Error("expected error")
+	}
+	err = h.(encoding.BinaryUnmarshaler).UnmarshalBinary(state)
+	if err == nil {
+		t.Error("expected error")
+	}
+}
+
 func TestHash(t *testing.T) {
 	msg := []byte("testing")
 	var tests = []struct {
