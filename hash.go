@@ -231,6 +231,34 @@ func (h *evpHash) sum(out []byte) {
 	runtime.KeepAlive(h)
 }
 
+// clone returns a new evpHash object that is a deep clone of itself.
+// The duplicate object contains all state and data contained in the
+// original object at the point of duplication.
+func (h *evpHash) clone() (*evpHash, error) {
+	ctx := C.go_openssl_EVP_MD_CTX_new()
+	if ctx == nil {
+		return nil, newOpenSSLError("EVP_MD_CTX_new")
+	}
+	if C.go_openssl_EVP_MD_CTX_copy_ex(ctx, h.ctx) != 1 {
+		C.go_openssl_EVP_MD_CTX_free(ctx)
+		return nil, newOpenSSLError("EVP_MD_CTX_copy_ex")
+	}
+	ctx2 := C.go_openssl_EVP_MD_CTX_new()
+	if ctx2 == nil {
+		C.go_openssl_EVP_MD_CTX_free(ctx)
+		return nil, newOpenSSLError("EVP_MD_CTX_new")
+	}
+	cloned := &evpHash{
+		ctx:          ctx,
+		ctx2:         ctx2,
+		size:         h.size,
+		blockSize:    h.blockSize,
+		marshallable: h.marshallable,
+	}
+	runtime.SetFinalizer(cloned, (*evpHash).finalize)
+	return cloned, nil
+}
+
 var testNotMarshalable bool // Used in tests.
 
 // hashState returns a pointer to the internal hash structure.
@@ -576,6 +604,17 @@ func (h *sha256Hash) UnmarshalBinary(b []byte) error {
 	return nil
 }
 
+// Clone returns a new [hash.Hash] object that is a deep clone of itself.
+// The duplicate object contains all state and data contained in the
+// original object at the point of duplication.
+func (h *sha256Hash) Clone() (hash.Hash, error) {
+	c, err := h.clone()
+	if err != nil {
+		return nil, err
+	}
+	return &sha256Hash{evpHash: c}, nil
+}
+
 // NewSHA384 returns a new SHA384 hash.
 func NewSHA384() hash.Hash {
 	return &sha384Hash{
@@ -586,6 +625,17 @@ func NewSHA384() hash.Hash {
 type sha384Hash struct {
 	*evpHash
 	out [384 / 8]byte
+}
+
+// Clone returns a new [hash.Hash] object that is a deep clone of itself.
+// The duplicate object contains all state and data contained in the
+// original object at the point of duplication.
+func (h *sha384Hash) Clone() (hash.Hash, error) {
+	c, err := h.clone()
+	if err != nil {
+		return nil, err
+	}
+	return &sha384Hash{evpHash: c}, nil
 }
 
 func (h *sha384Hash) Sum(in []byte) []byte {
@@ -729,6 +779,17 @@ func (h *sha512Hash) UnmarshalBinary(b []byte) error {
 	d.nh = n >> 61
 	d.nx = uint32(n) % 128
 	return nil
+}
+
+// Clone returns a new [hash.Hash] object that is a deep clone of itself.
+// The duplicate object contains all state and data contained in the
+// original object at the point of duplication.
+func (h *sha512Hash) Clone() (hash.Hash, error) {
+	c, err := h.clone()
+	if err != nil {
+		return nil, err
+	}
+	return &sha512Hash{evpHash: c}, nil
 }
 
 // NewSHA3_224 returns a new SHA3-224 hash.
