@@ -103,6 +103,7 @@ var (
 	providerNameFips    = C.CString("fips")
 	providerNameDefault = C.CString("default")
 	propFIPS            = C.CString("fips=yes")
+	propNoFIPS          = C.CString("-fips")
 
 	algorithmSHA256 = C.CString("SHA2-256")
 )
@@ -127,12 +128,7 @@ func FIPS() bool {
 		// but that is highly unlikely because SHA-256 is one of the most common algorithms and fundamental to many cryptographic operations.
 		// It also has a small chance of false positive if the FIPS provider implements the SHA-256 algorithm but not the other algorithms
 		// used by the caller application, but that is also unlikely because the FIPS provider should provide all common algorithms.
-		md := C.go_openssl_EVP_MD_fetch(nil, algorithmSHA256, nil)
-		if md == nil {
-			return false
-		}
-		C.go_openssl_EVP_MD_free(md)
-		return true
+		return proveSHA256(nil)
 	default:
 		panic(errUnsupportedVersion())
 	}
@@ -148,11 +144,15 @@ func isProviderAvailable(name string) bool {
 
 // SetFIPS enables or disables FIPS mode.
 //
-// For OpenSSL 3, the `fips` provider is loaded if enabled is true,
-// else the `default` provider is loaded.
-func SetFIPS(enabled bool) error {
+// For OpenSSL 3, if there is no provider available that supports FIPS mode,
+// SetFIPS will try to load a built-in provider that supports FIPS mode.
+func SetFIPS(enable bool) error {
+	if FIPS() == enable {
+		// Already in the desired state.
+		return nil
+	}
 	var mode C.int
-	if enabled {
+	if enable {
 		mode = C.int(1)
 	} else {
 		mode = C.int(0)
@@ -164,31 +164,23 @@ func SetFIPS(enabled bool) error {
 		}
 		return nil
 	case 3:
-		var provName *C.char
-		if enabled {
+		var shaProps, provName *C.char
+		if enable {
+			shaProps = propFIPS
 			provName = providerNameFips
 		} else {
+			shaProps = propNoFIPS
 			provName = providerNameDefault
 		}
-		// Try to load the provider, but don't fail if it's not loaded.
-		// The built-in provider might not be present in the system.
-		// We don't need the built-in provider if third-party providers are being used: they are already loaded.
-		// If the system is not well-configured and has no FIPS capability, this will be detected by the next steps.
-		C.go_openssl_OSSL_PROVIDER_try_load(nil, provName, 1)
-		C.go_openssl_ERR_clear_error()
-
-		// See FIPS() for the rationale behind this check.
-		md := C.go_openssl_EVP_MD_fetch(nil, algorithmSHA256, propFIPS)
-		if md == nil {
-			// Don't enable FIPS mode if there is no provider that supports it.
-			// This makes it easier for callers to call SetFIPS(true) to do a
-			// best-effort attempt to enable FIPS mode, but not fail if it's not possible.
-			C.go_openssl_ERR_clear_error()
-			return errors.New("openssl: FIPS mode not supported by any provider")
+		if !proveSHA256(shaProps) {
+			// There is no provider available that supports the desired FIPS mode.
+			// Try to load the built-in provider associated with the given mode.
+			if C.go_openssl_OSSL_PROVIDER_try_load(nil, provName, 1) == nil {
+				// The built-in provider was not loaded successfully, we can't enable FIPS mode.
+				C.go_openssl_ERR_clear_error()
+				return errors.New("openssl: FIPS mode not supported by any provider")
+			}
 		}
-		C.go_openssl_EVP_MD_free(md)
-
-		// Enable FIPS mode in the default properties.
 		if C.go_openssl_EVP_default_properties_enable_fips(nil, mode) != 1 {
 			return newOpenSSLError("EVP_default_properties_enable_fips")
 		}
@@ -196,6 +188,18 @@ func SetFIPS(enabled bool) error {
 	default:
 		panic(errUnsupportedVersion())
 	}
+}
+
+// proveSHA256 checks if the SHA-256 algorithm is available
+// using the given properties.
+func proveSHA256(props *C.char) bool {
+	md := C.go_openssl_EVP_MD_fetch(nil, algorithmSHA256, props)
+	if md == nil {
+		C.go_openssl_ERR_clear_error()
+		return false
+	}
+	C.go_openssl_EVP_MD_free(md)
+	return true
 }
 
 // noescape hides a pointer from escape analysis. noescape is
