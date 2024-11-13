@@ -5,8 +5,13 @@ import "sync"
 var ErrOpen = errOpen
 
 var SymCryptProviderAvailable = sync.OnceValue(func() bool {
-	if vMajor == 1 {
-		return false
-	}
 	return isProviderAvailable("symcryptprovider")
+})
+
+var FIPSProviderAvailable = sync.OnceValue(func() bool {
+	return isProviderAvailable("fips")
+})
+
+var DefaultProviderAvailable = sync.OnceValue(func() bool {
+	return isProviderAvailable("default")
 })

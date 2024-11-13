@@ -91,3 +91,45 @@ func compareCurrentVersion(v string) int {
 	ver := strings.TrimPrefix(runtime.Version(), "devel ")
 	return version.Compare(ver, v)
 }
+
+func TestSetFIPS(t *testing.T) {
+	fipsEnabled := openssl.FIPS()
+	t.Cleanup(func() {
+		// Restore the previous FIPS mode.
+		err := openssl.SetFIPS(fipsEnabled)
+		if err != nil {
+			t.Fatal(err)
+		}
+	})
+
+	if err := openssl.SetFIPS(fipsEnabled); err != nil {
+		// Test that we can set FIPS mode to the current state
+		// without error.
+		t.Fatalf("SetFIPS(%v) failed: %v", fipsEnabled, err)
+	}
+	if got := openssl.FIPS(); got != fipsEnabled {
+		// Test that the FIPS mode hasn't been changed by the
+		// previous SetFIPS call.
+		t.Fatalf("FIPS mode mismatch: want %v, got %v", fipsEnabled, got)
+	}
+
+	if fipsEnabled &&
+		openssl.DefaultProviderAvailable() {
+		// Test that we can disable FIPS mode if it was enabled
+		// when the built-in provider is available.
+		err := openssl.SetFIPS(false)
+		if err != nil {
+			t.Fatalf("SetFIPS(false) failed: %v", err)
+		}
+	} else if !fipsEnabled &&
+		(openssl.SymCryptProviderAvailable() || openssl.FIPSProviderAvailable()) {
+		// Test that we can enable FIPS mode if it was disabled
+		// when the provider is known to support FIPS mode.
+		err := openssl.SetFIPS(true)
+		if err != nil {
+			t.Fatalf("SetFIPS(true) failed: %v", err)
+		}
+	} else {
+		t.Skip("FIPS mode is not supported")
+	}
+}
