@@ -405,3 +405,46 @@ func TestHKDFUnsupportedHash(t *testing.T) {
 		t.Error("expected error for unsupported hash")
 	}
 }
+func TestExpandHKDFOneShot(t *testing.T) {
+	if !openssl.SupportsHKDF() {
+		t.Skip("HKDF is not supported")
+	}
+	for i, tt := range hkdfTests {
+		out, err := openssl.ExpandHKDFOneShot(tt.hash, tt.prk, tt.info, len(tt.out))
+		if err != nil {
+			t.Errorf("test %d: error expanding HKDF one-shot: %v.", i, err)
+			continue
+		}
+		if !bytes.Equal(out, tt.out) {
+			t.Errorf("test %d: incorrect output from ExpandHKDFOneShot: have %v, need %v.", i, out, tt.out)
+		}
+	}
+}
+
+func TestExpandHKDFOneShotLimit(t *testing.T) {
+	if !openssl.SupportsHKDF() {
+		t.Skip("HKDF is not supported")
+	}
+	hash := openssl.NewSHA1
+	master := []byte{0x00, 0x01, 0x02, 0x03}
+	info := []byte{}
+
+	prk, err := openssl.ExtractHKDF(hash, master, nil)
+	if err != nil {
+		t.Fatalf("error extracting HKDF: %v.", err)
+	}
+	limit := hash().Size() * 255
+	out, err := openssl.ExpandHKDFOneShot(hash, prk, info, limit)
+	if err != nil {
+		t.Errorf("error expanding HKDF one-shot: %v.", err)
+	}
+	if len(out) != limit {
+		t.Errorf("incorrect output length: have %d, need %d.", len(out), limit)
+	}
+
+	// Expanding one more byte should fail
+	_, err = openssl.ExpandHKDFOneShot(hash, prk, info, limit+1)
+	if err == nil {
+		t.Errorf("expected error for key expansion overflow")
+	}
+}

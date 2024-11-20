@@ -151,6 +151,43 @@ func ExtractHKDF(h func() hash.Hash, secret, salt []byte) ([]byte, error) {
 	}
 }
 
+// ExpandHKDFOneShot derives a key from the given hash, key, and optional context info,
+func ExpandHKDFOneShot(h func() hash.Hash, pseudorandomKey, info []byte, keyLength int) ([]byte, error) {
+	if !SupportsHKDF() {
+		return nil, errUnsupportedVersion()
+	}
+
+	md, err := hashFuncToMD(h)
+	if err != nil {
+		return nil, err
+	}
+
+	out := make([]byte, keyLength)
+	switch vMajor {
+	case 1:
+		ctx, err := newHKDFCtx1(md, C.GO_EVP_KDF_HKDF_MODE_EXPAND_ONLY, nil, nil, pseudorandomKey, info)
+		if err != nil {
+			return nil, err
+		}
+		defer C.go_openssl_EVP_PKEY_CTX_free(ctx)
+		if C.go_openssl_EVP_PKEY_derive_wrapper(ctx, base(out), C.size_t(keyLength)).result != 1 {
+			return nil, newOpenSSLError("EVP_PKEY_derive")
+		}
+	case 3:
+		ctx, err := newHKDFCtx3(md, C.GO_EVP_KDF_HKDF_MODE_EXPAND_ONLY, nil, nil, pseudorandomKey, info)
+		if err != nil {
+			return nil, err
+		}
+		defer C.go_openssl_EVP_KDF_CTX_free(ctx)
+		if C.go_openssl_EVP_KDF_derive(ctx, base(out), C.size_t(keyLength), nil) != 1 {
+			return nil, newOpenSSLError("EVP_KDF_derive")
+		}
+	default:
+		panic(errUnsupportedVersion())
+	}
+	return out, nil
+}
+
 func ExpandHKDF(h func() hash.Hash, pseudorandomKey, info []byte) (io.Reader, error) {
 	if !SupportsHKDF() {
 		return nil, errUnsupportedVersion()
