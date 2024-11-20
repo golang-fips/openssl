@@ -151,7 +151,7 @@ func ExtractHKDF(h func() hash.Hash, secret, salt []byte) ([]byte, error) {
 	}
 }
 
-// ExpandHKDFOneShot derives a key from the given hash, key, and optional context info,
+// ExpandHKDFOneShot derives a key from the given hash, key, and optional context info.
 func ExpandHKDFOneShot(h func() hash.Hash, pseudorandomKey, info []byte, keyLength int) ([]byte, error) {
 	if !SupportsHKDF() {
 		return nil, errUnsupportedVersion()
