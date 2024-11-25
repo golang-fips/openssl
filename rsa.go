@@ -238,7 +238,7 @@ func saltLength(saltLen int, sign bool) (C.int, error) {
 	// A salt length of -2 is valid in OpenSSL, but not in crypto/rsa, so reject
 	// it, and lengths < -2, before we convert to the OpenSSL sentinel values.
 	if saltLen <= -2 {
-		return 0, errors.New("crypto/rsa: PSSOptions.SaltLength cannot be negative")
+		return 0, errors.New("crypto/rsa: invalid PSS salt length")
 	}
 	// OpenSSL uses sentinel salt length values like Go crypto does,
 	// but the values don't fully match for rsa.PSSSaltLengthAuto (0).
