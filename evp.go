@@ -502,7 +502,7 @@ func getECKey(pkey C.GO_EVP_PKEY_PTR) (key C.GO_EC_KEY_PTR) {
 	return key
 }
 
-func newEvpFromParams(id C.int, selection C.int, params C.GO_OSSL_PARAM_PTR) (C.GO_EVP_PKEY_PTR, error) {
+func newEvpFromParams(id C.int, selection C.int, params C.GO_OSSL_PARAM_PTR, validate bool) (C.GO_EVP_PKEY_PTR, error) {
 	ctx := C.go_openssl_EVP_PKEY_CTX_new_id(id, nil)
 	if ctx == nil {
 		return nil, newOpenSSLError("EVP_PKEY_CTX_new_id")
@@ -514,6 +514,19 @@ func newEvpFromParams(id C.int, selection C.int, params C.GO_OSSL_PARAM_PTR) (C.
 	var pkey C.GO_EVP_PKEY_PTR
 	if C.go_openssl_EVP_PKEY_fromdata(ctx, &pkey, selection, params) != 1 {
 		return nil, newOpenSSLError("EVP_PKEY_fromdata")
+	}
+	if validate {
+		if selection == C.GO_EVP_PKEY_KEYPAIR { // Private key
+			if C.go_openssl_EVP_PKEY_private_check(ctx) != 1 {
+				// Match upstream error message.
+				return nil, errors.New("crypto/ecdh: invalid private key")
+			}
+		} else { // Public key
+			if C.go_openssl_EVP_PKEY_public_check_quick(ctx) != 1 {
+				// Match upstream error message.
+				return nil, errors.New("crypto/ecdh: invalid public key")
+			}
+		}
 	}
 	return pkey, nil
 }

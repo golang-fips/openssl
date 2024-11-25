@@ -310,8 +310,8 @@ DEFINEFUNC(int, EVP_PKEY_sign, (GO_EVP_PKEY_CTX_PTR arg0, unsigned char *arg1, s
 DEFINEFUNC(int, EVP_PKEY_derive_init, (GO_EVP_PKEY_CTX_PTR ctx), (ctx)) \
 DEFINEFUNC(int, EVP_PKEY_derive_set_peer, (GO_EVP_PKEY_CTX_PTR ctx, GO_EVP_PKEY_PTR peer), (ctx, peer)) \
 DEFINEFUNC(int, EVP_PKEY_derive, (GO_EVP_PKEY_CTX_PTR ctx, unsigned char *key, size_t *keylen), (ctx, key, keylen)) \
-DEFINEFUNC(int, EVP_PKEY_public_check_quick, (GO_EVP_PKEY_CTX_PTR ctx), (ctx)) \
-DEFINEFUNC(int, EVP_PKEY_private_check, (GO_EVP_PKEY_CTX_PTR ctx), (ctx)) \
+DEFINEFUNC_3_0(int, EVP_PKEY_public_check_quick, (GO_EVP_PKEY_CTX_PTR ctx), (ctx)) \
+DEFINEFUNC_3_0(int, EVP_PKEY_private_check, (GO_EVP_PKEY_CTX_PTR ctx), (ctx)) \
 DEFINEFUNC_LEGACY_1_0(void*, EVP_PKEY_get0, (GO_EVP_PKEY_PTR pkey), (pkey)) \
 DEFINEFUNC_LEGACY_1_1(GO_EC_KEY_PTR, EVP_PKEY_get0_EC_KEY, (GO_EVP_PKEY_PTR pkey), (pkey)) \
 DEFINEFUNC_LEGACY_1_1(GO_DSA_PTR, EVP_PKEY_get0_DSA, (GO_EVP_PKEY_PTR pkey), (pkey)) \
