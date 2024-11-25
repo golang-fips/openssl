@@ -181,7 +181,19 @@ func newECDHPkey3(nid C.int, bytes []byte, isPrivate bool) (C.GO_EVP_PKEY_PTR, e
 	bld.addUTF8String(_OSSL_PKEY_PARAM_GROUP_NAME, C.go_openssl_OBJ_nid2sn(nid), 0)
 	var selection C.int
 	if isPrivate {
-		bld.addBin(_OSSL_PKEY_PARAM_PRIV_KEY, bytes, true)
+		priv := C.go_openssl_BN_bin2bn(base(bytes), C.int(len(bytes)), nil)
+		if priv == nil {
+			return nil, newOpenSSLError("BN_bin2bn")
+		}
+		defer C.go_openssl_BN_clear_free(priv)
+		pubBytes, err := generateAndEncodeEcPublicKey(nid, func(group C.GO_EC_GROUP_PTR) (C.GO_EC_POINT_PTR, error) {
+			return pointMult(group, priv)
+		})
+		if err != nil {
+			return nil, err
+		}
+		bld.addOctetString(_OSSL_PKEY_PARAM_PUB_KEY, pubBytes)
+		bld.addBN(_OSSL_PKEY_PARAM_PRIV_KEY, priv)
 		selection = C.GO_EVP_PKEY_KEYPAIR
 	} else {
 		bld.addOctetString(_OSSL_PKEY_PARAM_PUB_KEY, bytes)
@@ -209,32 +221,6 @@ func pointMult(group C.GO_EC_GROUP_PTR, priv C.GO_BIGNUM_PTR) (C.GO_EC_POINT_PTR
 		return nil, newOpenSSLError("EC_POINT_mul")
 	}
 	return pt, nil
-}
-
-// deriveEcdhPublicKey sets the raw public key of pkey by deriving it from
-// the raw private key.
-func deriveEcdhPublicKey(pkey C.GO_EVP_PKEY_PTR, curve string) error {
-	switch vMajor {
-	case 3:
-		var priv C.GO_BIGNUM_PTR
-		if C.go_openssl_EVP_PKEY_get_bn_param(pkey, _OSSL_PKEY_PARAM_PRIV_KEY, &priv) != 1 {
-			return newOpenSSLError("EVP_PKEY_get_bn_param")
-		}
-		defer C.go_openssl_BN_clear_free(priv)
-		nid, _ := curveNID(curve)
-		pubBytes, err := generateAndEncodeEcPublicKey(nid, func(group C.GO_EC_GROUP_PTR) (C.GO_EC_POINT_PTR, error) {
-			return pointMult(group, priv)
-		})
-		if err != nil {
-			return err
-		}
-		if C.go_openssl_EVP_PKEY_set1_encoded_public_key(pkey, base(pubBytes), C.size_t(len(pubBytes))) != 1 {
-			return newOpenSSLError("EVP_PKEY_set1_encoded_public_key")
-		}
-	default:
-		panic(errUnsupportedVersion())
-	}
-	return nil
 }
 
 func ECDH(priv *PrivateKeyECDH, pub *PublicKeyECDH) ([]byte, error) {
