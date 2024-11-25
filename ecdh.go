@@ -6,7 +6,6 @@ package openssl
 import "C"
 import (
 	"errors"
-	"math/bits"
 	"runtime"
 	"unsafe"
 )
@@ -317,49 +316,4 @@ func GenerateKeyECDH(curve string) (*PrivateKeyECDH, []byte, error) {
 	k = &PrivateKeyECDH{pkey, curve, true}
 	runtime.SetFinalizer(k, (*PrivateKeyECDH).finalize)
 	return k, bytes, nil
-}
-
-// isZero reports whether x is all zeroes in constant time.
-func isZero(x []byte) bool {
-	var acc byte
-	for _, b := range x {
-		acc |= b
-	}
-	return acc == 0
-}
-
-// isECDHLess reports whether a < b, where a and b are big-endian buffers of the
-// same length and shorter than 72 bytes.
-func isECDHLess(a, b []byte) bool {
-	if len(a) != len(b) {
-		panic("crypto/ecdh: internal error: mismatched isLess inputs")
-	}
-
-	// Copy the values into a fixed-size preallocated little-endian buffer.
-	// 72 bytes is enough for every scalar in this package, and having a fixed
-	// size lets us avoid heap allocations.
-	if len(a) > 72 {
-		panic("crypto/ecdh: internal error: isLess input too large")
-	}
-	bufA, bufB := make([]byte, 72), make([]byte, 72)
-	for i := range a {
-		bufA[i], bufB[i] = a[len(a)-i-1], b[len(b)-i-1]
-	}
-
-	// Perform a subtraction with borrow.
-	var borrow uint64
-	for i := 0; i < len(bufA); i += 8 {
-		limbA, limbB := leUint64(bufA[i:]), leUint64(bufB[i:])
-		_, borrow = bits.Sub64(limbA, limbB, borrow)
-	}
-
-	// If there is a borrow at the end of the operation, then a < b.
-	return borrow == 1
-}
-
-// leUint64 returns the little-endian uint64 value in b.
-func leUint64(b []byte) uint64 {
-	_ = b[7] // bounds check hint to compiler; see golang.org/issue/14808
-	return uint64(b[0]) | uint64(b[1])<<8 | uint64(b[2])<<16 | uint64(b[3])<<24 |
-		uint64(b[4])<<32 | uint64(b[5])<<40 | uint64(b[6])<<48 | uint64(b[7])<<56
 }
