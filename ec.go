@@ -19,6 +19,22 @@ func curveNID(curve string) (C.int, error) {
 	return 0, errUnknownCurve
 }
 
+// curveSize returns the size of the curve in bytes.
+func curveSize(curve string) int {
+	switch curve {
+	default:
+		panic("openssl: unknown curve " + curve)
+	case "P-224":
+		return 224 / 8
+	case "P-256":
+		return 256 / 8
+	case "P-384":
+		return 384 / 8
+	case "P-521":
+		return (521 + 7) / 8
+	}
+}
+
 // encodeEcPoint encodes pt.
 func encodeEcPoint(group C.GO_EC_GROUP_PTR, pt C.GO_EC_POINT_PTR) ([]byte, error) {
 	// Get encoded point size.
