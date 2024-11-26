@@ -404,5 +404,5 @@ func newRSAKey3(isPriv bool, n, e, d, p, q, dp, dq, qinv BigInt) (C.GO_EVP_PKEY_
 	if isPriv {
 		selection = C.GO_EVP_PKEY_KEYPAIR
 	}
-	return newEvpFromParams(C.GO_EVP_PKEY_RSA, C.int(selection), params, false)
+	return newEvpFromParams(C.GO_EVP_PKEY_RSA, C.int(selection), params)
 }

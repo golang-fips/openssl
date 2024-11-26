@@ -207,5 +207,5 @@ func newECDSAKey3(nid C.int, bx, by, bd C.GO_BIGNUM_PTR) (C.GO_EVP_PKEY_PTR, err
 		return nil, err
 	}
 	defer C.go_openssl_OSSL_PARAM_free(params)
-	return newEvpFromParams(C.GO_EVP_PKEY_EC, selection, params, false)
+	return newEvpFromParams(C.GO_EVP_PKEY_EC, selection, params)
 }

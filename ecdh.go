@@ -210,7 +210,28 @@ func newECDHPkey3(nid C.int, bytes []byte, isPrivate bool) (C.GO_EVP_PKEY_PTR, e
 		return nil, err
 	}
 	defer C.go_openssl_OSSL_PARAM_free(params)
-	return newEvpFromParams(C.GO_EVP_PKEY_EC, selection, params, true)
+	pkey, err := newEvpFromParams(C.GO_EVP_PKEY_EC, selection, params)
+	if err != nil {
+		return nil, err
+	}
+	ctx := C.go_openssl_EVP_PKEY_CTX_new(pkey, nil)
+	if ctx == nil {
+		return nil, newOpenSSLError("EVP_PKEY_CTX_new")
+	}
+	defer C.go_openssl_EVP_PKEY_CTX_free(ctx)
+	if isPrivate {
+		if C.go_openssl_EVP_PKEY_private_check(ctx) != 1 {
+			// Match upstream error message.
+			return nil, errors.New("crypto/ecdh: invalid private key")
+		}
+	} else {
+		// Upstream Go does a partial check here, so do we.
+		if C.go_openssl_EVP_PKEY_public_check_quick(ctx) != 1 {
+			// Match upstream error message.
+			return nil, errors.New("crypto/ecdh: invalid public key")
+		}
+	}
+	return pkey, nil
 }
 
 func pointMult(group C.GO_EC_GROUP_PTR, priv C.GO_BIGNUM_PTR) (C.GO_EC_POINT_PTR, error) {

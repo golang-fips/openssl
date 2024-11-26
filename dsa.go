@@ -280,7 +280,7 @@ func newDSA3(params DSAParameters, x, y BigInt) (C.GO_EVP_PKEY_PTR, error) {
 		return nil, err
 	}
 	defer C.go_openssl_OSSL_PARAM_free(bldparams)
-	pkey, err := newEvpFromParams(C.GO_EVP_PKEY_DSA, selection, bldparams, false)
+	pkey, err := newEvpFromParams(C.GO_EVP_PKEY_DSA, selection, bldparams)
 	if err != nil {
 		return nil, err
 	}
