@@ -45,6 +45,14 @@ func hashToMD(h hash.Hash) C.GO_EVP_MD_PTR {
 	return nil
 }
 
+func evp_md5_sha1() C.GO_EVP_MD_PTR {
+	if vMajor == 1 && vMinor == 0 {
+		return C.go_openssl_EVP_md5_sha1_backport()
+	} else {
+		return C.go_openssl_EVP_md5_sha1()
+	}
+}
+
 // cryptoHashToMD converts a crypto.Hash to a GO_EVP_MD_PTR.
 func cryptoHashToMD(ch crypto.Hash) (md C.GO_EVP_MD_PTR) {
 	if v, ok := cacheMD.Load(ch); ok {
@@ -76,17 +84,9 @@ func cryptoHashToMD(ch crypto.Hash) (md C.GO_EVP_MD_PTR) {
 		}
 		cacheMD.Store(ch, md)
 	}()
-	// SupportsHash returns false for MD5SHA1 because we don't
-	// provide a hash.Hash implementation for it. Yet, it can
-	// still be used when signing/verifying with an RSA key.
-	if ch == crypto.MD5SHA1 {
-		if vMajor == 1 && vMinor == 0 {
-			return C.go_openssl_EVP_md5_sha1_backport()
-		} else {
-			return C.go_openssl_EVP_md5_sha1()
-		}
-	}
 	switch ch {
+	case crypto.MD5SHA1:
+		return evp_md5_sha1()
 	case crypto.MD4:
 		return C.go_openssl_EVP_md4()
 	case crypto.MD5:
@@ -265,7 +265,14 @@ func setupEVP(withKey withKeyFunc, padding C.int,
 			// We support unhashed messages.
 			md := cryptoHashToMD(ch)
 			if md == nil {
-				return nil, errors.New("crypto/rsa: unsupported hash function")
+				if ch == crypto.MD5SHA1 {
+					// Most providers will special-case MD5SHA1 to support it in RSA PKCS1 signatures,
+					// as it is used in TLS 1.0 and 1.1. Try to use it even if EVP_MD_fetch says it is not supported.
+					// Worst case, user will see the EVP_PKEY_CTX_ctrl error message instead of the one just below.
+					md = evp_md5_sha1()
+				} else {
+					return nil, errors.New("crypto/rsa: unsupported hash function")
+				}
 			}
 			if C.go_openssl_EVP_PKEY_CTX_ctrl(ctx, -1, -1, C.GO_EVP_PKEY_CTRL_MD, 0, unsafe.Pointer(md)) != 1 {
 				return nil, newOpenSSLError("EVP_PKEY_CTX_ctrl failed")
