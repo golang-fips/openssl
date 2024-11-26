@@ -158,7 +158,7 @@ func TestSignVerifyPKCS1v15_MD5SHA1(t *testing.T) {
 	if err != nil {
 		if openssl.FIPS() {
 			// This test is not supported in FIPS mode, but at least we
-			// can check that we don't panic (which we did before when using SOOSSL).
+			// can check that we don't panic (which we have before when using SCOSSL).
 			t.Skip("skipping test in FIPS mode")
 		}
 		t.Fatal(err)
