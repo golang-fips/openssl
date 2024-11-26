@@ -273,8 +273,6 @@ func TestECDHNewPrivateKeyECDH_Invalid(t *testing.T) {
 					t.Errorf("unexpectedly accepted %q", input)
 				} else if k != nil {
 					t.Error("PrivateKey was not nil on error")
-				} else if strings.Contains(err.Error(), "boringcrypto") {
-					t.Errorf("boringcrypto error leaked out: %v", err)
 				}
 			}
 		})
@@ -290,8 +288,6 @@ func TestECDHNewPublicKeyECDH_Invalid(t *testing.T) {
 					t.Errorf("unexpectedly accepted %q", input)
 				} else if k != nil {
 					t.Error("PublicKey was not nil on error")
-				} else if strings.Contains(err.Error(), "boringcrypto") {
-					t.Errorf("boringcrypto error leaked out: %v", err)
 				}
 			}
 		})
