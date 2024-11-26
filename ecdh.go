@@ -221,12 +221,14 @@ func newECDHPkey3(nid C.int, bytes []byte, isPrivate bool) (C.GO_EVP_PKEY_PTR, e
 	defer C.go_openssl_EVP_PKEY_CTX_free(ctx)
 	if isPrivate {
 		if C.go_openssl_EVP_PKEY_private_check(ctx) != 1 {
+			C.go_openssl_EVP_PKEY_free(pkey)
 			// Match upstream error message.
 			return nil, errors.New("crypto/ecdh: invalid private key")
 		}
 	} else {
 		// Upstream Go does a partial check here, so do we.
 		if C.go_openssl_EVP_PKEY_public_check_quick(ctx) != 1 {
+			C.go_openssl_EVP_PKEY_free(pkey)
 			// Match upstream error message.
 			return nil, errors.New("crypto/ecdh: invalid public key")
 		}
