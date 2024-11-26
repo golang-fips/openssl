@@ -147,6 +147,28 @@ func TestSignVerifyPKCS1v15(t *testing.T) {
 	}
 }
 
+func TestSignVerifyPKCS1v15_MD5SHA1(t *testing.T) {
+	priv, pub := newRSAKey(t, 2048)
+
+	// Construct a fake MD5+SHA1 hash.
+	hashed := make([]byte, crypto.MD5.Size()+crypto.SHA1.Size())
+	hashed[0] = 0x30
+
+	signed, err := openssl.SignRSAPKCS1v15(priv, crypto.MD5SHA1, hashed)
+	if err != nil {
+		if openssl.FIPS() {
+			// This test is not supported in FIPS mode, but at least we
+			// can check that we don't panic (which we did before when using SOOSSL).
+			t.Skip("skipping test in FIPS mode")
+		}
+		t.Fatal(err)
+	}
+	err = openssl.VerifyRSAPKCS1v15(pub, crypto.MD5SHA1, hashed, signed)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestSignVerifyPKCS1v15_Unhashed(t *testing.T) {
 	msg := []byte("hi!")
 	priv, pub := newRSAKey(t, 2048)
