@@ -122,10 +122,7 @@ func HashVerifyECDSA(pub *PublicKeyECDSA, h crypto.Hash, msg, sig []byte) bool {
 }
 
 func newECDSAKey(curve string, x, y, d BigInt) (C.GO_EVP_PKEY_PTR, error) {
-	nid, err := curveNID(curve)
-	if err != nil {
-		return nil, err
-	}
+	nid := curveNID(curve)
 	var bx, by, bd C.GO_BIGNUM_PTR
 	defer func() {
 		C.go_openssl_BN_free(bx)

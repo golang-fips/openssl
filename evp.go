@@ -175,10 +175,7 @@ func generateEVPPKey(id C.int, bits int, curve string) (C.GO_EVP_PKEY_PTR, error
 		}
 	}
 	if curve != "" {
-		nid, err := curveNID(curve)
-		if err != nil {
-			return nil, err
-		}
+		nid := curveNID(curve)
 		if C.go_openssl_EVP_PKEY_CTX_ctrl(ctx, id, -1, C.GO_EVP_PKEY_CTRL_EC_PARAMGEN_CURVE_NID, nid, nil) != 1 {
 			return nil, newOpenSSLError("EVP_PKEY_CTX_ctrl failed")
 		}

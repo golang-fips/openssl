@@ -107,10 +107,7 @@ func (k *PrivateKeyECDH) PublicKey() (*PublicKeyECDH, error) {
 }
 
 func newECDHPkey(curve string, bytes []byte, isPrivate bool) (C.GO_EVP_PKEY_PTR, error) {
-	nid, err := curveNID(curve)
-	if err != nil {
-		return nil, err
-	}
+	nid := curveNID(curve)
 	switch vMajor {
 	case 1:
 		return newECDHPkey1(nid, bytes, isPrivate)
@@ -214,24 +211,10 @@ func newECDHPkey3(nid C.int, bytes []byte, isPrivate bool) (C.GO_EVP_PKEY_PTR, e
 	if err != nil {
 		return nil, err
 	}
-	ctx := C.go_openssl_EVP_PKEY_CTX_new(pkey, nil)
-	if ctx == nil {
-		return nil, newOpenSSLError("EVP_PKEY_CTX_new")
-	}
-	defer C.go_openssl_EVP_PKEY_CTX_free(ctx)
-	if isPrivate {
-		if C.go_openssl_EVP_PKEY_private_check(ctx) != 1 {
-			C.go_openssl_EVP_PKEY_free(pkey)
-			// Match upstream error message.
-			return nil, errors.New("crypto/ecdh: invalid private key")
-		}
-	} else {
-		// Upstream Go does a partial check here, so do we.
-		if C.go_openssl_EVP_PKEY_public_check_quick(ctx) != 1 {
-			C.go_openssl_EVP_PKEY_free(pkey)
-			// Match upstream error message.
-			return nil, errors.New("crypto/ecdh: invalid public key")
-		}
+
+	if err := checkPkey(pkey, isPrivate); err != nil {
+		C.go_openssl_EVP_PKEY_free(pkey)
+		return nil, errors.New("crypto/ecdh: " + err.Error())
 	}
 	return pkey, nil
 }

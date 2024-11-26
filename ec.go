@@ -4,26 +4,26 @@ package openssl
 
 // #include "goopenssl.h"
 import "C"
+import "errors"
 
-func curveNID(curve string) (C.int, error) {
+func curveNID(curve string) C.int {
 	switch curve {
 	case "P-224":
-		return C.GO_NID_secp224r1, nil
+		return C.GO_NID_secp224r1
 	case "P-256":
-		return C.GO_NID_X9_62_prime256v1, nil
+		return C.GO_NID_X9_62_prime256v1
 	case "P-384":
-		return C.GO_NID_secp384r1, nil
+		return C.GO_NID_secp384r1
 	case "P-521":
-		return C.GO_NID_secp521r1, nil
+		return C.GO_NID_secp521r1
+	default:
+		panic("openssl: unknown curve " + curve)
 	}
-	return 0, errUnknownCurve
 }
 
 // curveSize returns the size of the curve in bytes.
 func curveSize(curve string) int {
 	switch curve {
-	default:
-		panic("openssl: unknown curve " + curve)
 	case "P-224":
 		return 224 / 8
 	case "P-256":
@@ -32,6 +32,8 @@ func curveSize(curve string) int {
 		return 384 / 8
 	case "P-521":
 		return (521 + 7) / 8
+	default:
+		panic("openssl: unknown curve " + curve)
 	}
 }
 
@@ -64,4 +66,25 @@ func generateAndEncodeEcPublicKey(nid C.int, newPubKeyPointFn func(group C.GO_EC
 	}
 	defer C.go_openssl_EC_POINT_free(pt)
 	return encodeEcPoint(group, pt)
+}
+
+func checkPkey(pkey C.GO_EVP_PKEY_PTR, isPrivate bool) error {
+	ctx := C.go_openssl_EVP_PKEY_CTX_new(pkey, nil)
+	if ctx == nil {
+		return newOpenSSLError("EVP_PKEY_CTX_new")
+	}
+	defer C.go_openssl_EVP_PKEY_CTX_free(ctx)
+	if isPrivate {
+		if C.go_openssl_EVP_PKEY_private_check(ctx) != 1 {
+			// Match upstream error message.
+			return errors.New("invalid private key")
+		}
+	} else {
+		// Upstream Go does a partial check here, so do we.
+		if C.go_openssl_EVP_PKEY_public_check_quick(ctx) != 1 {
+			// Match upstream error message.
+			return errors.New("invalid public key")
+		}
+	}
+	return nil
 }
