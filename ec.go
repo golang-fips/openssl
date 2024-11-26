@@ -4,7 +4,6 @@ package openssl
 
 // #include "goopenssl.h"
 import "C"
-import "errors"
 
 func curveNID(curve string) C.int {
 	switch curve {
@@ -66,25 +65,4 @@ func generateAndEncodeEcPublicKey(nid C.int, newPubKeyPointFn func(group C.GO_EC
 	}
 	defer C.go_openssl_EC_POINT_free(pt)
 	return encodeEcPoint(group, pt)
-}
-
-func checkPkey(pkey C.GO_EVP_PKEY_PTR, isPrivate bool) error {
-	ctx := C.go_openssl_EVP_PKEY_CTX_new(pkey, nil)
-	if ctx == nil {
-		return newOpenSSLError("EVP_PKEY_CTX_new")
-	}
-	defer C.go_openssl_EVP_PKEY_CTX_free(ctx)
-	if isPrivate {
-		if C.go_openssl_EVP_PKEY_private_check(ctx) != 1 {
-			// Match upstream error message.
-			return errors.New("invalid private key")
-		}
-	} else {
-		// Upstream Go does a partial check here, so do we.
-		if C.go_openssl_EVP_PKEY_public_check_quick(ctx) != 1 {
-			// Match upstream error message.
-			return errors.New("invalid public key")
-		}
-	}
-	return nil
 }

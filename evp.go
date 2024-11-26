@@ -510,7 +510,34 @@ func newEvpFromParams(id C.int, selection C.int, params C.GO_OSSL_PARAM_PTR) (C.
 	}
 	var pkey C.GO_EVP_PKEY_PTR
 	if C.go_openssl_EVP_PKEY_fromdata(ctx, &pkey, selection, params) != 1 {
+		if vMinor < 2 {
+			// OpenSSL 3.0.1 and 3.0.2 have a bug where EVP_PKEY_fromdata
+			// does not free the internally allocated EVP_PKEY on error.
+			// See https://github.com/openssl/openssl/issues/17407.
+			C.go_openssl_EVP_PKEY_free(pkey)
+		}
 		return nil, newOpenSSLError("EVP_PKEY_fromdata")
 	}
 	return pkey, nil
+}
+
+func checkPkey(pkey C.GO_EVP_PKEY_PTR, isPrivate bool) error {
+	ctx := C.go_openssl_EVP_PKEY_CTX_new(pkey, nil)
+	if ctx == nil {
+		return newOpenSSLError("EVP_PKEY_CTX_new")
+	}
+	defer C.go_openssl_EVP_PKEY_CTX_free(ctx)
+	if isPrivate {
+		if C.go_openssl_EVP_PKEY_private_check(ctx) != 1 {
+			// Match upstream error message.
+			return errors.New("invalid private key")
+		}
+	} else {
+		// Upstream Go does a partial check here, so do we.
+		if C.go_openssl_EVP_PKEY_public_check_quick(ctx) != 1 {
+			// Match upstream error message.
+			return errors.New("invalid public key")
+		}
+	}
+	return nil
 }

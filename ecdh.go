@@ -7,6 +7,7 @@ import "C"
 import (
 	"errors"
 	"runtime"
+	"slices"
 	"unsafe"
 )
 
@@ -36,7 +37,7 @@ func NewPublicKeyECDH(curve string, bytes []byte) (*PublicKeyECDH, error) {
 	if err != nil {
 		return nil, err
 	}
-	k := &PublicKeyECDH{pkey, append([]byte(nil), bytes...)}
+	k := &PublicKeyECDH{pkey, slices.Clone(bytes)}
 	runtime.SetFinalizer(k, (*PublicKeyECDH).finalize)
 	return k, nil
 }
