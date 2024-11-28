@@ -510,7 +510,7 @@ func newEvpFromParams(id C.int, selection C.int, params C.GO_OSSL_PARAM_PTR) (C.
 	}
 	var pkey C.GO_EVP_PKEY_PTR
 	if C.go_openssl_EVP_PKEY_fromdata(ctx, &pkey, selection, params) != 1 {
-		if vMinor < 2 {
+		if vMajor == 3 && vMinor <= 2 {
 			// OpenSSL 3.0.1 and 3.0.2 have a bug where EVP_PKEY_fromdata
 			// does not free the internally allocated EVP_PKEY on error.
 			// See https://github.com/openssl/openssl/issues/17407.
