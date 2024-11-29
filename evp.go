@@ -13,6 +13,12 @@ import (
 	"unsafe"
 )
 
+var (
+	keyTypeRSA     = C.CString("RSA")
+	keyTypeEC      = C.CString("EC")
+	keyTypeED25519 = C.CString("ED25519")
+)
+
 // cacheMD is a cache of crypto.Hash to GO_EVP_MD_PTR.
 var cacheMD sync.Map
 
@@ -157,36 +163,61 @@ func cryptoHashToMD(ch crypto.Hash) (md C.GO_EVP_MD_PTR) {
 	return nil
 }
 
+// generateEVPPKey generates a new EVP_PKEY with the given id and properties.
 func generateEVPPKey(id C.int, bits int, curve string) (C.GO_EVP_PKEY_PTR, error) {
 	if bits != 0 && curve != "" {
 		return nil, fail("incorrect generateEVPPKey parameters")
 	}
-	ctx := C.go_openssl_EVP_PKEY_CTX_new_id(id, nil)
-	if ctx == nil {
-		return nil, newOpenSSLError("EVP_PKEY_CTX_new_id failed")
-	}
-	defer C.go_openssl_EVP_PKEY_CTX_free(ctx)
-	if C.go_openssl_EVP_PKEY_keygen_init(ctx) != 1 {
-		return nil, newOpenSSLError("EVP_PKEY_keygen_init failed")
-	}
-	if bits != 0 {
-		if C.go_openssl_EVP_PKEY_CTX_ctrl(ctx, id, -1, C.GO_EVP_PKEY_CTRL_RSA_KEYGEN_BITS, C.int(bits), nil) != 1 {
-			return nil, newOpenSSLError("EVP_PKEY_CTX_ctrl failed")
-		}
-	}
+	var curveID C.int
 	if curve != "" {
-		nid, err := curveNID(curve)
+		var err error
+		curveID, err = curveNID(curve)
 		if err != nil {
 			return nil, err
 		}
-		if C.go_openssl_EVP_PKEY_CTX_ctrl(ctx, id, -1, C.GO_EVP_PKEY_CTRL_EC_PARAMGEN_CURVE_NID, nid, nil) != 1 {
-			return nil, newOpenSSLError("EVP_PKEY_CTX_ctrl failed")
-		}
 	}
 	var pkey C.GO_EVP_PKEY_PTR
-	if C.go_openssl_EVP_PKEY_keygen(ctx, &pkey) != 1 {
-		return nil, newOpenSSLError("EVP_PKEY_keygen failed")
+	switch vMajor {
+	case 1:
+		ctx := C.go_openssl_EVP_PKEY_CTX_new_id(id, nil)
+		if ctx == nil {
+			return nil, newOpenSSLError("EVP_PKEY_CTX_new_id")
+		}
+		defer C.go_openssl_EVP_PKEY_CTX_free(ctx)
+		if C.go_openssl_EVP_PKEY_keygen_init(ctx) != 1 {
+			return nil, newOpenSSLError("EVP_PKEY_keygen_init")
+		}
+		if bits != 0 {
+			if C.go_openssl_EVP_PKEY_CTX_ctrl(ctx, id, -1, C.GO_EVP_PKEY_CTRL_RSA_KEYGEN_BITS, C.int(bits), nil) != 1 {
+				return nil, newOpenSSLError("EVP_PKEY_CTX_ctrl")
+			}
+		}
+		if curve != "" {
+			if C.go_openssl_EVP_PKEY_CTX_ctrl(ctx, id, -1, C.GO_EVP_PKEY_CTRL_EC_PARAMGEN_CURVE_NID, curveID, nil) != 1 {
+				return nil, newOpenSSLError("EVP_PKEY_CTX_ctrl")
+			}
+		}
+		if C.go_openssl_EVP_PKEY_keygen(ctx, &pkey) != 1 {
+			return nil, newOpenSSLError("EVP_PKEY_keygen")
+		}
+	case 3:
+		switch id {
+		case C.GO_EVP_PKEY_RSA:
+			pkey = C.go_openssl_EVP_PKEY_Q_keygen_RSA(nil, nil, keyTypeRSA, C.size_t(bits))
+		case C.GO_EVP_PKEY_EC:
+			pkey = C.go_openssl_EVP_PKEY_Q_keygen_EC(nil, nil, keyTypeEC, C.go_openssl_OBJ_nid2sn(curveID))
+		case C.GO_EVP_PKEY_ED25519:
+			pkey = C.go_openssl_EVP_PKEY_Q_keygen(nil, nil, keyTypeED25519)
+		default:
+			panic("unsupported key type '" + strconv.Itoa(int(id)) + "'")
+		}
+		if pkey == nil {
+			return nil, newOpenSSLError("EVP_PKEY_Q_keygen")
+		}
+	default:
+		panic(errUnsupportedVersion())
 	}
+
 	return pkey, nil
 }
 

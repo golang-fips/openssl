@@ -22,6 +22,7 @@
 #define DEFINEFUNC_3_0(ret, func, args, argscall)              DEFINEFUNC(ret, func, args, argscall)
 #define DEFINEFUNC_RENAMED_1_1(ret, func, oldfunc, args, argscall) DEFINEFUNC(ret, func, args, argscall)
 #define DEFINEFUNC_RENAMED_3_0(ret, func, oldfunc, args, argscall) DEFINEFUNC(ret, func, args, argscall)
+#define DEFINEFUNC_VARIADIC_3_0(ret, func, newname, args, argscall)  DEFINEFUNC(ret, newname, args, argscall)
 
 FOR_ALL_OPENSSL_FUNCTIONS
 
@@ -34,6 +35,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #undef DEFINEFUNC_3_0
 #undef DEFINEFUNC_RENAMED_1_1
 #undef DEFINEFUNC_RENAMED_3_0
+#undef DEFINEFUNC_VARIADIC_3_0
 
 // go_openssl_fips_enabled returns 1 if FIPS mode is enabled, 0 otherwise.
 // As a special case, it returns -1 if it cannot determine if FIPS mode is enabled.
@@ -140,6 +142,11 @@ go_openssl_load_functions(void* handle, unsigned int major, unsigned int minor, 
     {                                                               \
         DEFINEFUNC_INTERNAL(func, #func)                            \
     }
+#define DEFINEFUNC_VARIADIC_3_0(ret, func, newname, args, argscall)   \
+    if (major == 3)                                                 \
+    {                                                               \
+        DEFINEFUNC_INTERNAL(newname, #func)                         \
+    }
 
 FOR_ALL_OPENSSL_FUNCTIONS
 
@@ -152,6 +159,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #undef DEFINEFUNC_3_0
 #undef DEFINEFUNC_RENAMED_1_1
 #undef DEFINEFUNC_RENAMED_3_0
+#undef DEFINEFUNC_VARIADIC_3_0
 }
 
 static unsigned long

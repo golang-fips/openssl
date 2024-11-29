@@ -9,7 +9,6 @@ import (
 	"runtime"
 	"strconv"
 	"sync"
-	"unsafe"
 )
 
 const (
@@ -37,9 +36,7 @@ var supportsEd25519 = sync.OnceValue(func() bool {
 			}
 		}
 	case 3:
-		name := C.CString("ED25519")
-		defer C.free(unsafe.Pointer(name))
-		sig := C.go_openssl_EVP_SIGNATURE_fetch(nil, name, nil)
+		sig := C.go_openssl_EVP_SIGNATURE_fetch(nil, keyTypeED25519, nil)
 		if sig != nil {
 			C.go_openssl_EVP_SIGNATURE_free(sig)
 			return true

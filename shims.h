@@ -157,6 +157,12 @@ typedef void* GO_SHA_CTX_PTR;
 // DEFINEFUNC_RENAMED_3_0 acts like DEFINEFUNC but tries to load the function using the new name when using >= 3.x
 // and the old name when using 1.x. In both cases the function will have the new name.
 //
+// DEFINEFUNC_VARIADIC_3_0 defines a function that wraps an OpenSSL function with a different name and signature.
+// It should only be used for functions that can't be directly called from Go because their signature is not
+// compatible with cgo. The only known case are functions that take a variable number of arguments. See
+// https://github.com/golang/go/issues/975.
+// The process is aborted if the function can't be loaded when using 3.0.0 or higher.
+//
 // #include <openssl/crypto.h>
 // #include <openssl/err.h>
 // #include <openssl/rsa.h>
@@ -298,6 +304,9 @@ DEFINEFUNC(int, EVP_PKEY_paramgen_init, (GO_EVP_PKEY_CTX_PTR ctx), (ctx)) \
 DEFINEFUNC(int, EVP_PKEY_paramgen, (GO_EVP_PKEY_CTX_PTR ctx, GO_EVP_PKEY_PTR *ppkey), (ctx, ppkey)) \
 DEFINEFUNC(int, EVP_PKEY_keygen_init, (GO_EVP_PKEY_CTX_PTR ctx), (ctx)) \
 DEFINEFUNC(int, EVP_PKEY_keygen, (GO_EVP_PKEY_CTX_PTR ctx, GO_EVP_PKEY_PTR *ppkey), (ctx, ppkey)) \
+DEFINEFUNC_VARIADIC_3_0(GO_EVP_PKEY_PTR, EVP_PKEY_Q_keygen, EVP_PKEY_Q_keygen, (GO_OSSL_LIB_CTX_PTR ctx, const char *propq, const char *type), (ctx, propq, type)) \
+DEFINEFUNC_VARIADIC_3_0(GO_EVP_PKEY_PTR, EVP_PKEY_Q_keygen, EVP_PKEY_Q_keygen_RSA, (GO_OSSL_LIB_CTX_PTR ctx, const char *propq, const char *type, size_t arg1), (ctx, propq, type, arg1)) \
+DEFINEFUNC_VARIADIC_3_0(GO_EVP_PKEY_PTR, EVP_PKEY_Q_keygen, EVP_PKEY_Q_keygen_EC, (GO_OSSL_LIB_CTX_PTR ctx, const char *propq, const char *type, const char *arg1), (ctx, propq, type, arg1)) \
 DEFINEFUNC(void, EVP_PKEY_CTX_free, (GO_EVP_PKEY_CTX_PTR arg0), (arg0)) \
 DEFINEFUNC(int, EVP_PKEY_CTX_ctrl, (GO_EVP_PKEY_CTX_PTR ctx, int keytype, int optype, int cmd, int p1, void *p2), (ctx, keytype, optype, cmd, p1, p2)) \
 DEFINEFUNC(int, EVP_PKEY_decrypt, (GO_EVP_PKEY_CTX_PTR arg0, unsigned char *arg1, size_t *arg2, const unsigned char *arg3, size_t arg4), (arg0, arg1, arg2, arg3, arg4)) \
