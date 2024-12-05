@@ -3,6 +3,7 @@
 #include "api.h"
 #include "thread_setup.h"
 #include <pthread.h>
+#include <stdlib.h>
 
 /* This array will store all of the mutexes available to OpenSSL. */ 
 static pthread_mutex_t *mutex_buf = NULL;
