@@ -460,7 +460,7 @@ func newEVPPKEY(key ossl.EC_KEY_PTR) (ossl.EVP_PKEY_PTR, error) {
 // The returned key should not be freed.
 func getECKey(pkey ossl.EVP_PKEY_PTR) (key ossl.EC_KEY_PTR) {
 	if vMajor == 1 && vMinor == 0 {
-		if key0, err := ossl.EVP_PKEY_get0(pkey); err != nil {
+		if key0, err := ossl.EVP_PKEY_get0(pkey); err == nil {
 			key = ossl.EC_KEY_PTR(key0)
 		}
 	} else {
