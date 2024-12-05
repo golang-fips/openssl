@@ -5,6 +5,7 @@ package ossl
 /*
 #include "ossl_extra.h"
 #include <stdint.h>
+#cgo linux LDFLAGS: -ldl -pthread
 */
 import "C"
 import "unsafe"
