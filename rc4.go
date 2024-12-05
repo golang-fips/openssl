@@ -1,10 +1,13 @@
-//go:build !cmd_go_bootstrap
+//go:build !cmd_go_bootstrap && cgo
 
 package openssl
 
-// #include "goopenssl.h"
-import "C"
-import "runtime"
+import (
+	"runtime"
+	"unsafe"
+
+	"github.com/golang-fips/openssl/v2/internal/ossl"
+)
 
 // SupportsRC4 returns true if NewRC4Cipher is supported.
 func SupportsRC4() bool {
@@ -15,7 +18,7 @@ func SupportsRC4() bool {
 
 // A RC4Cipher is an instance of RC4 using a particular key.
 type RC4Cipher struct {
-	ctx C.GO_EVP_CIPHER_CTX_PTR
+	ctx ossl.EVP_CIPHER_CTX_PTR
 }
 
 // NewRC4Cipher creates and returns a new Cipher.
@@ -31,14 +34,14 @@ func NewRC4Cipher(key []byte) (*RC4Cipher, error) {
 
 func (c *RC4Cipher) finalize() {
 	if c.ctx != nil {
-		C.go_openssl_EVP_CIPHER_CTX_free(c.ctx)
+		ossl.EVP_CIPHER_CTX_free(c.ctx)
 	}
 }
 
 // Reset zeros the key data and makes the Cipher unusable.
 func (c *RC4Cipher) Reset() {
 	if c.ctx != nil {
-		C.go_openssl_EVP_CIPHER_CTX_free(c.ctx)
+		ossl.EVP_CIPHER_CTX_free(c.ctx)
 		c.ctx = nil
 	}
 }
@@ -55,9 +58,9 @@ func (c *RC4Cipher) XORKeyStream(dst, src []byte) {
 	// panic if len(dst) < len(src) with a runtime out of bound error,
 	// which is what crypto/rc4 does.
 	_ = dst[len(src)-1]
-	var outLen C.int
-	if C.go_openssl_EVP_EncryptUpdate(c.ctx, base(dst), &outLen, base(src), C.int(len(src))) != 1 {
-		panic("crypto/cipher: EncryptUpdate failed")
+	var outLen int32
+	if err := ossl.EVP_EncryptUpdate(c.ctx, unsafe.SliceData(dst), &outLen, unsafe.SliceData(src), int32(len(src))); err != nil {
+		panic(err)
 	}
 	if int(outLen) != len(src) {
 		panic("crypto/rc4: src not fully XORed")

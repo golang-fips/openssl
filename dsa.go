@@ -1,21 +1,21 @@
-//go:build !cmd_go_bootstrap
+//go:build !cmd_go_bootstrap && cgo
 
 package openssl
 
-// #include "goopenssl.h"
-import "C"
 import (
 	"runtime"
 	"unsafe"
+
+	"github.com/golang-fips/openssl/v2/internal/ossl"
 )
 
 // SupportsDSA returns true if the OpenSSL library supports DSA.
 func SupportsDSA() bool {
-	ctx := C.go_openssl_EVP_PKEY_CTX_new_id(C.GO_EVP_PKEY_DSA, nil)
-	if ctx == nil {
+	ctx, err := ossl.EVP_PKEY_CTX_new_id(ossl.EVP_PKEY_DSA, nil)
+	if err != nil {
 		return false
 	}
-	C.go_openssl_EVP_PKEY_CTX_free(ctx)
+	ossl.EVP_PKEY_CTX_free(ctx)
 	return true
 }
 
@@ -30,14 +30,14 @@ type PrivateKeyDSA struct {
 	X, Y BigInt
 
 	// _pkey MUST NOT be accessed directly. Instead, use the withKey method.
-	_pkey C.GO_EVP_PKEY_PTR
+	_pkey ossl.EVP_PKEY_PTR
 }
 
 func (k *PrivateKeyDSA) finalize() {
-	C.go_openssl_EVP_PKEY_free(k._pkey)
+	ossl.EVP_PKEY_free(k._pkey)
 }
 
-func (k *PrivateKeyDSA) withKey(f func(C.GO_EVP_PKEY_PTR) C.int) C.int {
+func (k *PrivateKeyDSA) withKey(f func(ossl.EVP_PKEY_PTR) error) error {
 	defer runtime.KeepAlive(k)
 	return f(k._pkey)
 }
@@ -48,14 +48,14 @@ type PublicKeyDSA struct {
 	Y BigInt
 
 	// _pkey MUST NOT be accessed directly. Instead, use the withKey method.
-	_pkey C.GO_EVP_PKEY_PTR
+	_pkey ossl.EVP_PKEY_PTR
 }
 
 func (k *PublicKeyDSA) finalize() {
-	C.go_openssl_EVP_PKEY_free(k._pkey)
+	ossl.EVP_PKEY_free(k._pkey)
 }
 
-func (k *PublicKeyDSA) withKey(f func(C.GO_EVP_PKEY_PTR) C.int) C.int {
+func (k *PublicKeyDSA) withKey(f func(ossl.EVP_PKEY_PTR) error) error {
 	defer runtime.KeepAlive(k)
 	return f(k._pkey)
 }
@@ -66,46 +66,50 @@ func GenerateDSAParameters(l, n int) (DSAParameters, error) {
 	// extracting the domain parameters from it.
 
 	// Generate a new DSA key context and set the known parameters.
-	ctx := C.go_openssl_EVP_PKEY_CTX_new_id(C.GO_EVP_PKEY_DSA, nil)
-	if ctx == nil {
-		return DSAParameters{}, newOpenSSLError("EVP_PKEY_CTX_new_id failed")
+	ctx, err := ossl.EVP_PKEY_CTX_new_id(ossl.EVP_PKEY_DSA, nil)
+	if err != nil {
+		return DSAParameters{}, err
 	}
-	defer C.go_openssl_EVP_PKEY_CTX_free(ctx)
-	if C.go_openssl_EVP_PKEY_paramgen_init(ctx) != 1 {
-		return DSAParameters{}, newOpenSSLError("EVP_PKEY_paramgen_init failed")
+	defer ossl.EVP_PKEY_CTX_free(ctx)
+	if err := ossl.EVP_PKEY_paramgen_init(ctx); err != nil {
+		return DSAParameters{}, err
 	}
-	if C.go_openssl_EVP_PKEY_CTX_ctrl(ctx, C.GO_EVP_PKEY_DSA, -1, C.GO_EVP_PKEY_CTRL_DSA_PARAMGEN_BITS, C.int(l), nil) != 1 {
-		return DSAParameters{}, newOpenSSLError("EVP_PKEY_CTX_ctrl failed")
+	if err := ossl.EVP_PKEY_CTX_ctrl(ctx, ossl.EVP_PKEY_DSA, -1, ossl.EVP_PKEY_CTRL_DSA_PARAMGEN_BITS, int32(l), nil); err != nil {
+		return DSAParameters{}, err
 	}
-	if C.go_openssl_EVP_PKEY_CTX_ctrl(ctx, C.GO_EVP_PKEY_DSA, -1, C.GO_EVP_PKEY_CTRL_DSA_PARAMGEN_Q_BITS, C.int(n), nil) != 1 {
-		return DSAParameters{}, newOpenSSLError("EVP_PKEY_CTX_ctrl failed")
+	if err := ossl.EVP_PKEY_CTX_ctrl(ctx, ossl.EVP_PKEY_DSA, -1, ossl.EVP_PKEY_CTRL_DSA_PARAMGEN_Q_BITS, int32(n), nil); err != nil {
+		return DSAParameters{}, err
 	}
-	var pkey C.GO_EVP_PKEY_PTR
-	if C.go_openssl_EVP_PKEY_paramgen(ctx, &pkey) != 1 {
-		return DSAParameters{}, newOpenSSLError("EVP_PKEY_paramgen failed")
+	var pkey ossl.EVP_PKEY_PTR
+	if err := ossl.EVP_PKEY_paramgen(ctx, &pkey); err != nil {
+		return DSAParameters{}, err
 	}
-	defer C.go_openssl_EVP_PKEY_free(pkey)
+	defer ossl.EVP_PKEY_free(pkey)
 
 	// Extract the domain parameters from the generated key.
-	var p, q, g C.GO_BIGNUM_PTR
+	var p, q, g ossl.BIGNUM_PTR
 	switch vMajor {
 	case 1:
 		dsa := getDSA(pkey)
 		if vMinor == 0 {
-			C.go_openssl_DSA_get0_pqg_backport(dsa, &p, &q, &g)
+			ossl.DSA_get0_pqg_backport(dsa, &p, &q, &g)
 		} else {
-			C.go_openssl_DSA_get0_pqg(dsa, &p, &q, &g)
+			ossl.DSA_get0_pqg(dsa, &p, &q, &g)
 		}
 	case 3:
 		defer func() {
-			C.go_openssl_BN_free(p)
-			C.go_openssl_BN_free(q)
-			C.go_openssl_BN_free(g)
+			ossl.BN_free(p)
+			ossl.BN_free(q)
+			ossl.BN_free(g)
 		}()
-		if C.go_openssl_EVP_PKEY_get_bn_param(pkey, _OSSL_PKEY_PARAM_FFC_P, &p) != 1 ||
-			C.go_openssl_EVP_PKEY_get_bn_param(pkey, _OSSL_PKEY_PARAM_FFC_Q, &q) != 1 ||
-			C.go_openssl_EVP_PKEY_get_bn_param(pkey, _OSSL_PKEY_PARAM_FFC_G, &g) != 1 {
-			return DSAParameters{}, newOpenSSLError("EVP_PKEY_get_bn_param")
+		if err := getBnParam(pkey, ossl.OSSL_PKEY_PARAM_FFC_P, &p); err != err {
+			return DSAParameters{}, err
+		}
+		if err := getBnParam(pkey, ossl.OSSL_PKEY_PARAM_FFC_Q, &q); err != err {
+			return DSAParameters{}, err
+		}
+		if err := getBnParam(pkey, ossl.OSSL_PKEY_PARAM_FFC_G, &g); err != err {
+			return DSAParameters{}, err
 		}
 	default:
 		panic(errUnsupportedVersion())
@@ -152,23 +156,25 @@ func GenerateKeyDSA(params DSAParameters) (*PrivateKeyDSA, error) {
 	if err != nil {
 		return nil, err
 	}
-	var x, y C.GO_BIGNUM_PTR
+	var x, y ossl.BIGNUM_PTR
 	switch vMajor {
 	case 1:
 		dsa := getDSA(pkey)
 		if vMinor == 0 {
-			C.go_openssl_DSA_get0_key_backport(dsa, &y, &x)
+			ossl.DSA_get0_key_backport(dsa, &y, &x)
 		} else {
-			C.go_openssl_DSA_get0_key(dsa, &y, &x)
+			ossl.DSA_get0_key(dsa, &y, &x)
 		}
 	case 3:
 		defer func() {
-			C.go_openssl_BN_clear_free(x)
-			C.go_openssl_BN_free(y)
+			ossl.BN_clear_free(x)
+			ossl.BN_free(y)
 		}()
-		if C.go_openssl_EVP_PKEY_get_bn_param(pkey, _OSSL_PKEY_PARAM_PUB_KEY, &y) != 1 ||
-			C.go_openssl_EVP_PKEY_get_bn_param(pkey, _OSSL_PKEY_PARAM_PRIV_KEY, &x) != 1 {
-			return nil, newOpenSSLError("EVP_PKEY_get_bn_param")
+		if err := getBnParam(pkey, ossl.OSSL_PKEY_PARAM_PUB_KEY, &y); err != nil {
+			return nil, err
+		}
+		if err := getBnParam(pkey, ossl.OSSL_PKEY_PARAM_PRIV_KEY, &x); err != nil {
+			return nil, err
 		}
 	default:
 		panic(errUnsupportedVersion())
@@ -188,7 +194,7 @@ func VerifyDSA(pub *PublicKeyDSA, hash []byte, sig []byte) bool {
 	return evpVerify(pub.withKey, 0, 0, 0, sig, hash) == nil
 }
 
-func newDSA(params DSAParameters, x, y BigInt) (C.GO_EVP_PKEY_PTR, error) {
+func newDSA(params DSAParameters, x, y BigInt) (ossl.EVP_PKEY_PTR, error) {
 	switch vMajor {
 	case 1:
 		return newDSA1(params, x, y)
@@ -199,61 +205,60 @@ func newDSA(params DSAParameters, x, y BigInt) (C.GO_EVP_PKEY_PTR, error) {
 	}
 }
 
-func newDSA1(params DSAParameters, x, y BigInt) (pkey C.GO_EVP_PKEY_PTR, err error) {
+func newDSA1(params DSAParameters, x, y BigInt) (pkey ossl.EVP_PKEY_PTR, _ error) {
 	checkMajorVersion(1)
 
-	dsa := C.go_openssl_DSA_new()
-	if dsa == nil {
-		return nil, newOpenSSLError("DSA_new failed")
+	dsa, err := ossl.DSA_new()
+	if err != nil {
+		return nil, err
 	}
 	defer func() {
 		if pkey == nil {
-			C.go_openssl_DSA_free(dsa)
+			ossl.DSA_free(dsa)
 		}
 	}()
 
 	p, q, g := bigToBN(params.P), bigToBN(params.Q), bigToBN(params.G)
-	var ret C.int
 	if vMinor == 0 {
-		ret = C.go_openssl_DSA_set0_pqg_backport(dsa, p, q, g)
+		err = ossl.DSA_set0_pqg_backport(dsa, p, q, g)
 	} else {
-		ret = C.go_openssl_DSA_set0_pqg(dsa, p, q, g)
+		err = ossl.DSA_set0_pqg(dsa, p, q, g)
 	}
-	if ret != 1 {
-		C.go_openssl_BN_free(p)
-		C.go_openssl_BN_free(q)
-		C.go_openssl_BN_free(g)
-		return nil, newOpenSSLError("DSA_set0_pqg failed")
+	if err != nil {
+		ossl.BN_free(p)
+		ossl.BN_free(q)
+		ossl.BN_free(g)
+		return nil, err
 	}
 	if y != nil {
 		pub, priv := bigToBN(y), bigToBN(x)
 		if vMinor == 0 {
-			ret = C.go_openssl_DSA_set0_key_backport(dsa, pub, priv)
+			err = ossl.DSA_set0_key_backport(dsa, pub, priv)
 		} else {
-			ret = C.go_openssl_DSA_set0_key(dsa, pub, priv)
+			err = ossl.DSA_set0_key(dsa, pub, priv)
 		}
-		if ret != 1 {
-			C.go_openssl_BN_free(pub)
-			C.go_openssl_BN_clear_free(priv)
-			return nil, newOpenSSLError("DSA_set0_key failed")
+		if err != nil {
+			ossl.BN_free(pub)
+			ossl.BN_clear_free(priv)
+			return nil, err
 		}
 	} else {
-		if C.go_openssl_DSA_generate_key(dsa) != 1 {
-			return nil, newOpenSSLError("DSA_generate_key failed")
+		if err := ossl.DSA_generate_key(dsa); err != nil {
+			return nil, err
 		}
 	}
-	pkey = C.go_openssl_EVP_PKEY_new()
-	if pkey == nil {
-		return nil, newOpenSSLError("EVP_PKEY_new failed")
+	pkey, err = ossl.EVP_PKEY_new()
+	if err != nil {
+		return nil, err
 	}
-	if C.go_openssl_EVP_PKEY_assign(pkey, C.GO_EVP_PKEY_DSA, unsafe.Pointer(dsa)) != 1 {
-		C.go_openssl_EVP_PKEY_free(pkey)
-		return nil, newOpenSSLError("EVP_PKEY_assign failed")
+	if err := ossl.EVP_PKEY_assign(pkey, ossl.EVP_PKEY_DSA, unsafe.Pointer(dsa)); err != nil {
+		ossl.EVP_PKEY_free(pkey)
+		return nil, err
 	}
 	return pkey, nil
 }
 
-func newDSA3(params DSAParameters, x, y BigInt) (C.GO_EVP_PKEY_PTR, error) {
+func newDSA3(params DSAParameters, x, y BigInt) (ossl.EVP_PKEY_PTR, error) {
 	checkMajorVersion(3)
 
 	bld, err := newParamBuilder()
@@ -262,25 +267,25 @@ func newDSA3(params DSAParameters, x, y BigInt) (C.GO_EVP_PKEY_PTR, error) {
 	}
 	defer bld.finalize()
 
-	bld.addBigInt(_OSSL_PKEY_PARAM_FFC_P, params.P, false)
-	bld.addBigInt(_OSSL_PKEY_PARAM_FFC_Q, params.Q, false)
-	bld.addBigInt(_OSSL_PKEY_PARAM_FFC_G, params.G, false)
-	selection := C.int(C.GO_EVP_PKEY_KEYPAIR)
+	bld.addBigInt(ossl.OSSL_PKEY_PARAM_FFC_P, params.P, false)
+	bld.addBigInt(ossl.OSSL_PKEY_PARAM_FFC_Q, params.Q, false)
+	bld.addBigInt(ossl.OSSL_PKEY_PARAM_FFC_G, params.G, false)
+	selection := ossl.EVP_PKEY_KEYPAIR
 	if y != nil {
-		bld.addBigInt(_OSSL_PKEY_PARAM_PUB_KEY, y, false)
+		bld.addBigInt(ossl.OSSL_PKEY_PARAM_PUB_KEY, y, false)
 		if x == nil {
-			selection = C.int(C.GO_EVP_PKEY_PUBLIC_KEY)
+			selection = ossl.EVP_PKEY_PUBLIC_KEY
 		}
 	}
 	if x != nil {
-		bld.addBigInt(_OSSL_PKEY_PARAM_PRIV_KEY, x, true)
+		bld.addBigInt(ossl.OSSL_PKEY_PARAM_PRIV_KEY, x, true)
 	}
 	bldparams, err := bld.build()
 	if err != nil {
 		return nil, err
 	}
-	defer C.go_openssl_OSSL_PARAM_free(bldparams)
-	pkey, err := newEvpFromParams(C.GO_EVP_PKEY_DSA, selection, bldparams)
+	defer ossl.OSSL_PARAM_free(bldparams)
+	pkey, err := newEvpFromParams(ossl.EVP_PKEY_DSA, selection, bldparams)
 	if err != nil {
 		return nil, err
 	}
@@ -290,18 +295,18 @@ func newDSA3(params DSAParameters, x, y BigInt) (C.GO_EVP_PKEY_PTR, error) {
 	// pkey doesn't contain the public component, but the crypto/dsa package
 	// expects it to be always there. Generate a new key using pkey as domain
 	// parameters placeholder.
-	defer C.go_openssl_EVP_PKEY_free(pkey)
-	ctx := C.go_openssl_EVP_PKEY_CTX_new_from_pkey(nil, pkey, nil)
-	if ctx == nil {
-		return nil, newOpenSSLError("EVP_PKEY_CTX_new_from_pkey")
+	defer ossl.EVP_PKEY_free(pkey)
+	ctx, err := ossl.EVP_PKEY_CTX_new_from_pkey(nil, pkey, nil)
+	if err != nil {
+		return nil, err
 	}
-	defer C.go_openssl_EVP_PKEY_CTX_free(ctx)
-	if C.go_openssl_EVP_PKEY_keygen_init(ctx) != 1 {
-		return nil, newOpenSSLError("EVP_PKEY_keygen_init")
+	defer ossl.EVP_PKEY_CTX_free(ctx)
+	if err := ossl.EVP_PKEY_keygen_init(ctx); err != nil {
+		return nil, err
 	}
-	var gkey C.GO_EVP_PKEY_PTR
-	if C.go_openssl_EVP_PKEY_keygen(ctx, &gkey) != 1 {
-		return nil, newOpenSSLError("EVP_PKEY_keygen")
+	var gkey ossl.EVP_PKEY_PTR
+	if err := ossl.EVP_PKEY_keygen(ctx, &gkey); err != nil {
+		return nil, err
 	}
 	return gkey, nil
 }
@@ -309,13 +314,13 @@ func newDSA3(params DSAParameters, x, y BigInt) (C.GO_EVP_PKEY_PTR, error) {
 // getDSA returns the DSA from pkey.
 // If pkey does not contain an DSA it panics.
 // The returned key should not be freed.
-func getDSA(pkey C.GO_EVP_PKEY_PTR) (key C.GO_DSA_PTR) {
+func getDSA(pkey ossl.EVP_PKEY_PTR) (key ossl.DSA_PTR) {
 	if vMajor == 1 && vMinor == 0 {
-		if key0 := C.go_openssl_EVP_PKEY_get0(pkey); key0 != nil {
-			key = C.GO_DSA_PTR(key0)
+		if key0, err := ossl.EVP_PKEY_get0(pkey); err == nil {
+			key = ossl.DSA_PTR(key0)
 		}
 	} else {
-		key = C.go_openssl_EVP_PKEY_get0_DSA(pkey)
+		key, _ = ossl.EVP_PKEY_get0_DSA(pkey)
 	}
 	if key == nil {
 		panic("pkey does not contain an DSA")

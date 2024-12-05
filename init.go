@@ -1,11 +1,11 @@
-//go:build !cmd_go_bootstrap
+//go:build !cmd_go_bootstrap && cgo
 
 package openssl
 
-// #include "goopenssl.h"
-import "C"
 import (
 	"errors"
+
+	"github.com/golang-fips/openssl/v2/internal/ossl"
 )
 
 // opensslInit loads and initialize OpenSSL.
@@ -24,9 +24,9 @@ func opensslInit(file string) (major, minor, patch uint, err error) {
 	// Notice that major and minor could not match with the version parameter
 	// in case the name of the shared library file differs from the OpenSSL
 	// version it contains.
-	imajor := int(C.go_openssl_version_major(handle))
-	iminor := int(C.go_openssl_version_minor(handle))
-	ipatch := int(C.go_openssl_version_patch(handle))
+	imajor := ossl.Go_openssl_version_major(handle)
+	iminor := ossl.Go_openssl_version_minor(handle)
+	ipatch := ossl.Go_openssl_version_minor(handle)
 	if imajor < 0 || iminor < 0 || ipatch < 0 {
 		return 0, 0, 0, errors.New("openssl: can't retrieve OpenSSL version")
 	}
@@ -42,22 +42,18 @@ func opensslInit(file string) (major, minor, patch uint, err error) {
 		return 0, 0, 0, errUnsupportedVersion()
 	}
 
-	// Load the OpenSSL functions.
-	// See shims.go for the complete list of supported functions.
-	C.go_openssl_load_functions(handle, C.uint(major), C.uint(minor), C.uint(patch))
+	ossl.LoadLcrypto(handle)
 
 	// Initialize OpenSSL.
-	C.go_openssl_OPENSSL_init()
+	ossl.OPENSSL_init()
 	if major == 1 && minor == 0 {
-		if C.go_openssl_thread_setup() != 1 {
-			return 0, 0, 0, fail("openssl: thread setup")
-		}
-		C.go_openssl_OPENSSL_add_all_algorithms_conf()
-		C.go_openssl_ERR_load_crypto_strings()
+		ossl.ThreadSetup()
+		ossl.OPENSSL_add_all_algorithms_conf()
+		ossl.ERR_load_crypto_strings()
 	} else {
-		flags := C.uint64_t(C.GO_OPENSSL_INIT_ADD_ALL_CIPHERS | C.GO_OPENSSL_INIT_ADD_ALL_DIGESTS | C.GO_OPENSSL_INIT_LOAD_CONFIG | C.GO_OPENSSL_INIT_LOAD_CRYPTO_STRINGS)
-		if C.go_openssl_OPENSSL_init_crypto(flags, nil) != 1 {
-			return 0, 0, 0, fail("openssl: init crypto")
+		flags := ossl.OPENSSL_INIT_ADD_ALL_CIPHERS | ossl.OPENSSL_INIT_ADD_ALL_DIGESTS | ossl.OPENSSL_INIT_LOAD_CONFIG | ossl.OPENSSL_INIT_LOAD_CRYPTO_STRINGS
+		if err := ossl.OPENSSL_init_crypto(uint64(flags), nil); err != nil {
+			return 0, 0, 0, err
 		}
 	}
 	return major, minor, patch, nil

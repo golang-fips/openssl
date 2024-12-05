@@ -1,9 +1,9 @@
-//go:build !cmd_go_bootstrap
+//go:build !cmd_go_bootstrap && cgo
 
 // Package openssl provides access to OpenSSL cryptographic functions.
 package openssl
 
-// #include "goopenssl.h"
+// #include "leak_check.h"
 import "C"
 import (
 	"encoding/binary"
@@ -14,6 +14,8 @@ import (
 	"strings"
 	"sync"
 	"unsafe"
+
+	"github.com/golang-fips/openssl/v2/internal/ossl"
 )
 
 var (
@@ -38,7 +40,7 @@ func CheckVersion(version string) (exists, fips bool) {
 		return false, false
 	}
 	defer dlclose(handle)
-	enabled := C.go_openssl_fips_enabled(handle)
+	enabled := ossl.Go_openssl_fips_enabled(handle)
 	fips = enabled == 1
 	// If go_openssl_fips_enabled returns -1, it means that all or some of the necessary
 	// functions are not available. This can be due to the version of OpenSSL being too old,
@@ -96,16 +98,17 @@ func (e fail) Error() string { return "openssl: " + string(e) + " failed" }
 
 // VersionText returns the version text of the OpenSSL currently loaded.
 func VersionText() string {
-	return C.GoString(C.go_openssl_OpenSSL_version(0))
+	v := ossl.OpenSSL_version(0)
+	return goString(v)
 }
 
-var (
-	providerNameFips    = C.CString("fips")
-	providerNameDefault = C.CString("default")
-	propFIPS            = C.CString("fips=yes")
-	propNoFIPS          = C.CString("-fips")
+const (
+	providerNameFips    = "fips\x00"
+	providerNameDefault = "default\x00"
+	propFIPS            = "fips=yes\x00"
+	propNoFIPS          = "-fips\x00"
 
-	algorithmSHA256 = C.CString("SHA2-256")
+	algorithmSHA256 = "SHA2-256\x00"
 )
 
 // FIPS returns true if OpenSSL is running in FIPS mode and there is
@@ -113,10 +116,10 @@ var (
 func FIPS() bool {
 	switch vMajor {
 	case 1:
-		return C.go_openssl_FIPS_mode() == 1
+		return ossl.FIPS_mode() == 1
 	case 3:
 		// Check if the default properties contain `fips=1`.
-		if C.go_openssl_EVP_default_properties_is_fips_enabled(nil) != 1 {
+		if ossl.EVP_default_properties_is_fips_enabled(nil) != 1 {
 			// Note that it is still possible that the provider used by default is FIPS-compliant,
 			// but that wouldn't be a system or user requirement.
 			return false
@@ -140,9 +143,7 @@ func isProviderAvailable(name string) bool {
 	if vMajor == 1 {
 		return false
 	}
-	providerName := C.CString(name)
-	defer C.free(unsafe.Pointer(providerName))
-	return C.go_openssl_OSSL_PROVIDER_available(nil, providerName) == 1
+	return ossl.OSSL_PROVIDER_available(nil, cStringData(name)) == 1
 }
 
 // SetFIPS enables or disables FIPS mode.
@@ -154,20 +155,17 @@ func SetFIPS(enable bool) error {
 		// Already in the desired state.
 		return nil
 	}
-	var mode C.int
+	var mode int32
 	if enable {
-		mode = C.int(1)
+		mode = 1
 	} else {
-		mode = C.int(0)
+		mode = 0
 	}
 	switch vMajor {
 	case 1:
-		if C.go_openssl_FIPS_mode_set(mode) != 1 {
-			return newOpenSSLError("FIPS_mode_set")
-		}
-		return nil
+		return ossl.FIPS_mode_set(mode)
 	case 3:
-		var shaProps, provName *C.char
+		var shaProps, provName string
 		if enable {
 			shaProps = propFIPS
 			provName = providerNameFips
@@ -175,19 +173,16 @@ func SetFIPS(enable bool) error {
 			shaProps = propNoFIPS
 			provName = providerNameDefault
 		}
-		if !proveSHA256(shaProps) {
+		if !proveSHA256(cStringData(shaProps)) {
 			// There is no provider available that supports the desired FIPS mode.
 			// Try to load the built-in provider associated with the given mode.
-			if C.go_openssl_OSSL_PROVIDER_try_load(nil, provName, 1) == nil {
+			if _, err := ossl.OSSL_PROVIDER_try_load(nil, cStringData(provName), 1); err != nil {
 				// The built-in provider was not loaded successfully, we can't enable FIPS mode.
-				C.go_openssl_ERR_clear_error()
+				ossl.ERR_clear_error()
 				return errors.New("openssl: FIPS mode not supported by any provider")
 			}
 		}
-		if C.go_openssl_EVP_default_properties_enable_fips(nil, mode) != 1 {
-			return newOpenSSLError("EVP_default_properties_enable_fips")
-		}
-		return nil
+		return ossl.EVP_default_properties_enable_fips(nil, mode)
 	default:
 		panic(errUnsupportedVersion())
 	}
@@ -195,13 +190,13 @@ func SetFIPS(enable bool) error {
 
 // proveSHA256 checks if the SHA-256 algorithm is available
 // using the given properties.
-func proveSHA256(props *C.char) bool {
-	md := C.go_openssl_EVP_MD_fetch(nil, algorithmSHA256, props)
-	if md == nil {
-		C.go_openssl_ERR_clear_error()
+func proveSHA256(props *byte) bool {
+	md, err := ossl.EVP_MD_fetch(nil, cStringData(algorithmSHA256), props)
+	if err != nil {
+		ossl.ERR_clear_error()
 		return false
 	}
-	C.go_openssl_EVP_MD_free(md)
+	ossl.EVP_MD_free(md)
 	return true
 }
 
@@ -233,18 +228,27 @@ func addr(p []byte) *byte {
 
 // base returns the address of the underlying array in b,
 // being careful not to panic when b has zero length.
-func base(b []byte) *C.uchar {
-	if len(b) == 0 {
-		return nil
-	}
-	return (*C.uchar)(unsafe.Pointer(&b[0]))
+func base(b []byte) *byte {
+	return unsafe.SliceData(b)
 }
 
-func sbase(b []byte) *C.char {
-	if len(b) == 0 {
+// stringData returns a pointer to the underlying bytes of s.
+// If s is not empty it must end in a NUL byte.
+// The returned pointer is valid for the lifetime of s.
+// If s is empty, stringData returns nil.
+func cStringData(s string) *byte {
+	if len(s) == 0 {
 		return nil
 	}
-	return (*C.char)(unsafe.Pointer(&b[0]))
+	if s[len(s)-1] != 0 {
+		panic("openssl: stringData not NUL-terminated")
+	}
+	for i := 0; i < len(s)-1; i++ {
+		if s[i] == 0 {
+			panic("openssl: string contains non-trailing NUL byte")
+		}
+	}
+	return unsafe.StringData(s)
 }
 
 func newOpenSSLError(msg string) error {
@@ -253,15 +257,15 @@ func newOpenSSLError(msg string) error {
 	b.WriteString("\nopenssl error(s):")
 	for {
 		var (
-			e    C.ulong
-			file *C.char
-			line C.int
+			e    uint64
+			file *byte
+			line int32
 		)
 		switch vMajor {
 		case 1:
-			e = C.go_openssl_ERR_get_error_line(&file, &line)
+			e = ossl.ERR_get_error_line(&file, &line)
 		case 3:
-			e = C.go_openssl_ERR_get_error_all(&file, &line, nil, nil, nil)
+			e = ossl.ERR_get_error_all(&file, &line, nil, nil, nil)
 		default:
 			panic(errUnsupportedVersion())
 		}
@@ -270,10 +274,24 @@ func newOpenSSLError(msg string) error {
 		}
 		b.WriteByte('\n')
 		var buf [256]byte
-		C.go_openssl_ERR_error_string_n(e, (*C.char)(unsafe.Pointer(&buf[0])), C.size_t(len(buf)))
-		b.WriteString(string(buf[:]) + "\n\t" + C.GoString(file) + ":" + strconv.Itoa(int(line)))
+		ossl.ERR_error_string_n(e, &buf[0], len(buf))
+		b.WriteString(string(buf[:]) + "\n\t" + goString(file) + ":" + strconv.Itoa(int(line)))
 	}
 	return errors.New(b.String())
+}
+
+// goString converts a C null-terminated string to a Go string.
+func goString(p *byte) string {
+	if p == nil {
+		return ""
+	}
+	end := unsafe.Pointer(p)
+	n := 0
+	for *(*byte)(end) != 0 {
+		end = unsafe.Pointer(uintptr(end) + unsafe.Sizeof(*p))
+		n++
+	}
+	return string(unsafe.Slice(p, n))
 }
 
 var unknownFile = "<go code>\000"
@@ -284,7 +302,7 @@ var unknownFile = "<go code>\000"
 // the caller of caller. The return values report the file name and line number
 // within the file of the corresponding call. The returned file is a C string
 // with static storage duration.
-func caller(skip int) (file *C.char, line C.int) {
+func caller(skip int) (file *byte, line int32) {
 	_, f, l, ok := runtime.Caller(skip + 1)
 	if !ok {
 		f = unknownFile
@@ -292,8 +310,11 @@ func caller(skip int) (file *C.char, line C.int) {
 	// The underlying bytes of the file string are null-terminated rodata with
 	// static lifetimes, so can be safely passed to C without worrying about
 	// leaking memory or use-after-free.
-	return (*C.char)(noescape(unsafe.Pointer(unsafe.StringData(f)))), C.int(l)
+	return (*byte)(noescape(unsafe.Pointer(unsafe.StringData(f)))), int32(l)
 }
+
+//go:linkname runtime_throw runtime.throw
+func runtime_throw(string)
 
 // cryptoMalloc allocates n bytes of memory on the OpenSSL heap, which may be
 // different from the heap which C.malloc allocates on. The allocated object
@@ -310,9 +331,9 @@ func cryptoMalloc(n int) unsafe.Pointer {
 	file, line := caller(1)
 	var p unsafe.Pointer
 	if vMajor == 1 && vMinor == 0 {
-		p = C.go_openssl_CRYPTO_malloc_legacy102(C.int(n), file, line)
+		p = ossl.CRYPTO_malloc_legacy102(int32(n), file, line)
 	} else {
-		p = C.go_openssl_CRYPTO_malloc(C.size_t(n), file, line)
+		p = ossl.CRYPTO_malloc(n, file, line)
 	}
 	if p == nil {
 		// Un-recover()-ably crash the program in the same manner as the
@@ -327,11 +348,11 @@ func cryptoMalloc(n int) unsafe.Pointer {
 // to the OPENSSL_free macro.
 func cryptoFree(p unsafe.Pointer) {
 	if vMajor == 1 && vMinor == 0 {
-		C.go_openssl_CRYPTO_free_legacy102(p)
+		ossl.CRYPTO_free_legacy102(p)
 		return
 	}
 	file, line := caller(1)
-	C.go_openssl_CRYPTO_free(p, file, line)
+	ossl.CRYPTO_free(p, file, line)
 }
 
 const wordBytes = bits.UintSize / 8
@@ -348,23 +369,23 @@ func (z BigInt) byteSwap() {
 	}
 }
 
-func wbase(b BigInt) *C.uchar {
+func wbase(b BigInt) *byte {
 	if len(b) == 0 {
 		return nil
 	}
-	return (*C.uchar)(unsafe.Pointer(&b[0]))
+	return (*byte)(unsafe.Pointer(&b[0]))
 }
 
 // bignum_st_1_0_2 is bignum_st (BIGNUM) memory layout in OpenSSL 1.0.2.
 type bignum_st_1_0_2 struct {
 	d     unsafe.Pointer // Pointer to an array of BN_ULONG bit chunks
-	top   C.int          // Index of last used d +1
-	dmax  C.int
-	neg   C.int
-	flags C.int
+	top   int32          // Index of last used d +1
+	dmax  int32
+	neg   int32
+	flags int32
 }
 
-func bigToBN(x BigInt) C.GO_BIGNUM_PTR {
+func bigToBN(x BigInt) ossl.BIGNUM_PTR {
 	if len(x) == 0 {
 		return nil
 	}
@@ -372,19 +393,19 @@ func bigToBN(x BigInt) C.GO_BIGNUM_PTR {
 	if vMajor == 1 && vMinor == 0 {
 		// OpenSSL 1.0.x does not export bn_lebin2bn on all platforms,
 		// so we have to emulate it.
-		bn := C.go_openssl_BN_new()
-		if bn == nil {
+		bn, err := ossl.BN_new()
+		if err != nil {
 			return nil
 		}
-		if C.go_openssl_bn_expand2(bn, C.int(len(x))) == nil {
-			C.go_openssl_BN_free(bn)
-			panic(newOpenSSLError("BN_expand2"))
+		if _, err := ossl.BN_expand2(bn, int32(len(x))); err != nil {
+			ossl.BN_free(bn)
+			panic(err)
 		}
 		// The bytes of a BigInt are laid out in memory in the same order as a
 		// BIGNUM, regardless of host endianness.
 		bns := (*bignum_st_1_0_2)(unsafe.Pointer(bn))
 		d := unsafe.Slice((*uint)(bns.d), len(x))
-		bns.top = C.int(copy(d, x))
+		bns.top = int32(copy(d, x))
 		return bn
 	}
 
@@ -396,10 +417,11 @@ func bigToBN(x BigInt) C.GO_BIGNUM_PTR {
 	}
 	// Limbs are always ordered in LSB first, so we can safely apply
 	// BN_lebin2bn regardless of host endianness.
-	return C.go_openssl_BN_lebin2bn(wbase(x), C.int(len(x)*wordBytes), nil)
+	bn, _ := ossl.BN_lebin2bn(wbase(x), int32(len(x)*wordBytes), nil)
+	return bn
 }
 
-func bnToBig(bn C.GO_BIGNUM_PTR) BigInt {
+func bnToBig(bn ossl.BIGNUM_PTR) BigInt {
 	if bn == nil {
 		return nil
 	}
@@ -416,8 +438,8 @@ func bnToBig(bn C.GO_BIGNUM_PTR) BigInt {
 
 	// Limbs are always ordered in LSB first, so we can safely apply
 	// BN_bn2lebinpad regardless of host endianness.
-	x := make(BigInt, C.go_openssl_BN_num_bits(bn))
-	if C.go_openssl_BN_bn2lebinpad(bn, wbase(x), C.int(len(x)*wordBytes)) == 0 {
+	x := make(BigInt, ossl.BN_num_bits(bn))
+	if _, err := ossl.BN_bn2lebinpad(bn, wbase(x), int32(len(x)*wordBytes)); err != nil {
 		panic("openssl: bignum conversion failed")
 	}
 	if nativeEndian == binary.BigEndian {
@@ -426,33 +448,33 @@ func bnToBig(bn C.GO_BIGNUM_PTR) BigInt {
 	return x
 }
 
-func bnNumBytes(bn C.GO_BIGNUM_PTR) int {
-	return (int(C.go_openssl_BN_num_bits(bn)) + 7) / 8
+func bnNumBytes(bn ossl.BIGNUM_PTR) int32 {
+	return (ossl.BN_num_bits(bn) + 7) / 8
 }
 
 // bnToBinPad converts the absolute value of bn into big-endian form and stores
 // it at to, padding with zeroes if necessary. If len(to) is not large enough to
 // hold the result, an error is returned.
-func bnToBinPad(bn C.GO_BIGNUM_PTR, to []byte) error {
+func bnToBinPad(bn ossl.BIGNUM_PTR, to []byte) error {
 	if vMajor == 1 && vMinor == 0 {
 		// OpenSSL 1.0.x does not export bn_bn2binpad on all platforms,
 		// so we have to emulate it.
 		n := bnNumBytes(bn)
-		pad := len(to) - n
+		pad := int32(len(to)) - n
 		if pad < 0 {
 			return errors.New("openssl: destination buffer too small")
 		}
 		for i := range pad {
 			to[i] = 0
 		}
-		if int(C.go_openssl_BN_bn2bin(bn, base(to[pad:]))) != n {
+		if ossl.BN_bn2bin(bn, base(to[pad:])) != n {
 			return errors.New("openssl: BN_bn2bin short write")
 		}
 		return nil
 	}
 
-	if C.go_openssl_BN_bn2binpad(bn, base(to), C.int(len(to))) < 0 {
-		return newOpenSSLError("BN_bn2binpad")
+	if _, err := ossl.BN_bn2binpad(bn, base(to), int32(len(to))); err != nil {
+		return err
 	}
 	return nil
 }

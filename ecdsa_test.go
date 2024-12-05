@@ -23,7 +23,6 @@ func testAllCurves(t *testing.T, f func(*testing.T, elliptic.Curve)) {
 	for _, test := range tests {
 		curve := test.curve
 		t.Run(test.name, func(t *testing.T) {
-			t.Parallel()
 			f(t, curve)
 		})
 	}

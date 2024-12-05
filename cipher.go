@@ -1,9 +1,6 @@
-//go:build !cmd_go_bootstrap
+//go:build !cmd_go_bootstrap && cgo
 
 package openssl
-
-// #include "goopenssl.h"
-import "C"
 
 import (
 	"crypto/cipher"
@@ -13,6 +10,8 @@ import (
 	"strconv"
 	"sync"
 	"unsafe"
+
+	"github.com/golang-fips/openssl/v2/internal/ossl"
 )
 
 type cipherKind int8
@@ -76,9 +75,9 @@ type cacheCipherKey struct {
 }
 
 // loadCipher returns a cipher object for the given k.
-func loadCipher(k cipherKind, mode cipherMode) (cipher C.GO_EVP_CIPHER_PTR) {
+func loadCipher(k cipherKind, mode cipherMode) (cipher ossl.EVP_CIPHER_PTR) {
 	if v, ok := cacheCipher.Load(cacheCipherKey{k, mode}); ok {
-		return v.(C.GO_EVP_CIPHER_PTR)
+		return v.(ossl.EVP_CIPHER_PTR)
 	}
 	defer func() {
 		if cipher != nil && vMajor == 3 {
@@ -86,7 +85,7 @@ func loadCipher(k cipherKind, mode cipherMode) (cipher C.GO_EVP_CIPHER_PTR) {
 			// not created by EVP_CIPHER has negative performance
 			// implications, as cipher operations will have
 			// to fetch it on every call. Better to just fetch it once here.
-			cipher = C.go_openssl_EVP_CIPHER_fetch(nil, C.go_openssl_EVP_CIPHER_get0_name(cipher), nil)
+			cipher, _ = ossl.EVP_CIPHER_fetch(nil, ossl.EVP_CIPHER_get0_name(cipher), nil)
 		}
 		cacheCipher.Store(cacheCipherKey{k, mode}, cipher)
 	}()
@@ -94,52 +93,52 @@ func loadCipher(k cipherKind, mode cipherMode) (cipher C.GO_EVP_CIPHER_PTR) {
 	case cipherAES128:
 		switch mode {
 		case cipherModeECB:
-			cipher = C.go_openssl_EVP_aes_128_ecb()
+			cipher = ossl.EVP_aes_128_ecb()
 		case cipherModeCBC:
-			cipher = C.go_openssl_EVP_aes_128_cbc()
+			cipher = ossl.EVP_aes_128_cbc()
 		case cipherModeCTR:
-			cipher = C.go_openssl_EVP_aes_128_ctr()
+			cipher = ossl.EVP_aes_128_ctr()
 		case cipherModeGCM:
-			cipher = C.go_openssl_EVP_aes_128_gcm()
+			cipher = ossl.EVP_aes_128_gcm()
 		}
 	case cipherAES192:
 		switch mode {
 		case cipherModeECB:
-			cipher = C.go_openssl_EVP_aes_192_ecb()
+			cipher = ossl.EVP_aes_192_ecb()
 		case cipherModeCBC:
-			cipher = C.go_openssl_EVP_aes_192_cbc()
+			cipher = ossl.EVP_aes_192_cbc()
 		case cipherModeCTR:
-			cipher = C.go_openssl_EVP_aes_192_ctr()
+			cipher = ossl.EVP_aes_192_ctr()
 		case cipherModeGCM:
-			cipher = C.go_openssl_EVP_aes_192_gcm()
+			cipher = ossl.EVP_aes_192_gcm()
 		}
 	case cipherAES256:
 		switch mode {
 		case cipherModeECB:
-			cipher = C.go_openssl_EVP_aes_256_ecb()
+			cipher = ossl.EVP_aes_256_ecb()
 		case cipherModeCBC:
-			cipher = C.go_openssl_EVP_aes_256_cbc()
+			cipher = ossl.EVP_aes_256_cbc()
 		case cipherModeCTR:
-			cipher = C.go_openssl_EVP_aes_256_ctr()
+			cipher = ossl.EVP_aes_256_ctr()
 		case cipherModeGCM:
-			cipher = C.go_openssl_EVP_aes_256_gcm()
+			cipher = ossl.EVP_aes_256_gcm()
 		}
 	case cipherDES:
 		switch mode {
 		case cipherModeECB:
-			cipher = C.go_openssl_EVP_des_ecb()
+			cipher = ossl.EVP_des_ecb()
 		case cipherModeCBC:
-			cipher = C.go_openssl_EVP_des_cbc()
+			cipher = ossl.EVP_des_cbc()
 		}
 	case cipherDES3:
 		switch mode {
 		case cipherModeECB:
-			cipher = C.go_openssl_EVP_des_ede3_ecb()
+			cipher = ossl.EVP_des_ede3_ecb()
 		case cipherModeCBC:
-			cipher = C.go_openssl_EVP_des_ede3_cbc()
+			cipher = ossl.EVP_des_ede3_cbc()
 		}
 	case cipherRC4:
-		cipher = C.go_openssl_EVP_rc4()
+		cipher = ossl.EVP_rc4()
 	}
 	return cipher
 }
@@ -157,7 +156,7 @@ func newEVPCipher(key []byte, kind cipherKind) (*evpCipher, error) {
 	}
 	c := &evpCipher{key: make([]byte, len(key)), kind: kind}
 	copy(c.key, key)
-	c.blockSize = int(C.go_openssl_EVP_CIPHER_get_block_size(cipher))
+	c.blockSize = int(ossl.EVP_CIPHER_get_block_size(cipher))
 	return c, nil
 }
 
@@ -177,9 +176,9 @@ func (c *evpCipher) encrypt(dst, src []byte) error {
 	if err != nil {
 		return err
 	}
-	defer C.go_openssl_EVP_CIPHER_CTX_free(enc_ctx)
+	defer ossl.EVP_CIPHER_CTX_free(enc_ctx)
 
-	if C.go_openssl_EVP_EncryptUpdate_wrapper(enc_ctx, base(dst), base(src), C.int(c.blockSize)) != 1 {
+	if ossl.EVP_EncryptUpdate_wrapper(enc_ctx, unsafe.SliceData(dst), unsafe.SliceData(src), int32(c.blockSize)) != nil {
 		return errors.New("EncryptUpdate failed")
 	}
 	runtime.KeepAlive(c)
@@ -202,24 +201,24 @@ func (c *evpCipher) decrypt(dst, src []byte) error {
 	if err != nil {
 		return err
 	}
-	defer C.go_openssl_EVP_CIPHER_CTX_free(dec_ctx)
+	defer ossl.EVP_CIPHER_CTX_free(dec_ctx)
 
-	if C.go_openssl_EVP_CIPHER_CTX_set_padding(dec_ctx, 0) != 1 {
+	if ossl.EVP_CIPHER_CTX_set_padding(dec_ctx, 0) != nil {
 		return errors.New("could not disable cipher padding")
 	}
 
-	C.go_openssl_EVP_DecryptUpdate_wrapper(dec_ctx, base(dst), base(src), C.int(c.blockSize))
+	ossl.EVP_DecryptUpdate_wrapper(dec_ctx, unsafe.SliceData(dst), unsafe.SliceData(src), int32(c.blockSize))
 	runtime.KeepAlive(c)
 	return nil
 }
 
 type cipherCBC struct {
-	ctx       C.GO_EVP_CIPHER_CTX_PTR
+	ctx       ossl.EVP_CIPHER_CTX_PTR
 	blockSize int
 }
 
 func (c *cipherCBC) finalize() {
-	C.go_openssl_EVP_CIPHER_CTX_free(c.ctx)
+	ossl.EVP_CIPHER_CTX_free(c.ctx)
 }
 
 func (x *cipherCBC) BlockSize() int { return x.blockSize }
@@ -235,7 +234,7 @@ func (x *cipherCBC) CryptBlocks(dst, src []byte) {
 		panic("crypto/cipher: output smaller than input")
 	}
 	if len(src) > 0 {
-		if C.go_openssl_EVP_CipherUpdate_wrapper(x.ctx, base(dst), base(src), C.int(len(src))) != 1 {
+		if ossl.EVP_CipherUpdate_wrapper(x.ctx, unsafe.SliceData(dst), unsafe.SliceData(src), int32(len(src))) != nil {
 			panic("crypto/cipher: CipherUpdate failed")
 		}
 		runtime.KeepAlive(x)
@@ -246,7 +245,7 @@ func (x *cipherCBC) SetIV(iv []byte) {
 	if len(iv) != x.blockSize {
 		panic("cipher: incorrect length IV")
 	}
-	if C.go_openssl_EVP_CipherInit_ex(x.ctx, nil, nil, nil, base(iv), C.int(cipherOpNone)) != 1 {
+	if ossl.EVP_CipherInit_ex(x.ctx, nil, nil, nil, unsafe.SliceData(iv), int32(cipherOpNone)) != nil {
 		panic("cipher: unable to initialize EVP cipher ctx")
 	}
 }
@@ -258,14 +257,14 @@ func (c *evpCipher) newCBC(iv []byte, op cipherOp) cipher.BlockMode {
 	}
 	x := &cipherCBC{ctx: ctx, blockSize: c.blockSize}
 	runtime.SetFinalizer(x, (*cipherCBC).finalize)
-	if C.go_openssl_EVP_CIPHER_CTX_set_padding(x.ctx, 0) != 1 {
+	if ossl.EVP_CIPHER_CTX_set_padding(x.ctx, 0) != nil {
 		panic("cipher: unable to set padding")
 	}
 	return x
 }
 
 type cipherCTR struct {
-	ctx C.GO_EVP_CIPHER_CTX_PTR
+	ctx ossl.EVP_CIPHER_CTX_PTR
 }
 
 func (x *cipherCTR) XORKeyStream(dst, src []byte) {
@@ -278,7 +277,7 @@ func (x *cipherCTR) XORKeyStream(dst, src []byte) {
 	if len(src) == 0 {
 		return
 	}
-	if C.go_openssl_EVP_EncryptUpdate_wrapper(x.ctx, base(dst), base(src), C.int(len(src))) != 1 {
+	if ossl.EVP_EncryptUpdate_wrapper(x.ctx, base(dst), base(src), int32(len(src))) != nil {
 		panic("crypto/cipher: EncryptUpdate failed")
 	}
 	runtime.KeepAlive(x)
@@ -295,7 +294,7 @@ func (c *evpCipher) newCTR(iv []byte) cipher.Stream {
 }
 
 func (c *cipherCTR) finalize() {
-	C.go_openssl_EVP_CIPHER_CTX_free(c.ctx)
+	ossl.EVP_CIPHER_CTX_free(c.ctx)
 }
 
 type cipherGCMTLS uint8
@@ -445,7 +444,7 @@ func (g *cipherGCM) Seal(dst, nonce, plaintext, additionalData []byte) []byte {
 	if err != nil {
 		panic(err)
 	}
-	defer C.go_openssl_EVP_CIPHER_CTX_free(ctx)
+	defer ossl.EVP_CIPHER_CTX_free(ctx)
 	// Encrypt additional data.
 	// When sealing a TLS payload, OpenSSL app sets the additional data using
 	// 'EVP_CIPHER_CTX_ctrl(g.ctx, C.EVP_CTRL_AEAD_TLS1_AAD, C.EVP_AEAD_TLS1_AAD_LEN, base(additionalData))'.
@@ -453,9 +452,9 @@ func (g *cipherGCM) Seal(dst, nonce, plaintext, additionalData []byte) []byte {
 	// relying in the explicit nonce being securely set externally,
 	// and it also gives some interesting speed gains.
 	// Unfortunately we can't use it because Go expects AEAD.Seal to honor the provided nonce.
-	if C.go_openssl_EVP_CIPHER_CTX_seal_wrapper(ctx, base(out), base(nonce),
-		base(plaintext), C.int(len(plaintext)),
-		base(additionalData), C.int(len(additionalData))) != 1 {
+	if ossl.EVP_CIPHER_CTX_seal_wrapper(ctx, base(out), base(nonce),
+		base(plaintext), int32(len(plaintext)),
+		base(additionalData), int32(len(additionalData))) != nil {
 
 		panic(fail("EVP_CIPHER_CTX_seal"))
 	}
@@ -492,13 +491,13 @@ func (g *cipherGCM) Open(dst, nonce, ciphertext, additionalData []byte) ([]byte,
 	if err != nil {
 		return nil, err
 	}
-	defer C.go_openssl_EVP_CIPHER_CTX_free(ctx)
-	ok := C.go_openssl_EVP_CIPHER_CTX_open_wrapper(
+	defer ossl.EVP_CIPHER_CTX_free(ctx)
+	err = ossl.EVP_CIPHER_CTX_open_wrapper(
 		ctx, base(out), base(nonce),
-		base(ciphertext), C.int(len(ciphertext)),
-		base(additionalData), C.int(len(additionalData)), base(tag))
+		base(ciphertext), int32(len(ciphertext)),
+		base(additionalData), int32(len(additionalData)), base(tag))
 	runtime.KeepAlive(g)
-	if ok == 0 {
+	if err != nil {
 		// Zero output buffer on error.
 		for i := range out {
 			out[i] = 0
@@ -520,35 +519,35 @@ func sliceForAppend(in []byte, n int) (head, tail []byte) {
 	return
 }
 
-func newCipherCtx(kind cipherKind, mode cipherMode, encrypt cipherOp, key, iv []byte) (_ C.GO_EVP_CIPHER_CTX_PTR, err error) {
+func newCipherCtx(kind cipherKind, mode cipherMode, encrypt cipherOp, key, iv []byte) (_ ossl.EVP_CIPHER_CTX_PTR, err error) {
 	cipher := loadCipher(kind, mode)
 	if cipher == nil {
 		panic("crypto/cipher: unsupported cipher: " + kind.String())
 	}
-	ctx := C.go_openssl_EVP_CIPHER_CTX_new()
-	if ctx == nil {
+	ctx, err := ossl.EVP_CIPHER_CTX_new()
+	if err != nil {
 		return nil, fail("unable to create EVP cipher ctx")
 	}
 	defer func() {
 		if err != nil {
-			C.go_openssl_EVP_CIPHER_CTX_free(ctx)
+			ossl.EVP_CIPHER_CTX_free(ctx)
 		}
 	}()
 	if kind == cipherRC4 {
 		// RC4 cipher supports a variable key length.
 		// We need to set the key length before setting the key,
 		// and to do so we need to have an initialized cipher ctx.
-		if C.go_openssl_EVP_CipherInit_ex(ctx, cipher, nil, nil, nil, C.int(encrypt)) != 1 {
-			return nil, newOpenSSLError("EVP_CipherInit_ex")
+		if err := ossl.EVP_CipherInit_ex(ctx, cipher, nil, nil, nil, int32(encrypt)); err != nil {
+			return nil, err
 		}
-		if C.go_openssl_EVP_CIPHER_CTX_set_key_length(ctx, C.int(len(key))) != 1 {
-			return nil, newOpenSSLError("EVP_CIPHER_CTX_set_key_length")
+		if err := ossl.EVP_CIPHER_CTX_set_key_length(ctx, int32(len(key))); err != nil {
+			return nil, err
 		}
 		// Pass nil to the next call to EVP_CipherInit_ex to avoid resetting ctx's cipher.
 		cipher = nil
 	}
-	if C.go_openssl_EVP_CipherInit_ex(ctx, cipher, nil, base(key), base(iv), C.int(encrypt)) != 1 {
-		return nil, newOpenSSLError("unable to initialize EVP cipher ctx")
+	if err := ossl.EVP_CipherInit_ex(ctx, cipher, nil, base(key), base(iv), int32(encrypt)); err != nil {
+		return nil, err
 	}
 	return ctx, nil
 }
