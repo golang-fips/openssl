@@ -21,7 +21,7 @@ static void locking_function(int mode, int n, const char *file, int line)
         pthread_mutex_unlock(&mutex_buf[n]);
 }
 
-static void thread_id(GO_CRYPTO_THREADID_PTR tid)
+static void thread_id(CRYPTO_THREADID_PTR tid)
 {
     CRYPTO_THREADID_set_numeric(tid, (unsigned long)pthread_self());
 
