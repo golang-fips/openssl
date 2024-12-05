@@ -1,6 +1,6 @@
 //go:build unix
 
-#include "ossl.h"
+#include "api.h"
 #include "thread_setup.h"
 #include <pthread.h>
 
