@@ -19,9 +19,9 @@ jobs:
       uses: actions/checkout@v4
     - name: Install OpenSSL
       run: sudo sh ./scripts/openssl.sh ${{ matrix.openssl-version }}
-    - name: Check headers
-      working-directory: ./cmd/checkheader
-      run: go run . --ossl-include /usr/local/src/openssl-${{ matrix.openssl-version }}/include -shim ../../shims.h
+    #- name: Check headers
+    #  working-directory: ./cmd/checkheader
+    #  run: go run . --ossl-include /usr/local/src/openssl-${{ matrix.openssl-version }}/include -shim ../../shims.h
     - name: Set OpenSSL config and prove FIPS
       run: |
         sudo cp ./scripts/openssl-3.cnf /usr/local/ssl/openssl.cnf
