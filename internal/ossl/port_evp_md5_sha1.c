@@ -11,7 +11,8 @@
  * https://www.openssl.org/source/license.html
  */
 
-#include "goopenssl.h"
+#include "api.h"
+#include <stddef.h>
 
 #define NID_md5_sha1            114
 
@@ -81,24 +82,24 @@ struct md5_sha1_ctx {
 
 static int md5_sha1_init(EVP_MD_CTX *ctx) {
     struct md5_sha1_ctx *mctx = ctx->md_data;
-    if (!go_openssl_MD5_Init(&mctx->md5))
+    if (!MD5_Init(&mctx->md5))
         return 0;
-    return go_openssl_SHA1_Init(&mctx->sha1);
+    return SHA1_Init(&mctx->sha1);
 }
 
 static int md5_sha1_update(EVP_MD_CTX *ctx, const void *data,
                                            size_t count) {
     struct md5_sha1_ctx *mctx = ctx->md_data;
-    if (!go_openssl_MD5_Update(&mctx->md5, data, count))
+    if (!MD5_Update(&mctx->md5, data, count))
         return 0;
-    return go_openssl_SHA1_Update(&mctx->sha1, data, count);
+    return SHA1_Update(&mctx->sha1, data, count);
 }
 
 static int md5_sha1_final(EVP_MD_CTX *ctx, unsigned char *md) {
     struct md5_sha1_ctx *mctx = ctx->md_data;
-    if (!go_openssl_MD5_Final(md, &mctx->md5))
+    if (!MD5_Final(md, &mctx->md5))
         return 0;
-    return go_openssl_SHA1_Final(md + MD5_DIGEST_LENGTH, &mctx->sha1);
+    return SHA1_Final(md + MD5_DIGEST_LENGTH, &mctx->sha1);
 }
 
 // Change: Removed:
@@ -121,6 +122,6 @@ static const EVP_MD md5_sha1_md = {
 };
 
 // Change: Apply name mangling.
-const GO_EVP_MD_PTR go_openssl_EVP_md5_sha1_backport(void) {
-    return (const GO_EVP_MD_PTR)&md5_sha1_md;
+const EVP_MD_PTR go_openssl_EVP_md5_sha1_backport(void) {
+    return (const EVP_MD_PTR)&md5_sha1_md;
 }

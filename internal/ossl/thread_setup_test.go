@@ -1,4 +1,4 @@
-package openssl
+package ossl
 
 import (
 	"runtime"
@@ -28,7 +28,7 @@ func TestThreadCleanup(t *testing.T) {
 		runtime.LockOSThread()
 		// Checking for errors has the side effect of initializing
 		// the thread-local OpenSSL error queue.
-		_ = newOpenSSLError("")
+		_ = newError("")
 	}()
 	<-done
 	time.Sleep(100 * time.Millisecond) // Give some time for the thread to terminate.

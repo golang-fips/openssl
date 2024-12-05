@@ -1,6 +1,6 @@
 //go:build windows
 
-#include "goopenssl.h"
+#include "api.h"
 #include "thread_setup.h"
 
 #include <stdlib.h>
@@ -22,9 +22,9 @@ static void locking_function(int mode, int n, const char *file, int line)
         ReleaseMutex(mutex_buf[n]);
 }
 
-static void thread_id(GO_CRYPTO_THREADID_PTR tid)
+static void thread_id(CRYPTO_THREADID_PTR tid)
 {
-    go_openssl_CRYPTO_THREADID_set_numeric(tid, (unsigned long)GetCurrentThreadId());
+    CRYPTO_THREADID_set_numeric(tid, (unsigned long)GetCurrentThreadId());
 
     // OpenSSL fetches the current thread ID whenever it does anything with the
     // per-thread error state, so this function is guaranteed to be executed at
@@ -39,7 +39,7 @@ static void thread_id(GO_CRYPTO_THREADID_PTR tid)
 static void cleanup_thread_state(void *ignored)
 {
     UNUSED(ignored);
-    go_openssl_ERR_remove_thread_state(NULL);
+    ERR_remove_thread_state(NULL);
 }
 
 int go_openssl_thread_setup(void)
@@ -49,16 +49,16 @@ int go_openssl_thread_setup(void)
     fls_index = FlsAlloc(cleanup_thread_state);
     if (fls_index == FLS_OUT_OF_INDEXES)
         return 0;
-    mutex_buf = malloc(go_openssl_CRYPTO_num_locks()*sizeof(HANDLE));
+    mutex_buf = malloc(CRYPTO_num_locks()*sizeof(HANDLE));
     if (!mutex_buf)
         return 0;
     int i;
-    for (i = 0; i < go_openssl_CRYPTO_num_locks(); i++)
+    for (i = 0; i < CRYPTO_num_locks(); i++)
         mutex_buf[i] = CreateMutex(NULL, FALSE, NULL);
-    go_openssl_CRYPTO_set_locking_callback(locking_function);
-    // go_openssl_CRYPTO_set_id_callback is not strictly needed on Windows
+    CRYPTO_set_locking_callback(locking_function);
+    // CRYPTO_set_id_callback is not strictly needed on Windows
     // as OpenSSL uses GetCurrentThreadId() by default.
     // But we need to piggyback off the callback for our own purposes.
-    go_openssl_CRYPTO_THREADID_set_callback(thread_id);
+    CRYPTO_THREADID_set_callback(thread_id);
     return 1;
 }

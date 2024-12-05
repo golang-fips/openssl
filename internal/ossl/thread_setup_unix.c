@@ -1,6 +1,6 @@
 //go:build unix
 
-#include "goopenssl.h"
+#include "ossl.h"
 #include "thread_setup.h"
 #include <pthread.h>
 
@@ -22,7 +22,7 @@ static void locking_function(int mode, int n, const char *file, int line)
 
 static void thread_id(GO_CRYPTO_THREADID_PTR tid)
 {
-    go_openssl_CRYPTO_THREADID_set_numeric(tid, (unsigned long)pthread_self());
+    CRYPTO_THREADID_set_numeric(tid, (unsigned long)pthread_self());
 
     // OpenSSL fetches the current thread ID whenever it does anything with the
     // per-thread error state, so this function is guaranteed to be executed at
@@ -38,7 +38,7 @@ static void thread_id(GO_CRYPTO_THREADID_PTR tid)
 static void cleanup_thread_state(void *ignored)
 {
     UNUSED(ignored);
-    go_openssl_ERR_remove_thread_state(NULL);
+    ERR_remove_thread_state(NULL);
     // ERR_remove_thread_state(NULL) in turn calls our registered thread_id
     // callback via CRYPTO_THREADID_current(), which sets the thread-local
     // variable associated with this destructor to a non-NULL value. We have to
@@ -52,13 +52,13 @@ int go_openssl_thread_setup(void)
 {
     if (pthread_key_create(&destructor_key, cleanup_thread_state) != 0)
         return 0;
-    mutex_buf = malloc(go_openssl_CRYPTO_num_locks()*sizeof(pthread_mutex_t));
+    mutex_buf = malloc(CRYPTO_num_locks()*sizeof(pthread_mutex_t));
     if (!mutex_buf)
         return 0;
     int i;
-    for (i = 0; i < go_openssl_CRYPTO_num_locks(); i++)
+    for (i = 0; i < CRYPTO_num_locks(); i++)
         pthread_mutex_init(&mutex_buf[i], NULL);
-    go_openssl_CRYPTO_THREADID_set_callback(thread_id);
-    go_openssl_CRYPTO_set_locking_callback(locking_function);
+    CRYPTO_THREADID_set_callback(thread_id);
+    CRYPTO_set_locking_callback(locking_function);
     return 1;
 }
