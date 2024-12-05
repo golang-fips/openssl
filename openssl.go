@@ -313,8 +313,8 @@ func caller(skip int) (file *byte, line int32) {
 	return (*byte)(noescape(unsafe.Pointer(unsafe.StringData(f)))), int32(l)
 }
 
-//go:linkname runtime_throw runtime.throw
-func runtime_throw(string)
+//go:linkname throw runtime.throw
+func throw(string)
 
 // cryptoMalloc allocates n bytes of memory on the OpenSSL heap, which may be
 // different from the heap which C.malloc allocates on. The allocated object
@@ -338,7 +338,7 @@ func cryptoMalloc(n int) unsafe.Pointer {
 	if p == nil {
 		// Un-recover()-ably crash the program in the same manner as the
 		// C.malloc() wrapper function.
-		runtime_throw("openssl: CRYPTO_malloc failed")
+		throw("openssl: CRYPTO_malloc failed")
 	}
 	return p
 }
