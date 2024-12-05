@@ -1,5 +1,4 @@
 #include "api.h"
-#include <stddef.h>
 
 int go_openssl_fips_enabled(void* handle);
 int go_openssl_version_major(void* handle);

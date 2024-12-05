@@ -2,6 +2,7 @@
 
 #include "ossl.h"
 #include <stdint.h>
+#include <stddef.h>
 
 void ERR_clear_error(void);
 void ERR_error_string_n(unsigned long e, char *buf, size_t len);
