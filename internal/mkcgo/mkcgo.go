@@ -89,7 +89,7 @@ type rets struct {
 	fnMaybeAbsent bool
 }
 
-type fnOptions struct {
+type fnAttributes struct {
 	name          string
 	libName       string
 	errorType     string

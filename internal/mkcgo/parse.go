@@ -36,11 +36,11 @@ func (src *source) parseFile(name string) error {
 	defer file.Close()
 	s := bufio.NewScanner(file)
 	var inComment bool
-	var srcOps, fnOps fnOptions
+	var srcOps, fnOps fnAttributes
 	var t string
 	for s.Scan() {
 		line := trim(s.Text())
-		if strings.HasPrefix(line, "/*") {
+		if strings.HasPrefix(line, "/*") && !strings.HasPrefix(line, "/*[[mkcgo::") {
 			if !strings.HasSuffix(line, "*/") {
 				inComment = true
 			}
@@ -61,46 +61,19 @@ func (src *source) parseFile(name string) error {
 			}
 			return errors.New("Unknown mkcgo directive: " + t)
 		}
-
-		if strings.HasPrefix(line, "[[") {
-			for {
-				var body string
-				var ok bool
-				_, body, line, ok = extractSection(line, "[[", "]]")
-				if !ok {
-					break
-				}
-				body, ok = strings.CutPrefix(body, "mkcgo::")
-				if !ok {
-					continue
-				}
-				if body == "error" {
-					fnOps.returnsError = true
-				} else if body == "error_only" {
-					fnOps.returnsError = true
-					fnOps.errorOnly = true
-				} else if body == "c_only" {
-					fnOps.cOnly = true
-				} else if strings.HasPrefix(body, "error(") || strings.HasPrefix(body, "error_only(") {
-					fnOps.returnsError = true
-					fnOps.errorOnly = strings.HasPrefix(body, "error_only(")
-					if _, body, _, ok = extractSection(body, "(", ")"); ok {
-						fnOps.failCondition = strings.Trim(body, `"`)
-					}
-				} else if strings.HasPrefix(body, "name(") {
-					if _, body, _, ok = extractSection(body, "(", ")"); ok {
-						fnOps.name = strings.Trim(body, `"`)
-					}
-				} else if strings.HasPrefix(body, "variadic(") {
-					if _, body, _, ok = extractSection(body, "(", ")"); ok {
-						fnOps.importName = strings.Trim(body, `"`)
-					}
-				}
-			}
-		}
-
 		if strings.HasPrefix(line, "//") || strings.HasPrefix(line, "#") {
 			continue
+		}
+		if strings.HasPrefix(line, "/*[[mkcgo:") {
+			end := strings.LastIndex(line, "*/")
+			if end == -1 {
+				return errors.New("Could not find closing attributes comment in \"" + line + "\"")
+			}
+			err = extractFunctionAttributes(line[2:end], &fnOps)
+			if err != nil {
+				return err
+			}
+			line = line[end+2:]
 		}
 		if line == "" {
 			continue
@@ -118,7 +91,7 @@ func (src *source) parseFile(name string) error {
 			return err
 		}
 		src.funcs = append(src.funcs, f)
-		fnOps = fnOptions{
+		fnOps = fnAttributes{
 			errorType:     srcOps.errorType,
 			failCondition: srcOps.failCondition,
 		}
@@ -134,7 +107,7 @@ func (src *source) parseFile(name string) error {
 }
 
 // newFn parses string s and return created function Fn.
-func newFn(s string, opts fnOptions) (*fn, error) {
+func newFn(s string, opts fnAttributes) (*fn, error) {
 	f := &fn{
 		rets: &rets{},
 		src:  s,
@@ -206,6 +179,56 @@ func extractSection(s string, start, end string) (prefix, body, suffix string, f
 		return "", "", "", false
 	}
 	return prefix, a[0], a[1], true
+}
+
+func extractFunctionAttributes(s string, attrs *fnAttributes) error {
+	s = trim(s)
+	if s == "" {
+		return nil
+	}
+	for {
+		var body string
+		var ok bool
+		_, body, s, ok = extractSection(s, "[[", "]]")
+		if !ok {
+			break
+		}
+		body, ok = strings.CutPrefix(body, "mkcgo::")
+		if !ok {
+			return errors.New("Could not extract mkcgo attribute from \"" + body + "\"")
+		}
+		if body == "error" {
+			attrs.returnsError = true
+		} else if body == "error_only" {
+			attrs.returnsError = true
+			attrs.errorOnly = true
+		} else if body == "c_only" {
+			attrs.cOnly = true
+		} else if strings.HasPrefix(body, "error(") || strings.HasPrefix(body, "error_only(") {
+			attrs.returnsError = true
+			attrs.errorOnly = strings.HasPrefix(body, "error_only(")
+			if _, body, _, ok = extractSection(body, "(", ")"); ok {
+				attrs.failCondition = strings.Trim(body, `"`)
+			} else {
+				return errors.New("Could not extract error attribute value")
+			}
+		} else if strings.HasPrefix(body, "name(") {
+			if _, body, _, ok = extractSection(body, "(", ")"); ok {
+				attrs.name = strings.Trim(body, `"`)
+			} else {
+				return errors.New("Could not extract name attribute value")
+			}
+		} else if strings.HasPrefix(body, "variadic(") {
+			if _, body, _, ok = extractSection(body, "(", ")"); ok {
+				attrs.importName = strings.Trim(body, `"`)
+			} else {
+				return errors.New("Could not extract variadic attribute value")
+			}
+		} else {
+			return errors.New("Unknown mkcgo attribute: " + body)
+		}
+	}
+	return nil
 }
 
 // extractParams parses s to extract function parameters.
