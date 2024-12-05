@@ -102,13 +102,13 @@ func GenerateDSAParameters(l, n int) (DSAParameters, error) {
 			ossl.BN_free(q)
 			ossl.BN_free(g)
 		}()
-		if err := getBnParam(pkey, ossl.OSSL_PKEY_PARAM_FFC_P, &p); err != err {
+		if err := getBnParam(pkey, ossl.OSSL_PKEY_PARAM_FFC_P, &p); err != nil {
 			return DSAParameters{}, err
 		}
-		if err := getBnParam(pkey, ossl.OSSL_PKEY_PARAM_FFC_Q, &q); err != err {
+		if err := getBnParam(pkey, ossl.OSSL_PKEY_PARAM_FFC_Q, &q); err != nil {
 			return DSAParameters{}, err
 		}
-		if err := getBnParam(pkey, ossl.OSSL_PKEY_PARAM_FFC_G, &g); err != err {
+		if err := getBnParam(pkey, ossl.OSSL_PKEY_PARAM_FFC_G, &g); err != nil {
 			return DSAParameters{}, err
 		}
 	default:
