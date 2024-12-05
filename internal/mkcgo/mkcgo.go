@@ -11,10 +11,6 @@ import (
 )
 
 var (
-	defaultErrorCodeStr string
-)
-
-var (
 	fileName      = flag.String("out", "", "output file name (standard output if omitted)")
 	includeHeader = flag.String("include", "", "include header file")
 	packageName   = flag.String("package", "", "package name")

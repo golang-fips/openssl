@@ -275,7 +275,6 @@ func (r *rets) useLongHandleErrorCode(retvar, msg string) string {
 	if strings.HasSuffix(r.typ, "*") || strings.HasSuffix(strings.ToUpper(r.typ), "_PTR") {
 		cond = retvar + " == nil"
 	} else {
-		cond = retvar + " != " + defaultErrorCodeStr
 		cond = strings.Replace(r.failCond, "retval", retvar, 1)
 	}
 	return fmt.Sprintf(code, cond, msg)
