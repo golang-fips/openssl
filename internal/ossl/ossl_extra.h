@@ -1,0 +1,188 @@
+#include "api.h"
+#include <stddef.h>
+
+int go_openssl_fips_enabled(void* handle);
+int go_openssl_version_major(void* handle);
+int go_openssl_version_minor(void* handle);
+int go_openssl_version_patch(void* handle);
+void go_openssl_load_functions(void* handle, unsigned int major, unsigned int minor, unsigned int patch);
+int go_openssl_thread_setup(void);
+const EVP_MD_PTR go_openssl_EVP_md5_sha1_backport(void);
+void go_openssl_DSA_get0_pqg_backport(const DSA_PTR d, BIGNUM_PTR *p, BIGNUM_PTR *q, BIGNUM_PTR *g);
+int go_openssl_DSA_set0_pqg_backport(DSA_PTR d, BIGNUM_PTR p, BIGNUM_PTR q, BIGNUM_PTR g);
+void go_openssl_DSA_get0_key_backport(const DSA_PTR d, BIGNUM_PTR *pub_key, BIGNUM_PTR *priv_key);
+int go_openssl_DSA_set0_key_backport(DSA_PTR d, BIGNUM_PTR pub_key, BIGNUM_PTR priv_key);
+
+// These wrappers allocate out_len on the C stack to avoid having to pass a pointer from Go, which would escape to the heap.
+// Use them only in situations where the output length can be safely discarded.
+static inline int
+EVP_EncryptUpdate_wrapper(EVP_CIPHER_CTX_PTR ctx, unsigned char *out, unsigned char *in, int in_len)
+{
+    int len;
+    return EVP_EncryptUpdate(ctx, out, &len, in, in_len);
+}
+
+static inline int
+EVP_DecryptUpdate_wrapper(EVP_CIPHER_CTX_PTR ctx, unsigned char *out, unsigned char *in, int in_len)
+{
+    int len;
+    return EVP_DecryptUpdate(ctx, out, &len, in, in_len);
+}
+
+static inline int
+EVP_CipherUpdate_wrapper(EVP_CIPHER_CTX_PTR ctx, unsigned char *out, unsigned char *in, int in_len)
+{
+    int len;
+    return EVP_CipherUpdate(ctx, out, &len, in, in_len);
+}
+
+
+// These wrappers allocate out_len on the C stack, and check that it matches the expected
+// value, to avoid having to pass a pointer from Go, which would escape to the heap.
+
+static inline int
+EVP_CIPHER_CTX_seal_wrapper(EVP_CIPHER_CTX_PTR ctx,
+                                unsigned char *out,
+                                const unsigned char *nonce,
+                                const unsigned char *in, int in_len,
+                                const unsigned char *aad, int aad_len)
+{
+    if (in_len == 0) in = (const unsigned char *)"";
+    if (aad_len == 0) aad = (const unsigned char *)"";
+
+    if (EVP_EncryptInit_ex(ctx, NULL, NULL, NULL, nonce) != 1)
+        return 0;
+
+    int discard_len, out_len;
+    if (EVP_EncryptUpdate(ctx, NULL, &discard_len, aad, aad_len) != 1
+        || EVP_EncryptUpdate(ctx, out, &out_len, in, in_len) != 1
+        || EVP_EncryptFinal_ex(ctx, out + out_len, &discard_len) != 1)
+    {
+        return 0;
+    }
+
+    if (in_len != out_len)
+        return 0;
+
+    return EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_GCM_GET_TAG, 16, out + out_len);
+}
+
+static inline int
+EVP_CIPHER_CTX_open_wrapper(EVP_CIPHER_CTX_PTR ctx,
+                                       unsigned char *out,
+                                       const unsigned char *nonce,
+                                       const unsigned char *in, int in_len,
+                                       const unsigned char *aad, int aad_len,
+                                       const unsigned char *tag)
+{
+    if (in_len == 0) {
+        in = (const unsigned char *)"";
+        // OpenSSL 1.0.2 in FIPS mode contains a bug: it will fail to verify
+        // unless EVP_DecryptUpdate is called at least once with a non-NULL
+        // output buffer.  OpenSSL will not dereference the output buffer when
+        // the input length is zero, so set it to an arbitrary non-NULL pointer
+        // to satisfy OpenSSL when the caller only has authenticated additional
+        // data (AAD) to verify. While a stack-allocated buffer could be used,
+        // that would risk a stack-corrupting buffer overflow if OpenSSL
+        // unexpectedly dereferenced it. Instead pass a value which would
+        // segfault if dereferenced on any modern platform where a NULL-pointer
+        // dereference would also segfault.
+        if (out == NULL) out = (unsigned char *)1;
+    }
+    if (aad_len == 0) aad = (const unsigned char *)"";
+
+    if (EVP_DecryptInit_ex(ctx, NULL, NULL, NULL, nonce) != 1)
+        return 0;
+
+    // OpenSSL 1.0.x FIPS Object Module 2.0 versions below 2.0.5 require that
+    // the tag be set before the ciphertext, otherwise EVP_DecryptUpdate returns
+    // an error. At least one extant commercially-supported, FIPS validated
+    // build of OpenSSL 1.0.2 uses FIPS module version 2.0.1. Set the tag first
+    // to maximize compatibility with all OpenSSL version combinations.
+    if (EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_GCM_SET_TAG, 16, (unsigned char *)(tag)) != 1)
+        return 0;
+
+    int discard_len, out_len;
+    if (EVP_DecryptUpdate(ctx, NULL, &discard_len, aad, aad_len) != 1
+        || EVP_DecryptUpdate(ctx, out, &out_len, in, in_len) != 1)
+    {
+        return 0;
+    }
+
+    if (EVP_DecryptFinal_ex(ctx, out + out_len, &discard_len) != 1)
+        return 0;
+
+    if (out_len != in_len)
+        return 0;
+
+    return 1;
+}
+
+// go_hash_sum copies ctx into ctx2 and calls EVP_DigestFinal using ctx2.
+// This is necessary because Go hash.Hash mandates that Sum has no effect
+// on the underlying stream. In particular it is OK to Sum, then Write more,
+// then Sum again, and the second Sum acts as if the first didn't happen.
+// It is written in C because Sum() tend to be in the hot path,
+// and doing one cgo call instead of two is a significant performance win.
+static inline int
+go_hash_sum(EVP_MD_CTX_PTR ctx, EVP_MD_CTX_PTR ctx2, unsigned char *out)
+{
+    if (EVP_MD_CTX_copy(ctx2, ctx) != 1)
+        return 0;
+    // TODO: use EVP_DigestFinal_ex once we know why it leaks
+    // memory on OpenSSL 1.0.2.
+    return EVP_DigestFinal(ctx2, out, NULL);
+}
+
+// These wrappers also allocate length variables on the C stack to avoid escape to the heap, but do return the result.
+// A struct is returned that contains multiple return values instead of OpenSSL's approach of using pointers.
+
+typedef struct
+{
+    int result;
+    size_t keylen;
+} EVP_PKEY_derive_wrapper_out;
+
+static inline EVP_PKEY_derive_wrapper_out
+EVP_PKEY_derive_wrapper(EVP_PKEY_CTX_PTR ctx, unsigned char *key, size_t keylen)
+{
+    EVP_PKEY_derive_wrapper_out r = {0, keylen};
+    r.result = EVP_PKEY_derive(ctx, key, &r.keylen);
+    return r;
+}
+
+typedef struct
+{
+    int result;
+    size_t len;
+} EVP_PKEY_get_raw_key_out;
+
+static inline EVP_PKEY_get_raw_key_out
+EVP_PKEY_get_raw_public_key_wrapper(const EVP_PKEY_PTR pkey, unsigned char *pub, size_t len)
+{
+    EVP_PKEY_get_raw_key_out r = {0, len};
+    r.result = EVP_PKEY_get_raw_public_key(pkey, pub, &r.len);
+    return r;
+}
+
+static inline EVP_PKEY_get_raw_key_out
+EVP_PKEY_get_raw_private_key_wrapper(const EVP_PKEY_PTR pkey, unsigned char *priv, size_t len)
+{
+    EVP_PKEY_get_raw_key_out r = {0, len};
+    r.result = EVP_PKEY_get_raw_private_key(pkey, priv, &r.len);
+    return r;
+}
+
+typedef struct
+{
+    int result;
+    size_t siglen;
+} EVP_DigestSign_wrapper_out;
+
+static inline EVP_DigestSign_wrapper_out
+EVP_DigestSign_wrapper(EVP_MD_CTX_PTR ctx, unsigned char *sigret, size_t siglen, const unsigned char *tbs, size_t tbslen)
+{
+    EVP_DigestSign_wrapper_out r = {0, siglen};
+    r.result = EVP_DigestSign(ctx, sigret, &r.siglen, tbs, tbslen);
+    return r;
+}
