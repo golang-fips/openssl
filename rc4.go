@@ -4,7 +4,6 @@ package openssl
 
 import (
 	"runtime"
-	"unsafe"
 
 	"github.com/golang-fips/openssl/v2/internal/ossl"
 )
@@ -59,7 +58,7 @@ func (c *RC4Cipher) XORKeyStream(dst, src []byte) {
 	// which is what crypto/rc4 does.
 	_ = dst[len(src)-1]
 	var outLen int32
-	if err := ossl.EVP_EncryptUpdate(c.ctx, unsafe.SliceData(dst), &outLen, unsafe.SliceData(src), int32(len(src))); err != nil {
+	if err := ossl.EVP_EncryptUpdate(c.ctx, base(dst), &outLen, base(src), int32(len(src))); err != nil {
 		panic(err)
 	}
 	if int(outLen) != len(src) {

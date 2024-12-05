@@ -178,7 +178,7 @@ func (c *evpCipher) encrypt(dst, src []byte) error {
 	}
 	defer ossl.EVP_CIPHER_CTX_free(enc_ctx)
 
-	if ossl.EVP_EncryptUpdate_wrapper(enc_ctx, unsafe.SliceData(dst), unsafe.SliceData(src), int32(c.blockSize)) != nil {
+	if ossl.EVP_EncryptUpdate_wrapper(enc_ctx, base(dst), base(src), int32(c.blockSize)) != nil {
 		return errors.New("EncryptUpdate failed")
 	}
 	runtime.KeepAlive(c)
@@ -207,7 +207,7 @@ func (c *evpCipher) decrypt(dst, src []byte) error {
 		return errors.New("could not disable cipher padding")
 	}
 
-	ossl.EVP_DecryptUpdate_wrapper(dec_ctx, unsafe.SliceData(dst), unsafe.SliceData(src), int32(c.blockSize))
+	ossl.EVP_DecryptUpdate_wrapper(dec_ctx, base(dst), base(src), int32(c.blockSize))
 	runtime.KeepAlive(c)
 	return nil
 }
@@ -234,7 +234,7 @@ func (x *cipherCBC) CryptBlocks(dst, src []byte) {
 		panic("crypto/cipher: output smaller than input")
 	}
 	if len(src) > 0 {
-		if ossl.EVP_CipherUpdate_wrapper(x.ctx, unsafe.SliceData(dst), unsafe.SliceData(src), int32(len(src))) != nil {
+		if ossl.EVP_CipherUpdate_wrapper(x.ctx, base(dst), base(src), int32(len(src))) != nil {
 			panic("crypto/cipher: CipherUpdate failed")
 		}
 		runtime.KeepAlive(x)
@@ -245,7 +245,7 @@ func (x *cipherCBC) SetIV(iv []byte) {
 	if len(iv) != x.blockSize {
 		panic("cipher: incorrect length IV")
 	}
-	if ossl.EVP_CipherInit_ex(x.ctx, nil, nil, nil, unsafe.SliceData(iv), int32(cipherOpNone)) != nil {
+	if ossl.EVP_CipherInit_ex(x.ctx, nil, nil, nil, base(iv), int32(cipherOpNone)) != nil {
 		panic("cipher: unable to initialize EVP cipher ctx")
 	}
 }
