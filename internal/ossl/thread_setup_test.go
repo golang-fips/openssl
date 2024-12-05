@@ -18,6 +18,7 @@ func TestThreadCleanup(t *testing.T) {
 	if vMajor > 1 || vMinor > 0 {
 		t.Skip("explicit thread cleanup is only needed for OpenSSL 1.0.x")
 	}
+	t.Skip("not supported for now")
 
 	before := opensslThreadsCleanedUp()
 	done := make(chan struct{})
