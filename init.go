@@ -26,7 +26,7 @@ func opensslInit(file string) (major, minor, patch uint, err error) {
 	// version it contains.
 	imajor := ossl.Go_openssl_version_major(handle)
 	iminor := ossl.Go_openssl_version_minor(handle)
-	ipatch := ossl.Go_openssl_version_minor(handle)
+	ipatch := ossl.Go_openssl_version_patch(handle)
 	if imajor < 0 || iminor < 0 || ipatch < 0 {
 		return 0, 0, 0, errors.New("openssl: can't retrieve OpenSSL version")
 	}
