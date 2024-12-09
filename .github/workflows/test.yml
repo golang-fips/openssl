@@ -71,10 +71,8 @@ jobs:
         openssl-version: [/opt/homebrew/opt/openssl@3/lib/libcrypto.3.dylib]
     runs-on: macos-13
     steps:
-    - name: Install OpenSSL
-      run: brew install openssl@3
     - name: List OpenSSL
-      run: ls /opt/homebrew/opt
+      run: brew --prefix openssl@3
     - name: Install Go
       uses: actions/setup-go@v5
       with:
