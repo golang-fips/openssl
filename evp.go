@@ -168,13 +168,6 @@ func generateEVPPKey(id C.int, bits int, curve string) (C.GO_EVP_PKEY_PTR, error
 	if bits != 0 && curve != "" {
 		return nil, fail("incorrect generateEVPPKey parameters")
 	}
-	var curveID C.int
-	if curve != "" {
-		var err error
-		if curveID, err = curveNID(curve); err != nil {
-			return nil, err
-		}
-	}
 	var pkey C.GO_EVP_PKEY_PTR
 	switch vMajor {
 	case 1:
@@ -192,7 +185,7 @@ func generateEVPPKey(id C.int, bits int, curve string) (C.GO_EVP_PKEY_PTR, error
 			}
 		}
 		if curve != "" {
-			if C.go_openssl_EVP_PKEY_CTX_ctrl(ctx, id, -1, C.GO_EVP_PKEY_CTRL_EC_PARAMGEN_CURVE_NID, curveID, nil) != 1 {
+			if C.go_openssl_EVP_PKEY_CTX_ctrl(ctx, id, -1, C.GO_EVP_PKEY_CTRL_EC_PARAMGEN_CURVE_NID, curveNID(curve), nil) != 1 {
 				return nil, newOpenSSLError("EVP_PKEY_CTX_ctrl")
 			}
 		}
@@ -204,7 +197,7 @@ func generateEVPPKey(id C.int, bits int, curve string) (C.GO_EVP_PKEY_PTR, error
 		case C.GO_EVP_PKEY_RSA:
 			pkey = C.go_openssl_EVP_PKEY_Q_keygen_RSA(nil, nil, keyTypeRSA, C.size_t(bits))
 		case C.GO_EVP_PKEY_EC:
-			pkey = C.go_openssl_EVP_PKEY_Q_keygen_EC(nil, nil, keyTypeEC, C.go_openssl_OBJ_nid2sn(curveID))
+			pkey = C.go_openssl_EVP_PKEY_Q_keygen_EC(nil, nil, keyTypeEC, C.go_openssl_OBJ_nid2sn(curveNID(curve)))
 		case C.GO_EVP_PKEY_ED25519:
 			pkey = C.go_openssl_EVP_PKEY_Q_keygen(nil, nil, keyTypeED25519)
 		default:
