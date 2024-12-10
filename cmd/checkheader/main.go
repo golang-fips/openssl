@@ -228,7 +228,8 @@ func tryConvertDefineFunc(w io.Writer, l string, i int) bool {
 		return false
 	}
 	if strings.HasPrefix(l, "DEFINEFUNC_VARIADIC") {
-		// Variadic functions are not supported.
+		// Variadic functions are not supported. There is not enough
+		// information in the macro to create use it in writeDefineFunc.
 		return false
 	}
 	i1 := strings.IndexByte(l, '(')
