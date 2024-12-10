@@ -33,13 +33,13 @@ func TestDSAGenerateParameters(t *testing.T) {
 			if openssl.FIPS() {
 				t.Skip("generating DSA parameters with L = 2048 is not supported in FIPS mode")
 			}
-			testGenerateDSAParameters(t, test.L, test.N)
+			testGenerateParametersDSA(t, test.L, test.N)
 		})
 	}
 }
 
-func testGenerateDSAParameters(t *testing.T, L, N int) {
-	params, err := openssl.GenerateDSAParameters(L, N)
+func testGenerateParametersDSA(t *testing.T, L, N int) {
+	params, err := openssl.GenerateParametersDSA(L, N)
 	if err != nil {
 		t.Errorf("error generating parameters: %s", err)
 		return
@@ -64,17 +64,19 @@ func testGenerateDSAParameters(t *testing.T, L, N int) {
 	if rem.Sign() != 0 {
 		t.Error("p-1 mod q != 0")
 	}
-	x := new(big.Int).Exp(G, quo, P)
-	if x.Cmp(one) == 0 {
+	if x := new(big.Int).Exp(G, quo, P); x.Cmp(one) == 0 {
 		t.Error("invalid generator")
 	}
 
-	priv, err := openssl.GenerateKeyDSA(params)
+	x, y, err := openssl.GenerateKeyDSA(params)
 	if err != nil {
 		t.Errorf("error generating key: %s", err)
 		return
 	}
-
+	priv, err := openssl.NewPrivateKeyDSA(params, x, y)
+	if err != nil {
+		t.Errorf("error creating key: %s", err)
+	}
 	testDSASignAndVerify(t, priv)
 }
 
