@@ -5,18 +5,35 @@ package openssl
 // #include "goopenssl.h"
 import "C"
 
-func curveNID(curve string) (C.int, error) {
+func curveNID(curve string) C.int {
 	switch curve {
 	case "P-224":
-		return C.GO_NID_secp224r1, nil
+		return C.GO_NID_secp224r1
 	case "P-256":
-		return C.GO_NID_X9_62_prime256v1, nil
+		return C.GO_NID_X9_62_prime256v1
 	case "P-384":
-		return C.GO_NID_secp384r1, nil
+		return C.GO_NID_secp384r1
 	case "P-521":
-		return C.GO_NID_secp521r1, nil
+		return C.GO_NID_secp521r1
+	default:
+		panic("openssl: unknown curve " + curve)
 	}
-	return 0, errUnknownCurve
+}
+
+// curveSize returns the size of the curve in bytes.
+func curveSize(curve string) int {
+	switch curve {
+	case "P-224":
+		return 224 / 8
+	case "P-256":
+		return 256 / 8
+	case "P-384":
+		return 384 / 8
+	case "P-521":
+		return (521 + 7) / 8
+	default:
+		panic("openssl: unknown curve " + curve)
+	}
 }
 
 // encodeEcPoint encodes pt.
