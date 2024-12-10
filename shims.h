@@ -157,10 +157,13 @@ typedef void* GO_SHA_CTX_PTR;
 // DEFINEFUNC_RENAMED_3_0 acts like DEFINEFUNC but tries to load the function using the new name when using >= 3.x
 // and the old name when using 1.x. In both cases the function will have the new name.
 //
-// DEFINEFUNC_VARIADIC_3_0 defines a function that wraps an OpenSSL function with a different name and signature.
-// It should only be used for functions that can't be directly called from Go because their signature is not
-// compatible with cgo. The only known case are functions that take a variable number of arguments. See
-// https://github.com/golang/go/issues/975.
+// DEFINEFUNC_VARIADIC_3_0 acts like DEFINEFUNC but creates an alias with a more specific signature.
+// This is necessary to call variadic functions (functions that accept a variable number of arguments)
+// because variadic functions are not directly compatible with cgo. By defining a cgo-compatible alias
+// for each desired signature, the C compiler handles the variadic arguments rather than cgo.
+// Variadic functions are the only known incompatibility of this kind.
+// If you use this macro for a different reason, consider renaming it to something more general first.
+// See https://github.com/golang/go/issues/975.
 // The process is aborted if the function can't be loaded when using 3.0.0 or higher.
 //
 // #include <openssl/crypto.h>
