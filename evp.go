@@ -170,11 +170,11 @@ func generateEVPPKey(id C.int, bits int, curve string) (C.GO_EVP_PKEY_PTR, error
 	}
 	var curveID C.int
 	if curve != "" {
-	  var err error
-	  if curveID, err = curveNID(curve); err != nil {
-		  return nil, err
-	  }
-  }
+		var err error
+		if curveID, err = curveNID(curve); err != nil {
+			return nil, err
+		}
+	}
 	var pkey C.GO_EVP_PKEY_PTR
 	switch vMajor {
 	case 1:
