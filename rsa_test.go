@@ -259,17 +259,20 @@ func TestRSASignVerifyRSAPSS(t *testing.T) {
 	const keyBits = 2048
 	var saltLengthCombinations = []struct {
 		signSaltLength, verifySaltLength int
-		good                             bool
+		good, fipsGood                   bool
 	}{
-		{rsa.PSSSaltLengthAuto, rsa.PSSSaltLengthAuto, true},
-		{rsa.PSSSaltLengthEqualsHash, rsa.PSSSaltLengthAuto, true},
-		{rsa.PSSSaltLengthEqualsHash, rsa.PSSSaltLengthEqualsHash, true},
-		{rsa.PSSSaltLengthEqualsHash, 8, false},
-		{rsa.PSSSaltLengthAuto, rsa.PSSSaltLengthEqualsHash, false},
-		{8, 8, true},
-		{rsa.PSSSaltLengthAuto, keyBits/8 - 2 - 32, true}, // simulate Go PSSSaltLengthAuto algorithm (32 = sha256 size)
-		{rsa.PSSSaltLengthAuto, 20, false},
-		{rsa.PSSSaltLengthAuto, -2, false},
+		{rsa.PSSSaltLengthAuto, rsa.PSSSaltLengthAuto, true, true},
+		{rsa.PSSSaltLengthEqualsHash, rsa.PSSSaltLengthAuto, true, true},
+		{rsa.PSSSaltLengthEqualsHash, rsa.PSSSaltLengthEqualsHash, true, true},
+		{rsa.PSSSaltLengthEqualsHash, 8, false, false},
+		{rsa.PSSSaltLengthAuto, rsa.PSSSaltLengthEqualsHash, false, false},
+		{8, 8, true, true},
+		{rsa.PSSSaltLengthAuto, keyBits/8 - 2 - 32, true, true}, // simulate Go PSSSaltLengthAuto algorithm (32 = sha256 size)
+		// In FIPS mode, PSSSaltLengthAuto is capped at PSSSaltLengthEqualsHash.
+		{rsa.PSSSaltLengthAuto, rsa.PSSSaltLengthEqualsHash, false, true},
+		{rsa.PSSSaltLengthAuto, 106, true, false},
+		{rsa.PSSSaltLengthAuto, 20, false, true},
+		{rsa.PSSSaltLengthAuto, -2, false, false},
 	}
 	sha256 := openssl.NewSHA256()
 	priv, pub := newRSAKey(t, keyBits)
@@ -282,8 +285,12 @@ func TestRSASignVerifyRSAPSS(t *testing.T) {
 			continue
 		}
 		err = openssl.VerifyRSAPSS(pub, crypto.SHA256, hashed, signed, test.verifySaltLength)
-		if (err == nil) != test.good {
-			t.Errorf("#%d: bad result, wanted: %t, got: %s", i, test.good, err)
+		good := test.good
+		if openssl.FIPS() {
+			good = test.fipsGood
+		}
+		if (err == nil) != good {
+			t.Errorf("#%d: bad result, wanted: %t, got: %s", i, good, err)
 		}
 	}
 }
