@@ -267,10 +267,9 @@ func TestRSASignVerifyRSAPSS(t *testing.T) {
 		{rsa.PSSSaltLengthEqualsHash, 8, false, false},
 		{rsa.PSSSaltLengthAuto, rsa.PSSSaltLengthEqualsHash, false, false},
 		{8, 8, true, true},
-		{rsa.PSSSaltLengthAuto, keyBits/8 - 2 - 32, true, true}, // simulate Go PSSSaltLengthAuto algorithm (32 = sha256 size)
 		// In FIPS mode, PSSSaltLengthAuto is capped at PSSSaltLengthEqualsHash.
 		{rsa.PSSSaltLengthAuto, rsa.PSSSaltLengthEqualsHash, false, true},
-		{rsa.PSSSaltLengthAuto, 106, true, false},
+		{rsa.PSSSaltLengthAuto, keyBits/8 - 2 - 32, true, false}, // simulate Go PSSSaltLengthAuto algorithm (32 = sha256 size)
 		{rsa.PSSSaltLengthAuto, 20, false, true},
 		{rsa.PSSSaltLengthAuto, -2, false, false},
 	}
@@ -281,7 +280,7 @@ func TestRSASignVerifyRSAPSS(t *testing.T) {
 	for i, test := range saltLengthCombinations {
 		signed, err := openssl.SignRSAPSS(priv, crypto.SHA256, hashed, test.signSaltLength)
 		if err != nil {
-			t.Errorf("#%d: error while signing: %s", i, err)
+			t.Errorf("#%d: error while signing: %v", i, err)
 			continue
 		}
 		err = openssl.VerifyRSAPSS(pub, crypto.SHA256, hashed, signed, test.verifySaltLength)
@@ -290,7 +289,7 @@ func TestRSASignVerifyRSAPSS(t *testing.T) {
 			good = test.fipsGood
 		}
 		if (err == nil) != good {
-			t.Errorf("#%d: bad result, wanted: %t, got: %s", i, good, err)
+			t.Errorf("#%d: bad result, wanted: %t, got: %v", i, good, err)
 		}
 	}
 }
