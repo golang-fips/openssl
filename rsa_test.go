@@ -257,6 +257,7 @@ func TestRSASignVerifyRSAPSS(t *testing.T) {
 	// Test cases taken from
 	// https://github.com/golang/go/blob/54182ff54a687272dd7632c3a963e036ce03cb7c/src/crypto/rsa/pss_test.go#L200.
 	const keyBits = 2048
+	sha256 := openssl.NewSHA256()
 	var saltLengthCombinations = []struct {
 		signSaltLength, verifySaltLength int
 		good, fipsGood                   bool
@@ -269,11 +270,10 @@ func TestRSASignVerifyRSAPSS(t *testing.T) {
 		{8, 8, true, true},
 		// In FIPS mode, PSSSaltLengthAuto is capped at PSSSaltLengthEqualsHash.
 		{rsa.PSSSaltLengthAuto, rsa.PSSSaltLengthEqualsHash, false, true},
-		{rsa.PSSSaltLengthAuto, keyBits/8 - 2 - 32, true, false}, // simulate Go PSSSaltLengthAuto algorithm (32 = sha256 size)
-		{rsa.PSSSaltLengthAuto, 20, false, true},
+		{rsa.PSSSaltLengthAuto, keyBits/8 - 2 - sha256.Size(), true, false}, // simulate Go PSSSaltLengthAuto algorithm
+		{rsa.PSSSaltLengthAuto, sha256.Size(), false, true},
 		{rsa.PSSSaltLengthAuto, -2, false, false},
 	}
-	sha256 := openssl.NewSHA256()
 	priv, pub := newRSAKey(t, keyBits)
 	sha256.Write([]byte("testing"))
 	hashed := sha256.Sum(nil)
