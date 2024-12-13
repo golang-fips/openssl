@@ -193,6 +193,14 @@ func TestRSAEncryptDecryptOAEP_WrongLabel(t *testing.T) {
 	}
 }
 
+func TestSupportsSignatureRSAPKCS1v15(t *testing.T) {
+	// crypto.SHA256 should always be supported.
+	// Use it to test that the function works.
+	if !openssl.SupportsSignatureRSAPKCS1v15(crypto.SHA256) {
+		t.Error("crypto.SHA256 not supported")
+	}
+}
+
 func TestRSASignVerifyPKCS1v15(t *testing.T) {
 	priv, pub := newRSAKey(t, 2048)
 	// These are all the hashes supported by Go's crypto/rsa package
