@@ -14,13 +14,14 @@ import (
 	"unsafe"
 )
 
-var testRSAKey = sync.OnceValue(func() C.GO_EVP_PKEY_PTR {
-	pkey, err := generateEVPPKey(C.GO_EVP_PKEY_RSA, 512, "")
-	if err != nil {
+var testRSAPkey C.GO_EVP_PKEY_PTR
+
+var initTestRSAKey = sync.OnceFunc(func() {
+	testRSAPkey, _ = generateEVPPKey(C.GO_EVP_PKEY_RSA, 512, "")
+	if testRSAPkey == nil {
 		// Try with a larger key.
-		pkey, _ = generateEVPPKey(C.GO_EVP_PKEY_RSA, 1024, "")
+		testRSAPkey, _ = generateEVPPKey(C.GO_EVP_PKEY_RSA, 1024, "")
 	}
-	return pkey
 })
 
 var cachePKCS1Supported sync.Map
@@ -38,11 +39,11 @@ func SupportsSignatureRSAPKCS1v15(ch crypto.Hash) (supported bool) {
 	if ch != 0 && md == nil {
 		return false
 	}
-	pkey := testRSAKey()
-	if pkey == nil {
+	initTestRSAKey()
+	if testRSAPkey == nil {
 		return false
 	}
-	ctx := C.go_openssl_EVP_PKEY_CTX_new(pkey, nil)
+	ctx := C.go_openssl_EVP_PKEY_CTX_new(testRSAPkey, nil)
 	if ctx == nil {
 		return false
 	}
