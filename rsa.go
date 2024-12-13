@@ -16,12 +16,10 @@ import (
 
 var testRSAPkey C.GO_EVP_PKEY_PTR
 
+// Use sync.OnceFunc instead of sync.OnceValue to avoid the
+// memory sanitizer from incorrectly reporting the result as a leak.
 var initTestRSAKey = sync.OnceFunc(func() {
-	testRSAPkey, _ = generateEVPPKey(C.GO_EVP_PKEY_RSA, 512, "")
-	if testRSAPkey == nil {
-		// Try with a larger key.
-		testRSAPkey, _ = generateEVPPKey(C.GO_EVP_PKEY_RSA, 1024, "")
-	}
+	testRSAPkey, _ = generateEVPPKey(C.GO_EVP_PKEY_RSA, 1024, "")
 })
 
 var cachePKCS1Supported sync.Map
@@ -41,7 +39,9 @@ func SupportsSignatureRSAPKCS1v15(ch crypto.Hash) (supported bool) {
 	}
 	initTestRSAKey()
 	if testRSAPkey == nil {
-		return false
+		// The test key is not available, so we cannot determine if PKCS1 signatures are supported.
+		// Use SupportsHash instead as a fallback.
+		return SupportsHash(ch)
 	}
 	ctx := C.go_openssl_EVP_PKEY_CTX_new(testRSAPkey, nil)
 	if ctx == nil {
