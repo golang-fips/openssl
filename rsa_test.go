@@ -194,6 +194,60 @@ func TestRSAEncryptDecryptOAEP_WrongLabel(t *testing.T) {
 }
 
 func TestRSASignVerifyPKCS1v15(t *testing.T) {
+	priv, pub := newRSAKey(t, 2048)
+	// These are all the hashes supported by Go's crypto/rsa package
+	// as off Go 1.24.
+	hashes := []crypto.Hash{
+		0,
+		crypto.MD5SHA1,
+		crypto.MD5,
+		crypto.SHA1,
+		crypto.SHA224,
+		crypto.SHA256,
+		crypto.SHA512,
+		crypto.SHA512_224,
+		crypto.SHA512_256,
+		crypto.SHA3_224,
+		crypto.SHA3_256,
+		crypto.SHA3_512,
+		crypto.RIPEMD160,
+	}
+	for _, hash := range hashes {
+		var name string
+		if hash == 0 {
+			name = "unhashed"
+		} else {
+			name = hash.String()
+		}
+		t.Run(name, func(t *testing.T) {
+			if !openssl.SupportsSignatureRSAPKCS1v15(hash) {
+				t.Skip("skipping test because hash is not supported")
+			}
+			// Construct a fake hashed data.
+			size := 1
+			if hash != 0 {
+				size = hash.Size()
+			}
+			hashed := make([]byte, size)
+			hashed[0] = 0x30
+			signed, err := openssl.SignRSAPKCS1v15(priv, hash, hashed)
+			if err != nil {
+				if openssl.FIPS() && (hash == 0 || hash == crypto.MD5SHA1 || hash == crypto.MD5 || hash == crypto.RIPEMD160) {
+					// This test is not supported in FIPS mode, but at least we
+					// can check that we don't panic.
+					t.Skip("skipping test in FIPS mode")
+				}
+				t.Fatal(err)
+			}
+			err = openssl.VerifyRSAPKCS1v15(pub, hash, hashed, signed)
+			if err != nil {
+				t.Fatal(err)
+			}
+		})
+	}
+}
+
+func TestRSAHashSignVerifyPKCS1v15(t *testing.T) {
 	sha256 := openssl.NewSHA256()
 	priv, pub := newRSAKey(t, 2048)
 	msg := []byte("hi!")
@@ -215,23 +269,6 @@ func TestRSASignVerifyPKCS1v15(t *testing.T) {
 		t.Fatal(err)
 	}
 	err = openssl.HashVerifyRSAPKCS1v15(pub, crypto.SHA256, msg, signed2)
-	if err != nil {
-		t.Fatal(err)
-	}
-}
-
-func TestRSASignVerifyPKCS1v15_Unhashed(t *testing.T) {
-	if openssl.SymCryptProviderAvailable() {
-		t.Skip("SymCrypt provider does not support unhashed PKCS1v15")
-	}
-
-	msg := []byte("hi!")
-	priv, pub := newRSAKey(t, 2048)
-	signed, err := openssl.SignRSAPKCS1v15(priv, 0, msg)
-	if err != nil {
-		t.Fatal(err)
-	}
-	err = openssl.VerifyRSAPKCS1v15(pub, 0, msg, signed)
 	if err != nil {
 		t.Fatal(err)
 	}

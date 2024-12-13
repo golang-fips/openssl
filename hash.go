@@ -78,9 +78,28 @@ func SHA512(p []byte) (sum [64]byte) {
 	return
 }
 
+// cacheHashSupported is a cache of crypto.Hash support.
+var cacheHashSupported sync.Map
+
 // SupportsHash returns true if a hash.Hash implementation is supported for h.
 func SupportsHash(h crypto.Hash) bool {
-	return cryptoHashToMD(h) != nil
+	if v, ok := cacheHashSupported.Load(h); ok {
+		return v.(bool)
+	}
+	md := cryptoHashToMD(h)
+	if md == nil {
+		return false
+	}
+	// EVP_MD objects can be not-nil even when they can't be used
+	// in a EVP_MD_CTX, e.g. MD5 in FIPS mode. We need to prove
+	// if they can be used by passing them to a EVP_MD_CTX.
+	var supported bool
+	if ctx := C.go_openssl_EVP_MD_CTX_new(); ctx != nil {
+		supported = C.go_openssl_EVP_DigestInit_ex(ctx, md, nil) == 1
+		C.go_openssl_EVP_MD_CTX_free(ctx)
+	}
+	cacheHashSupported.Store(h, supported)
+	return supported
 }
 
 func SHA3_224(p []byte) (sum [28]byte) {

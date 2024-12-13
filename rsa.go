@@ -10,8 +10,54 @@ import (
 	"errors"
 	"hash"
 	"runtime"
+	"sync"
 	"unsafe"
 )
+
+var testRSAKey = sync.OnceValue(func() C.GO_EVP_PKEY_PTR {
+	pkey, err := generateEVPPKey(C.GO_EVP_PKEY_RSA, 512, "")
+	if err != nil {
+		// Try with a larger key.
+		pkey, _ = generateEVPPKey(C.GO_EVP_PKEY_RSA, 1024, "")
+	}
+	return pkey
+})
+
+var cachePKCS1Supported sync.Map
+
+// SupportsSignatureRSAPKCS1v15 returns true if PKCS1 signatures are supported
+// for the given hash.
+func SupportsSignatureRSAPKCS1v15(ch crypto.Hash) (supported bool) {
+	if val, ok := cachePKCS1Supported.Load(ch); ok {
+		return val.(bool)
+	}
+	defer func() {
+		cachePKCS1Supported.Store(ch, supported)
+	}()
+	md := cryptoHashToMD(ch)
+	if ch != 0 && md == nil {
+		return false
+	}
+	pkey := testRSAKey()
+	if pkey == nil {
+		return false
+	}
+	ctx := C.go_openssl_EVP_PKEY_CTX_new(pkey, nil)
+	if ctx == nil {
+		return false
+	}
+	defer C.go_openssl_EVP_PKEY_CTX_free(ctx)
+	if C.go_openssl_EVP_PKEY_sign_init(ctx) != 1 {
+		return false
+	}
+	if C.go_openssl_EVP_PKEY_CTX_ctrl(ctx, -1, -1, C.GO_EVP_PKEY_CTRL_MD, 0, unsafe.Pointer(md)) != 1 {
+		return false
+	}
+	if setRSAPAdding(ctx, C.GO_RSA_PKCS1_PADDING) != nil {
+		return false
+	}
+	return true
+}
 
 func GenerateKeyRSA(bits int) (N, E, D, P, Q, Dp, Dq, Qinv BigInt, err error) {
 	bad := func(e error) (N, E, D, P, Q, Dp, Dq, Qinv BigInt, err error) {

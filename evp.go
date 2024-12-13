@@ -89,78 +89,77 @@ func hashFuncToMD(fn func() hash.Hash) (C.GO_EVP_MD_PTR, error) {
 	return md, nil
 }
 
-// cryptoHashToMD converts a crypto.Hash to a GO_EVP_MD_PTR.
-func cryptoHashToMD(ch crypto.Hash) (md C.GO_EVP_MD_PTR) {
+// cryptoHashToMD converts a crypto.Hash to a EVP_MD.
+func cryptoHashToMD(ch crypto.Hash) C.GO_EVP_MD_PTR {
 	if v, ok := cacheMD.Load(ch); ok {
 		return v.(C.GO_EVP_MD_PTR)
 	}
-	defer func() {
-		if md != nil {
-			switch vMajor {
-			case 1:
-				// On OpenSSL 1 EVP_MD objects can be not-nil even
-				// when they are not supported. We need to pass the md
-				// to a EVP_MD_CTX to really know if they can be used.
-				ctx := C.go_openssl_EVP_MD_CTX_new()
-				if C.go_openssl_EVP_DigestInit_ex(ctx, md, nil) != 1 {
-					md = nil
-				}
-				C.go_openssl_EVP_MD_CTX_free(ctx)
-			case 3:
-				// On OpenSSL 3, directly operating on a EVP_MD object
-				// not created by EVP_MD_fetch has negative performance
-				// implications, as digest operations will have
-				// to fetch it on every call. Better to just fetch it once here.
-				md = C.go_openssl_EVP_MD_fetch(nil, C.go_openssl_EVP_MD_get0_name(md), nil)
-			default:
-				panic(errUnsupportedVersion())
-			}
-		}
-		cacheMD.Store(ch, md)
-	}()
-	// SupportsHash returns false for MD5SHA1 because we don't
-	// provide a hash.Hash implementation for it. Yet, it can
-	// still be used when signing/verifying with an RSA key.
-	if ch == crypto.MD5SHA1 {
-		if vMajor == 1 && vMinor == 0 {
-			return C.go_openssl_EVP_md5_sha1_backport()
-		} else {
-			return C.go_openssl_EVP_md5_sha1()
-		}
-	}
+	var md C.GO_EVP_MD_PTR
 	switch ch {
+	case crypto.RIPEMD160:
+		md = C.go_openssl_EVP_ripemd160()
 	case crypto.MD4:
-		return C.go_openssl_EVP_md4()
+		md = C.go_openssl_EVP_md4()
 	case crypto.MD5:
-		return C.go_openssl_EVP_md5()
+		md = C.go_openssl_EVP_md5()
+	case crypto.MD5SHA1:
+		if vMajor == 1 && vMinor == 0 {
+			md = C.go_openssl_EVP_md5_sha1_backport()
+		} else {
+			md = C.go_openssl_EVP_md5_sha1()
+		}
 	case crypto.SHA1:
-		return C.go_openssl_EVP_sha1()
+		md = C.go_openssl_EVP_sha1()
 	case crypto.SHA224:
-		return C.go_openssl_EVP_sha224()
+		md = C.go_openssl_EVP_sha224()
 	case crypto.SHA256:
-		return C.go_openssl_EVP_sha256()
+		md = C.go_openssl_EVP_sha256()
 	case crypto.SHA384:
-		return C.go_openssl_EVP_sha384()
+		md = C.go_openssl_EVP_sha384()
 	case crypto.SHA512:
-		return C.go_openssl_EVP_sha512()
+		md = C.go_openssl_EVP_sha512()
+	case crypto.SHA512_224:
+		if versionAtOrAbove(1, 1, 1) {
+			md = C.go_openssl_EVP_sha512_224()
+		}
+	case crypto.SHA512_256:
+		if versionAtOrAbove(1, 1, 1) {
+			md = C.go_openssl_EVP_sha512_256()
+		}
 	case crypto.SHA3_224:
 		if versionAtOrAbove(1, 1, 1) {
-			return C.go_openssl_EVP_sha3_224()
+			md = C.go_openssl_EVP_sha3_224()
 		}
 	case crypto.SHA3_256:
 		if versionAtOrAbove(1, 1, 1) {
-			return C.go_openssl_EVP_sha3_256()
+			md = C.go_openssl_EVP_sha3_256()
 		}
 	case crypto.SHA3_384:
 		if versionAtOrAbove(1, 1, 1) {
-			return C.go_openssl_EVP_sha3_384()
+			md = C.go_openssl_EVP_sha3_384()
 		}
 	case crypto.SHA3_512:
 		if versionAtOrAbove(1, 1, 1) {
-			return C.go_openssl_EVP_sha3_512()
+			md = C.go_openssl_EVP_sha3_512()
 		}
 	}
-	return nil
+	if md == nil {
+		cacheMD.Store(ch, nil)
+	}
+	if vMajor == 3 {
+		// On OpenSSL 3, directly operating on a EVP_MD object
+		// not created by EVP_MD_fetch has negative performance
+		// implications, as digest operations will have
+		// to fetch it on every call. Better to just fetch it once here.
+		md1 := C.go_openssl_EVP_MD_fetch(nil, C.go_openssl_EVP_MD_get0_name(md), nil)
+		// Don't overwrite md in case it can't be fetched, as the md may still be used
+		// outside of EVP_MD_CTX, for example to sign and verify RSA signatures.
+		if md1 != nil {
+			md = md1
+		}
+	}
+	cacheMD.Store(ch, md)
+	return md
 }
 
 // generateEVPPKey generates a new EVP_PKEY with the given id and properties.
@@ -218,6 +217,13 @@ type initFunc func(C.GO_EVP_PKEY_CTX_PTR) error
 type cryptFunc func(C.GO_EVP_PKEY_CTX_PTR, *C.uchar, *C.size_t, *C.uchar, C.size_t) error
 type verifyFunc func(C.GO_EVP_PKEY_CTX_PTR, *C.uchar, C.size_t, *C.uchar, C.size_t) error
 
+func setRSAPAdding(ctx C.GO_EVP_PKEY_CTX_PTR, padding C.int) error {
+	if C.go_openssl_EVP_PKEY_CTX_ctrl(ctx, C.GO_EVP_PKEY_RSA, -1, C.GO_EVP_PKEY_CTRL_RSA_PADDING, padding, nil) != 1 {
+		return newOpenSSLError("EVP_PKEY_CTX_ctrl failed")
+	}
+	return nil
+}
+
 func setupEVP(withKey withKeyFunc, padding C.int,
 	h, mgfHash hash.Hash, label []byte, saltLen C.int, ch crypto.Hash,
 	init initFunc) (_ C.GO_EVP_PKEY_CTX_PTR, err error) {
@@ -246,10 +252,7 @@ func setupEVP(withKey withKeyFunc, padding C.int,
 	// Each padding type has its own requirements in terms of when to apply the padding,
 	// so it can't be just set at this point.
 	setPadding := func() error {
-		if C.go_openssl_EVP_PKEY_CTX_ctrl(ctx, C.GO_EVP_PKEY_RSA, -1, C.GO_EVP_PKEY_CTRL_RSA_PADDING, padding, nil) != 1 {
-			return newOpenSSLError("EVP_PKEY_CTX_ctrl failed")
-		}
-		return nil
+		return setRSAPAdding(ctx, padding)
 	}
 	switch padding {
 	case C.GO_RSA_PKCS1_OAEP_PADDING:
