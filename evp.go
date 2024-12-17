@@ -145,6 +145,7 @@ func cryptoHashToMD(ch crypto.Hash) C.GO_EVP_MD_PTR {
 	}
 	if md == nil {
 		cacheMD.Store(ch, nil)
+		return nil
 	}
 	if vMajor == 3 {
 		// On OpenSSL 3, directly operating on a EVP_MD object
