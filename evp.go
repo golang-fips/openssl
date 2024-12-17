@@ -217,13 +217,6 @@ type initFunc func(C.GO_EVP_PKEY_CTX_PTR) error
 type cryptFunc func(C.GO_EVP_PKEY_CTX_PTR, *C.uchar, *C.size_t, *C.uchar, C.size_t) error
 type verifyFunc func(C.GO_EVP_PKEY_CTX_PTR, *C.uchar, C.size_t, *C.uchar, C.size_t) error
 
-func setRSAPAdding(ctx C.GO_EVP_PKEY_CTX_PTR, padding C.int) error {
-	if C.go_openssl_EVP_PKEY_CTX_ctrl(ctx, C.GO_EVP_PKEY_RSA, -1, C.GO_EVP_PKEY_CTRL_RSA_PADDING, padding, nil) != 1 {
-		return newOpenSSLError("EVP_PKEY_CTX_ctrl failed")
-	}
-	return nil
-}
-
 func setupEVP(withKey withKeyFunc, padding C.int,
 	h, mgfHash hash.Hash, label []byte, saltLen C.int, ch crypto.Hash,
 	init initFunc) (_ C.GO_EVP_PKEY_CTX_PTR, err error) {
@@ -252,7 +245,10 @@ func setupEVP(withKey withKeyFunc, padding C.int,
 	// Each padding type has its own requirements in terms of when to apply the padding,
 	// so it can't be just set at this point.
 	setPadding := func() error {
-		return setRSAPAdding(ctx, padding)
+		if C.go_openssl_EVP_PKEY_CTX_ctrl(ctx, C.GO_EVP_PKEY_RSA, -1, C.GO_EVP_PKEY_CTRL_RSA_PADDING, padding, nil) != 1 {
+			return newOpenSSLError("EVP_PKEY_CTX_ctrl failed")
+		}
+		return nil
 	}
 	switch padding {
 	case C.GO_RSA_PKCS1_OAEP_PADDING:
