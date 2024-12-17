@@ -194,26 +194,26 @@ func TestRSAEncryptDecryptOAEP_WrongLabel(t *testing.T) {
 	}
 }
 
+// These are all the hashes supported by Go's crypto/rsa package
+// as off Go 1.24.
+var stdHashes = [...]crypto.Hash{
+	crypto.MD5SHA1,
+	crypto.MD5,
+	crypto.SHA1,
+	crypto.SHA224,
+	crypto.SHA256,
+	crypto.SHA512,
+	crypto.SHA512_224,
+	crypto.SHA512_256,
+	crypto.SHA3_224,
+	crypto.SHA3_256,
+	crypto.SHA3_512,
+	crypto.RIPEMD160,
+}
+
 func TestRSASignVerifyPKCS1v15(t *testing.T) {
 	priv, pub := newRSAKey(t, 2048)
-	// These are all the hashes supported by Go's crypto/rsa package
-	// as off Go 1.24.
-	hashes := []crypto.Hash{
-		0,
-		crypto.MD5SHA1,
-		crypto.MD5,
-		crypto.SHA1,
-		crypto.SHA224,
-		crypto.SHA256,
-		crypto.SHA512,
-		crypto.SHA512_224,
-		crypto.SHA512_256,
-		crypto.SHA3_224,
-		crypto.SHA3_256,
-		crypto.SHA3_512,
-		crypto.RIPEMD160,
-	}
-	for _, hash := range hashes {
+	for _, hash := range append([]crypto.Hash{0}, stdHashes[:]...) {
 		var name string
 		if hash == 0 {
 			name = "unhashed"
@@ -290,6 +290,35 @@ func TestRSASignVerifyPKCS1v15_Invalid(t *testing.T) {
 }
 
 func TestRSASignVerifyRSAPSS(t *testing.T) {
+	priv, pub := newRSAKey(t, 2048)
+	for _, hash := range stdHashes {
+		t.Run(hash.String(), func(t *testing.T) {
+			if !openssl.SupportsHash(hash) {
+				t.Skip("skipping test because hash is not supported")
+			}
+			// Construct a fake hashed data.
+			size := 1
+			if hash != 0 {
+				size = hash.Size()
+			}
+			hashed := make([]byte, size)
+			hashed[0] = 0x30
+			signed, err := openssl.SignRSAPSS(priv, hash, hashed, rsa.PSSSaltLengthEqualsHash)
+			if err != nil {
+				if strings.Contains(err.Error(), "check_padding_md:invalid digest") {
+					t.Skip("skipping test because hash is not supported by PKCS1v15")
+				}
+				t.Fatal(err)
+			}
+			err = openssl.VerifyRSAPSS(pub, hash, hashed, signed, rsa.PSSSaltLengthEqualsHash)
+			if err != nil {
+				t.Fatal(err)
+			}
+		})
+	}
+}
+
+func TestRSASignVerifyRSAPSS_SaltLength(t *testing.T) {
 	// Test cases taken from
 	// https://github.com/golang/go/blob/54182ff54a687272dd7632c3a963e036ce03cb7c/src/crypto/rsa/pss_test.go#L200.
 	const keyBits = 2048
