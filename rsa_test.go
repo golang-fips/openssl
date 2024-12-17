@@ -233,8 +233,10 @@ func TestRSASignVerifyPKCS1v15(t *testing.T) {
 			hashed[0] = 0x30
 			signed, err := openssl.SignRSAPKCS1v15(priv, hash, hashed)
 			if err != nil {
-				if strings.Contains(err.Error(), "check_padding_md:invalid digest") {
-					t.Skip("skipping test because hash is not supported by PKCS1v15")
+				if strings.Contains(err.Error(), "invalid digest") || strings.Contains(err.Error(), "digest not allowed") {
+					// Can happen if the hash is supported by EVP_MD_CTX but not by EVP_PKEY_CTX.
+					// There is nothing we can do about it.
+					t.Skip("skipping test because hash is not supported")
 				}
 				t.Fatal(err)
 			}
@@ -305,8 +307,10 @@ func TestRSASignVerifyRSAPSS(t *testing.T) {
 			hashed[0] = 0x30
 			signed, err := openssl.SignRSAPSS(priv, hash, hashed, rsa.PSSSaltLengthEqualsHash)
 			if err != nil {
-				if strings.Contains(err.Error(), "check_padding_md:invalid digest") {
-					t.Skip("skipping test because hash is not supported by PKCS1v15")
+				if strings.Contains(err.Error(), "invalid digest") || strings.Contains(err.Error(), "digest not allowed") {
+					// Can happen if the hash is supported by EVP_MD_CTX but not by EVP_PKEY_CTX.
+					// There is nothing we can do about it.
+					t.Skip("skipping test because hash is not supported")
 				}
 				t.Fatal(err)
 			}
