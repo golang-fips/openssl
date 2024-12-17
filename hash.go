@@ -81,16 +81,17 @@ func SHA512(p []byte) (sum [64]byte) {
 // cacheHashSupported is a cache of crypto.Hash support.
 var cacheHashSupported sync.Map
 
-// SupportsHash returns true if a hash.Hash implementation is supported for h.
+// SupportsHash reports whether the current OpenSSL version supports the given hash.
 func SupportsHash(h crypto.Hash) bool {
 	if v, ok := cacheHashSupported.Load(h); ok {
 		return v.(bool)
 	}
 	md := cryptoHashToMD(h)
 	if md == nil {
+		cacheHashSupported.Store(h, false)
 		return false
 	}
-	// EVP_MD objects can be not-nil even when they can't be used
+	// EVP_MD objects can be non-nil even when they can't be used
 	// in a EVP_MD_CTX, e.g. MD5 in FIPS mode. We need to prove
 	// if they can be used by passing them to a EVP_MD_CTX.
 	var supported bool

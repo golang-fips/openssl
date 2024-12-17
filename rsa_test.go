@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"math/big"
 	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/golang-fips/openssl/v2"
@@ -193,14 +194,6 @@ func TestRSAEncryptDecryptOAEP_WrongLabel(t *testing.T) {
 	}
 }
 
-func TestSupportsSignatureRSAPKCS1v15(t *testing.T) {
-	// crypto.SHA256 should always be supported.
-	// Use it to test that the function works.
-	if !openssl.SupportsSignatureRSAPKCS1v15(crypto.SHA256) {
-		t.Error("crypto.SHA256 not supported")
-	}
-}
-
 func TestRSASignVerifyPKCS1v15(t *testing.T) {
 	priv, pub := newRSAKey(t, 2048)
 	// These are all the hashes supported by Go's crypto/rsa package
@@ -228,7 +221,7 @@ func TestRSASignVerifyPKCS1v15(t *testing.T) {
 			name = hash.String()
 		}
 		t.Run(name, func(t *testing.T) {
-			if !openssl.SupportsSignatureRSAPKCS1v15(hash) {
+			if hash != 0 && !openssl.SupportsHash(hash) {
 				t.Skip("skipping test because hash is not supported")
 			}
 			// Construct a fake hashed data.
@@ -240,10 +233,8 @@ func TestRSASignVerifyPKCS1v15(t *testing.T) {
 			hashed[0] = 0x30
 			signed, err := openssl.SignRSAPKCS1v15(priv, hash, hashed)
 			if err != nil {
-				if openssl.FIPS() && (hash == 0 || hash == crypto.MD5SHA1 || hash == crypto.MD5 || hash == crypto.RIPEMD160) {
-					// This test is not supported in FIPS mode, but at least we
-					// can check that we don't panic.
-					t.Skip("skipping test in FIPS mode")
+				if strings.Contains(err.Error(), "check_padding_md:invalid digest") {
+					t.Skip("skipping test because hash is not supported by PKCS1v15")
 				}
 				t.Fatal(err)
 			}

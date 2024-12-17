@@ -10,53 +10,8 @@ import (
 	"errors"
 	"hash"
 	"runtime"
-	"sync"
 	"unsafe"
 )
-
-var testRSAPkey C.GO_EVP_PKEY_PTR
-
-// Use sync.OnceFunc instead of sync.OnceValue to avoid the
-// memory sanitizer from incorrectly reporting the result as a leak.
-var initTestRSAKey = sync.OnceFunc(func() {
-	testRSAPkey, _ = generateEVPPKey(C.GO_EVP_PKEY_RSA, 1024, "")
-})
-
-var cachePKCS1Supported sync.Map
-
-// SupportsSignatureRSAPKCS1v15 returns true if PKCS1 signatures are supported
-// for the given hash.
-func SupportsSignatureRSAPKCS1v15(ch crypto.Hash) (supported bool) {
-	if val, ok := cachePKCS1Supported.Load(ch); ok {
-		return val.(bool)
-	}
-	defer func() {
-		cachePKCS1Supported.Store(ch, supported)
-	}()
-	var md C.GO_EVP_MD_PTR
-	if ch != 0 {
-		md = cryptoHashToMD(ch)
-		if md == nil {
-			return false
-		}
-	}
-	initTestRSAKey()
-	if testRSAPkey == nil {
-		return false
-	}
-	ctx := C.go_openssl_EVP_PKEY_CTX_new(testRSAPkey, nil)
-	if ctx == nil {
-		return false
-	}
-	defer C.go_openssl_EVP_PKEY_CTX_free(ctx)
-
-	msg := make([]byte, 1)
-	var outLen C.size_t
-	return C.go_openssl_EVP_PKEY_sign_init(ctx) == 1 &&
-		C.go_openssl_EVP_PKEY_CTX_ctrl(ctx, -1, -1, C.GO_EVP_PKEY_CTRL_MD, 0, unsafe.Pointer(md)) == 1 &&
-		setRSAPAdding(ctx, C.GO_RSA_PKCS1_PADDING) == nil &&
-		C.go_openssl_EVP_PKEY_sign(ctx, nil, &outLen, base(msg), C.size_t(len(msg))) == 1
-}
 
 func GenerateKeyRSA(bits int) (N, E, D, P, Q, Dp, Dq, Qinv BigInt, err error) {
 	bad := func(e error) (N, E, D, P, Q, Dp, Dq, Qinv BigInt, err error) {
