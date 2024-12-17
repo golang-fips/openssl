@@ -195,7 +195,7 @@ func TestRSAEncryptDecryptOAEP_WrongLabel(t *testing.T) {
 }
 
 // These are all the hashes supported by Go's crypto/rsa package
-// as off Go 1.24.
+// as of Go 1.24.
 var stdHashes = [...]crypto.Hash{
 	crypto.MD5SHA1,
 	crypto.MD5,
