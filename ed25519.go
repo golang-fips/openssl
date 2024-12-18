@@ -108,7 +108,7 @@ func GenerateKeyEd25519() (*PrivateKeyEd25519, error) {
 	return priv, nil
 }
 
-// Deprecated: NewPrivateKeyEd25119 has been deprecated in favor of NewPrivateKeyEd25519.
+// Deprecated: use NewPrivateKeyEd25519 instead.
 func NewPrivateKeyEd25119(priv []byte) (*PrivateKeyEd25519, error) {
 	return NewPrivateKeyEd25519(priv)
 }
@@ -120,7 +120,7 @@ func NewPrivateKeyEd25519(priv []byte) (*PrivateKeyEd25519, error) {
 	return NewPrivateKeyEd25519FromSeed(priv[:seedSizeEd25519])
 }
 
-// Deprecated: NewPublicKeyEd25119 has been deprecated in favor of NewPublicKeyEd25519.
+// Deprecated: use NewPublicKeyEd25519 instead.
 func NewPublicKeyEd25119(pub []byte) (*PublicKeyEd25519, error) {
 	return NewPublicKeyEd25519(pub)
 }
