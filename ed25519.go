@@ -108,11 +108,21 @@ func GenerateKeyEd25519() (*PrivateKeyEd25519, error) {
 	return priv, nil
 }
 
+// Deprecated: NewPrivateKeyEd25119 has been deprecated in favor of NewPrivateKeyEd25519.
+func NewPrivateKeyEd25119(priv []byte) (*PrivateKeyEd25519, error) {
+	return NewPrivateKeyEd25519(priv)
+}
+
 func NewPrivateKeyEd25519(priv []byte) (*PrivateKeyEd25519, error) {
 	if len(priv) != privateKeySizeEd25519 {
 		panic("ed25519: bad private key length: " + strconv.Itoa(len(priv)))
 	}
 	return NewPrivateKeyEd25519FromSeed(priv[:seedSizeEd25519])
+}
+
+// Deprecated: NewPublicKeyEd25119 has been deprecated in favor of NewPublicKeyEd25519.
+func NewPublicKeyEd25119(pub []byte) (*PublicKeyEd25519, error) {
+	return NewPublicKeyEd25519(pub)
 }
 
 func NewPublicKeyEd25519(pub []byte) (*PublicKeyEd25519, error) {
