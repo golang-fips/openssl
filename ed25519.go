@@ -90,7 +90,7 @@ func (k *PrivateKeyEd25519) Public() (*PublicKeyEd25519, error) {
 	if err := extractPKEYPubEd25519(k._pkey, pub); err != nil {
 		return nil, err
 	}
-	pubk, err := NewPublicKeyEd25119(pub)
+	pubk, err := NewPublicKeyEd25519(pub)
 	if err != nil {
 		return nil, err
 	}
@@ -108,14 +108,14 @@ func GenerateKeyEd25519() (*PrivateKeyEd25519, error) {
 	return priv, nil
 }
 
-func NewPrivateKeyEd25119(priv []byte) (*PrivateKeyEd25519, error) {
+func NewPrivateKeyEd25519(priv []byte) (*PrivateKeyEd25519, error) {
 	if len(priv) != privateKeySizeEd25519 {
 		panic("ed25519: bad private key length: " + strconv.Itoa(len(priv)))
 	}
 	return NewPrivateKeyEd25519FromSeed(priv[:seedSizeEd25519])
 }
 
-func NewPublicKeyEd25119(pub []byte) (*PublicKeyEd25519, error) {
+func NewPublicKeyEd25519(pub []byte) (*PublicKeyEd25519, error) {
 	if len(pub) != publicKeySizeEd25519 {
 		panic("ed25519: bad public key length: " + strconv.Itoa(len(pub)))
 	}

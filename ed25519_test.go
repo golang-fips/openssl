@@ -82,7 +82,7 @@ func TestEd25519Malleability(t *testing.T) {
 		0xb1, 0x08, 0xc3, 0xbd, 0xae, 0x36, 0x9e, 0xf5, 0x49, 0xfa,
 	}
 
-	pub, err := openssl.NewPublicKeyEd25119(publicKey)
+	pub, err := openssl.NewPublicKeyEd25519(publicKey)
 	if err != nil {
 		t.Fatal(err)
 	}
