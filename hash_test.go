@@ -377,6 +377,13 @@ func BenchmarkSHA256(b *testing.B) {
 	}
 }
 
+func BenchmarkNewSHA256(b *testing.B) {
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+		openssl.NewSHA256()
+	}
+}
+
 // stubHash is a hash.Hash implementation that does nothing.
 type stubHash struct{}
 
