@@ -168,7 +168,7 @@ func loadHash(ch crypto.Hash) *hashAlgorithm {
 			hash.md = md
 		}
 	}
-	hash.marshallable = isHashMarshallable(hash.md)
+	hash.marshallable = hash.magic != "" && isHashMarshallable(hash.md)
 	cacheMD.Store(ch, &hash)
 	return &hash
 }

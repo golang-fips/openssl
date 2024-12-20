@@ -110,7 +110,7 @@ func TestHash_BinaryMarshaler(t *testing.T) {
 
 			state, err := hashMarshaler.MarshalBinary()
 			if err != nil {
-				if strings.Contains(err.Error(), "unsupported hash function") {
+				if strings.Contains(err.Error(), "hash state is not marshallable") {
 					t.Skip("BinaryMarshaler not supported")
 				}
 				t.Fatalf("MarshalBinary failed: %v", err)
@@ -160,7 +160,7 @@ func TestHash_BinaryAppender(t *testing.T) {
 			// Append binary data to the prebuilt slice
 			state, err := hashWithBinaryAppender.AppendBinary(prebuiltSlice)
 			if err != nil {
-				if strings.Contains(err.Error(), "unsupported hash function") {
+				if strings.Contains(err.Error(), "hash state is not marshallable") {
 					t.Skip("AppendBinary not supported")
 				}
 				t.Errorf("could not append binary: %v", err)

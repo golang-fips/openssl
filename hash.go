@@ -384,7 +384,7 @@ func (d *evpHash) AppendBinary(buf []byte) ([]byte, error) {
 	case crypto.SHA512:
 		appender = (*sha512State)(state)
 	default:
-		return nil, errors.New("openssl: unsupported hash function: " + strconv.Itoa(int(d.alg.ch)))
+		panic("openssl: unsupported hash function: " + strconv.Itoa(int(d.alg.ch)))
 	}
 	buf = append(buf, d.alg.magic[:]...)
 	return appender.AppendBinary(buf)
@@ -422,7 +422,7 @@ func (d *evpHash) UnmarshalBinary(b []byte) error {
 	case crypto.SHA512:
 		unmarshaler = (*sha512State)(state)
 	default:
-		return errors.New("openssl: unsupported hash function: " + strconv.Itoa(int(d.alg.ch)))
+		panic("openssl: unsupported hash function: " + strconv.Itoa(int(d.alg.ch)))
 	}
 	return unmarshaler.UnmarshalBinary(b)
 }
