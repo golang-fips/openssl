@@ -6,6 +6,7 @@ import (
 	"encoding"
 	"hash"
 	"io"
+	"strings"
 	"testing"
 
 	"github.com/golang-fips/openssl/v2"
@@ -100,7 +101,7 @@ func TestHash_BinaryMarshaler(t *testing.T) {
 				encoding.BinaryMarshaler
 			})
 			if !ok {
-				t.Skip("BinaryMarshaler not supported")
+				t.Fatal("BinaryMarshaler not supported")
 			}
 
 			if _, err := hashMarshaler.Write(msg); err != nil {
@@ -109,6 +110,9 @@ func TestHash_BinaryMarshaler(t *testing.T) {
 
 			state, err := hashMarshaler.MarshalBinary()
 			if err != nil {
+				if strings.Contains(err.Error(), "unsupported hash function") {
+					t.Skip("BinaryMarshaler not supported")
+				}
 				t.Fatalf("MarshalBinary failed: %v", err)
 			}
 
@@ -140,7 +144,7 @@ func TestHash_BinaryAppender(t *testing.T) {
 				AppendBinary(b []byte) ([]byte, error)
 			})
 			if !ok {
-				t.Skip("not supported")
+				t.Fatal("AppendBinary not supported")
 			}
 
 			// Create a slice with 10 elements
@@ -156,6 +160,9 @@ func TestHash_BinaryAppender(t *testing.T) {
 			// Append binary data to the prebuilt slice
 			state, err := hashWithBinaryAppender.AppendBinary(prebuiltSlice)
 			if err != nil {
+				if strings.Contains(err.Error(), "unsupported hash function") {
+					t.Skip("AppendBinary not supported")
+				}
 				t.Errorf("could not append binary: %v", err)
 			}
 
