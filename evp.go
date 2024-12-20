@@ -156,7 +156,6 @@ func loadHash(ch crypto.Hash) *hashAlgorithm {
 	hash.ch = ch
 	hash.size = int(C.go_openssl_EVP_MD_get_size(hash.md))
 	hash.blockSize = int(C.go_openssl_EVP_MD_get_block_size(hash.md))
-	hash.marshallable = isHashMarshallable(hash.md)
 	if vMajor == 3 {
 		// On OpenSSL 3, directly operating on a EVP_MD object
 		// not created by EVP_MD_fetch has negative performance
@@ -169,6 +168,7 @@ func loadHash(ch crypto.Hash) *hashAlgorithm {
 			hash.md = md
 		}
 	}
+	hash.marshallable = isHashMarshallable(hash.md)
 	cacheMD.Store(ch, &hash)
 	return &hash
 }
