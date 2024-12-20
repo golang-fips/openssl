@@ -96,7 +96,8 @@ func loadHash(ch crypto.Hash) *hashAlgorithm {
 		hash.marshalledSize = md5MarshaledSize
 	case crypto.MD5SHA1:
 		if vMajor == 1 && vMinor == 0 {
-			hash.md = C.go_openssl_EVP_md5_sha1_backport()
+			// OpenSSL 1.0.2 does not support MD5SHA1.
+			hash.md = nil
 		} else {
 			hash.md = C.go_openssl_EVP_md5_sha1()
 		}

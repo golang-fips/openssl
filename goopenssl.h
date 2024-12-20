@@ -27,7 +27,6 @@ int go_openssl_version_minor(void* handle);
 int go_openssl_version_patch(void* handle);
 int go_openssl_thread_setup(void);
 void go_openssl_load_functions(void* handle, unsigned int major, unsigned int minor, unsigned int patch);
-const GO_EVP_MD_PTR go_openssl_EVP_md5_sha1_backport(void);
 void go_openssl_DSA_get0_pqg_backport(const GO_DSA_PTR d, GO_BIGNUM_PTR *p, GO_BIGNUM_PTR *q, GO_BIGNUM_PTR *g);
 int go_openssl_DSA_set0_pqg_backport(GO_DSA_PTR d, GO_BIGNUM_PTR p, GO_BIGNUM_PTR q, GO_BIGNUM_PTR g);
 void go_openssl_DSA_get0_key_backport(const GO_DSA_PTR d, GO_BIGNUM_PTR *pub_key, GO_BIGNUM_PTR *priv_key);
