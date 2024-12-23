@@ -81,6 +81,20 @@ func SHA512(p []byte) (sum [64]byte) {
 	return
 }
 
+func SHA512_224(p []byte) (sum [28]byte) {
+	if !hashOneShot(crypto.SHA512_224, p, sum[:]) {
+		panic("openssl: SHA512 failed")
+	}
+	return
+}
+
+func SHA512_256(p []byte) (sum [32]byte) {
+	if !hashOneShot(crypto.SHA512_256, p, sum[:]) {
+		panic("openssl: SHA512_256 failed")
+	}
+	return
+}
+
 // cacheHashSupported is a cache of crypto.Hash support.
 var cacheHashSupported sync.Map
 
@@ -169,6 +183,16 @@ func NewSHA384() hash.Hash {
 // NewSHA512 returns a new SHA512 hash.
 func NewSHA512() hash.Hash {
 	return newEvpHash(crypto.SHA512)
+}
+
+// NewSHA512_224 returns a new SHA512_224 hash.
+func NewSHA512_224() hash.Hash {
+	return newEvpHash(crypto.SHA512_224)
+}
+
+// NewSHA512_256 returns a new SHA512_256 hash.
+func NewSHA512_256() hash.Hash {
+	return newEvpHash(crypto.SHA512_256)
 }
 
 // NewSHA3_224 returns a new SHA3-224 hash.
@@ -383,6 +407,10 @@ func (d *evpHash) AppendBinary(buf []byte) ([]byte, error) {
 		appender = (*sha512State)(state)
 	case crypto.SHA512:
 		appender = (*sha512State)(state)
+	case crypto.SHA512_224:
+		appender = (*sha512State)(state)
+	case crypto.SHA512_256:
+		appender = (*sha512State)(state)
 	default:
 		panic("openssl: unsupported hash function: " + strconv.Itoa(int(d.alg.ch)))
 	}
@@ -420,6 +448,10 @@ func (d *evpHash) UnmarshalBinary(b []byte) error {
 	case crypto.SHA384:
 		unmarshaler = (*sha512State)(state)
 	case crypto.SHA512:
+		unmarshaler = (*sha512State)(state)
+	case crypto.SHA512_224:
+		unmarshaler = (*sha512State)(state)
+	case crypto.SHA512_256:
 		unmarshaler = (*sha512State)(state)
 	default:
 		panic("openssl: unsupported hash function: " + strconv.Itoa(int(d.alg.ch)))

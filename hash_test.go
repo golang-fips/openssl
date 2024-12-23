@@ -28,6 +28,10 @@ func cryptoToHash(h crypto.Hash) func() hash.Hash {
 		return openssl.NewSHA384
 	case crypto.SHA512:
 		return openssl.NewSHA512
+	case crypto.SHA512_224:
+		return openssl.NewSHA512_224
+	case crypto.SHA512_256:
+		return openssl.NewSHA512_256
 	case crypto.SHA3_224:
 		return openssl.NewSHA3_224
 	case crypto.SHA3_256:
@@ -48,6 +52,8 @@ var hashes = [...]crypto.Hash{
 	crypto.SHA256,
 	crypto.SHA384,
 	crypto.SHA512,
+	crypto.SHA512_224,
+	crypto.SHA512_256,
 	crypto.SHA3_224,
 	crypto.SHA3_256,
 	crypto.SHA3_384,
@@ -292,6 +298,14 @@ func TestHash_OneShot(t *testing.T) {
 		}},
 		{crypto.SHA512, func(p []byte) []byte {
 			b := openssl.SHA512(p)
+			return b[:]
+		}},
+		{crypto.SHA512_224, func(p []byte) []byte {
+			b := openssl.SHA512_224(p)
+			return b[:]
+		}},
+		{crypto.SHA512_256, func(p []byte) []byte {
+			b := openssl.SHA512_256(p)
 			return b[:]
 		}},
 		{crypto.SHA3_224, func(p []byte) []byte {
