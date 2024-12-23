@@ -18,6 +18,8 @@ func TestHMAC(t *testing.T) {
 		{"sha256", openssl.NewSHA256},
 		{"sha384", openssl.NewSHA384},
 		{"sha512", openssl.NewSHA512},
+		{"sha512_224", openssl.NewSHA512_224},
+		{"sha512_256", openssl.NewSHA512_256},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
