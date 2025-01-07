@@ -81,8 +81,9 @@ func supportsSHAKE(size int) bool {
 
 // SHAKE is an instance of a SHAKE extendable output function.
 type SHAKE struct {
-	alg *shakeAlgorithm
-	ctx C.GO_EVP_MD_CTX_PTR
+	alg        *shakeAlgorithm
+	ctx        C.GO_EVP_MD_CTX_PTR
+	lastXofLen int
 }
 
 // NewSHAKE128 creates a new SHAKE128 XOF.
@@ -168,8 +169,11 @@ func (s *SHAKE) Read(p []byte) (n int, err error) {
 	if len(p) == 0 {
 		return 0, nil
 	}
-	if C.go_openssl_EVP_MD_CTX_ctrl(s.ctx, C.EVP_MD_CTRL_XOF_LEN, C.int(len(p)), nil) != 1 {
-		panic(newOpenSSLError("EVP_MD_CTX_ctrl"))
+	if len(p) != s.lastXofLen {
+		if C.go_openssl_EVP_MD_CTX_ctrl(s.ctx, C.EVP_MD_CTRL_XOF_LEN, C.int(len(p)), nil) != 1 {
+			panic(newOpenSSLError("EVP_MD_CTX_ctrl"))
+		}
+		s.lastXofLen = len(p)
 	}
 	if C.go_openssl_EVP_DigestSqueeze(s.ctx, (*C.uchar)(unsafe.Pointer(&*addr(p))), C.size_t(len(p))) != 1 {
 		panic(newOpenSSLError("EVP_DigestSqueeze"))
