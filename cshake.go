@@ -214,12 +214,12 @@ func loadShake(xofLength int) *shakeAlgorithm {
 
 	var shake shakeAlgorithm
 	switch xofLength {
-	case 32:
+	case 128:
 		if versionAtOrAbove(1, 1, 0) {
 			shake.md = C.go_openssl_EVP_shake128()
 			shake.xofLength = 32
 		}
-	case 64:
+	case 256:
 		if versionAtOrAbove(1, 1, 0) {
 			shake.md = C.go_openssl_EVP_shake256()
 			shake.xofLength = 64
