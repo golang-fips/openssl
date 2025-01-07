@@ -20,6 +20,7 @@
 #define DEFINEFUNC_1_1(ret, func, args, argscall)              DEFINEFUNC(ret, func, args, argscall)
 #define DEFINEFUNC_1_1_1(ret, func, args, argscall)            DEFINEFUNC(ret, func, args, argscall)
 #define DEFINEFUNC_3_0(ret, func, args, argscall)              DEFINEFUNC(ret, func, args, argscall)
+#define DEFINEFUNC_3_3(ret, func, args, argscall)              DEFINEFUNC(ret, func, args, argscall)
 #define DEFINEFUNC_RENAMED_1_1(ret, func, oldfunc, args, argscall) DEFINEFUNC(ret, func, args, argscall)
 #define DEFINEFUNC_RENAMED_3_0(ret, func, oldfunc, args, argscall) DEFINEFUNC(ret, func, args, argscall)
 #define DEFINEFUNC_VARIADIC_3_0(ret, func, newname, args, argscall)  DEFINEFUNC(ret, newname, args, argscall)
@@ -33,6 +34,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #undef DEFINEFUNC_1_1
 #undef DEFINEFUNC_1_1_1
 #undef DEFINEFUNC_3_0
+#undef DEFINEFUNC_3_3
 #undef DEFINEFUNC_RENAMED_1_1
 #undef DEFINEFUNC_RENAMED_3_0
 #undef DEFINEFUNC_VARIADIC_3_0
@@ -124,6 +126,11 @@ go_openssl_load_functions(void* handle, unsigned int major, unsigned int minor, 
     {                                                 \
         DEFINEFUNC_INTERNAL(func, #func)              \
     }
+#define DEFINEFUNC_3_3(ret, func, args, argscall)     \
+    if (major == 3 && minor >= 3)     \
+    {                                                 \
+        DEFINEFUNC_INTERNAL(func, #func)              \
+    }
 #define DEFINEFUNC_RENAMED_1_1(ret, func, oldfunc, args, argscall)  \
     if (major == 1 && minor == 0)                                   \
     {                                                               \
@@ -157,6 +164,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #undef DEFINEFUNC_1_1
 #undef DEFINEFUNC_1_1_1
 #undef DEFINEFUNC_3_0
+#undef DEFINEFUNC_3_3
 #undef DEFINEFUNC_RENAMED_1_1
 #undef DEFINEFUNC_RENAMED_3_0
 #undef DEFINEFUNC_VARIADIC_3_0

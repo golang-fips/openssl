@@ -54,6 +54,8 @@ int go_openssl_DSA_set0_key_backport(GO_DSA_PTR d, GO_BIGNUM_PTR pub_key, GO_BIG
     DEFINEFUNC(ret, func, args, argscall)
 #define DEFINEFUNC_3_0(ret, func, args, argscall)     \
     DEFINEFUNC(ret, func, args, argscall)
+#define DEFINEFUNC_3_3(ret, func, args, argscall)     \
+    DEFINEFUNC(ret, func, args, argscall)
 #define DEFINEFUNC_RENAMED_1_1(ret, func, oldfunc, args, argscall)     \
     DEFINEFUNC(ret, func, args, argscall)
 #define DEFINEFUNC_RENAMED_3_0(ret, func, oldfunc, args, argscall)     \
@@ -70,6 +72,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #undef DEFINEFUNC_1_1
 #undef DEFINEFUNC_1_1_1
 #undef DEFINEFUNC_3_0
+#undef DEFINEFUNC_3_3
 #undef DEFINEFUNC_RENAMED_1_1
 #undef DEFINEFUNC_RENAMED_3_0
 #undef DEFINEFUNC_VARIADIC_3_0

@@ -27,7 +27,9 @@ enum {
     GO_EVP_MAX_MD_SIZE = 64,
 
     GO_EVP_PKEY_PUBLIC_KEY = 0x86,
-    GO_EVP_PKEY_KEYPAIR = 0x87
+    GO_EVP_PKEY_KEYPAIR = 0x87,
+
+    EVP_MD_CTRL_XOF_LEN = 0x3
 };
 
 // #include <openssl/ec.h>
@@ -151,6 +153,9 @@ typedef void* GO_SHA_CTX_PTR;
 // DEFINEFUNC_3_0 acts like DEFINEFUNC but only aborts the process if function can't be loaded
 // when using 3.0.0 or higher.
 //
+// DEFINEFUNC_3_3 acts like DEFINEFUNC but only aborts the process if function can't be loaded
+// when using 3.3.0 or higher.
+//
 // DEFINEFUNC_RENAMED_1_1 acts like DEFINEFUNC but tries to load the function using the new name when using >= 1.1.x
 // and the old name when using 1.0.2. In both cases the function will have the new name.
 //
@@ -219,11 +224,13 @@ DEFINEFUNC_RENAMED_1_1(GO_EVP_MD_CTX_PTR, EVP_MD_CTX_new, EVP_MD_CTX_create, (vo
 DEFINEFUNC_RENAMED_1_1(void, EVP_MD_CTX_free, EVP_MD_CTX_destroy, (GO_EVP_MD_CTX_PTR ctx), (ctx)) \
 DEFINEFUNC(int, EVP_MD_CTX_copy, (GO_EVP_MD_CTX_PTR out, const GO_EVP_MD_CTX_PTR in), (out, in)) \
 DEFINEFUNC(int, EVP_MD_CTX_copy_ex, (GO_EVP_MD_CTX_PTR out, const GO_EVP_MD_CTX_PTR in), (out, in)) \
+DEFINEFUNC_1_1_1(int, EVP_MD_CTX_ctrl, (GO_EVP_MD_CTX_PTR ctx, int cmd, int p1, void *p2), (ctx, cmd, p1, p2)) \
 DEFINEFUNC(int, EVP_Digest, (const void *data, size_t count, unsigned char *md, unsigned int *size, const GO_EVP_MD_PTR type, GO_ENGINE_PTR impl), (data, count, md, size, type, impl)) \
 DEFINEFUNC(int, EVP_DigestInit_ex, (GO_EVP_MD_CTX_PTR ctx, const GO_EVP_MD_PTR type, GO_ENGINE_PTR impl), (ctx, type, impl)) \
 DEFINEFUNC(int, EVP_DigestInit, (GO_EVP_MD_CTX_PTR ctx, const GO_EVP_MD_PTR type), (ctx, type)) \
 DEFINEFUNC(int, EVP_DigestUpdate, (GO_EVP_MD_CTX_PTR ctx, const void *d, size_t cnt), (ctx, d, cnt)) \
 DEFINEFUNC(int, EVP_DigestFinal, (GO_EVP_MD_CTX_PTR ctx, unsigned char *md, unsigned int *s), (ctx, md, s)) \
+DEFINEFUNC_3_3(int, EVP_DigestSqueeze, (GO_EVP_MD_CTX_PTR ctx, unsigned char *out, size_t outlen), (ctx, out, outlen)) \
 DEFINEFUNC_1_1_1(int, EVP_DigestSign, (GO_EVP_MD_CTX_PTR ctx, unsigned char *sigret, size_t *siglen, const unsigned char *tbs, size_t tbslen), (ctx, sigret, siglen, tbs, tbslen)) \
 DEFINEFUNC(int, EVP_DigestSignInit, (GO_EVP_MD_CTX_PTR ctx, GO_EVP_PKEY_CTX_PTR *pctx, const GO_EVP_MD_PTR type, GO_ENGINE_PTR e, GO_EVP_PKEY_PTR pkey), (ctx, pctx, type, e, pkey)) \
 DEFINEFUNC(int, EVP_DigestSignFinal, (GO_EVP_MD_CTX_PTR ctx, unsigned char *sig, size_t *siglen), (ctx, sig, siglen)) \
@@ -245,6 +252,8 @@ DEFINEFUNC_1_1_1(const GO_EVP_MD_PTR, EVP_sha3_224, (void), ()) \
 DEFINEFUNC_1_1_1(const GO_EVP_MD_PTR, EVP_sha3_256, (void), ()) \
 DEFINEFUNC_1_1_1(const GO_EVP_MD_PTR, EVP_sha3_384, (void), ()) \
 DEFINEFUNC_1_1_1(const GO_EVP_MD_PTR, EVP_sha3_512, (void), ()) \
+DEFINEFUNC_1_1_1(const GO_EVP_MD_PTR, EVP_shake128, (void), ()) \
+DEFINEFUNC_1_1_1(const GO_EVP_MD_PTR, EVP_shake256, (void), ()) \
 DEFINEFUNC_LEGACY_1_0(void, HMAC_CTX_init, (GO_HMAC_CTX_PTR arg0), (arg0)) \
 DEFINEFUNC_LEGACY_1_0(void, HMAC_CTX_cleanup, (GO_HMAC_CTX_PTR arg0), (arg0)) \
 DEFINEFUNC_LEGACY_1(int, HMAC_Init_ex, (GO_HMAC_CTX_PTR arg0, const void *arg1, int arg2, const GO_EVP_MD_PTR arg3, GO_ENGINE_PTR arg4), (arg0, arg1, arg2, arg3, arg4)) \
