@@ -113,6 +113,9 @@ func NewSHAKE256() *SHAKE {
 // cSHAKE is desired. S is a customization byte string used for domain
 // separation. When N and S are both empty, this is equivalent to NewSHAKE128.
 func NewCSHAKE128(N, S []byte) *SHAKE {
+	if len(N) == 0 && len(S) == 0 {
+		return NewSHAKE128()
+	}
 	return nil
 }
 
@@ -122,6 +125,9 @@ func NewCSHAKE128(N, S []byte) *SHAKE {
 // cSHAKE is desired. S is a customization byte string used for domain
 // separation. When N and S are both empty, this is equivalent to NewSHAKE256.
 func NewCSHAKE256(N, S []byte) *SHAKE {
+	if len(N) == 0 && len(S) == 0 {
+		return NewSHAKE256()
+	}
 	return nil
 }
 
