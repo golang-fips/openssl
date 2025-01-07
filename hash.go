@@ -236,6 +236,19 @@ func isHashMarshallable(md C.GO_EVP_MD_PTR) bool {
 	return marshallable
 }
 
+// cloneHash is an interface that defines a Clone method.
+//
+// hahs.CloneHash will probably be added in Go 1.25, see https://golang.org/issue/69521,
+// but we need it now.
+type cloneHash interface {
+	hash.Hash
+	// Clone returns a separate Hash instance with the same state as h.
+	Clone() hash.Hash
+}
+
+var _ hash.Hash = (*evpHash)(nil)
+var _ cloneHash = (*evpHash)(nil)
+
 // evpHash implements generic hash methods.
 type evpHash struct {
 	alg *hashAlgorithm
@@ -349,26 +362,26 @@ func (h *evpHash) Sum(in []byte) []byte {
 // Clone returns a new evpHash object that is a deep clone of itself.
 // The duplicate object contains all state and data contained in the
 // original object at the point of duplication.
-func (h *evpHash) Clone() (hash.Hash, error) {
+func (h *evpHash) Clone() hash.Hash {
 	h2 := &evpHash{alg: h.alg}
 	if h.ctx != nil {
 		h2.ctx = C.go_openssl_EVP_MD_CTX_new()
 		if h2.ctx == nil {
-			return nil, newOpenSSLError("EVP_MD_CTX_new")
+			panic(newOpenSSLError("EVP_MD_CTX_new"))
 		}
 		if C.go_openssl_EVP_MD_CTX_copy_ex(h2.ctx, h.ctx) != 1 {
 			C.go_openssl_EVP_MD_CTX_free(h2.ctx)
-			return nil, newOpenSSLError("EVP_MD_CTX_copy")
+			panic(newOpenSSLError("EVP_MD_CTX_copy"))
 		}
 		h2.ctx2 = C.go_openssl_EVP_MD_CTX_new()
 		if h2.ctx2 == nil {
 			C.go_openssl_EVP_MD_CTX_free(h2.ctx)
-			return nil, newOpenSSLError("EVP_MD_CTX_new")
+			panic(newOpenSSLError("EVP_MD_CTX_new"))
 		}
 		runtime.SetFinalizer(h2, (*evpHash).finalize)
 	}
 	runtime.KeepAlive(h)
-	return h2, nil
+	return h2
 }
 
 // hashState returns a pointer to the internal hash structure.

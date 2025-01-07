@@ -216,10 +216,7 @@ func TestHash_Clone(t *testing.T) {
 			}
 			// We don't define an interface for the Clone method to avoid other
 			// packages from depending on it. Use type assertion to call it.
-			h2, err := h.(interface{ Clone() (hash.Hash, error) }).Clone()
-			if err != nil {
-				t.Fatal(err)
-			}
+			h2 := h.(interface{ Clone() hash.Hash }).Clone()
 			h.Write(msg)
 			h2.Write(msg)
 			if actual, actual2 := h.Sum(nil), h2.Sum(nil); !bytes.Equal(actual, actual2) {
