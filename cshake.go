@@ -74,19 +74,7 @@ func supportsSHAKE(size int) bool {
 	if v, ok := cacheSHAKESupported.Load(size); ok {
 		return v.(bool)
 	}
-	alg := loadShake(size)
-	if alg == nil {
-		cacheSHAKESupported.Store(size, false)
-		return false
-	}
-	// EVP_MD objects can be non-nil even when they can't be used
-	// in a EVP_MD_CTX, e.g. MD5 in FIPS mode. We need to prove
-	// if they can be used by passing them to a EVP_MD_CTX.
-	var supported bool
-	if ctx := C.go_openssl_EVP_MD_CTX_new(); ctx != nil {
-		supported = C.go_openssl_EVP_DigestInit_ex(ctx, alg.md, nil) == 1
-		C.go_openssl_EVP_MD_CTX_free(ctx)
-	}
+	supported := loadShake(size) != nil
 	cacheSHAKESupported.Store(size, supported)
 	return supported
 }
