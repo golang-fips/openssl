@@ -147,7 +147,7 @@ func newSHAKE(size int) *SHAKE {
 		C.go_openssl_EVP_MD_CTX_free(ctx)
 		panic(newOpenSSLError("EVP_MD_CTX_ctrl"))
 	}
-	s := &SHAKE{ctx: ctx}
+	s := &SHAKE{alg: alg, ctx: ctx}
 	runtime.SetFinalizer(s, (*SHAKE).finalize)
 	return s
 }

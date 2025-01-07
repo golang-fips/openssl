@@ -127,7 +127,7 @@ go_openssl_load_functions(void* handle, unsigned int major, unsigned int minor, 
         DEFINEFUNC_INTERNAL(func, #func)              \
     }
 #define DEFINEFUNC_3_3(ret, func, args, argscall)     \
-    if (major == 3 && minor >= 3)     \
+    if (major == 3 && minor >= 3)                     \
     {                                                 \
         DEFINEFUNC_INTERNAL(func, #func)              \
     }
