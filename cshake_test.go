@@ -48,25 +48,27 @@ func skipCSHAKEIfNotSupported(t *testing.T, algo string) {
 func TestCSHAKESqueezing(t *testing.T) {
 	const testString = "brekeccakkeccak koax koax"
 	for algo, v := range testShakes {
-		skipCSHAKEIfNotSupported(t, algo)
+		t.Run(algo, func(t *testing.T) {
+			skipCSHAKEIfNotSupported(t, algo)
 
-		d0 := v.constructor([]byte(v.defAlgoName), []byte(v.defCustomStr))
-		d0.Write([]byte(testString))
-		ref := make([]byte, 32)
-		d0.Read(ref)
+			d0 := v.constructor([]byte(v.defAlgoName), []byte(v.defCustomStr))
+			d0.Write([]byte(testString))
+			ref := make([]byte, 32)
+			d0.Read(ref)
 
-		d1 := v.constructor([]byte(v.defAlgoName), []byte(v.defCustomStr))
-		d1.Write([]byte(testString))
-		var multiple []byte
-		for range ref {
-			d1.Read(make([]byte, 0))
-			one := make([]byte, 1)
-			d1.Read(one)
-			multiple = append(multiple, one...)
-		}
-		if !bytes.Equal(ref, multiple) {
-			t.Errorf("%s: squeezing %d bytes one at a time failed", algo, len(ref))
-		}
+			d1 := v.constructor([]byte(v.defAlgoName), []byte(v.defCustomStr))
+			d1.Write([]byte(testString))
+			var multiple []byte
+			for range ref {
+				d1.Read(make([]byte, 0))
+				one := make([]byte, 1)
+				d1.Read(one)
+				multiple = append(multiple, one...)
+			}
+			if !bytes.Equal(ref, multiple) {
+				t.Errorf("%s: squeezing %d bytes one at a time failed", algo, len(ref))
+			}
+		})
 	}
 }
 
@@ -88,21 +90,23 @@ func TestCSHAKEReset(t *testing.T) {
 	out2 := make([]byte, 32)
 
 	for algo, v := range testShakes {
-		skipCSHAKEIfNotSupported(t, algo)
+		t.Run(algo, func(t *testing.T) {
+			skipCSHAKEIfNotSupported(t, algo)
 
-		// Calculate hash for the first time
-		c := v.constructor(nil, []byte{0x99, 0x98})
-		c.Write(sequentialBytes(0x100))
-		c.Read(out1)
+			// Calculate hash for the first time
+			c := v.constructor(nil, []byte{0x99, 0x98})
+			c.Write(sequentialBytes(0x100))
+			c.Read(out1)
 
-		// Calculate hash again
-		c.Reset()
-		c.Write(sequentialBytes(0x100))
-		c.Read(out2)
+			// Calculate hash again
+			c.Reset()
+			c.Write(sequentialBytes(0x100))
+			c.Read(out2)
 
-		if !bytes.Equal(out1, out2) {
-			t.Error("\nExpected:\n", out1, "\ngot:\n", out2)
-		}
+			if !bytes.Equal(out1, out2) {
+				t.Error("\nExpected:\n", out1, "\ngot:\n", out2)
+			}
+		})
 	}
 }
 
