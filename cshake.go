@@ -137,10 +137,10 @@ func newSHAKE(size int) *SHAKE {
 		C.go_openssl_EVP_MD_CTX_free(ctx)
 		panic(newOpenSSLError("EVP_DigestInit_ex"))
 	}
-	if C.go_openssl_EVP_MD_CTX_ctrl(ctx, C.EVP_MD_CTRL_XOF_LEN, C.int(alg.xofLength), nil) != 1 {
-		C.go_openssl_EVP_MD_CTX_free(ctx)
-		panic(newOpenSSLError("EVP_MD_CTX_ctrl"))
-	}
+	//if C.go_openssl_EVP_MD_CTX_ctrl(ctx, C.EVP_MD_CTRL_XOF_LEN, C.int(alg.xofLength), nil) != 1 {
+	//	C.go_openssl_EVP_MD_CTX_free(ctx)
+	//	panic(newOpenSSLError("EVP_MD_CTX_ctrl"))
+	//}
 	s := &SHAKE{alg: alg, ctx: ctx}
 	runtime.SetFinalizer(s, (*SHAKE).finalize)
 	return s
