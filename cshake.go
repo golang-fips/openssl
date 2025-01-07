@@ -137,10 +137,6 @@ func newSHAKE(size int) *SHAKE {
 		C.go_openssl_EVP_MD_CTX_free(ctx)
 		panic(newOpenSSLError("EVP_DigestInit_ex"))
 	}
-	//if C.go_openssl_EVP_MD_CTX_ctrl(ctx, C.EVP_MD_CTRL_XOF_LEN, C.int(alg.xofLength), nil) != 1 {
-	//	C.go_openssl_EVP_MD_CTX_free(ctx)
-	//	panic(newOpenSSLError("EVP_MD_CTX_ctrl"))
-	//}
 	s := &SHAKE{alg: alg, ctx: ctx}
 	runtime.SetFinalizer(s, (*SHAKE).finalize)
 	return s
@@ -172,6 +168,9 @@ func (s *SHAKE) Read(p []byte) (n int, err error) {
 	if len(p) == 0 {
 		return 0, nil
 	}
+	if C.go_openssl_EVP_MD_CTX_ctrl(s.ctx, C.EVP_MD_CTRL_XOF_LEN, C.int(len(p)), nil) != 1 {
+		panic(newOpenSSLError("EVP_MD_CTX_ctrl"))
+	}
 	if C.go_openssl_EVP_DigestSqueeze(s.ctx, (*C.uchar)(unsafe.Pointer(&*addr(p))), C.size_t(len(p))) != 1 {
 		panic(newOpenSSLError("EVP_DigestSqueeze"))
 	}
@@ -197,7 +196,6 @@ var cacheSHAKE sync.Map
 type shakeAlgorithm struct {
 	md        C.GO_EVP_MD_PTR
 	blockSize int
-	xofLength int
 }
 
 // loadShake converts a crypto.Hash to a EVP_MD.
@@ -211,12 +209,10 @@ func loadShake(xofLength int) *shakeAlgorithm {
 	case 128:
 		if versionAtOrAbove(1, 1, 0) {
 			shake.md = C.go_openssl_EVP_shake128()
-			shake.xofLength = 32
 		}
 	case 256:
 		if versionAtOrAbove(1, 1, 0) {
 			shake.md = C.go_openssl_EVP_shake256()
-			shake.xofLength = 64
 		}
 	}
 	if shake.md == nil {
