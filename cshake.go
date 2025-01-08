@@ -31,7 +31,7 @@ func shakeOneShot(secuirtyBits int, data []byte, out []byte) {
 	if C.go_openssl_EVP_DigestUpdate(ctx, unsafe.Pointer(&*addr(data)), C.size_t(len(data))) != 1 {
 		panic(newOpenSSLError("EVP_DigestUpdate"))
 	}
-	if C.go_openssl_EVP_DigestFinalXOF(ctx, (*C.uchar)(unsafe.Pointer(&*addr(out))), C.size_t(len(out))) != 0 {
+	if C.go_openssl_EVP_DigestFinalXOF(ctx, (*C.uchar)(unsafe.Pointer(&*addr(out))), C.size_t(len(out))) != 1 {
 		panic(newOpenSSLError("EVP_DigestFinalXOF"))
 	}
 }
