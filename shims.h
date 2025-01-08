@@ -230,6 +230,7 @@ DEFINEFUNC(int, EVP_DigestInit_ex, (GO_EVP_MD_CTX_PTR ctx, const GO_EVP_MD_PTR t
 DEFINEFUNC(int, EVP_DigestInit, (GO_EVP_MD_CTX_PTR ctx, const GO_EVP_MD_PTR type), (ctx, type)) \
 DEFINEFUNC(int, EVP_DigestUpdate, (GO_EVP_MD_CTX_PTR ctx, const void *d, size_t cnt), (ctx, d, cnt)) \
 DEFINEFUNC(int, EVP_DigestFinal, (GO_EVP_MD_CTX_PTR ctx, unsigned char *md, unsigned int *s), (ctx, md, s)) \
+DEFINEFUNC_3_3(int, EVP_DigestFinalXOF, (GO_EVP_MD_CTX_PTR ctx, unsigned char *out, size_t outlen), (ctx, out, outlen)) \
 DEFINEFUNC_3_3(int, EVP_DigestSqueeze, (GO_EVP_MD_CTX_PTR ctx, unsigned char *out, size_t outlen), (ctx, out, outlen)) \
 DEFINEFUNC_1_1_1(int, EVP_DigestSign, (GO_EVP_MD_CTX_PTR ctx, unsigned char *sigret, size_t *siglen, const unsigned char *tbs, size_t tbslen), (ctx, sigret, siglen, tbs, tbslen)) \
 DEFINEFUNC(int, EVP_DigestSignInit, (GO_EVP_MD_CTX_PTR ctx, GO_EVP_PKEY_CTX_PTR *pctx, const GO_EVP_MD_PTR type, GO_ENGINE_PTR e, GO_EVP_PKEY_PTR pkey), (ctx, pctx, type, e, pkey)) \

@@ -11,17 +11,36 @@ import (
 	"unsafe"
 )
 
-func shakeOneShot(secuirtyBits int, data []byte, out []byte) bool {
-	return C.go_openssl_EVP_Digest(unsafe.Pointer(&*addr(data)), C.size_t(len(data)), (*C.uchar)(unsafe.Pointer(&*addr(out))), nil, loadShake(secuirtyBits).md, nil) != 0
+// shakeOneShot applies the SHAKE extendable output function to data and
+// writes the output to out.
+func shakeOneShot(secuirtyBits int, data []byte, out []byte) {
+	// Can't use EVP_Digest because it doesn't support output lengths
+	// larger than the block size, while crypto/sha3 supports any length.
+	alg := loadShake(secuirtyBits)
+	if alg == nil {
+		panic("openssl: unsupported SHAKE" + strconv.Itoa(secuirtyBits) + " function")
+	}
+	ctx := C.go_openssl_EVP_MD_CTX_new()
+	if ctx == nil {
+		panic(newOpenSSLError("EVP_MD_CTX_new"))
+	}
+	defer C.go_openssl_EVP_MD_CTX_free(ctx)
+	if C.go_openssl_EVP_DigestInit_ex(ctx, alg.md, nil) != 1 {
+		panic(newOpenSSLError("EVP_DigestInit_ex"))
+	}
+	if C.go_openssl_EVP_DigestUpdate(ctx, unsafe.Pointer(&*addr(data)), C.size_t(len(data))) != 1 {
+		panic(newOpenSSLError("EVP_DigestUpdate"))
+	}
+	if C.go_openssl_EVP_DigestFinalXOF(ctx, (*C.uchar)(unsafe.Pointer(&*addr(out))), C.size_t(len(out))) != 0 {
+		panic(newOpenSSLError("EVP_DigestFinalXOF"))
+	}
 }
 
 // SumSHAKE128 applies the SHAKE128 extendable output function to data and
 // returns an output of the given length in bytes.
 func SumSHAKE128(data []byte, length int) []byte {
 	out := make([]byte, length)
-	if !shakeOneShot(128, data, out[:]) {
-		panic("openssl: SumSHAKE128 failed")
-	}
+	shakeOneShot(128, data, out[:])
 	return out
 }
 
@@ -29,9 +48,7 @@ func SumSHAKE128(data []byte, length int) []byte {
 // returns an output of the given length in bytes.
 func SumSHAKE256(data []byte, length int) []byte {
 	out := make([]byte, length)
-	if !shakeOneShot(256, data, out[:]) {
-		panic("openssl: SumSHAKE256 failed")
-	}
+	shakeOneShot(256, data, out[:])
 	return out
 }
 
@@ -94,15 +111,10 @@ func NewCSHAKE256(N, S []byte) *SHAKE {
 	return nil
 }
 
-func newSHAKE(size int) *SHAKE {
-	if vMajor == 1 || (vMajor == 3 && vMinor < 3) {
-		panic("openssl: SHAKE is not supported by this version of OpenSSL")
-
-	}
-
-	alg := loadShake(size)
+func newSHAKE(securityBits int) *SHAKE {
+	alg := loadShake(securityBits)
 	if alg == nil {
-		panic("openssl: unsupported SHAKE" + strconv.Itoa(size) + " function")
+		panic("openssl: unsupported SHAKE" + strconv.Itoa(securityBits) + " function")
 	}
 	ctx := C.go_openssl_EVP_MD_CTX_new()
 	if ctx == nil {
