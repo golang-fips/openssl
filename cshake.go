@@ -11,8 +11,8 @@ import (
 	"unsafe"
 )
 
-func shakeOneShot(size int, p []byte, sum []byte) bool {
-	return C.go_openssl_EVP_Digest(unsafe.Pointer(&*addr(p)), C.size_t(len(p)), (*C.uchar)(unsafe.Pointer(&*addr(sum))), nil, loadShake(size).md, nil) != 0
+func shakeOneShot(secuirtyBits int, data []byte, out []byte) bool {
+	return C.go_openssl_EVP_Digest(unsafe.Pointer(&*addr(data)), C.size_t(len(data)), (*C.uchar)(unsafe.Pointer(&*addr(out))), nil, loadShake(secuirtyBits).md, nil) != 0
 }
 
 // SumSHAKE128 applies the SHAKE128 extendable output function to data and
@@ -161,6 +161,7 @@ func (s *SHAKE) Reset() {
 	if C.go_openssl_EVP_DigestInit_ex(s.ctx, nil, nil) != 1 {
 		panic(newOpenSSLError("EVP_DigestInit_ex"))
 	}
+	s.lastXofLen = 0
 }
 
 // BlockSize returns the rate of the XOF.
