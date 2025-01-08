@@ -35,48 +35,22 @@ func SumSHAKE256(data []byte, length int) []byte {
 	return out
 }
 
-// SupportsSHAKE128 returns true if the SHAKE128 extendable output function is
-// supported.
-func SupportsSHAKE128() bool {
-	return supportsSHAKE(128)
-}
-
-// SupportsSHAKE256 returns true if the SHAKE256 extendable output function is
-// supported.
-func SupportsSHAKE256() bool {
-	return supportsSHAKE(256)
-}
-
-// SupportsCSHAKE128 returns true if the CSHAKE128 extendable output function is
-// supported.
-func SupportsCSHAKE128() bool {
-	return false
-}
-
-// SupportsCSHAKE256 returns true if the CSHAKE256 extendable output function is
-// supported.
-func SupportsCSHAKE256() bool {
-	return false
-}
-
-// cacheSHAKESupported is a cache of SHAKE size support.
-var cacheSHAKESupported sync.Map
-
-// SupportsSHAKE returns true if the SHAKE extendable output function is
-// supported.
-func supportsSHAKE(size int) bool {
+// SupportsSHAKE returns true if the SHAKE extendable output functions
+// with the given securityBits are supported.
+func SupportsSHAKE(securityBits int) bool {
 	if vMajor == 1 || (vMajor == 3 && vMinor < 3) {
 		// SHAKE MD's are supported since OpenSSL 1.1.1,
 		// but EVP_DigestSqueeze is only supported since 3.3,
 		// and we need it to implement [sha3.SHAKE].
 		return false
 	}
-	if v, ok := cacheSHAKESupported.Load(size); ok {
-		return v.(bool)
-	}
-	supported := loadShake(size) != nil
-	cacheSHAKESupported.Store(size, supported)
-	return supported
+	return loadShake(securityBits) != nil
+}
+
+// SupportsCSHAKE returns true if the CSHAKE extendable output functions
+// with the given securityBits are supported.
+func SupportsCSHAKE(securityBits int) bool {
+	return false
 }
 
 // SHAKE is an instance of a SHAKE extendable output function.
@@ -203,35 +177,32 @@ type shakeAlgorithm struct {
 }
 
 // loadShake converts a crypto.Hash to a EVP_MD.
-func loadShake(xofLength int) *shakeAlgorithm {
-	if v, ok := cacheMD.Load(xofLength); ok {
+func loadShake(securityBits int) (alg *shakeAlgorithm) {
+	if v, ok := cacheMD.Load(securityBits); ok {
 		return v.(*shakeAlgorithm)
 	}
+	defer func() {
+		cacheMD.Store(securityBits, alg)
+	}()
 
-	var shake shakeAlgorithm
-	switch xofLength {
+	var name *C.char
+	switch securityBits {
 	case 128:
-		if versionAtOrAbove(1, 1, 0) {
-			shake.md = C.go_openssl_EVP_shake128()
-		}
+		name = C.CString("SHAKE-128")
 	case 256:
-		if versionAtOrAbove(1, 1, 0) {
-			shake.md = C.go_openssl_EVP_shake256()
-		}
-	}
-	if shake.md == nil {
-		cacheMD.Store(xofLength, (*hashAlgorithm)(nil))
+		name = C.CString("SHAKE-256")
+	default:
 		return nil
 	}
-	shake.blockSize = int(C.go_openssl_EVP_MD_get_block_size(shake.md))
-	if vMajor == 3 {
-		md := C.go_openssl_EVP_MD_fetch(nil, C.go_openssl_EVP_MD_get0_name(shake.md), nil)
-		// Don't overwrite md in case it can't be fetched, as the md may still be used
-		// outside of EVP_MD_CTX.
-		if md != nil {
-			shake.md = md
-		}
+	defer C.free(unsafe.Pointer(name))
+
+	md := C.go_openssl_EVP_MD_fetch(nil, name, nil)
+	if md == nil {
+		return nil
 	}
-	cacheMD.Store(xofLength, &shake)
-	return &shake
+
+	alg = new(shakeAlgorithm)
+	alg.md = md
+	alg.blockSize = int(C.go_openssl_EVP_MD_get_block_size(md))
+	return alg
 }

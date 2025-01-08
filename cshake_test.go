@@ -30,13 +30,13 @@ func skipCSHAKEIfNotSupported(t *testing.T, algo string) {
 	var supported bool
 	switch algo {
 	case "SHAKE128":
-		supported = openssl.SupportsSHAKE128()
+		supported = openssl.SupportsSHAKE(128)
 	case "SHAKE256":
-		supported = openssl.SupportsSHAKE256()
+		supported = openssl.SupportsSHAKE(256)
 	case "CSHAKE128":
-		supported = openssl.SupportsCSHAKE128()
+		supported = openssl.SupportsCSHAKE(128)
 	case "CSHAKE256":
-		supported = openssl.SupportsCSHAKE256()
+		supported = openssl.SupportsCSHAKE(256)
 	}
 	if !supported {
 		t.Skip("skipping: not supported")
@@ -94,7 +94,7 @@ func TestCSHAKEReset(t *testing.T) {
 			skipCSHAKEIfNotSupported(t, algo)
 
 			// Calculate hash for the first time
-			c := v.constructor(nil, []byte{0x99, 0x98})
+			c := v.constructor(nil, []byte(v.defCustomStr))
 			c.Write(sequentialBytes(0x100))
 			c.Read(out1)
 
@@ -112,14 +112,14 @@ func TestCSHAKEReset(t *testing.T) {
 
 func TestCSHAKEAccumulated(t *testing.T) {
 	t.Run("CSHAKE128", func(t *testing.T) {
-		if !openssl.SupportsSHAKE128() {
+		if !openssl.SupportsCSHAKE(128) {
 			t.Skip("skipping: not supported")
 		}
 		testCSHAKEAccumulated(t, openssl.NewCSHAKE128, (1600-256)/8,
 			"bb14f8657c6ec5403d0b0e2ef3d3393497e9d3b1a9a9e8e6c81dbaa5fd809252")
 	})
 	t.Run("CSHAKE256", func(t *testing.T) {
-		if !openssl.SupportsSHAKE256() {
+		if !openssl.SupportsCSHAKE(256) {
 			t.Skip("skipping: not supported")
 		}
 		testCSHAKEAccumulated(t, openssl.NewCSHAKE256, (1600-512)/8,
@@ -158,7 +158,7 @@ func testCSHAKEAccumulated(t *testing.T, newCSHAKE func(N, S []byte) *openssl.SH
 }
 
 func TestCSHAKELargeS(t *testing.T) {
-	if !openssl.SupportsSHAKE128() {
+	if !openssl.SupportsCSHAKE(128) {
 		t.Skip("skipping: not supported")
 	}
 	const s = (1<<32)/8 + 1000 // s * 8 > 2^32
@@ -178,11 +178,11 @@ func TestCSHAKELargeS(t *testing.T) {
 
 func TestCSHAKESum(t *testing.T) {
 	const testString = "hello world"
-	t.Run("CSHAKE128", func(t *testing.T) {
-		if !openssl.SupportsSHAKE128() {
+	t.Run("SHAKE128", func(t *testing.T) {
+		if !openssl.SupportsSHAKE(128) {
 			t.Skip("skipping: not supported")
 		}
-		h := openssl.NewCSHAKE128(nil, nil)
+		h := openssl.NewSHAKE128()
 		h.Write([]byte(testString[:5]))
 		h.Write([]byte(testString[5:]))
 		want := make([]byte, 32)
@@ -192,11 +192,11 @@ func TestCSHAKESum(t *testing.T) {
 			t.Errorf("got:%x want:%x", got, want)
 		}
 	})
-	t.Run("CSHAKE256", func(t *testing.T) {
-		if !openssl.SupportsSHAKE256() {
+	t.Run("SHAKE256", func(t *testing.T) {
+		if !openssl.SupportsSHAKE(256) {
 			t.Skip("skipping: not supported")
 		}
-		h := openssl.NewCSHAKE256(nil, nil)
+		h := openssl.NewSHAKE256()
 		h.Write([]byte(testString[:5]))
 		h.Write([]byte(testString[5:]))
 		want := make([]byte, 32)
