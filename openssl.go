@@ -134,7 +134,7 @@ func FIPS() bool {
 	}
 }
 
-// FIPSCapable returns true if the provider used by the default matches the `fips=yes` query.
+// FIPSCapable returns true if the provider used by default matches the `fips=yes` query.
 // Note that this function can return true even if [FIPS] returns false, because [FIPS] also
 // checks whether the default properties contain `fips=yes`.
 // It will always return true for OpenSSL 3 if [FIPS] returns true.
