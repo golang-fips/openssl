@@ -143,6 +143,6 @@ func TestFIPSCapable(t *testing.T) {
 		want = true
 	}
 	if got != want {
-		t.Fatalf("HasFIPSProvider mismatch: want %v, got %v", want, got)
+		t.Fatalf("FIPSCapable mismatch: want %v, got %v", want, got)
 	}
 }
