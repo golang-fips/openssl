@@ -135,10 +135,19 @@ func FIPS() bool {
 }
 
 // FIPSCapable returns true if the provider used by default matches the `fips=yes` query.
-// Note that this function can return true even if [FIPS] returns false, because [FIPS] also
-// checks whether the default properties contain `fips=yes`.
-// It will always return true for OpenSSL 3 if [FIPS] returns true.
-// When using OpenSSL 1, this function always returns the same value as [FIPS].
+// It is useful for checking whether OpenSSL is capable of running in FIPS mode regardless
+// of whether FIPS mode is explicitly enabled. For example, Azure Linux 3 doesn't set the
+// `fips=yes` query in the default properties, but sets the default provider to be SCOSSL,
+// which is FIPS-capable.
+//
+// Considerations:
+//   - Multiple calls to FIPSCapable can return different values if [SetFIPS] is called in between.
+//   - Can return true even if [FIPS] returns false, because [FIPS] also checks whether
+//     the default properties contain `fips=yes`.
+//   - When using OpenSSL 3, will always return true if [FIPS] returns true.
+//   - When using OpenSSL 1, Will always return the same value as [FIPS].
+//   - OpenSSL 3 doesn't provide a way to know if a provider is FIPS-capable. This function uses
+//     some heuristics that should be treated as an implementation detail that may change in the future.
 func FIPSCapable() bool {
 	if FIPS() {
 		return true
