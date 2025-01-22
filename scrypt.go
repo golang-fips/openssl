@@ -8,20 +8,19 @@ import (
 	"unsafe"
 )
 
-func Scrypt(password string, salt []byte, N, r, p, maxmem, keylen uint64) ([]byte, error) {
+func Scrypt(password string, salt []byte, N, r, p, maxMem, keyLen uint64) ([]byte, error) {
 	cpassword := C.CString(password)
 	defer C.free((unsafe.Pointer)(cpassword))
 
 	csalt := C.CBytes(salt)
 	defer C.free((unsafe.Pointer)(csalt))
 
-	key := C.malloc(C.size_t(keylen))
-	defer C.free(key)
+	key := make([]byte, keylen)
 
 	res := C.go_openssl_EVP_PBE_scrypt(
-		cpassword,
+		base(unsafe.StringData(password)),
 		C.size_t(len(password)),
-		(*C.uchar)(csalt),
+		base(salt),
 		C.size_t(len(salt)),
 		C.uint64_t(N),
 		C.uint64_t(r),
