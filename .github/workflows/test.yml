@@ -105,8 +105,8 @@ jobs:
   # reasonable. In that case, we can help by making sure the openssl package
   # builds successfully even without cgo.
   #
-  # For example, the Microsoft Go toolset fork builds this module without cgo
-  # for a cross-platform build.
+  # For example, the Microsoft build of Go compiles this module without cgo when
+  # running a cross-platform build.
   #
   # The golang-fips/openssl module can't do any crypto when built without cgo,
   # but it exports a few simple functions and types.
