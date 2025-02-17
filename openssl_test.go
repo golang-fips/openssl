@@ -27,7 +27,7 @@ func getVersion() string {
 	// Try to find a supported version of OpenSSL on the system.
 	// This is useful for local testing, where the user may not
 	// have GO_OPENSSL_VERSION_OVERRIDE set.
-	versions := []string{"3", "1.1.1", "1.1", "11", "111", "1.0.2", "1.0.0", "10"}
+	versions := []string{"3", "1.1.1", "1.1", "11", "111"}
 	if runtime.GOOS == "windows" {
 		if runtime.GOARCH == "amd64" {
 			versions = []string{"libcrypto-3-x64", "libcrypto-3", "libcrypto-1_1-x64", "libcrypto-1_1", "libeay64", "libeay32"}

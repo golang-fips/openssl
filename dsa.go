@@ -91,11 +91,7 @@ func GenerateParametersDSA(l, n int) (DSAParameters, error) {
 	switch vMajor {
 	case 1:
 		dsa := getDSA(pkey)
-		if vMinor == 0 {
-			C.go_openssl_DSA_get0_pqg_backport(dsa, &p, &q, &g)
-		} else {
-			C.go_openssl_DSA_get0_pqg(dsa, &p, &q, &g)
-		}
+		C.go_openssl_DSA_get0_pqg(dsa, &p, &q, &g)
 	case 3:
 		defer func() {
 			C.go_openssl_BN_free(p)
@@ -157,11 +153,7 @@ func GenerateKeyDSA(params DSAParameters) (x, y BigInt, err error) {
 	switch vMajor {
 	case 1:
 		dsa := getDSA(pkey)
-		if vMinor == 0 {
-			C.go_openssl_DSA_get0_key_backport(dsa, &by, &bx)
-		} else {
-			C.go_openssl_DSA_get0_key(dsa, &by, &bx)
-		}
+		C.go_openssl_DSA_get0_key(dsa, &by, &bx)
 	case 3:
 		defer func() {
 			C.go_openssl_BN_clear_free(bx)
@@ -212,12 +204,7 @@ func newDSA1(params DSAParameters, x, y BigInt) (pkey C.GO_EVP_PKEY_PTR, err err
 	}()
 
 	p, q, g := bigToBN(params.P), bigToBN(params.Q), bigToBN(params.G)
-	var ret C.int
-	if vMinor == 0 {
-		ret = C.go_openssl_DSA_set0_pqg_backport(dsa, p, q, g)
-	} else {
-		ret = C.go_openssl_DSA_set0_pqg(dsa, p, q, g)
-	}
+	ret := C.go_openssl_DSA_set0_pqg(dsa, p, q, g)
 	if ret != 1 {
 		C.go_openssl_BN_free(p)
 		C.go_openssl_BN_free(q)
@@ -226,11 +213,7 @@ func newDSA1(params DSAParameters, x, y BigInt) (pkey C.GO_EVP_PKEY_PTR, err err
 	}
 	if y != nil {
 		pub, priv := bigToBN(y), bigToBN(x)
-		if vMinor == 0 {
-			ret = C.go_openssl_DSA_set0_key_backport(dsa, pub, priv)
-		} else {
-			ret = C.go_openssl_DSA_set0_key(dsa, pub, priv)
-		}
+		ret = C.go_openssl_DSA_set0_key(dsa, pub, priv)
 		if ret != 1 {
 			C.go_openssl_BN_free(pub)
 			C.go_openssl_BN_clear_free(priv)
@@ -308,14 +291,8 @@ func newDSA3(params DSAParameters, x, y BigInt) (C.GO_EVP_PKEY_PTR, error) {
 // getDSA returns the DSA from pkey.
 // If pkey does not contain an DSA it panics.
 // The returned key should not be freed.
-func getDSA(pkey C.GO_EVP_PKEY_PTR) (key C.GO_DSA_PTR) {
-	if vMajor == 1 && vMinor == 0 {
-		if key0 := C.go_openssl_EVP_PKEY_get0(pkey); key0 != nil {
-			key = C.GO_DSA_PTR(key0)
-		}
-	} else {
-		key = C.go_openssl_EVP_PKEY_get0_DSA(pkey)
-	}
+func getDSA(pkey C.GO_EVP_PKEY_PTR) C.GO_DSA_PTR {
+	key := C.go_openssl_EVP_PKEY_get0_DSA(pkey)
 	if key == nil {
 		panic("pkey does not contain an DSA")
 	}

@@ -76,7 +76,7 @@ type opensslHMAC struct {
 }
 
 func newHMAC1(key []byte, md C.GO_EVP_MD_PTR) hmacCtx1 {
-	ctx := hmacCtxNew()
+	ctx := C.go_openssl_HMAC_CTX_new()
 	if ctx == nil {
 		panic("openssl: EVP_MAC_CTX_new failed")
 	}
@@ -188,7 +188,7 @@ func (h *opensslHMAC) Reset() {
 func (h *opensslHMAC) finalize() {
 	switch vMajor {
 	case 1:
-		hmacCtxFree(h.ctx1.ctx)
+		C.go_openssl_HMAC_CTX_free(h.ctx1.ctx)
 	case 3:
 		C.go_openssl_EVP_MAC_CTX_free(h.ctx3.ctx)
 	default:
@@ -230,11 +230,11 @@ func (h *opensslHMAC) Sum(in []byte) []byte {
 	// and the second Sum acts as if the first didn't happen.
 	switch vMajor {
 	case 1:
-		ctx2 := hmacCtxNew()
+		ctx2 := C.go_openssl_HMAC_CTX_new()
 		if ctx2 == nil {
 			panic("openssl: HMAC_CTX_new failed")
 		}
-		defer hmacCtxFree(ctx2)
+		defer C.go_openssl_HMAC_CTX_free(ctx2)
 		if C.go_openssl_HMAC_CTX_copy(ctx2, h.ctx1.ctx) == 0 {
 			panic("openssl: HMAC_CTX_copy failed")
 		}
@@ -250,25 +250,4 @@ func (h *opensslHMAC) Sum(in []byte) []byte {
 		panic(errUnsupportedVersion())
 	}
 	return append(in, h.sum...)
-}
-
-func hmacCtxNew() C.GO_HMAC_CTX_PTR {
-	if vMajor == 1 && vMinor == 0 {
-		// 0x120 is the sizeof value when building against OpenSSL 1.0.2 on Ubuntu 16.04.
-		ctx := (C.GO_HMAC_CTX_PTR)(C.malloc(0x120))
-		if ctx != nil {
-			C.go_openssl_HMAC_CTX_init(ctx)
-		}
-		return ctx
-	}
-	return C.go_openssl_HMAC_CTX_new()
-}
-
-func hmacCtxFree(ctx C.GO_HMAC_CTX_PTR) {
-	if vMajor == 1 && vMinor == 0 {
-		C.go_openssl_HMAC_CTX_cleanup(ctx)
-		C.free(unsafe.Pointer(ctx))
-		return
-	}
-	C.go_openssl_HMAC_CTX_free(ctx)
 }

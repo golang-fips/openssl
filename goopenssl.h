@@ -25,12 +25,7 @@ int go_openssl_fips_enabled(void* handle);
 int go_openssl_version_major(void* handle);
 int go_openssl_version_minor(void* handle);
 int go_openssl_version_patch(void* handle);
-int go_openssl_thread_setup(void);
 void go_openssl_load_functions(void* handle, unsigned int major, unsigned int minor, unsigned int patch);
-void go_openssl_DSA_get0_pqg_backport(const GO_DSA_PTR d, GO_BIGNUM_PTR *p, GO_BIGNUM_PTR *q, GO_BIGNUM_PTR *g);
-int go_openssl_DSA_set0_pqg_backport(GO_DSA_PTR d, GO_BIGNUM_PTR p, GO_BIGNUM_PTR q, GO_BIGNUM_PTR g);
-void go_openssl_DSA_get0_key_backport(const GO_DSA_PTR d, GO_BIGNUM_PTR *pub_key, GO_BIGNUM_PTR *priv_key);
-int go_openssl_DSA_set0_key_backport(GO_DSA_PTR d, GO_BIGNUM_PTR pub_key, GO_BIGNUM_PTR priv_key);
 
 // Define pointers to all the used OpenSSL functions.
 // Calling C function pointers from Go is currently not supported.
@@ -44,17 +39,11 @@ int go_openssl_DSA_set0_key_backport(GO_DSA_PTR d, GO_BIGNUM_PTR pub_key, GO_BIG
     }
 #define DEFINEFUNC_LEGACY_1_1(ret, func, args, argscall)    \
     DEFINEFUNC(ret, func, args, argscall)
-#define DEFINEFUNC_LEGACY_1_0(ret, func, args, argscall)    \
-    DEFINEFUNC(ret, func, args, argscall)
 #define DEFINEFUNC_LEGACY_1(ret, func, args, argscall)  \
-    DEFINEFUNC(ret, func, args, argscall)
-#define DEFINEFUNC_1_1(ret, func, args, argscall)   \
     DEFINEFUNC(ret, func, args, argscall)
 #define DEFINEFUNC_1_1_1(ret, func, args, argscall)     \
     DEFINEFUNC(ret, func, args, argscall)
 #define DEFINEFUNC_3_0(ret, func, args, argscall)     \
-    DEFINEFUNC(ret, func, args, argscall)
-#define DEFINEFUNC_RENAMED_1_1(ret, func, oldfunc, args, argscall)     \
     DEFINEFUNC(ret, func, args, argscall)
 #define DEFINEFUNC_RENAMED_3_0(ret, func, oldfunc, args, argscall)     \
     DEFINEFUNC(ret, func, args, argscall)
@@ -65,12 +54,9 @@ FOR_ALL_OPENSSL_FUNCTIONS
 
 #undef DEFINEFUNC
 #undef DEFINEFUNC_LEGACY_1_1
-#undef DEFINEFUNC_LEGACY_1_0
 #undef DEFINEFUNC_LEGACY_1
-#undef DEFINEFUNC_1_1
 #undef DEFINEFUNC_1_1_1
 #undef DEFINEFUNC_3_0
-#undef DEFINEFUNC_RENAMED_1_1
 #undef DEFINEFUNC_RENAMED_3_0
 #undef DEFINEFUNC_VARIADIC_3_0
 
@@ -245,17 +231,4 @@ go_openssl_EVP_CIPHER_CTX_open_wrapper(const GO_EVP_CIPHER_CTX_PTR ctx,
         return 0;
 
     return 1;
-}
-
-// Hand-roll custom wrappers for CRYPTO_malloc and CRYPTO_free which cast the
-// function pointers to the correct signatures for OpenSSL 1.0.2.
-
-static inline void *
-go_openssl_CRYPTO_malloc_legacy102(int num, const char *file, int line) {
-    return ((void *(*)(int, const char *, int))_g_CRYPTO_malloc)(num, file, line);
-}
-
-static inline void
-go_openssl_CRYPTO_free_legacy102(void *str) {
-    ((void (*)(void *))_g_CRYPTO_free)(str);
 }

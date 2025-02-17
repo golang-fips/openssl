@@ -15,12 +15,9 @@
 
 #define DEFINEFUNC(ret, func, args, argscall)                  ret (*_g_##func)args;
 #define DEFINEFUNC_LEGACY_1_1(ret, func, args, argscall)       DEFINEFUNC(ret, func, args, argscall)
-#define DEFINEFUNC_LEGACY_1_0(ret, func, args, argscall)       DEFINEFUNC(ret, func, args, argscall)
 #define DEFINEFUNC_LEGACY_1(ret, func, args, argscall)         DEFINEFUNC(ret, func, args, argscall)
-#define DEFINEFUNC_1_1(ret, func, args, argscall)              DEFINEFUNC(ret, func, args, argscall)
 #define DEFINEFUNC_1_1_1(ret, func, args, argscall)            DEFINEFUNC(ret, func, args, argscall)
 #define DEFINEFUNC_3_0(ret, func, args, argscall)              DEFINEFUNC(ret, func, args, argscall)
-#define DEFINEFUNC_RENAMED_1_1(ret, func, oldfunc, args, argscall) DEFINEFUNC(ret, func, args, argscall)
 #define DEFINEFUNC_RENAMED_3_0(ret, func, oldfunc, args, argscall) DEFINEFUNC(ret, func, args, argscall)
 #define DEFINEFUNC_VARIADIC_3_0(ret, func, newname, args, argscall)  DEFINEFUNC(ret, newname, args, argscall)
 
@@ -28,12 +25,9 @@ FOR_ALL_OPENSSL_FUNCTIONS
 
 #undef DEFINEFUNC
 #undef DEFINEFUNC_LEGACY_1_1
-#undef DEFINEFUNC_LEGACY_1_0
 #undef DEFINEFUNC_LEGACY_1
-#undef DEFINEFUNC_1_1
 #undef DEFINEFUNC_1_1_1
 #undef DEFINEFUNC_3_0
-#undef DEFINEFUNC_RENAMED_1_1
 #undef DEFINEFUNC_RENAMED_3_0
 #undef DEFINEFUNC_VARIADIC_3_0
 
@@ -99,20 +93,10 @@ go_openssl_load_functions(void* handle, unsigned int major, unsigned int minor, 
     {                                                     \
         DEFINEFUNC_INTERNAL(func, #func)                  \
     }
-#define DEFINEFUNC_LEGACY_1_0(ret, func, args, argscall)  \
-    if (major == 1 && minor == 0)                         \
-    {                                                     \
-        DEFINEFUNC_INTERNAL(func, #func)                  \
-    }
 #define DEFINEFUNC_LEGACY_1(ret, func, args, argscall)  \
     if (major == 1)                                     \
     {                                                   \
         DEFINEFUNC_INTERNAL(func, #func)                \
-    }
-#define DEFINEFUNC_1_1(ret, func, args, argscall)     \
-    if (major == 3 || (major == 1 && minor == 1))     \
-    {                                                 \
-        DEFINEFUNC_INTERNAL(func, #func)              \
     }
 #define DEFINEFUNC_1_1_1(ret, func, args, argscall)     \
     if (major == 3 || (major == 1 && minor == 1 && patch == 1))     \
@@ -123,15 +107,6 @@ go_openssl_load_functions(void* handle, unsigned int major, unsigned int minor, 
     if (major == 3)                                   \
     {                                                 \
         DEFINEFUNC_INTERNAL(func, #func)              \
-    }
-#define DEFINEFUNC_RENAMED_1_1(ret, func, oldfunc, args, argscall)  \
-    if (major == 1 && minor == 0)                                   \
-    {                                                               \
-        DEFINEFUNC_INTERNAL(func, #oldfunc)                         \
-    }                                                               \
-    else                                                            \
-    {                                                               \
-        DEFINEFUNC_INTERNAL(func, #func)                            \
     }
 #define DEFINEFUNC_RENAMED_3_0(ret, func, oldfunc, args, argscall)  \
     if (major == 1)                                                 \
@@ -152,12 +127,9 @@ FOR_ALL_OPENSSL_FUNCTIONS
 
 #undef DEFINEFUNC
 #undef DEFINEFUNC_LEGACY_1_1
-#undef DEFINEFUNC_LEGACY_1_0
 #undef DEFINEFUNC_LEGACY_1
-#undef DEFINEFUNC_1_1
 #undef DEFINEFUNC_1_1_1
 #undef DEFINEFUNC_3_0
-#undef DEFINEFUNC_RENAMED_1_1
 #undef DEFINEFUNC_RENAMED_3_0
 #undef DEFINEFUNC_VARIADIC_3_0
 }
@@ -168,11 +140,6 @@ version_num(void* handle)
     unsigned long (*fn)(void);
     // OPENSSL_version_num is defined in OpenSSL 1.1.0 and 1.1.1.
     fn = (unsigned long (*)(void))dlsym(handle, "OpenSSL_version_num");
-    if (fn != NULL)
-        return fn();
-
-    // SSLeay is defined in OpenSSL 1.0.2.
-    fn = (unsigned long (*)(void))dlsym(handle, "SSLeay");
     if (fn != NULL)
         return fn();
 

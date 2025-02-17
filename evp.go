@@ -95,12 +95,7 @@ func loadHash(ch crypto.Hash) *hashAlgorithm {
 		hash.magic = md5Magic
 		hash.marshalledSize = md5MarshaledSize
 	case crypto.MD5SHA1:
-		if vMajor == 1 && vMinor == 0 {
-			// OpenSSL 1.0.2 does not support MD5SHA1.
-			hash.md = nil
-		} else {
-			hash.md = C.go_openssl_EVP_md5_sha1()
-		}
+		hash.md = C.go_openssl_EVP_md5_sha1()
 	case crypto.SHA1:
 		hash.md = C.go_openssl_EVP_sha1()
 		hash.magic = sha1Magic
@@ -522,14 +517,8 @@ func newEVPPKEY(key C.GO_EC_KEY_PTR) (C.GO_EVP_PKEY_PTR, error) {
 // getECKey returns the EC_KEY from pkey.
 // If pkey does not contain an EC_KEY it panics.
 // The returned key should not be freed.
-func getECKey(pkey C.GO_EVP_PKEY_PTR) (key C.GO_EC_KEY_PTR) {
-	if vMajor == 1 && vMinor == 0 {
-		if key0 := C.go_openssl_EVP_PKEY_get0(pkey); key0 != nil {
-			key = C.GO_EC_KEY_PTR(key0)
-		}
-	} else {
-		key = C.go_openssl_EVP_PKEY_get0_EC_KEY(pkey)
-	}
+func getECKey(pkey C.GO_EVP_PKEY_PTR) C.GO_EC_KEY_PTR {
+	key := C.go_openssl_EVP_PKEY_get0_EC_KEY(pkey)
 	if key == nil {
 		panic("pkey does not contain an EC_KEY")
 	}

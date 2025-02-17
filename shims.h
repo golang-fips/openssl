@@ -134,25 +134,15 @@ typedef void* GO_SHA_CTX_PTR;
 // when using 1.1.x. This indicates the function is required when using 1.1.x, but is unused when using later versions.
 // It also might not exist in later versions.
 //
-// DEFINEFUNC_LEGACY_1_0 acts like DEFINEFUNC but only aborts the process if the function can't be loaded
-// when using 1.0.x. This indicates the function is required when using 1.0.x, but is unused when using later versions.
-// It also might not exist in later versions.
-//
 // DEFINEFUNC_LEGACY_1 acts like DEFINEFUNC but only aborts the process if the function can't be loaded
 // when using 1.x. This indicates the function is required when using 1.x, but is unused when using later versions.
 // It also might not exist in later versions.
-//
-// DEFINEFUNC_1_1 acts like DEFINEFUNC but only aborts the process if function can't be loaded
-// when using 1.1.0 or higher.
 //
 // DEFINEFUNC_1_1_1 acts like DEFINEFUNC but only aborts the process if function can't be loaded
 // when using 1.1.1 or higher.
 //
 // DEFINEFUNC_3_0 acts like DEFINEFUNC but only aborts the process if function can't be loaded
 // when using 3.0.0 or higher.
-//
-// DEFINEFUNC_RENAMED_1_1 acts like DEFINEFUNC but tries to load the function using the new name when using >= 1.1.x
-// and the old name when using 1.0.2. In both cases the function will have the new name.
 //
 // DEFINEFUNC_RENAMED_3_0 acts like DEFINEFUNC but tries to load the function using the new name when using >= 3.x
 // and the old name when using 1.x. In both cases the function will have the new name.
@@ -186,21 +176,14 @@ DEFINEFUNC(void, ERR_error_string_n, (unsigned long e, char *buf, size_t len), (
 DEFINEFUNC(void, ERR_clear_error, (void), ()) \
 DEFINEFUNC_LEGACY_1(unsigned long, ERR_get_error_line, (const char **file, int *line), (file, line)) \
 DEFINEFUNC_3_0(unsigned long, ERR_get_error_all, (const char **file, int *line, const char **func, const char **data, int *flags), (file, line, func, data, flags)) \
-DEFINEFUNC_RENAMED_1_1(const char *, OpenSSL_version, SSLeay_version, (int type), (type)) \
+DEFINEFUNC(const char *, OpenSSL_version, (int type), (type)) \
 DEFINEFUNC(void, OPENSSL_init, (void), ()) \
-DEFINEFUNC_LEGACY_1_0(void, ERR_load_crypto_strings, (void), ()) \
-DEFINEFUNC_LEGACY_1_0(void, ERR_remove_thread_state, (const GO_CRYPTO_THREADID_PTR tid), (tid)) \
-DEFINEFUNC_LEGACY_1_0(int, CRYPTO_num_locks, (void), ()) \
-DEFINEFUNC_LEGACY_1_0(int, CRYPTO_THREADID_set_callback, (void (*threadid_func) (GO_CRYPTO_THREADID_PTR)), (threadid_func)) \
-DEFINEFUNC_LEGACY_1_0(void, CRYPTO_THREADID_set_numeric, (GO_CRYPTO_THREADID_PTR id, unsigned long val), (id, val)) \
-DEFINEFUNC_LEGACY_1_0(void, CRYPTO_set_locking_callback, (void (*locking_function)(int mode, int n, const char *file, int line)), (locking_function)) \
 /* CRYPTO_malloc argument num changes from int to size_t in OpenSSL 1.1.0, */ \
 /* and CRYPTO_free has file and line arguments added. */ \
 /* Exclude them from headercheck tool when using previous OpenSSL versions. */ \
-/*check:from=1.1.0*/ DEFINEFUNC(void *, CRYPTO_malloc, (size_t num, const char *file, int line), (num, file, line)) \
-/*check:from=1.1.0*/ DEFINEFUNC(void, CRYPTO_free, (void *str, const char *file, int line), (str, file, line)) \
-DEFINEFUNC_LEGACY_1_0(void, OPENSSL_add_all_algorithms_conf, (void), ()) \
-DEFINEFUNC_1_1(int, OPENSSL_init_crypto, (uint64_t ops, const GO_OPENSSL_INIT_SETTINGS_PTR settings), (ops, settings)) \
+DEFINEFUNC(void *, CRYPTO_malloc, (size_t num, const char *file, int line), (num, file, line)) \
+DEFINEFUNC(void, CRYPTO_free, (void *str, const char *file, int line), (str, file, line)) \
+DEFINEFUNC(int, OPENSSL_init_crypto, (uint64_t ops, const GO_OPENSSL_INIT_SETTINGS_PTR settings), (ops, settings)) \
 DEFINEFUNC_LEGACY_1(int, FIPS_mode, (void), ()) \
 DEFINEFUNC_LEGACY_1(int, FIPS_mode_set, (int r), (r)) \
 DEFINEFUNC_3_0(int, EVP_default_properties_is_fips_enabled, (GO_OSSL_LIB_CTX_PTR libctx), (libctx)) \
@@ -215,8 +198,8 @@ DEFINEFUNC_3_0(const GO_OSSL_PROVIDER_PTR, EVP_MD_get0_provider, (const GO_EVP_M
 DEFINEFUNC_RENAMED_3_0(int, EVP_MD_get_size, EVP_MD_size, (const GO_EVP_MD_PTR md), (md)) \
 DEFINEFUNC_RENAMED_3_0(int, EVP_MD_get_block_size, EVP_MD_block_size, (const GO_EVP_MD_PTR md), (md)) \
 DEFINEFUNC(int, RAND_bytes, (unsigned char *arg0, int arg1), (arg0, arg1)) \
-DEFINEFUNC_RENAMED_1_1(GO_EVP_MD_CTX_PTR, EVP_MD_CTX_new, EVP_MD_CTX_create, (void), ()) \
-DEFINEFUNC_RENAMED_1_1(void, EVP_MD_CTX_free, EVP_MD_CTX_destroy, (GO_EVP_MD_CTX_PTR ctx), (ctx)) \
+DEFINEFUNC(GO_EVP_MD_CTX_PTR, EVP_MD_CTX_new, (void), ()) \
+DEFINEFUNC(void, EVP_MD_CTX_free, (GO_EVP_MD_CTX_PTR ctx), (ctx)) \
 DEFINEFUNC(int, EVP_MD_CTX_copy, (GO_EVP_MD_CTX_PTR out, const GO_EVP_MD_CTX_PTR in), (out, in)) \
 DEFINEFUNC(int, EVP_MD_CTX_copy_ex, (GO_EVP_MD_CTX_PTR out, const GO_EVP_MD_CTX_PTR in), (out, in)) \
 DEFINEFUNC(int, EVP_Digest, (const void *data, size_t count, unsigned char *md, unsigned int *size, const GO_EVP_MD_PTR type, GO_ENGINE_PTR impl), (data, count, md, size, type, impl)) \
@@ -230,7 +213,7 @@ DEFINEFUNC(int, EVP_DigestSignFinal, (GO_EVP_MD_CTX_PTR ctx, unsigned char *sig,
 DEFINEFUNC(int, EVP_DigestVerifyInit, (GO_EVP_MD_CTX_PTR ctx, GO_EVP_PKEY_CTX_PTR *pctx, const GO_EVP_MD_PTR type, GO_ENGINE_PTR e, GO_EVP_PKEY_PTR pkey), (ctx, pctx, type, e, pkey)) \
 DEFINEFUNC(int, EVP_DigestVerifyFinal, (GO_EVP_MD_CTX_PTR ctx, const unsigned char *sig, size_t siglen), (ctx, sig, siglen)) \
 DEFINEFUNC_1_1_1(int, EVP_DigestVerify, (GO_EVP_MD_CTX_PTR ctx, const unsigned char *sigret, size_t siglen, const unsigned char *tbs, size_t tbslen), (ctx, sigret, siglen, tbs, tbslen)) \
-DEFINEFUNC_1_1(const GO_EVP_MD_PTR, EVP_md5_sha1, (void), ()) \
+DEFINEFUNC(const GO_EVP_MD_PTR, EVP_md5_sha1, (void), ()) \
 DEFINEFUNC(const GO_EVP_MD_PTR, EVP_ripemd160, (void), ()) \
 DEFINEFUNC(const GO_EVP_MD_PTR, EVP_md4, (void), ()) \
 DEFINEFUNC(const GO_EVP_MD_PTR, EVP_md5, (void), ()) \
@@ -245,8 +228,6 @@ DEFINEFUNC_1_1_1(const GO_EVP_MD_PTR, EVP_sha3_224, (void), ()) \
 DEFINEFUNC_1_1_1(const GO_EVP_MD_PTR, EVP_sha3_256, (void), ()) \
 DEFINEFUNC_1_1_1(const GO_EVP_MD_PTR, EVP_sha3_384, (void), ()) \
 DEFINEFUNC_1_1_1(const GO_EVP_MD_PTR, EVP_sha3_512, (void), ()) \
-DEFINEFUNC_LEGACY_1_0(void, HMAC_CTX_init, (GO_HMAC_CTX_PTR arg0), (arg0)) \
-DEFINEFUNC_LEGACY_1_0(void, HMAC_CTX_cleanup, (GO_HMAC_CTX_PTR arg0), (arg0)) \
 DEFINEFUNC_LEGACY_1(int, HMAC_Init_ex, (GO_HMAC_CTX_PTR arg0, const void *arg1, int arg2, const GO_EVP_MD_PTR arg3, GO_ENGINE_PTR arg4), (arg0, arg1, arg2, arg3, arg4)) \
 DEFINEFUNC_LEGACY_1(int, HMAC_Update, (GO_HMAC_CTX_PTR arg0, const unsigned char *arg1, size_t arg2), (arg0, arg1, arg2)) \
 DEFINEFUNC_LEGACY_1(int, HMAC_Final, (GO_HMAC_CTX_PTR arg0, unsigned char *arg1, unsigned int *arg2), (arg0, arg1, arg2)) \
@@ -321,7 +302,6 @@ DEFINEFUNC(int, EVP_PKEY_derive_set_peer, (GO_EVP_PKEY_CTX_PTR ctx, GO_EVP_PKEY_
 DEFINEFUNC(int, EVP_PKEY_derive, (GO_EVP_PKEY_CTX_PTR ctx, unsigned char *key, size_t *keylen), (ctx, key, keylen)) \
 DEFINEFUNC_3_0(int, EVP_PKEY_public_check_quick, (GO_EVP_PKEY_CTX_PTR ctx), (ctx)) \
 DEFINEFUNC_3_0(int, EVP_PKEY_private_check, (GO_EVP_PKEY_CTX_PTR ctx), (ctx)) \
-DEFINEFUNC_LEGACY_1_0(void*, EVP_PKEY_get0, (GO_EVP_PKEY_PTR pkey), (pkey)) \
 DEFINEFUNC_LEGACY_1_1(GO_EC_KEY_PTR, EVP_PKEY_get0_EC_KEY, (GO_EVP_PKEY_PTR pkey), (pkey)) \
 DEFINEFUNC_LEGACY_1_1(GO_DSA_PTR, EVP_PKEY_get0_DSA, (GO_EVP_PKEY_PTR pkey), (pkey)) \
 DEFINEFUNC_3_0(int, EVP_PKEY_fromdata_init, (GO_EVP_PKEY_CTX_PTR ctx), (ctx)) \
@@ -343,11 +323,9 @@ DEFINEFUNC(void, BN_clear, (GO_BIGNUM_PTR arg0), (arg0)) \
 DEFINEFUNC(void, BN_clear_free, (GO_BIGNUM_PTR arg0), (arg0)) \
 DEFINEFUNC(int, BN_num_bits, (const GO_BIGNUM_PTR arg0), (arg0)) \
 DEFINEFUNC(GO_BIGNUM_PTR, BN_bin2bn, (const unsigned char *arg0, int arg1, GO_BIGNUM_PTR arg2), (arg0, arg1, arg2)) \
-DEFINEFUNC_LEGACY_1_0(int, BN_bn2bin, (const GO_BIGNUM_PTR a, unsigned char *to), (a, to)) \
-DEFINEFUNC_LEGACY_1_0(GO_BIGNUM_PTR, bn_expand2, (GO_BIGNUM_PTR a, int n), (a, n)) \
-DEFINEFUNC_1_1(GO_BIGNUM_PTR, BN_lebin2bn, (const unsigned char *s, int len, GO_BIGNUM_PTR ret), (s, len, ret)) \
-DEFINEFUNC_1_1(int, BN_bn2lebinpad, (const GO_BIGNUM_PTR a, unsigned char *to, int tolen), (a, to, tolen)) \
-DEFINEFUNC_1_1(int, BN_bn2binpad, (const GO_BIGNUM_PTR a, unsigned char *to, int tolen), (a, to, tolen)) \
+DEFINEFUNC(GO_BIGNUM_PTR, BN_lebin2bn, (const unsigned char *s, int len, GO_BIGNUM_PTR ret), (s, len, ret)) \
+DEFINEFUNC(int, BN_bn2lebinpad, (const GO_BIGNUM_PTR a, unsigned char *to, int tolen), (a, to, tolen)) \
+DEFINEFUNC(int, BN_bn2binpad, (const GO_BIGNUM_PTR a, unsigned char *to, int tolen), (a, to, tolen)) \
 DEFINEFUNC_LEGACY_1(int, EC_KEY_set_public_key_affine_coordinates, (GO_EC_KEY_PTR key, GO_BIGNUM_PTR x, GO_BIGNUM_PTR y), (key, x, y)) \
 DEFINEFUNC_LEGACY_1(int, EC_KEY_set_public_key, (GO_EC_KEY_PTR key, const GO_EC_POINT_PTR pub), (key, pub)) \
 DEFINEFUNC_LEGACY_1(void, EC_KEY_free, (GO_EC_KEY_PTR arg0), (arg0)) \
