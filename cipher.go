@@ -179,7 +179,8 @@ func (c *evpCipher) encrypt(dst, src []byte) error {
 	}
 	defer C.go_openssl_EVP_CIPHER_CTX_free(enc_ctx)
 
-	if C.go_openssl_EVP_EncryptUpdate_wrapper(enc_ctx, base(dst), base(src), C.int(c.blockSize)) != 1 {
+	var outl C.int
+	if C.go_openssl_EVP_EncryptUpdate(enc_ctx, base(dst), &outl, base(src), C.int(c.blockSize)) != 1 {
 		return errors.New("EncryptUpdate failed")
 	}
 	runtime.KeepAlive(c)
@@ -208,7 +209,8 @@ func (c *evpCipher) decrypt(dst, src []byte) error {
 		return errors.New("could not disable cipher padding")
 	}
 
-	C.go_openssl_EVP_DecryptUpdate_wrapper(dec_ctx, base(dst), base(src), C.int(c.blockSize))
+	var outl C.int
+	C.go_openssl_EVP_DecryptUpdate(dec_ctx, base(dst), &outl, base(src), C.int(c.blockSize))
 	runtime.KeepAlive(c)
 	return nil
 }
@@ -235,7 +237,8 @@ func (x *cipherCBC) CryptBlocks(dst, src []byte) {
 		panic("crypto/cipher: output smaller than input")
 	}
 	if len(src) > 0 {
-		if C.go_openssl_EVP_CipherUpdate_wrapper(x.ctx, base(dst), base(src), C.int(len(src))) != 1 {
+		var outl C.int
+		if C.go_openssl_EVP_CipherUpdate(x.ctx, base(dst), &outl, base(src), C.int(len(src))) != 1 {
 			panic("crypto/cipher: CipherUpdate failed")
 		}
 		runtime.KeepAlive(x)
@@ -278,7 +281,8 @@ func (x *cipherCTR) XORKeyStream(dst, src []byte) {
 	if len(src) == 0 {
 		return
 	}
-	if C.go_openssl_EVP_EncryptUpdate_wrapper(x.ctx, base(dst), base(src), C.int(len(src))) != 1 {
+	var outl C.int
+	if C.go_openssl_EVP_EncryptUpdate(x.ctx, base(dst), &outl, base(src), C.int(len(src))) != 1 {
 		panic("crypto/cipher: EncryptUpdate failed")
 	}
 	runtime.KeepAlive(x)

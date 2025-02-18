@@ -13,6 +13,22 @@ package openssl
 // observed to benefit from these directives, not every function that is merely
 // expected to meet the noescape/nocallback criteria.
 
-// #cgo noescape go_openssl_RAND_bytes
-// #cgo nocallback go_openssl_RAND_bytes
+/*
+#cgo noescape go_openssl_RAND_bytes
+#cgo nocallback go_openssl_RAND_bytes
+#cgo noescape go_openssl_EVP_EncryptUpdate
+#cgo nocallback go_openssl_EVP_EncryptUpdate
+#cgo noescape go_openssl_EVP_DecryptUpdate
+#cgo nocallback go_openssl_EVP_DecryptUpdate
+#cgo noescape go_openssl_EVP_CipherUpdate
+#cgo nocallback go_openssl_EVP_CipherUpdate
+#cgo noescape go_openssl_EVP_PKEY_derive
+#cgo nocallback go_openssl_EVP_PKEY_derive
+#cgo noescape go_openssl_EVP_PKEY_get_raw_public_key
+#cgo nocallback go_openssl_EVP_PKEY_get_raw_public_key
+#cgo noescape go_openssl_EVP_PKEY_get_raw_private_key
+#cgo nocallback go_openssl_EVP_PKEY_get_raw_private_key
+#cgo noescape go_openssl_EVP_DigestSign
+#cgo nocallback go_openssl_EVP_DigestSign
+*/
 import "C"

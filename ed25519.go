@@ -155,12 +155,12 @@ func NewPrivateKeyEd25519FromSeed(seed []byte) (*PrivateKeyEd25519, error) {
 }
 
 func extractPKEYPubEd25519(pkey C.GO_EVP_PKEY_PTR, pub []byte) error {
-	r := C.go_openssl_EVP_PKEY_get_raw_public_key_wrapper(pkey, base(pub), C.size_t(publicKeySizeEd25519))
-	if r.result != 1 {
+	keylen := C.size_t(publicKeySizeEd25519)
+	if C.go_openssl_EVP_PKEY_get_raw_public_key(pkey, base(pub), &keylen) != 1 {
 		return newOpenSSLError("EVP_PKEY_get_raw_public_key")
 	}
-	if r.len != publicKeySizeEd25519 {
-		return errors.New("ed25519: bad public key length: " + strconv.Itoa(int(r.len)))
+	if int(keylen) != publicKeySizeEd25519 {
+		return errors.New("ed25519: bad public key length: " + strconv.Itoa(int(keylen)))
 	}
 	return nil
 }
@@ -169,12 +169,12 @@ func extractPKEYPrivEd25519(pkey C.GO_EVP_PKEY_PTR, priv []byte) error {
 	if err := extractPKEYPubEd25519(pkey, priv[seedSizeEd25519:]); err != nil {
 		return err
 	}
-	r := C.go_openssl_EVP_PKEY_get_raw_private_key_wrapper(pkey, base(priv), C.size_t(seedSizeEd25519))
-	if r.result != 1 {
+	keylen := C.size_t(seedSizeEd25519)
+	if C.go_openssl_EVP_PKEY_get_raw_private_key(pkey, base(priv), &keylen) != 1 {
 		return newOpenSSLError("EVP_PKEY_get_raw_private_key")
 	}
-	if r.len != seedSizeEd25519 {
-		return errors.New("ed25519: bad private key length: " + strconv.Itoa(int(r.len)))
+	if int(keylen) != seedSizeEd25519 {
+		return errors.New("ed25519: bad private key length: " + strconv.Itoa(int(keylen)))
 	}
 	return nil
 }
@@ -200,12 +200,12 @@ func signEd25519(priv *PrivateKeyEd25519, sig, message []byte) error {
 	if C.go_openssl_EVP_DigestSignInit(ctx, nil, nil, nil, priv._pkey) != 1 {
 		return newOpenSSLError("EVP_DigestSignInit")
 	}
-	r := C.go_openssl_EVP_DigestSign_wrapper(ctx, base(sig), C.size_t(signatureSizeEd25519), base(message), C.size_t(len(message)))
-	if r.result != 1 {
+	siglen := C.size_t(signatureSizeEd25519)
+	if C.go_openssl_EVP_DigestSign(ctx, base(sig), &siglen, base(message), C.size_t(len(message))) != 1 {
 		return newOpenSSLError("EVP_DigestSign")
 	}
-	if r.siglen != signatureSizeEd25519 {
-		return errors.New("ed25519: bad signature length: " + strconv.Itoa(int(r.siglen)))
+	if int(siglen) != signatureSizeEd25519 {
+		return errors.New("ed25519: bad signature length: " + strconv.Itoa(int(siglen)))
 	}
 	return nil
 }

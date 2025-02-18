@@ -102,7 +102,7 @@ func (c *hkdf1) Read(p []byte) (int, error) {
 	}
 	c.buf = append(c.buf, make([]byte, needLen)...)
 	outLen := C.size_t(prevLen + needLen)
-	if C.go_openssl_EVP_PKEY_derive_wrapper(c.ctx, base(c.buf), outLen).result != 1 {
+	if C.go_openssl_EVP_PKEY_derive(c.ctx, base(c.buf), &outLen) != 1 {
 		return 0, newOpenSSLError("EVP_PKEY_derive")
 	}
 	n := copy(p, c.buf[prevLen:outLen])
@@ -126,15 +126,15 @@ func ExtractHKDF(h func() hash.Hash, secret, salt []byte) ([]byte, error) {
 			return nil, err
 		}
 		defer C.go_openssl_EVP_PKEY_CTX_free(ctx)
-		r := C.go_openssl_EVP_PKEY_derive_wrapper(ctx, nil, 0)
-		if r.result != 1 {
+		var keylen C.size_t
+		if C.go_openssl_EVP_PKEY_derive(ctx, nil, &keylen) != 1 {
 			return nil, newOpenSSLError("EVP_PKEY_derive_init")
 		}
-		out := make([]byte, r.keylen)
-		if C.go_openssl_EVP_PKEY_derive_wrapper(ctx, base(out), r.keylen).result != 1 {
+		out := make([]byte, keylen)
+		if C.go_openssl_EVP_PKEY_derive(ctx, base(out), &keylen) != 1 {
 			return nil, newOpenSSLError("EVP_PKEY_derive")
 		}
-		return out[:r.keylen], nil
+		return out[:keylen], nil
 	case 3:
 		ctx, err := newHKDFCtx3(md, C.GO_EVP_KDF_HKDF_MODE_EXTRACT_ONLY, secret, salt, nil, nil)
 		if err != nil {
@@ -170,7 +170,8 @@ func ExpandHKDFOneShot(h func() hash.Hash, pseudorandomKey, info []byte, keyLeng
 			return nil, err
 		}
 		defer C.go_openssl_EVP_PKEY_CTX_free(ctx)
-		if C.go_openssl_EVP_PKEY_derive_wrapper(ctx, base(out), C.size_t(keyLength)).result != 1 {
+		keylen := C.size_t(keyLength)
+		if C.go_openssl_EVP_PKEY_derive(ctx, base(out), &keylen) != 1 {
 			return nil, newOpenSSLError("EVP_PKEY_derive")
 		}
 	case 3:
