@@ -13,6 +13,13 @@ func (s cString) str() string {
 }
 
 // ptr returns a pointer to the string data.
+// It panics if the string is not null-terminated.
+//
+// The memory pointed to by the returned pointer should
+// not be modified and it must only be passed to
+// "const char*" parameters. Any attempt to modify it
+// will result in a runtime panic, as Go strings are
+// allocated in read-only memory.
 func (s cString) ptr() *C.char {
 	if len(s) == 0 {
 		return nil
