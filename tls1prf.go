@@ -116,9 +116,7 @@ func tls1PRF1(result, secret, label, seed []byte, md C.GO_EVP_MD_PTR) error {
 var fetchTLS1PRF3 = sync.OnceValues(func() (C.GO_EVP_KDF_PTR, error) {
 	checkMajorVersion(3)
 
-	name := C.CString("TLS1-PRF")
-	kdf := C.go_openssl_EVP_KDF_fetch(nil, name, nil)
-	C.free(unsafe.Pointer(name))
+	kdf := C.go_openssl_EVP_KDF_fetch(nil, _OSSL_KDF_NAME_TLS1_PRF.ptr(), nil)
 	if kdf == nil {
 		return nil, newOpenSSLError("EVP_KDF_fetch")
 	}

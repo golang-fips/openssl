@@ -91,9 +91,9 @@ func GenerateKeyECDSA(curve string) (x, y, d BigInt, err error) {
 		// Get Z. We don't need to free it, get0 does not increase the reference count.
 		bd = C.go_openssl_EC_KEY_get0_private_key(key)
 	case 3:
-		if C.go_openssl_EVP_PKEY_get_bn_param(pkey, _OSSL_PKEY_PARAM_EC_PUB_X, &bx) != 1 ||
-			C.go_openssl_EVP_PKEY_get_bn_param(pkey, _OSSL_PKEY_PARAM_EC_PUB_Y, &by) != 1 ||
-			C.go_openssl_EVP_PKEY_get_bn_param(pkey, _OSSL_PKEY_PARAM_PRIV_KEY, &bd) != 1 {
+		if C.go_openssl_EVP_PKEY_get_bn_param(pkey, _OSSL_PKEY_PARAM_EC_PUB_X.ptr(), &bx) != 1 ||
+			C.go_openssl_EVP_PKEY_get_bn_param(pkey, _OSSL_PKEY_PARAM_EC_PUB_Y.ptr(), &by) != 1 ||
+			C.go_openssl_EVP_PKEY_get_bn_param(pkey, _OSSL_PKEY_PARAM_PRIV_KEY.ptr(), &bd) != 1 {
 			return nil, nil, nil, newOpenSSLError("EVP_PKEY_get_bn_param")
 		}
 		defer C.go_openssl_BN_clear_free(bd)

@@ -13,12 +13,6 @@ import (
 	"unsafe"
 )
 
-var (
-	keyTypeRSA     = C.CString("RSA")
-	keyTypeEC      = C.CString("EC")
-	keyTypeED25519 = C.CString("ED25519")
-)
-
 // cacheMD is a cache of crypto.Hash to GO_EVP_MD_PTR.
 var cacheMD sync.Map
 
@@ -201,11 +195,11 @@ func generateEVPPKey(id C.int, bits int, curve string) (C.GO_EVP_PKEY_PTR, error
 	case 3:
 		switch id {
 		case C.GO_EVP_PKEY_RSA:
-			pkey = C.go_openssl_EVP_PKEY_Q_keygen_RSA(nil, nil, keyTypeRSA, C.size_t(bits))
+			pkey = C.go_openssl_EVP_PKEY_Q_keygen_RSA(nil, nil, _KeyTypeRSA.ptr(), C.size_t(bits))
 		case C.GO_EVP_PKEY_EC:
-			pkey = C.go_openssl_EVP_PKEY_Q_keygen_EC(nil, nil, keyTypeEC, C.go_openssl_OBJ_nid2sn(curveNID(curve)))
+			pkey = C.go_openssl_EVP_PKEY_Q_keygen_EC(nil, nil, _KeyTypeEC.ptr(), C.go_openssl_OBJ_nid2sn(curveNID(curve)))
 		case C.GO_EVP_PKEY_ED25519:
-			pkey = C.go_openssl_EVP_PKEY_Q_keygen(nil, nil, keyTypeED25519)
+			pkey = C.go_openssl_EVP_PKEY_Q_keygen(nil, nil, _KeyTypeED25519.ptr())
 		default:
 			panic("unsupported key type '" + strconv.Itoa(int(id)) + "'")
 		}

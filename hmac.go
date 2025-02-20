@@ -88,27 +88,26 @@ func newHMAC1(key []byte, md C.GO_EVP_MD_PTR) hmacCtx1 {
 
 var hmacDigestsSupported sync.Map
 var fetchHMAC3 = sync.OnceValue(func() C.GO_EVP_MAC_PTR {
-	name := C.CString("HMAC")
-	mac := C.go_openssl_EVP_MAC_fetch(nil, name, nil)
-	C.free(unsafe.Pointer(name))
+	mac := C.go_openssl_EVP_MAC_fetch(nil, _OSSL_MAC_NAME_HMAC.ptr(), nil)
 	if mac == nil {
 		panic("openssl: HMAC not supported")
 	}
 	return mac
 })
 
-func buildHMAC3Params(digest *C.char) (C.GO_OSSL_PARAM_PTR, error) {
+func buildHMAC3Params(md C.GO_EVP_MD_PTR) (C.GO_OSSL_PARAM_PTR, error) {
 	bld, err := newParamBuilder()
 	if err != nil {
 		return nil, err
 	}
 	defer bld.finalize()
-	bld.addUTF8String(_OSSL_MAC_PARAM_DIGEST, digest, 0)
+	bld.addUTF8String(_OSSL_MAC_PARAM_DIGEST, C.go_openssl_EVP_MD_get0_name(md), 0)
 	return bld.build()
 }
 
-func isHMAC3DigestSupported(digest string) bool {
-	if v, ok := hmacDigestsSupported.Load(digest); ok {
+func isHMAC3DigestSupported(md C.GO_EVP_MD_PTR) bool {
+	nid := C.go_openssl_EVP_MD_get_type(md)
+	if v, ok := hmacDigestsSupported.Load(nid); ok {
 		return v.(bool)
 	}
 	ctx := C.go_openssl_EVP_MAC_CTX_new(fetchHMAC3())
@@ -117,29 +116,26 @@ func isHMAC3DigestSupported(digest string) bool {
 	}
 	defer C.go_openssl_EVP_MAC_CTX_free(ctx)
 
-	cdigest := C.CString(digest)
-	defer C.free(unsafe.Pointer(cdigest))
-	params, err := buildHMAC3Params(cdigest)
+	params, err := buildHMAC3Params(md)
 	if err != nil {
 		panic(err)
 	}
 	defer C.go_openssl_OSSL_PARAM_free(params)
 
 	supported := C.go_openssl_EVP_MAC_CTX_set_params(ctx, params) != 0
-	hmacDigestsSupported.Store(digest, supported)
+	hmacDigestsSupported.Store(nid, supported)
 	return supported
 }
 
 func newHMAC3(key []byte, md C.GO_EVP_MD_PTR) hmacCtx3 {
-	digest := C.go_openssl_EVP_MD_get0_name(md)
-	if !isHMAC3DigestSupported(C.GoString(digest)) {
+	if !isHMAC3DigestSupported(md) {
 		// The digest is not supported by the HMAC provider.
 		// Don't panic here so the Go standard library to
 		// fall back to the Go implementation.
 		// See https://github.com/golang-fips/openssl/issues/153.
 		return hmacCtx3{}
 	}
-	params, err := buildHMAC3Params(digest)
+	params, err := buildHMAC3Params(md)
 	if err != nil {
 		panic(err)
 	}

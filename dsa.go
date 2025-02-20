@@ -98,9 +98,9 @@ func GenerateParametersDSA(l, n int) (DSAParameters, error) {
 			C.go_openssl_BN_free(q)
 			C.go_openssl_BN_free(g)
 		}()
-		if C.go_openssl_EVP_PKEY_get_bn_param(pkey, _OSSL_PKEY_PARAM_FFC_P, &p) != 1 ||
-			C.go_openssl_EVP_PKEY_get_bn_param(pkey, _OSSL_PKEY_PARAM_FFC_Q, &q) != 1 ||
-			C.go_openssl_EVP_PKEY_get_bn_param(pkey, _OSSL_PKEY_PARAM_FFC_G, &g) != 1 {
+		if C.go_openssl_EVP_PKEY_get_bn_param(pkey, _OSSL_PKEY_PARAM_FFC_P.ptr(), &p) != 1 ||
+			C.go_openssl_EVP_PKEY_get_bn_param(pkey, _OSSL_PKEY_PARAM_FFC_Q.ptr(), &q) != 1 ||
+			C.go_openssl_EVP_PKEY_get_bn_param(pkey, _OSSL_PKEY_PARAM_FFC_G.ptr(), &g) != 1 {
 			return DSAParameters{}, newOpenSSLError("EVP_PKEY_get_bn_param")
 		}
 	default:
@@ -159,8 +159,8 @@ func GenerateKeyDSA(params DSAParameters) (x, y BigInt, err error) {
 			C.go_openssl_BN_clear_free(bx)
 			C.go_openssl_BN_free(by)
 		}()
-		if C.go_openssl_EVP_PKEY_get_bn_param(pkey, _OSSL_PKEY_PARAM_PUB_KEY, &by) != 1 ||
-			C.go_openssl_EVP_PKEY_get_bn_param(pkey, _OSSL_PKEY_PARAM_PRIV_KEY, &bx) != 1 {
+		if C.go_openssl_EVP_PKEY_get_bn_param(pkey, _OSSL_PKEY_PARAM_PUB_KEY.ptr(), &by) != 1 ||
+			C.go_openssl_EVP_PKEY_get_bn_param(pkey, _OSSL_PKEY_PARAM_PRIV_KEY.ptr(), &bx) != 1 {
 			return nil, nil, newOpenSSLError("EVP_PKEY_get_bn_param")
 		}
 	default:

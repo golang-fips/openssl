@@ -280,7 +280,7 @@ func GenerateKeyECDH(curve string) (*PrivateKeyECDH, []byte, error) {
 			return nil, nil, newOpenSSLError("EC_KEY_get0_private_key")
 		}
 	case 3:
-		if C.go_openssl_EVP_PKEY_get_bn_param(pkey, _OSSL_PKEY_PARAM_PRIV_KEY, &priv) != 1 {
+		if C.go_openssl_EVP_PKEY_get_bn_param(pkey, _OSSL_PKEY_PARAM_PRIV_KEY.ptr(), &priv) != 1 {
 			return nil, nil, newOpenSSLError("EVP_PKEY_get_bn_param")
 		}
 		defer C.go_openssl_BN_clear_free(priv)

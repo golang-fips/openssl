@@ -36,7 +36,7 @@ var supportsEd25519 = sync.OnceValue(func() bool {
 			}
 		}
 	case 3:
-		sig := C.go_openssl_EVP_SIGNATURE_fetch(nil, keyTypeED25519, nil)
+		sig := C.go_openssl_EVP_SIGNATURE_fetch(nil, _KeyTypeED25519.ptr(), nil)
 		if sig != nil {
 			C.go_openssl_EVP_SIGNATURE_free(sig)
 			return true

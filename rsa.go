@@ -45,11 +45,11 @@ func GenerateKeyRSA(bits int) (N, E, D, P, Q, Dp, Dq, Qinv BigInt, err error) {
 			C.go_openssl_BN_clear_free(tmp)
 		}()
 		var err error
-		setBigInt := func(bi *BigInt, param *C.char) bool {
+		setBigInt := func(bi *BigInt, param cString) bool {
 			if err != nil {
 				return false
 			}
-			if C.go_openssl_EVP_PKEY_get_bn_param(pkey, param, &tmp) != 1 {
+			if C.go_openssl_EVP_PKEY_get_bn_param(pkey, param.ptr(), &tmp) != 1 {
 				err = newOpenSSLError("EVP_PKEY_get_bn_param failed")
 				return false
 			}
