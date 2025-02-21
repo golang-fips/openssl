@@ -381,7 +381,7 @@ func (g *cipherGCM) Overhead() int {
 	return gcmTagSize
 }
 
-func (g *cipherGCM) Seal(dst, nonce, plaintext, additionalData []byte) []byte {
+func (g *cipherGCM) Seal(dst, nonce, plaintext, aad []byte) []byte {
 	if len(nonce) != gcmStandardNonceSize {
 		panic("cipher: incorrect nonce length given to GCM")
 	}
@@ -392,9 +392,9 @@ func (g *cipherGCM) Seal(dst, nonce, plaintext, additionalData []byte) []byte {
 		panic("cipher: message too large for buffer")
 	}
 	if g.tls != cipherGCMTLSNone {
-		if g.tls == cipherGCMTLS12 && len(additionalData) != gcmTls12AddSize {
+		if g.tls == cipherGCMTLS12 && len(aad) != gcmTls12AddSize {
 			panic("cipher: incorrect additional data length given to GCM TLS 1.2")
-		} else if g.tls == cipherGCMTLS13 && len(additionalData) != gcmTls13AddSize {
+		} else if g.tls == cipherGCMTLS13 && len(aad) != gcmTls13AddSize {
 			panic("cipher: incorrect additional data length given to GCM TLS 1.3")
 		}
 		counter := binary.BigEndian.Uint64(nonce[gcmTlsFixedNonceSize:])
@@ -460,18 +460,18 @@ func (g *cipherGCM) Seal(dst, nonce, plaintext, additionalData []byte) []byte {
 	if C.go_openssl_EVP_EncryptInit_ex(ctx, nil, nil, nil, base(nonce)) != 1 {
 		panic(newOpenSSLError("EVP_EncryptInit_ex"))
 	}
-	var out_len, discard_len C.int
-	if C.go_openssl_EVP_EncryptUpdate(ctx, nil, &discard_len, baseNeverEmpty(additionalData), C.int(len(additionalData))) != 1 ||
-		C.go_openssl_EVP_EncryptUpdate(ctx, base(out), &out_len, baseNeverEmpty(plaintext), C.int(len(plaintext))) != 1 {
+	var outl, discard C.int
+	if C.go_openssl_EVP_EncryptUpdate(ctx, nil, &discard, baseNeverEmpty(aad), C.int(len(aad))) != 1 ||
+		C.go_openssl_EVP_EncryptUpdate(ctx, base(out), &outl, baseNeverEmpty(plaintext), C.int(len(plaintext))) != 1 {
 		panic(newOpenSSLError("EVP_EncryptUpdate"))
 	}
-	if len(plaintext) != int(out_len) {
+	if len(plaintext) != int(outl) {
 		panic("cipher: incorrect length returned from GCM EncryptUpdate")
 	}
-	if C.go_openssl_EVP_EncryptFinal_ex(ctx, base(out[out_len:]), &discard_len) != 1 {
+	if C.go_openssl_EVP_EncryptFinal_ex(ctx, base(out[outl:]), &discard) != 1 {
 		panic(newOpenSSLError("EVP_EncryptFinal_ex"))
 	}
-	if C.go_openssl_EVP_CIPHER_CTX_ctrl(ctx, C.GO_EVP_CTRL_GCM_GET_TAG, 16, unsafe.Pointer(base(out[out_len:]))) != 1 {
+	if C.go_openssl_EVP_CIPHER_CTX_ctrl(ctx, C.GO_EVP_CTRL_GCM_GET_TAG, 16, unsafe.Pointer(base(out[outl:]))) != 1 {
 		panic(newOpenSSLError("EVP_CIPHER_CTX_ctrl"))
 	}
 	runtime.KeepAlive(g)
@@ -480,7 +480,7 @@ func (g *cipherGCM) Seal(dst, nonce, plaintext, additionalData []byte) []byte {
 
 var errOpen = errors.New("cipher: message authentication failed")
 
-func (g *cipherGCM) Open(dst, nonce, ciphertext, additionalData []byte) (_ []byte, err error) {
+func (g *cipherGCM) Open(dst, nonce, ciphertext, aad []byte) (_ []byte, err error) {
 	if len(nonce) != gcmStandardNonceSize {
 		panic("cipher: incorrect nonce length given to GCM")
 	}
@@ -523,15 +523,15 @@ func (g *cipherGCM) Open(dst, nonce, ciphertext, additionalData []byte) (_ []byt
 	if C.go_openssl_EVP_CIPHER_CTX_ctrl(ctx, C.GO_EVP_CTRL_GCM_SET_TAG, 16, unsafe.Pointer(base(tag))) != 1 {
 		return nil, errOpen
 	}
-	var out_len, discard_len C.int
-	if C.go_openssl_EVP_DecryptUpdate(ctx, nil, &discard_len, baseNeverEmpty(additionalData), C.int(len(additionalData))) != 1 ||
-		C.go_openssl_EVP_DecryptUpdate(ctx, base(out), &out_len, baseNeverEmpty(ciphertext), C.int(len(ciphertext))) != 1 {
+	var outl, discard C.int
+	if C.go_openssl_EVP_DecryptUpdate(ctx, nil, &discard, baseNeverEmpty(aad), C.int(len(aad))) != 1 ||
+		C.go_openssl_EVP_DecryptUpdate(ctx, base(out), &outl, baseNeverEmpty(ciphertext), C.int(len(ciphertext))) != 1 {
 		return nil, errOpen
 	}
-	if len(ciphertext) != int(out_len) {
+	if len(ciphertext) != int(outl) {
 		return nil, errOpen
 	}
-	if C.go_openssl_EVP_DecryptFinal_ex(ctx, base(out[out_len:]), &discard_len) != 1 {
+	if C.go_openssl_EVP_DecryptFinal_ex(ctx, base(out[outl:]), &discard) != 1 {
 		return nil, errOpen
 	}
 	runtime.KeepAlive(g)
