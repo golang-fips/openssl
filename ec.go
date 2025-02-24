@@ -8,13 +8,13 @@ import "C"
 func curveNID(curve string) C.int {
 	switch curve {
 	case "P-224":
-		return C.GO_NID_secp224r1
+		return _NID_secp224r1
 	case "P-256":
-		return C.GO_NID_X9_62_prime256v1
+		return _NID_X9_62_prime256v1
 	case "P-384":
-		return C.GO_NID_secp384r1
+		return _NID_secp384r1
 	case "P-521":
-		return C.GO_NID_secp521r1
+		return _NID_secp521r1
 	default:
 		panic("openssl: unknown curve " + curve)
 	}
@@ -39,13 +39,13 @@ func curveSize(curve string) int {
 // encodeEcPoint encodes pt.
 func encodeEcPoint(group C.GO_EC_GROUP_PTR, pt C.GO_EC_POINT_PTR) ([]byte, error) {
 	// Get encoded point size.
-	n := C.go_openssl_EC_POINT_point2oct(group, pt, C.GO_POINT_CONVERSION_UNCOMPRESSED, nil, 0, nil)
+	n := C.go_openssl_EC_POINT_point2oct(group, pt, _POINT_CONVERSION_UNCOMPRESSED, nil, 0, nil)
 	if n == 0 {
 		return nil, newOpenSSLError("EC_POINT_point2oct")
 	}
 	// Encode point into bytes.
 	bytes := make([]byte, n)
-	n = C.go_openssl_EC_POINT_point2oct(group, pt, C.GO_POINT_CONVERSION_UNCOMPRESSED, base(bytes), n, nil)
+	n = C.go_openssl_EC_POINT_point2oct(group, pt, _POINT_CONVERSION_UNCOMPRESSED, base(bytes), n, nil)
 	if n == 0 {
 		return nil, newOpenSSLError("EC_POINT_point2oct")
 	}

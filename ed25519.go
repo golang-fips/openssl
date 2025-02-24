@@ -29,7 +29,7 @@ var supportsEd25519 = sync.OnceValue(func() bool {
 	switch vMajor {
 	case 1:
 		if versionAtOrAbove(1, 1, 1) {
-			ctx := C.go_openssl_EVP_PKEY_CTX_new_id(C.GO_EVP_PKEY_ED25519, nil)
+			ctx := C.go_openssl_EVP_PKEY_CTX_new_id(_EVP_PKEY_ED25519, nil)
 			if ctx != nil {
 				C.go_openssl_EVP_PKEY_CTX_free(ctx)
 				return true
@@ -99,7 +99,7 @@ func (k *PrivateKeyEd25519) Public() (*PublicKeyEd25519, error) {
 
 // GenerateKeyEd25519 generates a private key.
 func GenerateKeyEd25519() (*PrivateKeyEd25519, error) {
-	pkeyPriv, err := generateEVPPKey(C.GO_EVP_PKEY_ED25519, 0, "")
+	pkeyPriv, err := generateEVPPKey(_EVP_PKEY_ED25519, 0, "")
 	if err != nil {
 		return nil, err
 	}
@@ -129,7 +129,7 @@ func NewPublicKeyEd25519(pub []byte) (*PublicKeyEd25519, error) {
 	if len(pub) != publicKeySizeEd25519 {
 		panic("ed25519: bad public key length: " + strconv.Itoa(len(pub)))
 	}
-	pkey := C.go_openssl_EVP_PKEY_new_raw_public_key(C.GO_EVP_PKEY_ED25519, nil, base(pub), C.size_t(len(pub)))
+	pkey := C.go_openssl_EVP_PKEY_new_raw_public_key(_EVP_PKEY_ED25519, nil, base(pub), C.size_t(len(pub)))
 	if pkey == nil {
 		return nil, newOpenSSLError("EVP_PKEY_new_raw_public_key")
 	}
@@ -145,7 +145,7 @@ func NewPrivateKeyEd25519FromSeed(seed []byte) (*PrivateKeyEd25519, error) {
 	if len(seed) != seedSizeEd25519 {
 		panic("ed25519: bad seed length: " + strconv.Itoa(len(seed)))
 	}
-	pkey := C.go_openssl_EVP_PKEY_new_raw_private_key(C.GO_EVP_PKEY_ED25519, nil, base(seed), C.size_t(len(seed)))
+	pkey := C.go_openssl_EVP_PKEY_new_raw_private_key(_EVP_PKEY_ED25519, nil, base(seed), C.size_t(len(seed)))
 	if pkey == nil {
 		return nil, newOpenSSLError("EVP_PKEY_new_raw_private_key")
 	}

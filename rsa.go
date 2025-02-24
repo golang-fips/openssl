@@ -17,7 +17,7 @@ func GenerateKeyRSA(bits int) (N, E, D, P, Q, Dp, Dq, Qinv BigInt, err error) {
 	bad := func(e error) (N, E, D, P, Q, Dp, Dq, Qinv BigInt, err error) {
 		return nil, nil, nil, nil, nil, nil, nil, nil, e
 	}
-	pkey, err := generateEVPPKey(C.GO_EVP_PKEY_RSA, bits, "")
+	pkey, err := generateEVPPKey(_EVP_PKEY_RSA, bits, "")
 	if err != nil {
 		return bad(err)
 	}
@@ -94,7 +94,7 @@ func NewPublicKeyRSA(n, e BigInt) (*PublicKeyRSA, error) {
 			C.go_openssl_RSA_free(key)
 			return nil, newOpenSSLError("EVP_PKEY_new failed")
 		}
-		if C.go_openssl_EVP_PKEY_assign(pkey, C.GO_EVP_PKEY_RSA, (unsafe.Pointer)(key)) != 1 {
+		if C.go_openssl_EVP_PKEY_assign(pkey, _EVP_PKEY_RSA, (unsafe.Pointer)(key)) != 1 {
 			C.go_openssl_RSA_free(key)
 			C.go_openssl_EVP_PKEY_free(pkey)
 			return nil, newOpenSSLError("EVP_PKEY_assign failed")
@@ -155,7 +155,7 @@ func NewPrivateKeyRSA(n, e, d, p, q, dp, dq, qinv BigInt) (*PrivateKeyRSA, error
 			C.go_openssl_RSA_free(key)
 			return nil, newOpenSSLError("EVP_PKEY_new failed")
 		}
-		if C.go_openssl_EVP_PKEY_assign(pkey, C.GO_EVP_PKEY_RSA, (unsafe.Pointer)(key)) != 1 {
+		if C.go_openssl_EVP_PKEY_assign(pkey, _EVP_PKEY_RSA, (unsafe.Pointer)(key)) != 1 {
 			C.go_openssl_RSA_free(key)
 			C.go_openssl_EVP_PKEY_free(pkey)
 			return nil, newOpenSSLError("EVP_PKEY_assign failed")
@@ -186,23 +186,23 @@ func (k *PrivateKeyRSA) withKey(f func(C.GO_EVP_PKEY_PTR) C.int) C.int {
 }
 
 func DecryptRSAOAEP(h, mgfHash hash.Hash, priv *PrivateKeyRSA, ciphertext, label []byte) ([]byte, error) {
-	return evpDecrypt(priv.withKey, C.GO_RSA_PKCS1_OAEP_PADDING, h, mgfHash, label, ciphertext)
+	return evpDecrypt(priv.withKey, _RSA_PKCS1_OAEP_PADDING, h, mgfHash, label, ciphertext)
 }
 
 func EncryptRSAOAEP(h, mgfHash hash.Hash, pub *PublicKeyRSA, msg, label []byte) ([]byte, error) {
-	return evpEncrypt(pub.withKey, C.GO_RSA_PKCS1_OAEP_PADDING, h, mgfHash, label, msg)
+	return evpEncrypt(pub.withKey, _RSA_PKCS1_OAEP_PADDING, h, mgfHash, label, msg)
 }
 
 func DecryptRSAPKCS1(priv *PrivateKeyRSA, ciphertext []byte) ([]byte, error) {
-	return evpDecrypt(priv.withKey, C.GO_RSA_PKCS1_PADDING, nil, nil, nil, ciphertext)
+	return evpDecrypt(priv.withKey, _RSA_PKCS1_PADDING, nil, nil, nil, ciphertext)
 }
 
 func EncryptRSAPKCS1(pub *PublicKeyRSA, msg []byte) ([]byte, error) {
-	return evpEncrypt(pub.withKey, C.GO_RSA_PKCS1_PADDING, nil, nil, nil, msg)
+	return evpEncrypt(pub.withKey, _RSA_PKCS1_PADDING, nil, nil, nil, msg)
 }
 
 func DecryptRSANoPadding(priv *PrivateKeyRSA, ciphertext []byte) ([]byte, error) {
-	ret, err := evpDecrypt(priv.withKey, C.GO_RSA_NO_PADDING, nil, nil, nil, ciphertext)
+	ret, err := evpDecrypt(priv.withKey, _RSA_NO_PADDING, nil, nil, nil, ciphertext)
 	if err != nil {
 		return nil, err
 	}
@@ -226,7 +226,7 @@ func DecryptRSANoPadding(priv *PrivateKeyRSA, ciphertext []byte) ([]byte, error)
 }
 
 func EncryptRSANoPadding(pub *PublicKeyRSA, msg []byte) ([]byte, error) {
-	return evpEncrypt(pub.withKey, C.GO_RSA_NO_PADDING, nil, nil, nil, msg)
+	return evpEncrypt(pub.withKey, _RSA_NO_PADDING, nil, nil, nil, msg)
 }
 
 func saltLength(saltLen int, sign bool) (C.int, error) {
@@ -241,14 +241,14 @@ func saltLength(saltLen int, sign bool) (C.int, error) {
 		if sign {
 			if vMajor == 1 {
 				// OpenSSL 1.x uses -2 to mean maximal size when signing where Go crypto uses 0.
-				return C.GO_RSA_PSS_SALTLEN_MAX_SIGN, nil
+				return _RSA_PSS_SALTLEN_MAX_SIGN, nil
 			}
 			// OpenSSL 3.x deprecated RSA_PSS_SALTLEN_MAX_SIGN
 			// and uses -3 to mean maximal size when signing where Go crypto uses 0.
-			return C.GO_RSA_PSS_SALTLEN_MAX, nil
+			return _RSA_PSS_SALTLEN_MAX, nil
 		}
 		// OpenSSL uses -2 to mean auto-detect size when verifying where Go crypto uses 0.
-		return C.GO_RSA_PSS_SALTLEN_AUTO, nil
+		return _RSA_PSS_SALTLEN_AUTO, nil
 	}
 	return C.int(saltLen), nil
 }
@@ -258,7 +258,7 @@ func SignRSAPSS(priv *PrivateKeyRSA, h crypto.Hash, hashed []byte, saltLen int) 
 	if err != nil {
 		return nil, err
 	}
-	return evpSign(priv.withKey, C.GO_RSA_PKCS1_PSS_PADDING, cSaltLen, h, hashed)
+	return evpSign(priv.withKey, _RSA_PKCS1_PSS_PADDING, cSaltLen, h, hashed)
 }
 
 func VerifyRSAPSS(pub *PublicKeyRSA, h crypto.Hash, hashed, sig []byte, saltLen int) error {
@@ -266,11 +266,11 @@ func VerifyRSAPSS(pub *PublicKeyRSA, h crypto.Hash, hashed, sig []byte, saltLen 
 	if err != nil {
 		return err
 	}
-	return evpVerify(pub.withKey, C.GO_RSA_PKCS1_PSS_PADDING, cSaltLen, h, sig, hashed)
+	return evpVerify(pub.withKey, _RSA_PKCS1_PSS_PADDING, cSaltLen, h, sig, hashed)
 }
 
 func SignRSAPKCS1v15(priv *PrivateKeyRSA, h crypto.Hash, hashed []byte) ([]byte, error) {
-	return evpSign(priv.withKey, C.GO_RSA_PKCS1_PADDING, 0, h, hashed)
+	return evpSign(priv.withKey, _RSA_PKCS1_PADDING, 0, h, hashed)
 }
 
 func HashSignRSAPKCS1v15(priv *PrivateKeyRSA, h crypto.Hash, msg []byte) ([]byte, error) {
@@ -287,7 +287,7 @@ func VerifyRSAPKCS1v15(pub *PublicKeyRSA, h crypto.Hash, hashed, sig []byte) err
 	}) == 0 {
 		return errors.New("crypto/rsa: verification error")
 	}
-	return evpVerify(pub.withKey, C.GO_RSA_PKCS1_PADDING, 0, h, sig, hashed)
+	return evpVerify(pub.withKey, _RSA_PKCS1_PADDING, 0, h, sig, hashed)
 }
 
 func HashVerifyRSAPKCS1v15(pub *PublicKeyRSA, h crypto.Hash, msg, sig []byte) error {
@@ -329,9 +329,9 @@ func newRSAKey3(isPriv bool, n, e, d, p, q, dp, dq, qinv BigInt) (C.GO_EVP_PKEY_
 		return nil, err
 	}
 	defer C.go_openssl_OSSL_PARAM_free(params)
-	selection := C.GO_EVP_PKEY_PUBLIC_KEY
+	selection := _EVP_PKEY_PUBLIC_KEY
 	if isPriv {
-		selection = C.GO_EVP_PKEY_KEYPAIR
+		selection = _EVP_PKEY_KEYPAIR
 	}
-	return newEvpFromParams(C.GO_EVP_PKEY_RSA, C.int(selection), params)
+	return newEvpFromParams(_EVP_PKEY_RSA, C.int(selection), params)
 }

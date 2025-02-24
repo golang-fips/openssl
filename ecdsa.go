@@ -62,7 +62,7 @@ func NewPrivateKeyECDSA(curve string, x, y, d BigInt) (*PrivateKeyECDSA, error) 
 
 func GenerateKeyECDSA(curve string) (x, y, d BigInt, err error) {
 	// Generate the private key.
-	pkey, err := generateEVPPKey(C.GO_EVP_PKEY_EC, 0, curve)
+	pkey, err := generateEVPPKey(_EVP_PKEY_EC, 0, curve)
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -195,14 +195,14 @@ func newECDSAKey3(nid C.int, bx, by, bd C.GO_BIGNUM_PTR) (C.GO_EVP_PKEY_PTR, err
 	var selection C.int
 	if bd != nil {
 		bld.addBN(_OSSL_PKEY_PARAM_PRIV_KEY, bd)
-		selection = C.GO_EVP_PKEY_KEYPAIR
+		selection = _EVP_PKEY_KEYPAIR
 	} else {
-		selection = C.GO_EVP_PKEY_PUBLIC_KEY
+		selection = _EVP_PKEY_PUBLIC_KEY
 	}
 	params, err := bld.build()
 	if err != nil {
 		return nil, err
 	}
 	defer C.go_openssl_OSSL_PARAM_free(params)
-	return newEvpFromParams(C.GO_EVP_PKEY_EC, selection, params)
+	return newEvpFromParams(_EVP_PKEY_EC, selection, params)
 }

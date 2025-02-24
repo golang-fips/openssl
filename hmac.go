@@ -28,7 +28,7 @@ func NewHMAC(fh func() hash.Hash, key []byte) hash.Hash {
 		// HMAC_Init will try and reuse the key from the ctx. This is
 		// not the behavior previously implemented, so as a workaround
 		// we pass an "empty" key.
-		key = make([]byte, C.GO_EVP_MAX_MD_SIZE)
+		key = make([]byte, _EVP_MAX_MD_SIZE)
 	}
 
 	hmac := &opensslHMAC{

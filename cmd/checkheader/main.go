@@ -113,14 +113,14 @@ func generate(header string) (string, error) {
 	for sc.Scan() {
 		l := strings.TrimSpace(sc.Text())
 		if enum {
-			if !strings.HasPrefix(l, "}") {
+			if !strings.HasPrefix(l, ")") {
 				tryConvertEnum(&b, l)
 			} else {
 				enum = false
 			}
 			continue
 		}
-		if strings.HasPrefix(l, "enum {") || strings.HasPrefix(l, "typedef enum {") {
+		if strings.HasPrefix(l, "const (") {
 			enum = true
 			continue
 		}
@@ -174,18 +174,15 @@ func tryConvertTypedef(w io.Writer, l string) bool {
 // matches the corresponding OpenSSL value.
 // Only enum names starting with GO_ are converted.
 func tryConvertEnum(w io.Writer, l string) {
-	if !strings.HasPrefix(l, "GO_") {
+	if !strings.HasPrefix(l, "_") {
 		return
-	}
-	if l[len(l)-1] == ',' {
-		l = l[:len(l)-1]
 	}
 	split := strings.SplitN(l, " = ", 2)
 	if len(split) < 2 {
 		log.Printf("unexpected enum definition in function line: %s\n", l)
 		return
 	}
-	name := split[0][len("GO_"):]
+	name := split[0][len("_"):]
 	fmt.Fprintf(w, "#ifdef %s\n", name)
 	fmt.Fprintf(w, "_Static_assert(%s == %s, \"%s\");\n", name, split[1], name)
 	fmt.Fprintln(w, "#endif")

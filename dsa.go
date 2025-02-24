@@ -11,7 +11,7 @@ import (
 
 // SupportsDSA returns true if the OpenSSL library supports DSA.
 func SupportsDSA() bool {
-	ctx := C.go_openssl_EVP_PKEY_CTX_new_id(C.GO_EVP_PKEY_DSA, nil)
+	ctx := C.go_openssl_EVP_PKEY_CTX_new_id(_EVP_PKEY_DSA, nil)
 	if ctx == nil {
 		return false
 	}
@@ -66,7 +66,7 @@ func GenerateParametersDSA(l, n int) (DSAParameters, error) {
 	// extracting the domain parameters from it.
 
 	// Generate a new DSA key context and set the known parameters.
-	ctx := C.go_openssl_EVP_PKEY_CTX_new_id(C.GO_EVP_PKEY_DSA, nil)
+	ctx := C.go_openssl_EVP_PKEY_CTX_new_id(_EVP_PKEY_DSA, nil)
 	if ctx == nil {
 		return DSAParameters{}, newOpenSSLError("EVP_PKEY_CTX_new_id failed")
 	}
@@ -74,10 +74,10 @@ func GenerateParametersDSA(l, n int) (DSAParameters, error) {
 	if C.go_openssl_EVP_PKEY_paramgen_init(ctx) != 1 {
 		return DSAParameters{}, newOpenSSLError("EVP_PKEY_paramgen_init failed")
 	}
-	if C.go_openssl_EVP_PKEY_CTX_ctrl(ctx, C.GO_EVP_PKEY_DSA, -1, C.GO_EVP_PKEY_CTRL_DSA_PARAMGEN_BITS, C.int(l), nil) != 1 {
+	if C.go_openssl_EVP_PKEY_CTX_ctrl(ctx, _EVP_PKEY_DSA, -1, _EVP_PKEY_CTRL_DSA_PARAMGEN_BITS, C.int(l), nil) != 1 {
 		return DSAParameters{}, newOpenSSLError("EVP_PKEY_CTX_ctrl failed")
 	}
-	if C.go_openssl_EVP_PKEY_CTX_ctrl(ctx, C.GO_EVP_PKEY_DSA, -1, C.GO_EVP_PKEY_CTRL_DSA_PARAMGEN_Q_BITS, C.int(n), nil) != 1 {
+	if C.go_openssl_EVP_PKEY_CTX_ctrl(ctx, _EVP_PKEY_DSA, -1, _EVP_PKEY_CTRL_DSA_PARAMGEN_Q_BITS, C.int(n), nil) != 1 {
 		return DSAParameters{}, newOpenSSLError("EVP_PKEY_CTX_ctrl failed")
 	}
 	var pkey C.GO_EVP_PKEY_PTR
@@ -228,7 +228,7 @@ func newDSA1(params DSAParameters, x, y BigInt) (pkey C.GO_EVP_PKEY_PTR, err err
 	if pkey == nil {
 		return nil, newOpenSSLError("EVP_PKEY_new failed")
 	}
-	if C.go_openssl_EVP_PKEY_assign(pkey, C.GO_EVP_PKEY_DSA, unsafe.Pointer(dsa)) != 1 {
+	if C.go_openssl_EVP_PKEY_assign(pkey, _EVP_PKEY_DSA, unsafe.Pointer(dsa)) != 1 {
 		C.go_openssl_EVP_PKEY_free(pkey)
 		return nil, newOpenSSLError("EVP_PKEY_assign failed")
 	}
@@ -247,11 +247,11 @@ func newDSA3(params DSAParameters, x, y BigInt) (C.GO_EVP_PKEY_PTR, error) {
 	bld.addBigInt(_OSSL_PKEY_PARAM_FFC_P, params.P, false)
 	bld.addBigInt(_OSSL_PKEY_PARAM_FFC_Q, params.Q, false)
 	bld.addBigInt(_OSSL_PKEY_PARAM_FFC_G, params.G, false)
-	selection := C.int(C.GO_EVP_PKEY_KEYPAIR)
+	selection := C.int(_EVP_PKEY_KEYPAIR)
 	if y != nil {
 		bld.addBigInt(_OSSL_PKEY_PARAM_PUB_KEY, y, false)
 		if x == nil {
-			selection = C.int(C.GO_EVP_PKEY_PUBLIC_KEY)
+			selection = _EVP_PKEY_PUBLIC_KEY
 		}
 	}
 	if x != nil {
@@ -262,7 +262,7 @@ func newDSA3(params DSAParameters, x, y BigInt) (C.GO_EVP_PKEY_PTR, error) {
 		return nil, err
 	}
 	defer C.go_openssl_OSSL_PARAM_free(bldparams)
-	pkey, err := newEvpFromParams(C.GO_EVP_PKEY_DSA, selection, bldparams)
+	pkey, err := newEvpFromParams(_EVP_PKEY_DSA, selection, bldparams)
 	if err != nil {
 		return nil, err
 	}

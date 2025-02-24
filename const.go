@@ -85,3 +85,72 @@ const (
 	// MAC parameters
 	_OSSL_MAC_PARAM_DIGEST cString = "digest\x00"
 )
+
+const (
+	_POINT_CONVERSION_UNCOMPRESSED = 4
+
+	// #include <openssl/crypto.h>
+	_OPENSSL_INIT_LOAD_CRYPTO_STRINGS = 0x00000002
+	_OPENSSL_INIT_ADD_ALL_CIPHERS     = 0x00000004
+	_OPENSSL_INIT_ADD_ALL_DIGESTS     = 0x00000008
+	_OPENSSL_INIT_LOAD_CONFIG         = 0x00000040
+
+	// #include <openssl/evp.h>
+	_EVP_CTRL_GCM_GET_TAG = 0x10
+	_EVP_CTRL_GCM_SET_TAG = 0x11
+	_EVP_PKEY_CTRL_MD     = 1
+	_EVP_PKEY_RSA         = 6
+	_EVP_PKEY_EC          = 408
+	_EVP_PKEY_TLS1_PRF    = 1021
+	_EVP_PKEY_HKDF        = 1036
+	_EVP_PKEY_ED25519     = 1087
+	_EVP_PKEY_DSA         = 116
+	// This is defined differently in OpenSSL 3 (1 << 11),
+	// but in our code it is only used in OpenSSL 1.
+	_EVP_PKEY_OP_DERIVE = (1 << 10)
+	_EVP_MAX_MD_SIZE    = 64
+
+	_EVP_PKEY_PUBLIC_KEY = 0x86
+	_EVP_PKEY_KEYPAIR    = 0x87
+
+	// #include <openssl/ec.h>
+	_EVP_PKEY_CTRL_EC_PARAMGEN_CURVE_NID = 0x1001
+
+	// #include <openssl/kdf.h>
+
+	_EVP_KDF_HKDF_MODE_EXTRACT_ONLY = 1
+	_EVP_KDF_HKDF_MODE_EXPAND_ONLY  = 2
+
+	_EVP_PKEY_CTRL_TLS_MD     = 0x1000
+	_EVP_PKEY_CTRL_TLS_SECRET = 0x1001
+	_EVP_PKEY_CTRL_TLS_SEED   = 0x1002
+	_EVP_PKEY_CTRL_HKDF_MD    = 0x1003
+	_EVP_PKEY_CTRL_HKDF_SALT  = 0x1004
+	_EVP_PKEY_CTRL_HKDF_KEY   = 0x1005
+	_EVP_PKEY_CTRL_HKDF_INFO  = 0x1006
+	_EVP_PKEY_CTRL_HKDF_MODE  = 0x1007
+
+	// #include <openssl/obj_mac.h>
+	_NID_X9_62_prime256v1 = 415
+	_NID_secp224r1        = 713
+	_NID_secp384r1        = 715
+	_NID_secp521r1        = 716
+
+	// #include <openssl/rsa.h>
+	_RSA_PKCS1_PADDING                 = 1
+	_RSA_NO_PADDING                    = 3
+	_RSA_PKCS1_OAEP_PADDING            = 4
+	_RSA_PKCS1_PSS_PADDING             = 6
+	_RSA_PSS_SALTLEN_DIGEST            = -1
+	_RSA_PSS_SALTLEN_AUTO              = -2
+	_RSA_PSS_SALTLEN_MAX_SIGN          = -2
+	_RSA_PSS_SALTLEN_MAX               = -3
+	_EVP_PKEY_CTRL_RSA_PADDING         = 0x1001
+	_EVP_PKEY_CTRL_RSA_PSS_SALTLEN     = 0x1002
+	_EVP_PKEY_CTRL_RSA_KEYGEN_BITS     = 0x1003
+	_EVP_PKEY_CTRL_RSA_MGF1_MD         = 0x1005
+	_EVP_PKEY_CTRL_RSA_OAEP_MD         = 0x1009
+	_EVP_PKEY_CTRL_RSA_OAEP_LABEL      = 0x100A
+	_EVP_PKEY_CTRL_DSA_PARAMGEN_BITS   = 0x1001
+	_EVP_PKEY_CTRL_DSA_PARAMGEN_Q_BITS = 0x1002
+)

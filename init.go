@@ -48,8 +48,12 @@ func opensslInit(file string) (major, minor, patch uint, err error) {
 
 	// Initialize OpenSSL.
 	C.go_openssl_OPENSSL_init()
-	flags := C.uint64_t(C.GO_OPENSSL_INIT_ADD_ALL_CIPHERS | C.GO_OPENSSL_INIT_ADD_ALL_DIGESTS | C.GO_OPENSSL_INIT_LOAD_CONFIG | C.GO_OPENSSL_INIT_LOAD_CRYPTO_STRINGS)
-	if C.go_openssl_OPENSSL_init_crypto(flags, nil) != 1 {
+	if C.go_openssl_OPENSSL_init_crypto(
+		_OPENSSL_INIT_ADD_ALL_CIPHERS|
+			_OPENSSL_INIT_ADD_ALL_DIGESTS|
+			_OPENSSL_INIT_LOAD_CONFIG|
+			_OPENSSL_INIT_LOAD_CRYPTO_STRINGS,
+		nil) != 1 {
 		return 0, 0, 0, fail("openssl: init crypto")
 	}
 	return major, minor, patch, nil

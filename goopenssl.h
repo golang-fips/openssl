@@ -103,7 +103,7 @@ go_openssl_EVP_CIPHER_CTX_seal_wrapper(const GO_EVP_CIPHER_CTX_PTR ctx,
     if (in_len != out_len)
         return 0;
 
-    return go_openssl_EVP_CIPHER_CTX_ctrl(ctx, GO_EVP_CTRL_GCM_GET_TAG, 16, out + out_len);
+    return go_openssl_EVP_CIPHER_CTX_ctrl(ctx, 0x10, 16, out + out_len);
 }
 
 static inline int
@@ -138,7 +138,7 @@ go_openssl_EVP_CIPHER_CTX_open_wrapper(const GO_EVP_CIPHER_CTX_PTR ctx,
     // an error. At least one extant commercially-supported, FIPS validated
     // build of OpenSSL 1.0.2 uses FIPS module version 2.0.1. Set the tag first
     // to maximize compatibility with all OpenSSL version combinations.
-    if (go_openssl_EVP_CIPHER_CTX_ctrl(ctx, GO_EVP_CTRL_GCM_SET_TAG, 16, (unsigned char *)(tag)) != 1)
+    if (go_openssl_EVP_CIPHER_CTX_ctrl(ctx, 0x11, 16, (unsigned char *)(tag)) != 1)
         return 0;
 
     int discard_len, out_len;

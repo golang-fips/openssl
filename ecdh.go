@@ -197,10 +197,10 @@ func newECDHPkey3(nid C.int, bytes []byte, isPrivate bool) (C.GO_EVP_PKEY_PTR, e
 		}
 		bld.addOctetString(_OSSL_PKEY_PARAM_PUB_KEY, pubBytes)
 		bld.addBN(_OSSL_PKEY_PARAM_PRIV_KEY, priv)
-		selection = C.GO_EVP_PKEY_KEYPAIR
+		selection = _EVP_PKEY_KEYPAIR
 	} else {
 		bld.addOctetString(_OSSL_PKEY_PARAM_PUB_KEY, bytes)
-		selection = C.GO_EVP_PKEY_PUBLIC_KEY
+		selection = _EVP_PKEY_PUBLIC_KEY
 	}
 
 	params, err := bld.build()
@@ -208,7 +208,7 @@ func newECDHPkey3(nid C.int, bytes []byte, isPrivate bool) (C.GO_EVP_PKEY_PTR, e
 		return nil, err
 	}
 	defer C.go_openssl_OSSL_PARAM_free(params)
-	pkey, err := newEvpFromParams(C.GO_EVP_PKEY_EC, selection, params)
+	pkey, err := newEvpFromParams(_EVP_PKEY_EC, selection, params)
 	if err != nil {
 		return nil, err
 	}
@@ -261,7 +261,7 @@ func ECDH(priv *PrivateKeyECDH, pub *PublicKeyECDH) ([]byte, error) {
 }
 
 func GenerateKeyECDH(curve string) (*PrivateKeyECDH, []byte, error) {
-	pkey, err := generateEVPPKey(C.GO_EVP_PKEY_EC, 0, curve)
+	pkey, err := generateEVPPKey(_EVP_PKEY_EC, 0, curve)
 	if err != nil {
 		return nil, nil, err
 	}

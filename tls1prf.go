@@ -61,7 +61,7 @@ func TLS1PRF(result, secret, label, seed []byte, fh func() hash.Hash) error {
 func tls1PRF1(result, secret, label, seed []byte, md C.GO_EVP_MD_PTR) error {
 	checkMajorVersion(1)
 
-	ctx := C.go_openssl_EVP_PKEY_CTX_new_id(C.GO_EVP_PKEY_TLS1_PRF, nil)
+	ctx := C.go_openssl_EVP_PKEY_CTX_new_id(_EVP_PKEY_TLS1_PRF, nil)
 	if ctx == nil {
 		return newOpenSSLError("EVP_PKEY_CTX_new_id")
 	}
@@ -73,26 +73,26 @@ func tls1PRF1(result, secret, label, seed []byte, md C.GO_EVP_MD_PTR) error {
 		return newOpenSSLError("EVP_PKEY_derive_init")
 	}
 	if C.go_openssl_EVP_PKEY_CTX_ctrl(ctx, -1,
-		C.GO1_EVP_PKEY_OP_DERIVE,
-		C.GO_EVP_PKEY_CTRL_TLS_MD,
+		_EVP_PKEY_OP_DERIVE,
+		_EVP_PKEY_CTRL_TLS_MD,
 		0, unsafe.Pointer(md)) != 1 {
 		return newOpenSSLError("EVP_PKEY_CTX_set_tls1_prf_md")
 	}
 	if C.go_openssl_EVP_PKEY_CTX_ctrl(ctx, -1,
-		C.GO1_EVP_PKEY_OP_DERIVE,
-		C.GO_EVP_PKEY_CTRL_TLS_SECRET,
+		_EVP_PKEY_OP_DERIVE,
+		_EVP_PKEY_CTRL_TLS_SECRET,
 		C.int(len(secret)), unsafe.Pointer(base(secret))) != 1 {
 		return newOpenSSLError("EVP_PKEY_CTX_set1_tls1_prf_secret")
 	}
 	if C.go_openssl_EVP_PKEY_CTX_ctrl(ctx, -1,
-		C.GO1_EVP_PKEY_OP_DERIVE,
-		C.GO_EVP_PKEY_CTRL_TLS_SEED,
+		_EVP_PKEY_OP_DERIVE,
+		_EVP_PKEY_CTRL_TLS_SEED,
 		C.int(len(label)), unsafe.Pointer(base(label))) != 1 {
 		return newOpenSSLError("EVP_PKEY_CTX_add1_tls1_prf_seed")
 	}
 	if C.go_openssl_EVP_PKEY_CTX_ctrl(ctx, -1,
-		C.GO1_EVP_PKEY_OP_DERIVE,
-		C.GO_EVP_PKEY_CTRL_TLS_SEED,
+		_EVP_PKEY_OP_DERIVE,
+		_EVP_PKEY_CTRL_TLS_SEED,
 		C.int(len(seed)), unsafe.Pointer(base(seed))) != 1 {
 		return newOpenSSLError("EVP_PKEY_CTX_add1_tls1_prf_seed")
 	}

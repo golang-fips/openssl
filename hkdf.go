@@ -29,7 +29,7 @@ func SupportsHKDF() bool {
 func newHKDFCtx1(md C.GO_EVP_MD_PTR, mode C.int, secret, salt, pseudorandomKey, info []byte) (ctx C.GO_EVP_PKEY_CTX_PTR, err error) {
 	checkMajorVersion(1)
 
-	ctx = C.go_openssl_EVP_PKEY_CTX_new_id(C.GO_EVP_PKEY_HKDF, nil)
+	ctx = C.go_openssl_EVP_PKEY_CTX_new_id(_EVP_PKEY_HKDF, nil)
 	if ctx == nil {
 		return nil, newOpenSSLError("EVP_PKEY_CTX_new_id")
 	}
@@ -47,25 +47,25 @@ func newHKDFCtx1(md C.GO_EVP_MD_PTR, mode C.int, secret, salt, pseudorandomKey, 
 		if len(data) == 0 {
 			return 1 // No data to set.
 		}
-		return C.go_openssl_EVP_PKEY_CTX_ctrl(ctx, -1, C.GO1_EVP_PKEY_OP_DERIVE, C.int(ctrl), C.int(len(data)), unsafe.Pointer(base(data)))
+		return C.go_openssl_EVP_PKEY_CTX_ctrl(ctx, -1, _EVP_PKEY_OP_DERIVE, C.int(ctrl), C.int(len(data)), unsafe.Pointer(base(data)))
 	}
 
-	if C.go_openssl_EVP_PKEY_CTX_ctrl(ctx, -1, C.GO1_EVP_PKEY_OP_DERIVE, C.GO_EVP_PKEY_CTRL_HKDF_MODE, mode, nil) != 1 {
+	if C.go_openssl_EVP_PKEY_CTX_ctrl(ctx, -1, _EVP_PKEY_OP_DERIVE, _EVP_PKEY_CTRL_HKDF_MODE, mode, nil) != 1 {
 		return ctx, newOpenSSLError("EVP_PKEY_CTX_set_hkdf_mode")
 	}
-	if C.go_openssl_EVP_PKEY_CTX_ctrl(ctx, -1, C.GO1_EVP_PKEY_OP_DERIVE, C.GO_EVP_PKEY_CTRL_HKDF_MD, 0, unsafe.Pointer(md)) != 1 {
+	if C.go_openssl_EVP_PKEY_CTX_ctrl(ctx, -1, _EVP_PKEY_OP_DERIVE, _EVP_PKEY_CTRL_HKDF_MD, 0, unsafe.Pointer(md)) != 1 {
 		return ctx, newOpenSSLError("EVP_PKEY_CTX_set_hkdf_md")
 	}
-	if ctrlSlice(C.GO_EVP_PKEY_CTRL_HKDF_KEY, secret) != 1 {
+	if ctrlSlice(_EVP_PKEY_CTRL_HKDF_KEY, secret) != 1 {
 		return ctx, newOpenSSLError("EVP_PKEY_CTX_set1_hkdf_key")
 	}
-	if ctrlSlice(C.GO_EVP_PKEY_CTRL_HKDF_SALT, salt) != 1 {
+	if ctrlSlice(_EVP_PKEY_CTRL_HKDF_SALT, salt) != 1 {
 		return ctx, newOpenSSLError("EVP_PKEY_CTX_set1_hkdf_salt")
 	}
-	if ctrlSlice(C.GO_EVP_PKEY_CTRL_HKDF_KEY, pseudorandomKey) != 1 {
+	if ctrlSlice(_EVP_PKEY_CTRL_HKDF_KEY, pseudorandomKey) != 1 {
 		return ctx, newOpenSSLError("EVP_PKEY_CTX_set1_hkdf_key")
 	}
-	if ctrlSlice(C.GO_EVP_PKEY_CTRL_HKDF_INFO, info) != 1 {
+	if ctrlSlice(_EVP_PKEY_CTRL_HKDF_INFO, info) != 1 {
 		return ctx, newOpenSSLError("EVP_PKEY_CTX_add1_hkdf_info")
 	}
 	return ctx, nil
@@ -121,7 +121,7 @@ func ExtractHKDF(h func() hash.Hash, secret, salt []byte) ([]byte, error) {
 
 	switch vMajor {
 	case 1:
-		ctx, err := newHKDFCtx1(md, C.GO_EVP_KDF_HKDF_MODE_EXTRACT_ONLY, secret, salt, nil, nil)
+		ctx, err := newHKDFCtx1(md, _EVP_KDF_HKDF_MODE_EXTRACT_ONLY, secret, salt, nil, nil)
 		if err != nil {
 			return nil, err
 		}
@@ -136,7 +136,7 @@ func ExtractHKDF(h func() hash.Hash, secret, salt []byte) ([]byte, error) {
 		}
 		return out[:keylen], nil
 	case 3:
-		ctx, err := newHKDFCtx3(md, C.GO_EVP_KDF_HKDF_MODE_EXTRACT_ONLY, secret, salt, nil, nil)
+		ctx, err := newHKDFCtx3(md, _EVP_KDF_HKDF_MODE_EXTRACT_ONLY, secret, salt, nil, nil)
 		if err != nil {
 			return nil, err
 		}
@@ -165,7 +165,7 @@ func ExpandHKDFOneShot(h func() hash.Hash, pseudorandomKey, info []byte, keyLeng
 	out := make([]byte, keyLength)
 	switch vMajor {
 	case 1:
-		ctx, err := newHKDFCtx1(md, C.GO_EVP_KDF_HKDF_MODE_EXPAND_ONLY, nil, nil, pseudorandomKey, info)
+		ctx, err := newHKDFCtx1(md, _EVP_KDF_HKDF_MODE_EXPAND_ONLY, nil, nil, pseudorandomKey, info)
 		if err != nil {
 			return nil, err
 		}
@@ -175,7 +175,7 @@ func ExpandHKDFOneShot(h func() hash.Hash, pseudorandomKey, info []byte, keyLeng
 			return nil, newOpenSSLError("EVP_PKEY_derive")
 		}
 	case 3:
-		ctx, err := newHKDFCtx3(md, C.GO_EVP_KDF_HKDF_MODE_EXPAND_ONLY, nil, nil, pseudorandomKey, info)
+		ctx, err := newHKDFCtx3(md, _EVP_KDF_HKDF_MODE_EXPAND_ONLY, nil, nil, pseudorandomKey, info)
 		if err != nil {
 			return nil, err
 		}
@@ -201,7 +201,7 @@ func ExpandHKDF(h func() hash.Hash, pseudorandomKey, info []byte) (io.Reader, er
 
 	switch vMajor {
 	case 1:
-		ctx, err := newHKDFCtx1(md, C.GO_EVP_KDF_HKDF_MODE_EXPAND_ONLY, nil, nil, pseudorandomKey, info)
+		ctx, err := newHKDFCtx1(md, _EVP_KDF_HKDF_MODE_EXPAND_ONLY, nil, nil, pseudorandomKey, info)
 		if err != nil {
 			return nil, err
 		}
@@ -209,7 +209,7 @@ func ExpandHKDF(h func() hash.Hash, pseudorandomKey, info []byte) (io.Reader, er
 		runtime.SetFinalizer(c, (*hkdf1).finalize)
 		return c, nil
 	case 3:
-		ctx, err := newHKDFCtx3(md, C.GO_EVP_KDF_HKDF_MODE_EXPAND_ONLY, nil, nil, pseudorandomKey, info)
+		ctx, err := newHKDFCtx3(md, _EVP_KDF_HKDF_MODE_EXPAND_ONLY, nil, nil, pseudorandomKey, info)
 		if err != nil {
 			return nil, err
 		}
