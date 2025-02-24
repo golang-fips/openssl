@@ -6,7 +6,6 @@ package openssl
 // #include "goopenssl.h"
 import "C"
 import (
-	"encoding/binary"
 	"errors"
 	"math/bits"
 	"strconv"
@@ -26,7 +25,7 @@ var (
 	initErr  error
 )
 
-var nativeEndian binary.ByteOrder
+var isBigEndian bool
 
 // CheckVersion checks if the OpenSSL version can be loaded
 // and if the FIPS mode is enabled.
@@ -63,9 +62,9 @@ func Init(file string) error {
 
 		switch buf {
 		case [2]byte{0xCD, 0xAB}:
-			nativeEndian = binary.LittleEndian
+			isBigEndian = false
 		case [2]byte{0xAB, 0xCD}:
-			nativeEndian = binary.BigEndian
+			isBigEndian = true
 		default:
 			panic("Could not determine native endianness.")
 		}
@@ -356,7 +355,7 @@ func bigToBN(x BigInt) C.GO_BIGNUM_PTR {
 	if len(x) == 0 {
 		return nil
 	}
-	if nativeEndian == binary.BigEndian {
+	if isBigEndian {
 		z := make(BigInt, len(x))
 		copy(z, x)
 		z.byteSwap()
@@ -378,7 +377,7 @@ func bnToBig(bn C.GO_BIGNUM_PTR) BigInt {
 	if C.go_openssl_BN_bn2lebinpad(bn, wbase(x), C.int(len(x)*wordBytes)) == 0 {
 		panic("openssl: bignum conversion failed")
 	}
-	if nativeEndian == binary.BigEndian {
+	if isBigEndian {
 		x.byteSwap()
 	}
 	return x
@@ -403,4 +402,10 @@ func CheckLeaks() {
 // compared lexicographically.
 func versionAtOrAbove(major, minor, patch uint) bool {
 	return vMajor > major || (vMajor == major && vMinor > minor) || (vMajor == major && vMinor == minor && vPatch >= patch)
+}
+
+func bigUint64(b []byte) uint64 {
+	_ = b[7] // bounds check hint to compiler; see golang.org/issue/14808
+	return uint64(b[7]) | uint64(b[6])<<8 | uint64(b[5])<<16 | uint64(b[4])<<24 |
+		uint64(b[3])<<32 | uint64(b[2])<<40 | uint64(b[1])<<48 | uint64(b[0])<<56
 }

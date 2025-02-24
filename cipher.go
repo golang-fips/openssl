@@ -7,7 +7,6 @@ import "C"
 
 import (
 	"crypto/cipher"
-	"encoding/binary"
 	"errors"
 	"runtime"
 	"strconv"
@@ -397,7 +396,7 @@ func (g *cipherGCM) Seal(dst, nonce, plaintext, additionalData []byte) []byte {
 		} else if g.tls == cipherGCMTLS13 && len(additionalData) != gcmTls13AddSize {
 			panic("cipher: incorrect additional data length given to GCM TLS 1.3")
 		}
-		counter := binary.BigEndian.Uint64(nonce[gcmTlsFixedNonceSize:])
+		counter := bigUint64(nonce[gcmTlsFixedNonceSize:])
 		if g.tls == cipherGCMTLS13 {
 			// In TLS 1.3, the counter in the nonce has a mask and requires
 			// further decoding.
