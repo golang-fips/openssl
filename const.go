@@ -30,7 +30,7 @@ func (s cString) ptr() *C.char {
 	return (*C.char)(unsafe.Pointer(unsafe.StringData(string(s))))
 }
 
-const (
+const ( // no_check
 	// Provider names
 	_ProviderNameFips    cString = "fips\x00"
 	_ProviderNameDefault cString = "default\x00"
@@ -86,16 +86,24 @@ const (
 	_OSSL_MAC_PARAM_DIGEST cString = "digest\x00"
 )
 
+// #include <openssl/crypto.h>
+// #include <openssl/evp.h>
+// #include <openssl/ec.h>
+// #include <openssl/kdf.h>
+// #include <openssl/obj_mac.h>
+// #include <openssl/rsa.h>
+// #if OPENSSL_VERSION_NUMBER >= 0x30000000L
+// #include <openssl/core_names.h>
+// #endif
+
 const (
 	_POINT_CONVERSION_UNCOMPRESSED = 4
 
-	// #include <openssl/crypto.h>
 	_OPENSSL_INIT_LOAD_CRYPTO_STRINGS = 0x00000002
 	_OPENSSL_INIT_ADD_ALL_CIPHERS     = 0x00000004
 	_OPENSSL_INIT_ADD_ALL_DIGESTS     = 0x00000008
 	_OPENSSL_INIT_LOAD_CONFIG         = 0x00000040
 
-	// #include <openssl/evp.h>
 	_EVP_CTRL_GCM_GET_TAG = 0x10
 	_EVP_CTRL_GCM_SET_TAG = 0x11
 	_EVP_PKEY_CTRL_MD     = 1
@@ -107,16 +115,13 @@ const (
 	_EVP_PKEY_DSA         = 116
 	// This is defined differently in OpenSSL 3 (1 << 11),
 	// but in our code it is only used in OpenSSL 1.
-	_EVP_PKEY_OP_DERIVE = (1 << 10)
+	_EVP_PKEY_OP_DERIVE = (1 << 10) // nocheck
 	_EVP_MAX_MD_SIZE    = 64
 
 	_EVP_PKEY_PUBLIC_KEY = 0x86
 	_EVP_PKEY_KEYPAIR    = 0x87
 
-	// #include <openssl/ec.h>
 	_EVP_PKEY_CTRL_EC_PARAMGEN_CURVE_NID = 0x1001
-
-	// #include <openssl/kdf.h>
 
 	_EVP_KDF_HKDF_MODE_EXTRACT_ONLY = 1
 	_EVP_KDF_HKDF_MODE_EXPAND_ONLY  = 2
@@ -130,13 +135,11 @@ const (
 	_EVP_PKEY_CTRL_HKDF_INFO  = 0x1006
 	_EVP_PKEY_CTRL_HKDF_MODE  = 0x1007
 
-	// #include <openssl/obj_mac.h>
 	_NID_X9_62_prime256v1 = 415
 	_NID_secp224r1        = 713
 	_NID_secp384r1        = 715
 	_NID_secp521r1        = 716
 
-	// #include <openssl/rsa.h>
 	_RSA_PKCS1_PADDING                 = 1
 	_RSA_NO_PADDING                    = 3
 	_RSA_PKCS1_OAEP_PADDING            = 4

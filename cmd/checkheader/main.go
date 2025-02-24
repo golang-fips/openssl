@@ -21,8 +21,8 @@ import (
 // - Blank lines are discarded.
 // - Comments are discarded unless they contain a C directive, i.e #include, #if or #endif. The directive in the comment is included in the output.
 // - Typedefs following the pattern "typedef void* GO_%name%_PTR" are translated into "#define %name% GO_%name%_PTR".
-// - Enums are validated against their definition in the OpenSSL headers. Example:
-//   "enum { GO_EVP_CTRL_GCM_SET_TAG = 0x11 }" => "_Static_assert(EVP_CTRL_GCM_SET_TAG == 0x11);"
+// - Go constants are validated against their definition in the OpenSSL headers. Example:
+//   "const { _EVP_CTRL_GCM_SET_TAG = 0x11 }" => "_Static_assert(EVP_CTRL_GCM_SET_TAG == 0x11);"
 // - Function macros are validated against their definition in the OpenSSL headers. Example:
 //   "DEFINEFUNC(int, RAND_bytes, (unsigned char *a0, int a1), (a0, a1))" => "int(*__check_0)(unsigned char *, int) = RAND_bytes;"
 // - Function macros are excluded when checking old OpenSSL versions if they are prepended with '/*check:from=%version%*/', %version% being a version string such as '1.1.1' or '3.0.0'.
@@ -114,13 +114,13 @@ func generate(header string) (string, error) {
 		l := strings.TrimSpace(sc.Text())
 		if enum {
 			if !strings.HasPrefix(l, ")") {
-				tryConvertEnum(&b, l)
+				tryConvertGoConst(&b, l)
 			} else {
 				enum = false
 			}
 			continue
 		}
-		if strings.HasPrefix(l, "const (") {
+		if l == "const (" {
 			enum = true
 			continue
 		}
@@ -169,22 +169,22 @@ func tryConvertTypedef(w io.Writer, l string) bool {
 	return true
 }
 
-// tryConvertEnum adds a static check which verifies that
-// the enum contained in the line l
+// tryConvertGoConst adds a static check which verifies that
+// the const contained in the line l
 // matches the corresponding OpenSSL value.
-// Only enum names starting with GO_ are converted.
-func tryConvertEnum(w io.Writer, l string) {
-	if !strings.HasPrefix(l, "_") {
+// Only const names starting with _ are converted.
+func tryConvertGoConst(w io.Writer, l string) {
+	if !strings.HasPrefix(l, "_") || strings.HasSuffix(l, "// nocheck") {
 		return
 	}
-	split := strings.SplitN(l, " = ", 2)
+	split := strings.Split(l, " ")
 	if len(split) < 2 {
 		log.Printf("unexpected enum definition in function line: %s\n", l)
 		return
 	}
 	name := split[0][len("_"):]
 	fmt.Fprintf(w, "#ifdef %s\n", name)
-	fmt.Fprintf(w, "_Static_assert(%s == %s, \"%s\");\n", name, split[1], name)
+	fmt.Fprintf(w, "_Static_assert(%s == %s, \"%s\");\n", name, split[len(split)-1], name)
 	fmt.Fprintln(w, "#endif")
 }
 

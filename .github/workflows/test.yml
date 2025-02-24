@@ -21,7 +21,9 @@ jobs:
       run: sudo sh ./scripts/openssl.sh ${{ matrix.openssl-version }}
     - name: Check headers
       working-directory: ./cmd/checkheader
-      run: go run . --ossl-include /usr/local/src/openssl-${{ matrix.openssl-version }}/include -shim ../../shims.h
+      run: |
+        go run . --ossl-include /usr/local/src/openssl-${{ matrix.openssl-version }}/include -shim ../../shims.h
+        go run . --ossl-include /usr/local/src/openssl-${{ matrix.openssl-version }}/include -shim ../../const.go
     - name: Set OpenSSL config and prove FIPS
       run: |
         sudo cp ./scripts/openssl-3.cnf /usr/local/ssl/openssl.cnf
