@@ -471,7 +471,7 @@ func (g *cipherGCM) Seal(dst, nonce, plaintext, aad []byte) []byte {
 	if C.go_openssl_EVP_EncryptFinal_ex(ctx, base(out[outl:]), &discard) != 1 {
 		panic(newOpenSSLError("EVP_EncryptFinal_ex"))
 	}
-	if C.go_openssl_EVP_CIPHER_CTX_ctrl(ctx, C.GO_EVP_CTRL_GCM_GET_TAG, 16, unsafe.Pointer(base(out[outl:]))) != 1 {
+	if C.go_openssl_EVP_CIPHER_CTX_ctrl(ctx, _EVP_CTRL_GCM_GET_TAG, 16, unsafe.Pointer(base(out[outl:]))) != 1 {
 		panic(newOpenSSLError("EVP_CIPHER_CTX_ctrl"))
 	}
 	runtime.KeepAlive(g)
@@ -520,7 +520,7 @@ func (g *cipherGCM) Open(dst, nonce, ciphertext, aad []byte) (_ []byte, err erro
 	if C.go_openssl_EVP_DecryptInit_ex(ctx, nil, nil, nil, base(nonce)) != 1 {
 		return nil, errOpen
 	}
-	if C.go_openssl_EVP_CIPHER_CTX_ctrl(ctx, C.GO_EVP_CTRL_GCM_SET_TAG, 16, unsafe.Pointer(base(tag))) != 1 {
+	if C.go_openssl_EVP_CIPHER_CTX_ctrl(ctx, _EVP_CTRL_GCM_SET_TAG, 16, unsafe.Pointer(base(tag))) != 1 {
 		return nil, errOpen
 	}
 	var outl, discard C.int
