@@ -30,7 +30,7 @@ func (s cString) ptr() *C.char {
 	return (*C.char)(unsafe.Pointer(unsafe.StringData(string(s))))
 }
 
-const ( // no_check
+const ( //checkheader:ignore
 	// Provider names
 	_ProviderNameFips    cString = "fips\x00"
 	_ProviderNameDefault cString = "default\x00"
@@ -115,7 +115,7 @@ const (
 	_EVP_PKEY_DSA         = 116
 	// This is defined differently in OpenSSL 3 (1 << 11),
 	// but in our code it is only used in OpenSSL 1.
-	_EVP_PKEY_OP_DERIVE = (1 << 10) // nocheck
+	_EVP_PKEY_OP_DERIVE = (1 << 10) //checkheader:ignore
 	_EVP_MAX_MD_SIZE    = 64
 
 	_EVP_PKEY_PUBLIC_KEY = 0x86

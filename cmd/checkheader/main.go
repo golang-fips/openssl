@@ -120,7 +120,7 @@ func generate(header string) (string, error) {
 			}
 			continue
 		}
-		if l == "const (" {
+		if strings.HasPrefix(l, "const (") && !strings.HasSuffix(l, "//checkheader:ignore") {
 			enum = true
 			continue
 		}
@@ -174,7 +174,7 @@ func tryConvertTypedef(w io.Writer, l string) bool {
 // matches the corresponding OpenSSL value.
 // Only const names starting with _ are converted.
 func tryConvertGoConst(w io.Writer, l string) {
-	if !strings.HasPrefix(l, "_") || strings.HasSuffix(l, "// nocheck") {
+	if !strings.HasPrefix(l, "_") || strings.HasSuffix(l, "//checkheader:ignore") {
 		return
 	}
 	split := strings.Split(l, " ")
