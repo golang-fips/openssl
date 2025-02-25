@@ -18,6 +18,10 @@ package openssl
 #cgo nocallback go_openssl_RAND_bytes
 #cgo noescape go_openssl_EVP_EncryptUpdate
 #cgo nocallback go_openssl_EVP_EncryptUpdate
+#cgo noescape go_openssl_EVP_EncryptFinal_ex
+#cgo nocallback go_openssl_EVP_EncryptFinal_ex
+#cgo noescape go_openssl_EVP_DecryptFinal_ex
+#cgo nocallback go_openssl_EVP_DecryptFinal_ex
 #cgo noescape go_openssl_EVP_DecryptUpdate
 #cgo nocallback go_openssl_EVP_DecryptUpdate
 #cgo noescape go_openssl_EVP_CipherUpdate

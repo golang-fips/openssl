@@ -258,6 +258,15 @@ func addr(p []byte) *byte {
 	return (*byte)(noescape(unsafe.Pointer(&p[0])))
 }
 
+// baseNeverEmpty returns the address of the underlying array in b.
+// If b has zero length, it returns a pointer to a zero byte.
+func baseNeverEmpty(b []byte) *C.uchar {
+	if len(b) == 0 {
+		return (*C.uchar)(unsafe.Pointer(&zero))
+	}
+	return (*C.uchar)(unsafe.Pointer(&b[0]))
+}
+
 // base returns the address of the underlying array in b,
 // being careful not to panic when b has zero length.
 func base(b []byte) *C.uchar {
