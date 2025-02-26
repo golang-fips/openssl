@@ -360,7 +360,7 @@ func TestCgo(t *testing.T) {
 	openssl.SHA256(d.Data[:])
 }
 
-func BenchmarkHash8Bytes(b *testing.B) {
+func BenchmarkSHA256(b *testing.B) {
 	b.StopTimer()
 	h := openssl.NewSHA256()
 	sum := make([]byte, h.Size())
@@ -376,7 +376,7 @@ func BenchmarkHash8Bytes(b *testing.B) {
 	}
 }
 
-func BenchmarkSHA256(b *testing.B) {
+func BenchmarkSHA256OneShot(b *testing.B) {
 	b.StopTimer()
 	size := 8
 	buf := make([]byte, size)

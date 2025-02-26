@@ -34,5 +34,9 @@ package openssl
 #cgo nocallback go_openssl_EVP_PKEY_get_raw_private_key
 #cgo noescape go_openssl_EVP_DigestSign
 #cgo nocallback go_openssl_EVP_DigestSign
+#cgo noescape go_openssl_EVP_Digest
+#cgo nocallback go_openssl_EVP_Digest
+#cgo noescape go_openssl_EVP_DigestUpdate
+#cgo nocallback go_openssl_EVP_DigestUpdate
 */
 import "C"

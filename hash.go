@@ -17,19 +17,13 @@ import (
 // maxHashSize is the size of SHA52 and SHA3_512, the largest hashes we support.
 const maxHashSize = 64
 
-// NOTE: Implementation ported from https://go-review.googlesource.com/c/go/+/404295.
-// The cgo calls in this file are arranged to avoid marking the parameters as escaping.
-// To do that, we call noescape (including via addr).
-// We must also make sure that the data pointer arguments have the form unsafe.Pointer(&...)
-// so that cgo does not annotate them with cgoCheckPointer calls. If it did that, it might look
-// beyond the byte slice and find Go pointers in unprocessed parts of a larger allocation.
-// To do both of these simultaneously, the idiom is unsafe.Pointer(&*addr(p)),
-// where addr returns the base pointer of p, substituting a non-nil pointer for nil,
-// and applying a noescape along the way.
-// This is all to preserve compatibility with the allocation behavior of the non-openssl implementations.
-
 func hashOneShot(ch crypto.Hash, p []byte, sum []byte) bool {
-	return C.go_openssl_EVP_Digest(unsafe.Pointer(&*addr(p)), C.size_t(len(p)), (*C.uchar)(unsafe.Pointer(&*addr(sum))), nil, loadHash(ch).md, nil) != 0
+	if len(p) > 0 {
+		var pinner runtime.Pinner
+		defer pinner.Unpin()
+		pinner.Pin(&p[0])
+	}
+	return C.go_openssl_EVP_Digest(pbase(p), C.size_t(len(p)), base(sum), nil, loadHash(ch).md, nil) != 0
 }
 
 func MD4(p []byte) (sum [16]byte) {
@@ -256,7 +250,8 @@ type evpHash struct {
 	// ctx2 is used in evpHash.sum to avoid changing
 	// the state of ctx. Having it here allows reusing the
 	// same allocated object multiple times.
-	ctx2 C.GO_EVP_MD_CTX_PTR
+	ctx2   C.GO_EVP_MD_CTX_PTR
+	pinner runtime.Pinner
 }
 
 func newEvpHash(ch crypto.Hash) *evpHash {
@@ -312,8 +307,10 @@ func (h *evpHash) Write(p []byte) (int, error) {
 	if len(p) == 0 {
 		return 0, nil
 	}
+	defer h.pinner.Unpin()
+	h.pinner.Pin(&p[0])
 	h.init()
-	if C.go_openssl_EVP_DigestUpdate(h.ctx, unsafe.Pointer(&*addr(p)), C.size_t(len(p))) != 1 {
+	if C.go_openssl_EVP_DigestUpdate(h.ctx, pbase(p), C.size_t(len(p))) != 1 {
 		panic(newOpenSSLError("EVP_DigestUpdate"))
 	}
 	runtime.KeepAlive(h)
