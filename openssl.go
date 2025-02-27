@@ -258,6 +258,8 @@ func base(b []byte) *C.uchar {
 	return (*C.uchar)(pbase(b))
 }
 
+// sbase returns the address of the underlying array in b,
+// being careful not to panic when b has zero length.
 func sbase(b []byte) *C.char {
 	return (*C.char)(pbase(b))
 }
