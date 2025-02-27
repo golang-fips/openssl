@@ -243,7 +243,8 @@ func baseNeverEmpty(b []byte) *C.uchar {
 	return (*C.uchar)(unsafe.Pointer(&b[0]))
 }
 
-// pbase returns the address of the underlying array in b.
+// pbase returns the address of the underlying array in b,
+// being careful not to panic when b has zero length.
 func pbase(b []byte) unsafe.Pointer {
 	if len(b) == 0 {
 		return nil
