@@ -170,7 +170,7 @@ typedef int point_conversion_form_t;
 /*[[mkcgo]]*/ int EVP_PKEY_paramgen(_EVP_PKEY_CTX_PTR ctx, _EVP_PKEY_PTR *ppkey);
 /*[[mkcgo]]*/ int EVP_PKEY_keygen_init(_EVP_PKEY_CTX_PTR ctx);
 /*[[mkcgo]]*/ int EVP_PKEY_keygen(_EVP_PKEY_CTX_PTR ctx, _EVP_PKEY_PTR *ppkey);
-/*[[mkcgo::tag("3")]]*/ _EVP_PKEY_PTR EVP_PKEY_Q_keygen(_OSSL_LIB_CTX_PTR ctx, const char *propq, const char *type);
+/*[[mkcgo::tag("3")]] [[mkcgo::variadic("EVP_PKEY_Q_keygen")]]*/ _EVP_PKEY_PTR EVP_PKEY_Q_keygen(_OSSL_LIB_CTX_PTR ctx, const char *propq, const char *type);
 /*[[mkcgo::tag("3")]] [[mkcgo::variadic("EVP_PKEY_Q_keygen")]]*/ _EVP_PKEY_PTR EVP_PKEY_Q_keygen_RSA(_OSSL_LIB_CTX_PTR ctx, const char *propq, const char *type, size_t arg1);
 /*[[mkcgo::tag("3")]] [[mkcgo::variadic("EVP_PKEY_Q_keygen")]]*/ _EVP_PKEY_PTR EVP_PKEY_Q_keygen_EC(_OSSL_LIB_CTX_PTR ctx, const char *propq, const char *type, const char *arg1);
 /*[[mkcgo]]*/ void EVP_PKEY_CTX_free(_EVP_PKEY_CTX_PTR arg0);
