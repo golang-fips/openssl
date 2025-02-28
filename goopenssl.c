@@ -1,6 +1,6 @@
 //go:build unix || windows
 
-#include "goopenssl.h"
+#include "shims.h"
 
 #ifdef _WIN32
 # include <windows.h>
@@ -9,27 +9,6 @@
 # include <dlfcn.h> // dlsym
 #endif
 #include <stdio.h> // fprintf
-
-// Approach taken from .Net System.Security.Cryptography.Native
-// https://github.com/dotnet/runtime/blob/f64246ce08fb7a58221b2b7c8e68f69c02522b0d/src/libraries/Native/Unix/System.Security.Cryptography.Native/opensslshim.c
-
-#define DEFINEFUNC(ret, func, args, argscall)                  ret (*_g_##func)args;
-#define DEFINEFUNC_LEGACY_1_1(ret, func, args, argscall)       DEFINEFUNC(ret, func, args, argscall)
-#define DEFINEFUNC_LEGACY_1(ret, func, args, argscall)         DEFINEFUNC(ret, func, args, argscall)
-#define DEFINEFUNC_1_1_1(ret, func, args, argscall)            DEFINEFUNC(ret, func, args, argscall)
-#define DEFINEFUNC_3_0(ret, func, args, argscall)              DEFINEFUNC(ret, func, args, argscall)
-#define DEFINEFUNC_RENAMED_3_0(ret, func, oldfunc, args, argscall) DEFINEFUNC(ret, func, args, argscall)
-#define DEFINEFUNC_VARIADIC_3_0(ret, func, newname, args, argscall)  DEFINEFUNC(ret, newname, args, argscall)
-
-FOR_ALL_OPENSSL_FUNCTIONS
-
-#undef DEFINEFUNC
-#undef DEFINEFUNC_LEGACY_1_1
-#undef DEFINEFUNC_LEGACY_1
-#undef DEFINEFUNC_1_1_1
-#undef DEFINEFUNC_3_0
-#undef DEFINEFUNC_RENAMED_3_0
-#undef DEFINEFUNC_VARIADIC_3_0
 
 // go_openssl_fips_enabled returns 1 if FIPS mode is enabled, 0 otherwise.
 // As a special case, it returns -1 if it cannot determine if FIPS mode is enabled.
@@ -55,8 +34,8 @@ go_openssl_fips_enabled(void* handle)
 
     // For OpenSSL 3.x.
     int (*EVP_default_properties_is_fips_enabled)(void*) = (int (*)(void*))dlsym(handle, "EVP_default_properties_is_fips_enabled");
-    void *(*EVP_MD_fetch)(void*, const char*, const char*) = (void* (*)(void*, const char*, const char*))dlsym(handle, "EVP_MD_fetch");
-    void (*EVP_MD_free)(void*) = (void (*)(void*))dlsym(handle, "EVP_MD_free");
+    _EVP_MD_PTR (*EVP_MD_fetch)(void*, const char*, const char*) = (_EVP_MD_PTR (*)(void*, const char*, const char*))dlsym(handle, "EVP_MD_fetch");
+    void (*EVP_MD_free)(_EVP_MD_PTR) = (void (*)(_EVP_MD_PTR))dlsym(handle, "EVP_MD_free");
 
     if (EVP_default_properties_is_fips_enabled == NULL || EVP_MD_fetch == NULL || EVP_MD_free == NULL) {
         // Shouldn't happen, but if it does, we can't determine if FIPS mode is enabled.
@@ -66,72 +45,12 @@ go_openssl_fips_enabled(void* handle)
     if (EVP_default_properties_is_fips_enabled(NULL) != 1)
         return 0;
 
-    void *md = EVP_MD_fetch(NULL, "SHA2-256", NULL);
+    _EVP_MD_PTR md = EVP_MD_fetch(NULL, "SHA2-256", NULL);
     if (md == NULL)
         return 0;
 
     EVP_MD_free(md);
     return 1;
-}
-
-// Load all the functions stored in FOR_ALL_OPENSSL_FUNCTIONS
-// and assign them to their corresponding function pointer
-// defined in goopenssl.h.
-void
-go_openssl_load_functions(void* handle, unsigned int major, unsigned int minor, unsigned int patch)
-{
-#define DEFINEFUNC_INTERNAL(name, func)                                                                         \
-    _g_##name = dlsym(handle, func);                                                                            \
-    if (_g_##name == NULL) {                                                                                    \
-        fprintf(stderr, "Cannot get required symbol " #func " from libcrypto version %u.%u\n", major, minor);   \
-        abort();                                                                                                \
-    }
-#define DEFINEFUNC(ret, func, args, argscall) \
-    DEFINEFUNC_INTERNAL(func, #func)
-#define DEFINEFUNC_LEGACY_1_1(ret, func, args, argscall)  \
-    if (major == 1 && minor == 1)                         \
-    {                                                     \
-        DEFINEFUNC_INTERNAL(func, #func)                  \
-    }
-#define DEFINEFUNC_LEGACY_1(ret, func, args, argscall)  \
-    if (major == 1)                                     \
-    {                                                   \
-        DEFINEFUNC_INTERNAL(func, #func)                \
-    }
-#define DEFINEFUNC_1_1_1(ret, func, args, argscall)     \
-    if (major == 3 || (major == 1 && minor == 1 && patch == 1))     \
-    {                                                 \
-        DEFINEFUNC_INTERNAL(func, #func)              \
-    }
-#define DEFINEFUNC_3_0(ret, func, args, argscall)     \
-    if (major == 3)                                   \
-    {                                                 \
-        DEFINEFUNC_INTERNAL(func, #func)              \
-    }
-#define DEFINEFUNC_RENAMED_3_0(ret, func, oldfunc, args, argscall)  \
-    if (major == 1)                                                 \
-    {                                                               \
-        DEFINEFUNC_INTERNAL(func, #oldfunc)                         \
-    }                                                               \
-    else                                                            \
-    {                                                               \
-        DEFINEFUNC_INTERNAL(func, #func)                            \
-    }
-#define DEFINEFUNC_VARIADIC_3_0(ret, func, newname, args, argscall)   \
-    if (major == 3)                                                 \
-    {                                                               \
-        DEFINEFUNC_INTERNAL(newname, #func)                         \
-    }
-
-FOR_ALL_OPENSSL_FUNCTIONS
-
-#undef DEFINEFUNC
-#undef DEFINEFUNC_LEGACY_1_1
-#undef DEFINEFUNC_LEGACY_1
-#undef DEFINEFUNC_1_1_1
-#undef DEFINEFUNC_3_0
-#undef DEFINEFUNC_RENAMED_3_0
-#undef DEFINEFUNC_VARIADIC_3_0
 }
 
 static unsigned long

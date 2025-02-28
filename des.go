@@ -2,7 +2,6 @@
 
 package openssl
 
-// #include "goopenssl.h"
 import "C"
 import (
 	"crypto/cipher"

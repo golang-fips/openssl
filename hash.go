@@ -2,7 +2,24 @@
 
 package openssl
 
-// #include "goopenssl.h"
+/*
+#include "shims.h"
+// go_hash_sum copies ctx into ctx2 and calls EVP_DigestFinal_ex using ctx2.
+// This is necessary because Go hash.Hash mandates that Sum has no effect
+// on the underlying stream. In particular it is OK to Sum, then Write more,
+// then Sum again, and the second Sum acts as if the first didn't happen.
+// It is written in C because Sum() tend to be in the hot path,
+// and doing one cgo call instead of two is a significant performance win.
+int EVP_MD_CTX_copy(_EVP_MD_CTX_PTR ctx, _EVP_MD_CTX_PTR ctx2);
+int EVP_DigestFinal_ex(_EVP_MD_CTX_PTR ctx, unsigned char *md, unsigned int *s);
+static inline int
+go_hash_sum(_EVP_MD_CTX_PTR ctx, _EVP_MD_CTX_PTR ctx2, unsigned char *out)
+{
+    if (EVP_MD_CTX_copy(ctx2, ctx) != 1)
+        return 0;
+    return EVP_DigestFinal_ex(ctx2, out, NULL);
+}
+*/
 import "C"
 import (
 	"crypto"
@@ -23,7 +40,7 @@ func hashOneShot(ch crypto.Hash, p []byte, sum []byte) bool {
 		defer pinner.Unpin()
 		pinner.Pin(&p[0])
 	}
-	return C.go_openssl_EVP_Digest(pbase(p), C.size_t(len(p)), base(sum), nil, loadHash(ch).md, nil) != 0
+	return go_openssl_EVP_Digest(pbase(p), len(p), base(sum), nil, loadHash(ch).md, nil) != 0
 }
 
 func MD4(p []byte) (sum [16]byte) {
@@ -106,9 +123,9 @@ func SupportsHash(h crypto.Hash) bool {
 	// in a EVP_MD_CTX, e.g. MD5 in FIPS mode. We need to prove
 	// if they can be used by passing them to a EVP_MD_CTX.
 	var supported bool
-	if ctx := C.go_openssl_EVP_MD_CTX_new(); ctx != nil {
-		supported = C.go_openssl_EVP_DigestInit_ex(ctx, alg.md, nil) == 1
-		C.go_openssl_EVP_MD_CTX_free(ctx)
+	if ctx := go_openssl_EVP_MD_CTX_new(); ctx != nil {
+		supported = go_openssl_EVP_DigestInit_ex(ctx, alg.md, nil) == 1
+		go_openssl_EVP_MD_CTX_free(ctx)
 	}
 	cacheHashSupported.Store(h, supported)
 	return supported
@@ -211,19 +228,19 @@ func NewSHA3_512() hash.Hash {
 
 // isHashMarshallable returns true if the memory layout of md
 // is known by this library and can therefore be marshalled.
-func isHashMarshallable(md C.GO_EVP_MD_PTR) bool {
+func isHashMarshallable(md _EVP_MD_PTR) bool {
 	if vMajor == 1 {
 		return true
 	}
-	prov := C.go_openssl_EVP_MD_get0_provider(md)
+	prov := go_openssl_EVP_MD_get0_provider(md)
 	if prov == nil {
 		return false
 	}
-	cname := C.go_openssl_OSSL_PROVIDER_get0_name(prov)
+	cname := go_openssl_OSSL_PROVIDER_get0_name(prov)
 	if cname == nil {
 		return false
 	}
-	name := C.GoString(cname)
+	name := C.GoString((*C.char)(unsafe.Pointer(cname)))
 	// We only know the memory layout of the built-in providers.
 	// See evpHash.hashState for more details.
 	marshallable := name == "default" || name == "fips"
@@ -246,11 +263,11 @@ var _ cloneHash = (*evpHash)(nil)
 // evpHash implements generic hash methods.
 type evpHash struct {
 	alg *hashAlgorithm
-	ctx C.GO_EVP_MD_CTX_PTR
+	ctx _EVP_MD_CTX_PTR
 	// ctx2 is used in evpHash.sum to avoid changing
 	// the state of ctx. Having it here allows reusing the
 	// same allocated object multiple times.
-	ctx2   C.GO_EVP_MD_CTX_PTR
+	ctx2   _EVP_MD_CTX_PTR
 	pinner runtime.Pinner
 }
 
@@ -270,10 +287,10 @@ func newEvpHash(ch crypto.Hash) *evpHash {
 
 func (h *evpHash) finalize() {
 	if h.ctx != nil {
-		C.go_openssl_EVP_MD_CTX_free(h.ctx)
+		go_openssl_EVP_MD_CTX_free(h.ctx)
 	}
 	if h.ctx2 != nil {
-		C.go_openssl_EVP_MD_CTX_free(h.ctx2)
+		go_openssl_EVP_MD_CTX_free(h.ctx2)
 	}
 }
 
@@ -281,12 +298,12 @@ func (h *evpHash) init() {
 	if h.ctx != nil {
 		return
 	}
-	h.ctx = C.go_openssl_EVP_MD_CTX_new()
-	if C.go_openssl_EVP_DigestInit_ex(h.ctx, h.alg.md, nil) != 1 {
-		C.go_openssl_EVP_MD_CTX_free(h.ctx)
+	h.ctx = go_openssl_EVP_MD_CTX_new()
+	if go_openssl_EVP_DigestInit_ex(h.ctx, h.alg.md, nil) != 1 {
+		go_openssl_EVP_MD_CTX_free(h.ctx)
 		panic(newOpenSSLError("EVP_DigestInit_ex"))
 	}
-	h.ctx2 = C.go_openssl_EVP_MD_CTX_new()
+	h.ctx2 = go_openssl_EVP_MD_CTX_new()
 	runtime.SetFinalizer(h, (*evpHash).finalize)
 }
 
@@ -297,7 +314,7 @@ func (h *evpHash) Reset() {
 	}
 	// There is no need to reset h.ctx2 because it is always reset after
 	// use in evpHash.sum.
-	if C.go_openssl_EVP_DigestInit_ex(h.ctx, nil, nil) != 1 {
+	if go_openssl_EVP_DigestInit_ex(h.ctx, nil, nil) != 1 {
 		panic(newOpenSSLError("EVP_DigestInit_ex"))
 	}
 	runtime.KeepAlive(h)
@@ -310,7 +327,7 @@ func (h *evpHash) Write(p []byte) (int, error) {
 	defer h.pinner.Unpin()
 	h.pinner.Pin(&p[0])
 	h.init()
-	if C.go_openssl_EVP_DigestUpdate(h.ctx, pbase(p), C.size_t(len(p))) != 1 {
+	if go_openssl_EVP_DigestUpdate(h.ctx, sbase(p), len(p)) != 1 {
 		panic(newOpenSSLError("EVP_DigestUpdate"))
 	}
 	runtime.KeepAlive(h)
@@ -322,7 +339,7 @@ func (h *evpHash) WriteString(s string) (int, error) {
 		return 0, nil
 	}
 	h.init()
-	if C.go_openssl_EVP_DigestUpdate(h.ctx, unsafe.Pointer(unsafe.StringData(s)), C.size_t(len(s))) == 0 {
+	if go_openssl_EVP_DigestUpdate(h.ctx, unsafe.Pointer(unsafe.StringData(s)), len(s)) == 0 {
 		panic("openssl: EVP_DigestUpdate failed")
 	}
 	runtime.KeepAlive(h)
@@ -331,7 +348,7 @@ func (h *evpHash) WriteString(s string) (int, error) {
 
 func (h *evpHash) WriteByte(c byte) error {
 	h.init()
-	if C.go_openssl_EVP_DigestUpdate(h.ctx, unsafe.Pointer(&c), 1) == 0 {
+	if go_openssl_EVP_DigestUpdate(h.ctx, unsafe.Pointer(&c), 1) == 0 {
 		panic("openssl: EVP_DigestUpdate failed")
 	}
 	runtime.KeepAlive(h)
@@ -349,7 +366,7 @@ func (h *evpHash) BlockSize() int {
 func (h *evpHash) Sum(in []byte) []byte {
 	h.init()
 	out := make([]byte, h.Size(), maxHashSize) // explicit cap to allow stack allocation
-	if C.go_hash_sum(h.ctx, h.ctx2, base(out)) != 1 {
+	if C.go_hash_sum(h.ctx, h.ctx2, (*C.uchar)(unsafe.SliceData(out))) != 1 {
 		panic(newOpenSSLError("go_hash_sum"))
 	}
 	runtime.KeepAlive(h)
@@ -362,17 +379,17 @@ func (h *evpHash) Sum(in []byte) []byte {
 func (h *evpHash) Clone() hash.Hash {
 	h2 := &evpHash{alg: h.alg}
 	if h.ctx != nil {
-		h2.ctx = C.go_openssl_EVP_MD_CTX_new()
+		h2.ctx = go_openssl_EVP_MD_CTX_new()
 		if h2.ctx == nil {
 			panic(newOpenSSLError("EVP_MD_CTX_new"))
 		}
-		if C.go_openssl_EVP_MD_CTX_copy_ex(h2.ctx, h.ctx) != 1 {
-			C.go_openssl_EVP_MD_CTX_free(h2.ctx)
+		if go_openssl_EVP_MD_CTX_copy_ex(h2.ctx, h.ctx) != 1 {
+			go_openssl_EVP_MD_CTX_free(h2.ctx)
 			panic(newOpenSSLError("EVP_MD_CTX_copy"))
 		}
-		h2.ctx2 = C.go_openssl_EVP_MD_CTX_new()
+		h2.ctx2 = go_openssl_EVP_MD_CTX_new()
 		if h2.ctx2 == nil {
-			C.go_openssl_EVP_MD_CTX_free(h2.ctx)
+			go_openssl_EVP_MD_CTX_free(h2.ctx)
 			panic(newOpenSSLError("EVP_MD_CTX_new"))
 		}
 		runtime.SetFinalizer(h2, (*evpHash).finalize)
@@ -385,7 +402,7 @@ func (h *evpHash) Clone() hash.Hash {
 //
 // The EVP_MD_CTX memory layout has changed in OpenSSL 3
 // and the property holding the internal structure is no longer md_data but algctx.
-func hashState(ctx C.GO_EVP_MD_CTX_PTR) unsafe.Pointer {
+func hashState(ctx _EVP_MD_CTX_PTR) unsafe.Pointer {
 	switch vMajor {
 	case 1:
 		// https://github.com/openssl/openssl/blob/0418e993c717a6863f206feaa40673a261de7395/crypto/evp/evp_local.h#L12.

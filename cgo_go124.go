@@ -14,29 +14,29 @@ package openssl
 // expected to meet the noescape/nocallback criteria.
 
 /*
-#cgo noescape go_openssl_RAND_bytes
-#cgo nocallback go_openssl_RAND_bytes
-#cgo noescape go_openssl_EVP_EncryptUpdate
-#cgo nocallback go_openssl_EVP_EncryptUpdate
-#cgo noescape go_openssl_EVP_EncryptFinal_ex
-#cgo nocallback go_openssl_EVP_EncryptFinal_ex
-#cgo noescape go_openssl_EVP_DecryptFinal_ex
-#cgo nocallback go_openssl_EVP_DecryptFinal_ex
-#cgo noescape go_openssl_EVP_DecryptUpdate
-#cgo nocallback go_openssl_EVP_DecryptUpdate
-#cgo noescape go_openssl_EVP_CipherUpdate
-#cgo nocallback go_openssl_EVP_CipherUpdate
-#cgo noescape go_openssl_EVP_PKEY_derive
-#cgo nocallback go_openssl_EVP_PKEY_derive
-#cgo noescape go_openssl_EVP_PKEY_get_raw_public_key
-#cgo nocallback go_openssl_EVP_PKEY_get_raw_public_key
-#cgo noescape go_openssl_EVP_PKEY_get_raw_private_key
-#cgo nocallback go_openssl_EVP_PKEY_get_raw_private_key
-#cgo noescape go_openssl_EVP_DigestSign
-#cgo nocallback go_openssl_EVP_DigestSign
-#cgo noescape go_openssl_EVP_Digest
-#cgo nocallback go_openssl_EVP_Digest
-#cgo noescape go_openssl_EVP_DigestUpdate
-#cgo nocallback go_openssl_EVP_DigestUpdate
+#cgo noescape RAND_bytes
+#cgo nocallback RAND_bytes
+#cgo noescape EVP_EncryptUpdate
+#cgo nocallback EVP_EncryptUpdate
+#cgo noescape EVP_EncryptFinal_ex
+#cgo nocallback EVP_EncryptFinal_ex
+#cgo noescape EVP_DecryptFinal_ex
+#cgo nocallback EVP_DecryptFinal_ex
+#cgo noescape EVP_DecryptUpdate
+#cgo nocallback EVP_DecryptUpdate
+#cgo noescape EVP_CipherUpdate
+#cgo nocallback EVP_CipherUpdate
+#cgo noescape EVP_PKEY_derive
+#cgo nocallback EVP_PKEY_derive
+#cgo noescape EVP_PKEY_get_raw_public_key
+#cgo nocallback EVP_PKEY_get_raw_public_key
+#cgo noescape EVP_PKEY_get_raw_private_key
+#cgo nocallback EVP_PKEY_get_raw_private_key
+#cgo noescape EVP_DigestSign
+#cgo nocallback EVP_DigestSign
+#cgo noescape EVP_Digest
+#cgo nocallback EVP_Digest
+#cgo noescape EVP_DigestUpdate
+#cgo nocallback EVP_DigestUpdate
 */
 import "C"

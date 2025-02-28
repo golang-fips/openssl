@@ -2,7 +2,6 @@
 
 package openssl
 
-// #include "goopenssl.h"
 import "C"
 import (
 	"errors"
@@ -26,10 +25,10 @@ func SupportsPBKDF2() bool {
 // fetchPBKDF2 fetches the PBKDF2 algorithm.
 // It is safe to call this function concurrently.
 // The returned EVP_KDF_PTR shouldn't be freed.
-var fetchPBKDF2 = sync.OnceValues(func() (C.GO_EVP_KDF_PTR, error) {
+var fetchPBKDF2 = sync.OnceValues(func() (_EVP_KDF_PTR, error) {
 	checkMajorVersion(3)
 
-	kdf := C.go_openssl_EVP_KDF_fetch(nil, _OSSL_KDF_NAME_PBKDF2.ptr(), nil)
+	kdf := go_openssl_EVP_KDF_fetch(nil, _OSSL_KDF_NAME_PBKDF2.ptr(), nil)
 	if kdf == nil {
 		return nil, newOpenSSLError("EVP_KDF_fetch")
 	}
@@ -46,7 +45,7 @@ func PBKDF2(password, salt []byte, iter, keyLen int, fh func() hash.Hash) ([]byt
 		return nil, errors.New("unsupported hash function")
 	}
 	out := make([]byte, keyLen)
-	ok := C.go_openssl_PKCS5_PBKDF2_HMAC(sbase(password), C.int(len(password)), base(salt), C.int(len(salt)), C.int(iter), md, C.int(keyLen), base(out))
+	ok := go_openssl_PKCS5_PBKDF2_HMAC(base(password), int32(len(password)), base(salt), int32(len(salt)), int32(iter), md, int32(keyLen), base(out))
 	if ok != 1 {
 		return nil, newOpenSSLError("PKCS5_PBKDF2_HMAC")
 	}

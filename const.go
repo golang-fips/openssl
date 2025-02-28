@@ -20,14 +20,14 @@ func (s cString) str() string {
 // "const char*" parameters. Any attempt to modify it
 // will result in a runtime panic, as Go strings are
 // allocated in read-only memory.
-func (s cString) ptr() *C.char {
+func (s cString) ptr() *byte {
 	if len(s) == 0 {
 		return nil
 	}
 	if s[len(s)-1] != 0 {
 		panic("must be null-terminated")
 	}
-	return (*C.char)(unsafe.Pointer(unsafe.StringData(string(s))))
+	return unsafe.StringData(string(s))
 }
 
 const ( //checkheader:ignore

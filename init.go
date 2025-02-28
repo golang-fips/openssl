@@ -2,7 +2,11 @@
 
 package openssl
 
-// #include "goopenssl.h"
+/*
+int go_openssl_version_major(void* handle);
+int go_openssl_version_minor(void* handle);
+int go_openssl_version_patch(void* handle);
+*/
 import "C"
 import (
 	"errors"
@@ -44,11 +48,20 @@ func opensslInit(file string) (major, minor, patch uint, err error) {
 
 	// Load the OpenSSL functions.
 	// See shims.go for the complete list of supported functions.
-	C.go_openssl_load_functions(handle, C.uint(major), C.uint(minor), C.uint(patch))
+	mkcgoLoad_(handle)
+	if major == 1 {
+		mkcgoLoad_legacy_1(handle)
+		if patch == 1 {
+			mkcgoLoad_111(handle)
+		}
+	} else {
+		mkcgoLoad_111(handle)
+		mkcgoLoad_3(handle)
+	}
 
 	// Initialize OpenSSL.
-	C.go_openssl_OPENSSL_init()
-	if C.go_openssl_OPENSSL_init_crypto(
+	go_openssl_OPENSSL_init()
+	if go_openssl_OPENSSL_init_crypto(
 		_OPENSSL_INIT_ADD_ALL_CIPHERS|
 			_OPENSSL_INIT_ADD_ALL_DIGESTS|
 			_OPENSSL_INIT_LOAD_CONFIG|

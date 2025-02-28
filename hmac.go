@@ -2,7 +2,6 @@
 
 package openssl
 
-// #include "goopenssl.h"
 import "C"
 import (
 	"hash"
@@ -58,12 +57,12 @@ func NewHMAC(fh func() hash.Hash, key []byte) hash.Hash {
 
 // hmacCtx3 is used for OpenSSL 1.
 type hmacCtx1 struct {
-	ctx C.GO_HMAC_CTX_PTR
+	ctx _HMAC_CTX_PTR
 }
 
 // hmacCtx3 is used for OpenSSL 3.
 type hmacCtx3 struct {
-	ctx C.GO_EVP_MAC_CTX_PTR
+	ctx _EVP_MAC_CTX_PTR
 	key []byte // only set for OpenSSL 3.0.0, 3.0.1, and 3.0.2.
 }
 
@@ -75,59 +74,59 @@ type opensslHMAC struct {
 	sum       []byte
 }
 
-func newHMAC1(key []byte, md C.GO_EVP_MD_PTR) hmacCtx1 {
-	ctx := C.go_openssl_HMAC_CTX_new()
+func newHMAC1(key []byte, md _EVP_MD_PTR) hmacCtx1 {
+	ctx := go_openssl_HMAC_CTX_new()
 	if ctx == nil {
 		panic("openssl: EVP_MAC_CTX_new failed")
 	}
-	if C.go_openssl_HMAC_Init_ex(ctx, unsafe.Pointer(&key[0]), C.int(len(key)), md, nil) == 0 {
+	if go_openssl_HMAC_Init_ex(ctx, unsafe.Pointer(&key[0]), int32(len(key)), md, nil) == 0 {
 		panic(newOpenSSLError("HMAC_Init_ex failed"))
 	}
 	return hmacCtx1{ctx}
 }
 
 var hmacDigestsSupported sync.Map
-var fetchHMAC3 = sync.OnceValue(func() C.GO_EVP_MAC_PTR {
-	mac := C.go_openssl_EVP_MAC_fetch(nil, _OSSL_MAC_NAME_HMAC.ptr(), nil)
+var fetchHMAC3 = sync.OnceValue(func() _EVP_MAC_PTR {
+	mac := go_openssl_EVP_MAC_fetch(nil, _OSSL_MAC_NAME_HMAC.ptr(), nil)
 	if mac == nil {
 		panic("openssl: HMAC not supported")
 	}
 	return mac
 })
 
-func buildHMAC3Params(md C.GO_EVP_MD_PTR) (C.GO_OSSL_PARAM_PTR, error) {
+func buildHMAC3Params(md _EVP_MD_PTR) (_OSSL_PARAM_PTR, error) {
 	bld, err := newParamBuilder()
 	if err != nil {
 		return nil, err
 	}
 	defer bld.finalize()
-	bld.addUTF8String(_OSSL_MAC_PARAM_DIGEST, C.go_openssl_EVP_MD_get0_name(md), 0)
+	bld.addUTF8String(_OSSL_MAC_PARAM_DIGEST, go_openssl_EVP_MD_get0_name(md), 0)
 	return bld.build()
 }
 
-func isHMAC3DigestSupported(md C.GO_EVP_MD_PTR) bool {
-	nid := C.go_openssl_EVP_MD_get_type(md)
+func isHMAC3DigestSupported(md _EVP_MD_PTR) bool {
+	nid := go_openssl_EVP_MD_get_type(md)
 	if v, ok := hmacDigestsSupported.Load(nid); ok {
 		return v.(bool)
 	}
-	ctx := C.go_openssl_EVP_MAC_CTX_new(fetchHMAC3())
+	ctx := go_openssl_EVP_MAC_CTX_new(fetchHMAC3())
 	if ctx == nil {
 		panic(newOpenSSLError("EVP_MAC_CTX_new"))
 	}
-	defer C.go_openssl_EVP_MAC_CTX_free(ctx)
+	defer go_openssl_EVP_MAC_CTX_free(ctx)
 
 	params, err := buildHMAC3Params(md)
 	if err != nil {
 		panic(err)
 	}
-	defer C.go_openssl_OSSL_PARAM_free(params)
+	defer go_openssl_OSSL_PARAM_free(params)
 
-	supported := C.go_openssl_EVP_MAC_CTX_set_params(ctx, params) != 0
+	supported := go_openssl_EVP_MAC_CTX_set_params(ctx, params) != 0
 	hmacDigestsSupported.Store(nid, supported)
 	return supported
 }
 
-func newHMAC3(key []byte, md C.GO_EVP_MD_PTR) hmacCtx3 {
+func newHMAC3(key []byte, md _EVP_MD_PTR) hmacCtx3 {
 	if !isHMAC3DigestSupported(md) {
 		// The digest is not supported by the HMAC provider.
 		// Don't panic here so the Go standard library to
@@ -139,15 +138,15 @@ func newHMAC3(key []byte, md C.GO_EVP_MD_PTR) hmacCtx3 {
 	if err != nil {
 		panic(err)
 	}
-	defer C.go_openssl_OSSL_PARAM_free(params)
+	defer go_openssl_OSSL_PARAM_free(params)
 
-	ctx := C.go_openssl_EVP_MAC_CTX_new(fetchHMAC3())
+	ctx := go_openssl_EVP_MAC_CTX_new(fetchHMAC3())
 	if ctx == nil {
 		panic(newOpenSSLError("EVP_MAC_CTX_new"))
 	}
 
-	if C.go_openssl_EVP_MAC_init(ctx, base(key), C.size_t(len(key)), params) == 0 {
-		C.go_openssl_EVP_MAC_CTX_free(ctx)
+	if go_openssl_EVP_MAC_init(ctx, base(key), len(key), params) == 0 {
+		go_openssl_EVP_MAC_CTX_free(ctx)
 		panic(newOpenSSLError("EVP_MAC_init"))
 	}
 	var hkey []byte
@@ -166,11 +165,11 @@ func newHMAC3(key []byte, md C.GO_EVP_MD_PTR) hmacCtx3 {
 func (h *opensslHMAC) Reset() {
 	switch vMajor {
 	case 1:
-		if C.go_openssl_HMAC_Init_ex(h.ctx1.ctx, nil, 0, nil, nil) == 0 {
+		if go_openssl_HMAC_Init_ex(h.ctx1.ctx, nil, 0, nil, nil) == 0 {
 			panic(newOpenSSLError("HMAC_Init_ex failed"))
 		}
 	case 3:
-		if C.go_openssl_EVP_MAC_init(h.ctx3.ctx, base(h.ctx3.key), C.size_t(len(h.ctx3.key)), nil) == 0 {
+		if go_openssl_EVP_MAC_init(h.ctx3.ctx, base(h.ctx3.key), len(h.ctx3.key), nil) == 0 {
 			panic(newOpenSSLError("EVP_MAC_init failed"))
 		}
 	default:
@@ -184,9 +183,9 @@ func (h *opensslHMAC) Reset() {
 func (h *opensslHMAC) finalize() {
 	switch vMajor {
 	case 1:
-		C.go_openssl_HMAC_CTX_free(h.ctx1.ctx)
+		go_openssl_HMAC_CTX_free(h.ctx1.ctx)
 	case 3:
-		C.go_openssl_EVP_MAC_CTX_free(h.ctx3.ctx)
+		go_openssl_EVP_MAC_CTX_free(h.ctx3.ctx)
 	default:
 		panic(errUnsupportedVersion())
 	}
@@ -196,9 +195,9 @@ func (h *opensslHMAC) Write(p []byte) (int, error) {
 	if len(p) > 0 {
 		switch vMajor {
 		case 1:
-			C.go_openssl_HMAC_Update(h.ctx1.ctx, base(p), C.size_t(len(p)))
+			go_openssl_HMAC_Update(h.ctx1.ctx, base(p), len(p))
 		case 3:
-			C.go_openssl_EVP_MAC_update(h.ctx3.ctx, base(p), C.size_t(len(p)))
+			go_openssl_EVP_MAC_update(h.ctx3.ctx, base(p), len(p))
 		default:
 			panic(errUnsupportedVersion())
 		}
@@ -226,22 +225,22 @@ func (h *opensslHMAC) Sum(in []byte) []byte {
 	// and the second Sum acts as if the first didn't happen.
 	switch vMajor {
 	case 1:
-		ctx2 := C.go_openssl_HMAC_CTX_new()
+		ctx2 := go_openssl_HMAC_CTX_new()
 		if ctx2 == nil {
 			panic("openssl: HMAC_CTX_new failed")
 		}
-		defer C.go_openssl_HMAC_CTX_free(ctx2)
-		if C.go_openssl_HMAC_CTX_copy(ctx2, h.ctx1.ctx) == 0 {
+		defer go_openssl_HMAC_CTX_free(ctx2)
+		if go_openssl_HMAC_CTX_copy(ctx2, h.ctx1.ctx) == 0 {
 			panic("openssl: HMAC_CTX_copy failed")
 		}
-		C.go_openssl_HMAC_Final(ctx2, base(h.sum), nil)
+		go_openssl_HMAC_Final(ctx2, base(h.sum), nil)
 	case 3:
-		ctx2 := C.go_openssl_EVP_MAC_CTX_dup(h.ctx3.ctx)
+		ctx2 := go_openssl_EVP_MAC_CTX_dup(h.ctx3.ctx)
 		if ctx2 == nil {
 			panic("openssl: EVP_MAC_CTX_dup failed")
 		}
-		defer C.go_openssl_EVP_MAC_CTX_free(ctx2)
-		C.go_openssl_EVP_MAC_final(ctx2, base(h.sum), nil, C.size_t(len(h.sum)))
+		defer go_openssl_EVP_MAC_CTX_free(ctx2)
+		go_openssl_EVP_MAC_final(ctx2, base(h.sum), nil, len(h.sum))
 	default:
 		panic(errUnsupportedVersion())
 	}

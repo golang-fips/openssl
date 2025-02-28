@@ -2,7 +2,6 @@
 
 package openssl
 
-// #include "goopenssl.h"
 import "C"
 import (
 	"crypto"
@@ -12,28 +11,28 @@ import (
 
 type PrivateKeyECDSA struct {
 	// _pkey MUST NOT be accessed directly. Instead, use the withKey method.
-	_pkey C.GO_EVP_PKEY_PTR
+	_pkey _EVP_PKEY_PTR
 }
 
 func (k *PrivateKeyECDSA) finalize() {
-	C.go_openssl_EVP_PKEY_free(k._pkey)
+	go_openssl_EVP_PKEY_free(k._pkey)
 }
 
-func (k *PrivateKeyECDSA) withKey(f func(C.GO_EVP_PKEY_PTR) C.int) C.int {
+func (k *PrivateKeyECDSA) withKey(f func(_EVP_PKEY_PTR) int32) int32 {
 	defer runtime.KeepAlive(k)
 	return f(k._pkey)
 }
 
 type PublicKeyECDSA struct {
 	// _pkey MUST NOT be accessed directly. Instead, use the withKey method.
-	_pkey C.GO_EVP_PKEY_PTR
+	_pkey _EVP_PKEY_PTR
 }
 
 func (k *PublicKeyECDSA) finalize() {
-	C.go_openssl_EVP_PKEY_free(k._pkey)
+	go_openssl_EVP_PKEY_free(k._pkey)
 }
 
-func (k *PublicKeyECDSA) withKey(f func(C.GO_EVP_PKEY_PTR) C.int) C.int {
+func (k *PublicKeyECDSA) withKey(f func(_EVP_PKEY_PTR) int32) int32 {
 	defer runtime.KeepAlive(k)
 	return f(k._pkey)
 }
@@ -66,37 +65,37 @@ func GenerateKeyECDSA(curve string) (x, y, d BigInt, err error) {
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	defer C.go_openssl_EVP_PKEY_free(pkey)
+	defer go_openssl_EVP_PKEY_free(pkey)
 
-	var bx, by, bd C.GO_BIGNUM_PTR
+	var bx, by, bd _BIGNUM_PTR
 	defer func() {
-		C.go_openssl_BN_free(bx)
-		C.go_openssl_BN_free(by)
+		go_openssl_BN_free(bx)
+		go_openssl_BN_free(by)
 	}()
 	switch vMajor {
 	case 1:
 		// Retrieve the internal EC_KEY, which holds the X, Y, and D coordinates.
 		key := getECKey(pkey)
-		group := C.go_openssl_EC_KEY_get0_group(key)
-		pt := C.go_openssl_EC_KEY_get0_public_key(key)
+		group := go_openssl_EC_KEY_get0_group(key)
+		pt := go_openssl_EC_KEY_get0_public_key(key)
 		// Allocate two big numbers to store the X and Y coordinates.
-		bx, by = C.go_openssl_BN_new(), C.go_openssl_BN_new()
+		bx, by = go_openssl_BN_new(), go_openssl_BN_new()
 		if bx == nil || by == nil {
 			return nil, nil, nil, newOpenSSLError("BN_new failed")
 		}
 		// Get X and Y.
-		if C.go_openssl_EC_POINT_get_affine_coordinates_GFp(group, pt, bx, by, nil) == 0 {
+		if go_openssl_EC_POINT_get_affine_coordinates_GFp(group, pt, bx, by, nil) == 0 {
 			return nil, nil, nil, newOpenSSLError("EC_POINT_get_affine_coordinates_GFp failed")
 		}
 		// Get Z. We don't need to free it, get0 does not increase the reference count.
-		bd = C.go_openssl_EC_KEY_get0_private_key(key)
+		bd = go_openssl_EC_KEY_get0_private_key(key)
 	case 3:
-		if C.go_openssl_EVP_PKEY_get_bn_param(pkey, _OSSL_PKEY_PARAM_EC_PUB_X.ptr(), &bx) != 1 ||
-			C.go_openssl_EVP_PKEY_get_bn_param(pkey, _OSSL_PKEY_PARAM_EC_PUB_Y.ptr(), &by) != 1 ||
-			C.go_openssl_EVP_PKEY_get_bn_param(pkey, _OSSL_PKEY_PARAM_PRIV_KEY.ptr(), &bd) != 1 {
+		if go_openssl_EVP_PKEY_get_bn_param(pkey, _OSSL_PKEY_PARAM_EC_PUB_X.ptr(), &bx) != 1 ||
+			go_openssl_EVP_PKEY_get_bn_param(pkey, _OSSL_PKEY_PARAM_EC_PUB_Y.ptr(), &by) != 1 ||
+			go_openssl_EVP_PKEY_get_bn_param(pkey, _OSSL_PKEY_PARAM_PRIV_KEY.ptr(), &bd) != 1 {
 			return nil, nil, nil, newOpenSSLError("EVP_PKEY_get_bn_param")
 		}
-		defer C.go_openssl_BN_clear_free(bd)
+		defer go_openssl_BN_clear_free(bd)
 	default:
 		panic(errUnsupportedVersion())
 	}
@@ -121,13 +120,13 @@ func HashVerifyECDSA(pub *PublicKeyECDSA, h crypto.Hash, msg, sig []byte) bool {
 	return evpHashVerify(pub.withKey, h, msg, sig) == nil
 }
 
-func newECDSAKey(curve string, x, y, d BigInt) (C.GO_EVP_PKEY_PTR, error) {
+func newECDSAKey(curve string, x, y, d BigInt) (_EVP_PKEY_PTR, error) {
 	nid := curveNID(curve)
-	var bx, by, bd C.GO_BIGNUM_PTR
+	var bx, by, bd _BIGNUM_PTR
 	defer func() {
-		C.go_openssl_BN_free(bx)
-		C.go_openssl_BN_free(by)
-		C.go_openssl_BN_clear_free(bd)
+		go_openssl_BN_free(bx)
+		go_openssl_BN_free(by)
+		go_openssl_BN_clear_free(bd)
 	}()
 	bx = bigToBN(x)
 	by = bigToBN(y)
@@ -145,38 +144,38 @@ func newECDSAKey(curve string, x, y, d BigInt) (C.GO_EVP_PKEY_PTR, error) {
 	}
 }
 
-func newECDSAKey1(nid C.int, bx, by, bd C.GO_BIGNUM_PTR) (pkey C.GO_EVP_PKEY_PTR, err error) {
+func newECDSAKey1(nid int32, bx, by, bd _BIGNUM_PTR) (pkey _EVP_PKEY_PTR, err error) {
 	checkMajorVersion(1)
 
-	key := C.go_openssl_EC_KEY_new_by_curve_name(nid)
+	key := go_openssl_EC_KEY_new_by_curve_name(nid)
 	if key == nil {
 		return nil, newOpenSSLError("EC_KEY_new_by_curve_name failed")
 	}
 	defer func() {
 		if pkey == nil {
-			defer C.go_openssl_EC_KEY_free(key)
+			defer go_openssl_EC_KEY_free(key)
 		}
 	}()
-	if C.go_openssl_EC_KEY_set_public_key_affine_coordinates(key, bx, by) != 1 {
+	if go_openssl_EC_KEY_set_public_key_affine_coordinates(key, bx, by) != 1 {
 		return nil, newOpenSSLError("EC_KEY_set_public_key_affine_coordinates failed")
 	}
-	if bd != nil && C.go_openssl_EC_KEY_set_private_key(key, bd) != 1 {
+	if bd != nil && go_openssl_EC_KEY_set_private_key(key, bd) != 1 {
 		return nil, newOpenSSLError("EC_KEY_set_private_key failed")
 	}
 	return newEVPPKEY(key)
 }
 
-func newECDSAKey3(nid C.int, bx, by, bd C.GO_BIGNUM_PTR) (C.GO_EVP_PKEY_PTR, error) {
+func newECDSAKey3(nid int32, bx, by, bd _BIGNUM_PTR) (_EVP_PKEY_PTR, error) {
 	checkMajorVersion(3)
 
 	// Create the encoded public key public key from bx and by.
-	pubBytes, err := generateAndEncodeEcPublicKey(nid, func(group C.GO_EC_GROUP_PTR) (C.GO_EC_POINT_PTR, error) {
-		pt := C.go_openssl_EC_POINT_new(group)
+	pubBytes, err := generateAndEncodeEcPublicKey(nid, func(group _EC_GROUP_PTR) (_EC_POINT_PTR, error) {
+		pt := go_openssl_EC_POINT_new(group)
 		if pt == nil {
 			return nil, newOpenSSLError("EC_POINT_new")
 		}
-		if C.go_openssl_EC_POINT_set_affine_coordinates(group, pt, bx, by, nil) != 1 {
-			C.go_openssl_EC_POINT_free(pt)
+		if go_openssl_EC_POINT_set_affine_coordinates(group, pt, bx, by, nil) != 1 {
+			go_openssl_EC_POINT_free(pt)
 			return nil, newOpenSSLError("EC_POINT_set_affine_coordinates")
 		}
 		return pt, nil
@@ -190,9 +189,9 @@ func newECDSAKey3(nid C.int, bx, by, bd C.GO_BIGNUM_PTR) (C.GO_EVP_PKEY_PTR, err
 		return nil, err
 	}
 	defer bld.finalize()
-	bld.addUTF8String(_OSSL_PKEY_PARAM_GROUP_NAME, C.go_openssl_OBJ_nid2sn(nid), 0)
+	bld.addUTF8String(_OSSL_PKEY_PARAM_GROUP_NAME, go_openssl_OBJ_nid2sn(nid), 0)
 	bld.addOctetString(_OSSL_PKEY_PARAM_PUB_KEY, pubBytes)
-	var selection C.int
+	var selection int32
 	if bd != nil {
 		bld.addBN(_OSSL_PKEY_PARAM_PRIV_KEY, bd)
 		selection = _EVP_PKEY_KEYPAIR
@@ -203,6 +202,6 @@ func newECDSAKey3(nid C.int, bx, by, bd C.GO_BIGNUM_PTR) (C.GO_EVP_PKEY_PTR, err
 	if err != nil {
 		return nil, err
 	}
-	defer C.go_openssl_OSSL_PARAM_free(params)
+	defer go_openssl_OSSL_PARAM_free(params)
 	return newEvpFromParams(_EVP_PKEY_EC, selection, params)
 }

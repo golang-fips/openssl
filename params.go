@@ -2,15 +2,13 @@
 
 package openssl
 
-// #include "goopenssl.h"
 import "C"
 import (
 	"runtime"
-	"unsafe"
 )
 
 type bnParam struct {
-	value   C.GO_BIGNUM_PTR
+	value   _BIGNUM_PTR
 	private bool
 }
 
@@ -19,7 +17,7 @@ type bnParam struct {
 // subsequent calls to add parameters are ignored
 // and build() will return the error.
 type paramBuilder struct {
-	bld      C.GO_OSSL_PARAM_BLD_PTR
+	bld      _OSSL_PARAM_BLD_PTR
 	pinner   runtime.Pinner
 	bnToFree []bnParam
 
@@ -28,7 +26,7 @@ type paramBuilder struct {
 
 // newParamBuilder creates a new paramBuilder.
 func newParamBuilder() (*paramBuilder, error) {
-	bld := C.go_openssl_OSSL_PARAM_BLD_new()
+	bld := go_openssl_OSSL_PARAM_BLD_new()
 	if bld == nil {
 		return nil, newOpenSSLError("OSSL_PARAM_BLD_new")
 	}
@@ -46,12 +44,12 @@ func (b *paramBuilder) finalize() {
 		b.pinner.Unpin()
 		for _, bn := range b.bnToFree {
 			if bn.private {
-				C.go_openssl_BN_clear_free(bn.value)
+				go_openssl_BN_clear_free(bn.value)
 			} else {
-				C.go_openssl_BN_free(bn.value)
+				go_openssl_BN_free(bn.value)
 			}
 		}
-		C.go_openssl_OSSL_PARAM_BLD_free(b.bld)
+		go_openssl_OSSL_PARAM_BLD_free(b.bld)
 		b.bld = nil
 	}
 }
@@ -75,12 +73,12 @@ func (b *paramBuilder) check() bool {
 // If an error occurred while adding parameters, the error is returned
 // and the OSSL_PARAM is nil. Once build() is called, the builder is finalized
 // and cannot be reused.
-func (b *paramBuilder) build() (C.GO_OSSL_PARAM_PTR, error) {
+func (b *paramBuilder) build() (_OSSL_PARAM_PTR, error) {
 	defer b.finalize()
 	if !b.check() {
 		return nil, b.err
 	}
-	param := C.go_openssl_OSSL_PARAM_BLD_to_param(b.bld)
+	param := go_openssl_OSSL_PARAM_BLD_to_param(b.bld)
 	if param == nil {
 		return nil, newOpenSSLError("OSSL_PARAM_BLD_build")
 	}
@@ -89,12 +87,12 @@ func (b *paramBuilder) build() (C.GO_OSSL_PARAM_PTR, error) {
 
 // addUTF8String adds a NUL-terminated UTF-8 string to the builder.
 // size should not include the terminating NUL byte. If size is zero, then it will be calculated.
-func (b *paramBuilder) addUTF8String(name cString, value *C.char, size C.size_t) {
+func (b *paramBuilder) addUTF8String(name cString, value *byte, size int) {
 	if !b.check() {
 		return
 	}
 	// OSSL_PARAM_BLD_push_utf8_string calculates the size if it is zero.
-	if C.go_openssl_OSSL_PARAM_BLD_push_utf8_string(b.bld, name.ptr(), value, size) != 1 {
+	if go_openssl_OSSL_PARAM_BLD_push_utf8_string(b.bld, name.ptr(), value, size) != 1 {
 		b.err = newOpenSSLError("OSSL_PARAM_BLD_push_utf8_string(" + name.str() + ")")
 	}
 }
@@ -108,7 +106,7 @@ func (b *paramBuilder) addOctetString(name cString, value []byte) {
 	if len(value) != 0 {
 		b.pinner.Pin(&value[0])
 	}
-	if C.go_openssl_OSSL_PARAM_BLD_push_octet_string(b.bld, name.ptr(), unsafe.Pointer(sbase(value)), C.size_t(len(value))) != 1 {
+	if go_openssl_OSSL_PARAM_BLD_push_octet_string(b.bld, name.ptr(), sbase(value), len(value)) != 1 {
 		b.err = newOpenSSLError("OSSL_PARAM_BLD_push_octet_string(" + name.str() + ")")
 	}
 }
@@ -118,17 +116,17 @@ func (b *paramBuilder) addInt32(name cString, value int32) {
 	if !b.check() {
 		return
 	}
-	if C.go_openssl_OSSL_PARAM_BLD_push_int32(b.bld, name.ptr(), C.int32_t(value)) != 1 {
+	if go_openssl_OSSL_PARAM_BLD_push_int32(b.bld, name.ptr(), value) != 1 {
 		b.err = newOpenSSLError("OSSL_PARAM_BLD_push_int32(" + name.str() + ")")
 	}
 }
 
 // addBN adds a GO_BIGNUM_PTR to the builder.
-func (b *paramBuilder) addBN(name cString, value C.GO_BIGNUM_PTR) {
+func (b *paramBuilder) addBN(name cString, value _BIGNUM_PTR) {
 	if !b.check() {
 		return
 	}
-	if C.go_openssl_OSSL_PARAM_BLD_push_BN(b.bld, name.ptr(), value) != 1 {
+	if go_openssl_OSSL_PARAM_BLD_push_BN(b.bld, name.ptr(), value) != 1 {
 		b.err = newOpenSSLError("OSSL_PARAM_BLD_push_BN(" + name.str() + ")")
 	}
 }
@@ -145,7 +143,7 @@ func (b *paramBuilder) addBin(name cString, value []byte, private bool) {
 		// Nothing to do.
 		return
 	}
-	bn := C.go_openssl_BN_bin2bn(base(value), C.int(len(value)), nil)
+	bn := go_openssl_BN_bin2bn(base(value), int32(len(value)), nil)
 	if bn == nil {
 		b.err = newOpenSSLError("BN_bin2bn")
 		return
