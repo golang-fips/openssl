@@ -199,7 +199,7 @@ func tryConvertDefineFunc(w io.Writer, l string, i int) bool {
 	if !strings.HasPrefix(l, "/*[[mkcgo") {
 		return false
 	}
-	if strings.Contains(l, "/*[[mkcgo::variadic(") {
+	if strings.Contains(l, "[[mkcgo::variadic(") {
 		// Variadic functions are not supported. There is not enough
 		// information to create use it in writeDefineFunc.
 		return false
