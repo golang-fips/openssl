@@ -168,7 +168,7 @@ func loadHash(ch crypto.Hash) *hashAlgorithm {
 }
 
 // generateEVPPKey generates a new EVP_PKEY with the given id and properties.
-func generateEVPPKey(id int32, bits int, curve string) (_EVP_PKEY_PTR, error) {
+func generateEVPPKey(id, bits int32, curve string) (_EVP_PKEY_PTR, error) {
 	if bits != 0 && curve != "" {
 		return nil, fail("incorrect generateEVPPKey parameters")
 	}
@@ -184,7 +184,7 @@ func generateEVPPKey(id int32, bits int, curve string) (_EVP_PKEY_PTR, error) {
 			return nil, newOpenSSLError("EVP_PKEY_keygen_init")
 		}
 		if bits != 0 {
-			if go_openssl_EVP_PKEY_CTX_ctrl(ctx, id, -1, _EVP_PKEY_CTRL_RSA_KEYGEN_BITS, int32(bits), nil) != 1 {
+			if go_openssl_EVP_PKEY_CTX_ctrl(ctx, id, -1, _EVP_PKEY_CTRL_RSA_KEYGEN_BITS, bits, nil) != 1 {
 				return nil, newOpenSSLError("EVP_PKEY_CTX_ctrl")
 			}
 		}

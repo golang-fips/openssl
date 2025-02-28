@@ -16,7 +16,7 @@ func GenerateKeyRSA(bits int) (N, E, D, P, Q, Dp, Dq, Qinv BigInt, err error) {
 	bad := func(e error) (N, E, D, P, Q, Dp, Dq, Qinv BigInt, err error) {
 		return nil, nil, nil, nil, nil, nil, nil, nil, e
 	}
-	pkey, err := generateEVPPKey(_EVP_PKEY_RSA, bits, "")
+	pkey, err := generateEVPPKey(_EVP_PKEY_RSA, int32(bits), "")
 	if err != nil {
 		return bad(err)
 	}
