@@ -17,6 +17,10 @@ jobs:
         go-version: ${{ matrix.go-version }}
     - name: Checkout code
       uses: actions/checkout@v4
+    - name: Verify go generate leaves no changes
+      run: |
+        go generate .
+        git diff --exit-code
     - name: Install OpenSSL
       run: sudo sh ./scripts/openssl.sh ${{ matrix.openssl-version }}
     - name: Check headers
