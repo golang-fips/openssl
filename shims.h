@@ -311,4 +311,4 @@ DEFINEFUNC_3_0(int, EVP_KDF_CTX_set_params, (GO_EVP_KDF_CTX_PTR ctx, const GO_OS
 DEFINEFUNC_3_0(void, EVP_KDF_CTX_free, (GO_EVP_KDF_CTX_PTR ctx), (ctx)) \
 DEFINEFUNC_3_0(size_t, EVP_KDF_CTX_get_kdf_size, (GO_EVP_KDF_CTX_PTR ctx), (ctx)) \
 DEFINEFUNC_3_0(int, EVP_KDF_derive, (GO_EVP_KDF_CTX_PTR ctx, unsigned char *key, size_t keylen, const GO_OSSL_PARAM_PTR params), (ctx, key, keylen, params)) \
-
+DEFINEFUNC_1_1_1(int, EVP_PBE_scrypt, (const char *pass, size_t passlen, const unsigned char *salt, size_t saltlen, uint64_t N, uint64_t r, uint64_t p, uint64_t maxmem, unsigned char *key, size_t keylen), (pass, passlen, salt, saltlen, N, r, p, maxmem, key, keylen))
