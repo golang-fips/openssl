@@ -67,10 +67,10 @@ func main() {
 			}
 		}
 	} else {
-		err = os.WriteFile(*fileName, data, 0644)
+		err = os.WriteFile(*fileName, data, 0o644)
 		if err == nil {
 			cfileName := strings.TrimSuffix(*fileName, ".go") + ".c"
-			err = os.WriteFile(cfileName, cbuf.Bytes(), 0644)
+			err = os.WriteFile(cfileName, cbuf.Bytes(), 0o644)
 		}
 		if err != nil {
 			log.Fatal(err)
