@@ -188,18 +188,13 @@ func (src *source) generateCFn(f *fn, w io.Writer) {
 // toGo converts C parameter p to Go parameter.
 func (p *param) toGo() string {
 	goType := cArgToCgo(p.typ)
-	var s string
 	switch {
-	case goType == "":
-		return ""
-	case goType == "unsafe.Pointer":
+	case goType == "unsafe.Pointer" || goType == "":
 		return p.name
 	case goType[0] == '*':
 		return fmt.Sprintf("(%s)(unsafe.Pointer(%s))", goType, p.name)
-	default:
-		s = p.name
 	}
-	return fmt.Sprintf("%s(%s)", goType, s)
+	return fmt.Sprintf("%s(%s)", goType, p.name)
 }
 
 func isStdType(t string) bool {
@@ -232,27 +227,33 @@ func cArgToCgo(t string) string {
 			n++
 		}
 		s := cArgToCgo(t[:i+1])
-		s = strings.Repeat("*", n) + s
+		if s != "" {
+			s = strings.Repeat("*", n) + s
+		}
 		return s
 	}
 	// Map C types with spaces to cgo special-cased types.
-	switch t {
-	case "signed char":
-		t = "schar"
-	case "unsigned char":
-		t = "uchar"
-	case "unsigned short":
-		t = "ushort"
-	case "unsigned int":
-		t = "uint"
-	case "unsigned long":
-		t = "ulong"
-	case "long long":
-		t = "longlong"
-	case "unsigned long long":
-		t = "ulonglong"
+	if isStdType(t) {
+		switch t {
+		case "signed char":
+			t = "schar"
+		case "unsigned char":
+			t = "uchar"
+		case "unsigned short":
+			t = "ushort"
+		case "unsigned int":
+			t = "uint"
+		case "unsigned long":
+			t = "ulong"
+		case "long long":
+			t = "longlong"
+		case "unsigned long long":
+			t = "ulonglong"
+		}
+		return "C." + t
 	}
-	return "C." + t
+	// Non-standard C types are aliased to C.<type>.
+	return ""
 }
 
 // cTypeToGo converts C type t to a Go type.
