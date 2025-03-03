@@ -4,6 +4,7 @@
 #include <stddef.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <stdio.h>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -230,233 +231,242 @@ int (*_g_RSA_set0_crt_params)(_RSA_PTR, _BIGNUM_PTR, _BIGNUM_PTR, _BIGNUM_PTR);
 int (*_g_RSA_set0_factors)(_RSA_PTR, _BIGNUM_PTR, _BIGNUM_PTR);
 int (*_g_RSA_set0_key)(_RSA_PTR, _BIGNUM_PTR, _BIGNUM_PTR, _BIGNUM_PTR);
 
+#define __mkcgo__dlsym(name) __mkcgo__dlsym2(name, name)
+
+#define __mkcgo__dlsym2(cname, importname)								\
+	_g_##cname = (typeof(_g_##cname))dlsym(handle, #cname);				\
+	if (_g_##cname == NULL) {												\
+		fprintf(stderr, "Cannot get required symbol " #cname "\n");	\
+		abort();															\
+	}
+
 void __mkcgoLoad_(void* handle) {
-	_g_BN_bin2bn = (_BIGNUM_PTR (*)(const unsigned char*, int, _BIGNUM_PTR))dlsym(handle, "BN_bin2bn");
-	_g_BN_bn2binpad = (int (*)(const _BIGNUM_PTR, unsigned char*, int))dlsym(handle, "BN_bn2binpad");
-	_g_BN_bn2lebinpad = (int (*)(const _BIGNUM_PTR, unsigned char*, int))dlsym(handle, "BN_bn2lebinpad");
-	_g_BN_clear = (void (*)(_BIGNUM_PTR))dlsym(handle, "BN_clear");
-	_g_BN_clear_free = (void (*)(_BIGNUM_PTR))dlsym(handle, "BN_clear_free");
-	_g_BN_free = (void (*)(_BIGNUM_PTR))dlsym(handle, "BN_free");
-	_g_BN_lebin2bn = (_BIGNUM_PTR (*)(const unsigned char*, int, _BIGNUM_PTR))dlsym(handle, "BN_lebin2bn");
-	_g_BN_new = (_BIGNUM_PTR (*)(void))dlsym(handle, "BN_new");
-	_g_BN_num_bits = (int (*)(const _BIGNUM_PTR))dlsym(handle, "BN_num_bits");
-	_g_CRYPTO_free = (void (*)(void*, const char*, int))dlsym(handle, "CRYPTO_free");
-	_g_CRYPTO_malloc = (void* (*)(size_t, const char*, int))dlsym(handle, "CRYPTO_malloc");
-	_g_EC_GROUP_free = (void (*)(_EC_GROUP_PTR))dlsym(handle, "EC_GROUP_free");
-	_g_EC_GROUP_new_by_curve_name = (_EC_GROUP_PTR (*)(int))dlsym(handle, "EC_GROUP_new_by_curve_name");
-	_g_EC_POINT_free = (void (*)(_EC_POINT_PTR))dlsym(handle, "EC_POINT_free");
-	_g_EC_POINT_mul = (int (*)(const _EC_GROUP_PTR, _EC_POINT_PTR, const _BIGNUM_PTR, const _EC_POINT_PTR, const _BIGNUM_PTR, _BN_CTX_PTR))dlsym(handle, "EC_POINT_mul");
-	_g_EC_POINT_new = (_EC_POINT_PTR (*)(const _EC_GROUP_PTR))dlsym(handle, "EC_POINT_new");
-	_g_EC_POINT_oct2point = (int (*)(const _EC_GROUP_PTR, _EC_POINT_PTR, const unsigned char*, size_t, _BN_CTX_PTR))dlsym(handle, "EC_POINT_oct2point");
-	_g_EC_POINT_point2oct = (size_t (*)(const _EC_GROUP_PTR, const _EC_POINT_PTR, point_conversion_form_t, unsigned char*, size_t, _BN_CTX_PTR))dlsym(handle, "EC_POINT_point2oct");
-	_g_ERR_clear_error = (void (*)(void))dlsym(handle, "ERR_clear_error");
-	_g_ERR_error_string_n = (void (*)(unsigned long, char*, size_t))dlsym(handle, "ERR_error_string_n");
-	_g_EVP_CIPHER_CTX_ctrl = (int (*)(_EVP_CIPHER_CTX_PTR, int, int, void*))dlsym(handle, "EVP_CIPHER_CTX_ctrl");
-	_g_EVP_CIPHER_CTX_free = (void (*)(_EVP_CIPHER_CTX_PTR))dlsym(handle, "EVP_CIPHER_CTX_free");
-	_g_EVP_CIPHER_CTX_new = (_EVP_CIPHER_CTX_PTR (*)(void))dlsym(handle, "EVP_CIPHER_CTX_new");
-	_g_EVP_CIPHER_CTX_set_key_length = (int (*)(_EVP_CIPHER_CTX_PTR, int))dlsym(handle, "EVP_CIPHER_CTX_set_key_length");
-	_g_EVP_CIPHER_CTX_set_padding = (int (*)(_EVP_CIPHER_CTX_PTR, int))dlsym(handle, "EVP_CIPHER_CTX_set_padding");
-	_g_EVP_CipherInit_ex = (int (*)(_EVP_CIPHER_CTX_PTR, const _EVP_CIPHER_PTR, _ENGINE_PTR, const unsigned char*, const unsigned char*, int))dlsym(handle, "EVP_CipherInit_ex");
-	_g_EVP_CipherUpdate = (int (*)(_EVP_CIPHER_CTX_PTR, unsigned char*, int*, const unsigned char*, int))dlsym(handle, "EVP_CipherUpdate");
-	_g_EVP_DecryptFinal_ex = (int (*)(_EVP_CIPHER_CTX_PTR, unsigned char*, int*))dlsym(handle, "EVP_DecryptFinal_ex");
-	_g_EVP_DecryptInit_ex = (int (*)(_EVP_CIPHER_CTX_PTR, const _EVP_CIPHER_PTR, _ENGINE_PTR, const unsigned char*, const unsigned char*))dlsym(handle, "EVP_DecryptInit_ex");
-	_g_EVP_DecryptUpdate = (int (*)(_EVP_CIPHER_CTX_PTR, unsigned char*, int*, const unsigned char*, int))dlsym(handle, "EVP_DecryptUpdate");
-	_g_EVP_Digest = (int (*)(const void*, size_t, unsigned char*, unsigned int*, const _EVP_MD_PTR, _ENGINE_PTR))dlsym(handle, "EVP_Digest");
-	_g_EVP_DigestFinal_ex = (int (*)(_EVP_MD_CTX_PTR, unsigned char*, unsigned int*))dlsym(handle, "EVP_DigestFinal_ex");
-	_g_EVP_DigestInit = (int (*)(_EVP_MD_CTX_PTR, const _EVP_MD_PTR))dlsym(handle, "EVP_DigestInit");
-	_g_EVP_DigestInit_ex = (int (*)(_EVP_MD_CTX_PTR, const _EVP_MD_PTR, _ENGINE_PTR))dlsym(handle, "EVP_DigestInit_ex");
-	_g_EVP_DigestSignFinal = (int (*)(_EVP_MD_CTX_PTR, unsigned char*, size_t*))dlsym(handle, "EVP_DigestSignFinal");
-	_g_EVP_DigestSignInit = (int (*)(_EVP_MD_CTX_PTR, _EVP_PKEY_CTX_PTR*, const _EVP_MD_PTR, _ENGINE_PTR, _EVP_PKEY_PTR))dlsym(handle, "EVP_DigestSignInit");
-	_g_EVP_DigestUpdate = (int (*)(_EVP_MD_CTX_PTR, const void*, size_t))dlsym(handle, "EVP_DigestUpdate");
-	_g_EVP_DigestVerifyFinal = (int (*)(_EVP_MD_CTX_PTR, const unsigned char*, size_t))dlsym(handle, "EVP_DigestVerifyFinal");
-	_g_EVP_DigestVerifyInit = (int (*)(_EVP_MD_CTX_PTR, _EVP_PKEY_CTX_PTR*, const _EVP_MD_PTR, _ENGINE_PTR, _EVP_PKEY_PTR))dlsym(handle, "EVP_DigestVerifyInit");
-	_g_EVP_EncryptFinal_ex = (int (*)(_EVP_CIPHER_CTX_PTR, unsigned char*, int*))dlsym(handle, "EVP_EncryptFinal_ex");
-	_g_EVP_EncryptInit_ex = (int (*)(_EVP_CIPHER_CTX_PTR, const _EVP_CIPHER_PTR, _ENGINE_PTR, const unsigned char*, const unsigned char*))dlsym(handle, "EVP_EncryptInit_ex");
-	_g_EVP_EncryptUpdate = (int (*)(_EVP_CIPHER_CTX_PTR, unsigned char*, int*, const unsigned char*, int))dlsym(handle, "EVP_EncryptUpdate");
-	_g_EVP_MD_CTX_copy = (int (*)(_EVP_MD_CTX_PTR, const _EVP_MD_CTX_PTR))dlsym(handle, "EVP_MD_CTX_copy");
-	_g_EVP_MD_CTX_copy_ex = (int (*)(_EVP_MD_CTX_PTR, const _EVP_MD_CTX_PTR))dlsym(handle, "EVP_MD_CTX_copy_ex");
-	_g_EVP_MD_CTX_free = (void (*)(_EVP_MD_CTX_PTR))dlsym(handle, "EVP_MD_CTX_free");
-	_g_EVP_MD_CTX_new = (_EVP_MD_CTX_PTR (*)(void))dlsym(handle, "EVP_MD_CTX_new");
-	_g_EVP_PKEY_CTX_ctrl = (int (*)(_EVP_PKEY_CTX_PTR, int, int, int, int, void*))dlsym(handle, "EVP_PKEY_CTX_ctrl");
-	_g_EVP_PKEY_CTX_free = (void (*)(_EVP_PKEY_CTX_PTR))dlsym(handle, "EVP_PKEY_CTX_free");
-	_g_EVP_PKEY_CTX_new = (_EVP_PKEY_CTX_PTR (*)(_EVP_PKEY_PTR, _ENGINE_PTR))dlsym(handle, "EVP_PKEY_CTX_new");
-	_g_EVP_PKEY_CTX_new_id = (_EVP_PKEY_CTX_PTR (*)(int, _ENGINE_PTR))dlsym(handle, "EVP_PKEY_CTX_new_id");
-	_g_EVP_PKEY_decrypt = (int (*)(_EVP_PKEY_CTX_PTR, unsigned char*, size_t*, const unsigned char*, size_t))dlsym(handle, "EVP_PKEY_decrypt");
-	_g_EVP_PKEY_decrypt_init = (int (*)(_EVP_PKEY_CTX_PTR))dlsym(handle, "EVP_PKEY_decrypt_init");
-	_g_EVP_PKEY_derive = (int (*)(_EVP_PKEY_CTX_PTR, unsigned char*, size_t*))dlsym(handle, "EVP_PKEY_derive");
-	_g_EVP_PKEY_derive_init = (int (*)(_EVP_PKEY_CTX_PTR))dlsym(handle, "EVP_PKEY_derive_init");
-	_g_EVP_PKEY_derive_set_peer = (int (*)(_EVP_PKEY_CTX_PTR, _EVP_PKEY_PTR))dlsym(handle, "EVP_PKEY_derive_set_peer");
-	_g_EVP_PKEY_encrypt = (int (*)(_EVP_PKEY_CTX_PTR, unsigned char*, size_t*, const unsigned char*, size_t))dlsym(handle, "EVP_PKEY_encrypt");
-	_g_EVP_PKEY_encrypt_init = (int (*)(_EVP_PKEY_CTX_PTR))dlsym(handle, "EVP_PKEY_encrypt_init");
-	_g_EVP_PKEY_free = (void (*)(_EVP_PKEY_PTR))dlsym(handle, "EVP_PKEY_free");
-	_g_EVP_PKEY_keygen = (int (*)(_EVP_PKEY_CTX_PTR, _EVP_PKEY_PTR*))dlsym(handle, "EVP_PKEY_keygen");
-	_g_EVP_PKEY_keygen_init = (int (*)(_EVP_PKEY_CTX_PTR))dlsym(handle, "EVP_PKEY_keygen_init");
-	_g_EVP_PKEY_new = (_EVP_PKEY_PTR (*)(void))dlsym(handle, "EVP_PKEY_new");
-	_g_EVP_PKEY_paramgen = (int (*)(_EVP_PKEY_CTX_PTR, _EVP_PKEY_PTR*))dlsym(handle, "EVP_PKEY_paramgen");
-	_g_EVP_PKEY_paramgen_init = (int (*)(_EVP_PKEY_CTX_PTR))dlsym(handle, "EVP_PKEY_paramgen_init");
-	_g_EVP_PKEY_sign = (int (*)(_EVP_PKEY_CTX_PTR, unsigned char*, size_t*, const unsigned char*, size_t))dlsym(handle, "EVP_PKEY_sign");
-	_g_EVP_PKEY_sign_init = (int (*)(_EVP_PKEY_CTX_PTR))dlsym(handle, "EVP_PKEY_sign_init");
-	_g_EVP_PKEY_verify = (int (*)(_EVP_PKEY_CTX_PTR, const unsigned char*, size_t, const unsigned char*, size_t))dlsym(handle, "EVP_PKEY_verify");
-	_g_EVP_PKEY_verify_init = (int (*)(_EVP_PKEY_CTX_PTR))dlsym(handle, "EVP_PKEY_verify_init");
-	_g_EVP_aes_128_cbc = (const _EVP_CIPHER_PTR (*)(void))dlsym(handle, "EVP_aes_128_cbc");
-	_g_EVP_aes_128_ctr = (const _EVP_CIPHER_PTR (*)(void))dlsym(handle, "EVP_aes_128_ctr");
-	_g_EVP_aes_128_ecb = (const _EVP_CIPHER_PTR (*)(void))dlsym(handle, "EVP_aes_128_ecb");
-	_g_EVP_aes_128_gcm = (const _EVP_CIPHER_PTR (*)(void))dlsym(handle, "EVP_aes_128_gcm");
-	_g_EVP_aes_192_cbc = (const _EVP_CIPHER_PTR (*)(void))dlsym(handle, "EVP_aes_192_cbc");
-	_g_EVP_aes_192_ctr = (const _EVP_CIPHER_PTR (*)(void))dlsym(handle, "EVP_aes_192_ctr");
-	_g_EVP_aes_192_ecb = (const _EVP_CIPHER_PTR (*)(void))dlsym(handle, "EVP_aes_192_ecb");
-	_g_EVP_aes_192_gcm = (const _EVP_CIPHER_PTR (*)(void))dlsym(handle, "EVP_aes_192_gcm");
-	_g_EVP_aes_256_cbc = (const _EVP_CIPHER_PTR (*)(void))dlsym(handle, "EVP_aes_256_cbc");
-	_g_EVP_aes_256_ctr = (const _EVP_CIPHER_PTR (*)(void))dlsym(handle, "EVP_aes_256_ctr");
-	_g_EVP_aes_256_ecb = (const _EVP_CIPHER_PTR (*)(void))dlsym(handle, "EVP_aes_256_ecb");
-	_g_EVP_aes_256_gcm = (const _EVP_CIPHER_PTR (*)(void))dlsym(handle, "EVP_aes_256_gcm");
-	_g_EVP_des_cbc = (const _EVP_CIPHER_PTR (*)(void))dlsym(handle, "EVP_des_cbc");
-	_g_EVP_des_ecb = (const _EVP_CIPHER_PTR (*)(void))dlsym(handle, "EVP_des_ecb");
-	_g_EVP_des_ede3_cbc = (const _EVP_CIPHER_PTR (*)(void))dlsym(handle, "EVP_des_ede3_cbc");
-	_g_EVP_des_ede3_ecb = (const _EVP_CIPHER_PTR (*)(void))dlsym(handle, "EVP_des_ede3_ecb");
-	_g_EVP_md4 = (const _EVP_MD_PTR (*)(void))dlsym(handle, "EVP_md4");
-	_g_EVP_md5 = (const _EVP_MD_PTR (*)(void))dlsym(handle, "EVP_md5");
-	_g_EVP_md5_sha1 = (const _EVP_MD_PTR (*)(void))dlsym(handle, "EVP_md5_sha1");
-	_g_EVP_rc4 = (const _EVP_CIPHER_PTR (*)(void))dlsym(handle, "EVP_rc4");
-	_g_EVP_ripemd160 = (const _EVP_MD_PTR (*)(void))dlsym(handle, "EVP_ripemd160");
-	_g_EVP_sha1 = (const _EVP_MD_PTR (*)(void))dlsym(handle, "EVP_sha1");
-	_g_EVP_sha224 = (const _EVP_MD_PTR (*)(void))dlsym(handle, "EVP_sha224");
-	_g_EVP_sha256 = (const _EVP_MD_PTR (*)(void))dlsym(handle, "EVP_sha256");
-	_g_EVP_sha384 = (const _EVP_MD_PTR (*)(void))dlsym(handle, "EVP_sha384");
-	_g_EVP_sha512 = (const _EVP_MD_PTR (*)(void))dlsym(handle, "EVP_sha512");
-	_g_OBJ_nid2sn = (const char* (*)(int))dlsym(handle, "OBJ_nid2sn");
-	_g_OPENSSL_init = (void (*)(void))dlsym(handle, "OPENSSL_init");
-	_g_OPENSSL_init_crypto = (int (*)(uint64_t, const _OPENSSL_INIT_SETTINGS_PTR))dlsym(handle, "OPENSSL_init_crypto");
-	_g_OpenSSL_version = (const char* (*)(int))dlsym(handle, "OpenSSL_version");
-	_g_PKCS5_PBKDF2_HMAC = (int (*)(const char*, int, const unsigned char*, int, int, const _EVP_MD_PTR, int, unsigned char*))dlsym(handle, "PKCS5_PBKDF2_HMAC");
-	_g_RAND_bytes = (int (*)(unsigned char*, int))dlsym(handle, "RAND_bytes");
+	__mkcgo__dlsym(BN_bin2bn)
+	__mkcgo__dlsym(BN_bn2binpad)
+	__mkcgo__dlsym(BN_bn2lebinpad)
+	__mkcgo__dlsym(BN_clear)
+	__mkcgo__dlsym(BN_clear_free)
+	__mkcgo__dlsym(BN_free)
+	__mkcgo__dlsym(BN_lebin2bn)
+	__mkcgo__dlsym(BN_new)
+	__mkcgo__dlsym(BN_num_bits)
+	__mkcgo__dlsym(CRYPTO_free)
+	__mkcgo__dlsym(CRYPTO_malloc)
+	__mkcgo__dlsym(EC_GROUP_free)
+	__mkcgo__dlsym(EC_GROUP_new_by_curve_name)
+	__mkcgo__dlsym(EC_POINT_free)
+	__mkcgo__dlsym(EC_POINT_mul)
+	__mkcgo__dlsym(EC_POINT_new)
+	__mkcgo__dlsym(EC_POINT_oct2point)
+	__mkcgo__dlsym(EC_POINT_point2oct)
+	__mkcgo__dlsym(ERR_clear_error)
+	__mkcgo__dlsym(ERR_error_string_n)
+	__mkcgo__dlsym(EVP_CIPHER_CTX_ctrl)
+	__mkcgo__dlsym(EVP_CIPHER_CTX_free)
+	__mkcgo__dlsym(EVP_CIPHER_CTX_new)
+	__mkcgo__dlsym(EVP_CIPHER_CTX_set_key_length)
+	__mkcgo__dlsym(EVP_CIPHER_CTX_set_padding)
+	__mkcgo__dlsym(EVP_CipherInit_ex)
+	__mkcgo__dlsym(EVP_CipherUpdate)
+	__mkcgo__dlsym(EVP_DecryptFinal_ex)
+	__mkcgo__dlsym(EVP_DecryptInit_ex)
+	__mkcgo__dlsym(EVP_DecryptUpdate)
+	__mkcgo__dlsym(EVP_Digest)
+	__mkcgo__dlsym(EVP_DigestFinal_ex)
+	__mkcgo__dlsym(EVP_DigestInit)
+	__mkcgo__dlsym(EVP_DigestInit_ex)
+	__mkcgo__dlsym(EVP_DigestSignFinal)
+	__mkcgo__dlsym(EVP_DigestSignInit)
+	__mkcgo__dlsym(EVP_DigestUpdate)
+	__mkcgo__dlsym(EVP_DigestVerifyFinal)
+	__mkcgo__dlsym(EVP_DigestVerifyInit)
+	__mkcgo__dlsym(EVP_EncryptFinal_ex)
+	__mkcgo__dlsym(EVP_EncryptInit_ex)
+	__mkcgo__dlsym(EVP_EncryptUpdate)
+	__mkcgo__dlsym(EVP_MD_CTX_copy)
+	__mkcgo__dlsym(EVP_MD_CTX_copy_ex)
+	__mkcgo__dlsym(EVP_MD_CTX_free)
+	__mkcgo__dlsym(EVP_MD_CTX_new)
+	__mkcgo__dlsym(EVP_PKEY_CTX_ctrl)
+	__mkcgo__dlsym(EVP_PKEY_CTX_free)
+	__mkcgo__dlsym(EVP_PKEY_CTX_new)
+	__mkcgo__dlsym(EVP_PKEY_CTX_new_id)
+	__mkcgo__dlsym(EVP_PKEY_decrypt)
+	__mkcgo__dlsym(EVP_PKEY_decrypt_init)
+	__mkcgo__dlsym(EVP_PKEY_derive)
+	__mkcgo__dlsym(EVP_PKEY_derive_init)
+	__mkcgo__dlsym(EVP_PKEY_derive_set_peer)
+	__mkcgo__dlsym(EVP_PKEY_encrypt)
+	__mkcgo__dlsym(EVP_PKEY_encrypt_init)
+	__mkcgo__dlsym(EVP_PKEY_free)
+	__mkcgo__dlsym(EVP_PKEY_keygen)
+	__mkcgo__dlsym(EVP_PKEY_keygen_init)
+	__mkcgo__dlsym(EVP_PKEY_new)
+	__mkcgo__dlsym(EVP_PKEY_paramgen)
+	__mkcgo__dlsym(EVP_PKEY_paramgen_init)
+	__mkcgo__dlsym(EVP_PKEY_sign)
+	__mkcgo__dlsym(EVP_PKEY_sign_init)
+	__mkcgo__dlsym(EVP_PKEY_verify)
+	__mkcgo__dlsym(EVP_PKEY_verify_init)
+	__mkcgo__dlsym(EVP_aes_128_cbc)
+	__mkcgo__dlsym(EVP_aes_128_ctr)
+	__mkcgo__dlsym(EVP_aes_128_ecb)
+	__mkcgo__dlsym(EVP_aes_128_gcm)
+	__mkcgo__dlsym(EVP_aes_192_cbc)
+	__mkcgo__dlsym(EVP_aes_192_ctr)
+	__mkcgo__dlsym(EVP_aes_192_ecb)
+	__mkcgo__dlsym(EVP_aes_192_gcm)
+	__mkcgo__dlsym(EVP_aes_256_cbc)
+	__mkcgo__dlsym(EVP_aes_256_ctr)
+	__mkcgo__dlsym(EVP_aes_256_ecb)
+	__mkcgo__dlsym(EVP_aes_256_gcm)
+	__mkcgo__dlsym(EVP_des_cbc)
+	__mkcgo__dlsym(EVP_des_ecb)
+	__mkcgo__dlsym(EVP_des_ede3_cbc)
+	__mkcgo__dlsym(EVP_des_ede3_ecb)
+	__mkcgo__dlsym(EVP_md4)
+	__mkcgo__dlsym(EVP_md5)
+	__mkcgo__dlsym(EVP_md5_sha1)
+	__mkcgo__dlsym(EVP_rc4)
+	__mkcgo__dlsym(EVP_ripemd160)
+	__mkcgo__dlsym(EVP_sha1)
+	__mkcgo__dlsym(EVP_sha224)
+	__mkcgo__dlsym(EVP_sha256)
+	__mkcgo__dlsym(EVP_sha384)
+	__mkcgo__dlsym(EVP_sha512)
+	__mkcgo__dlsym(OBJ_nid2sn)
+	__mkcgo__dlsym(OPENSSL_init)
+	__mkcgo__dlsym(OPENSSL_init_crypto)
+	__mkcgo__dlsym(OpenSSL_version)
+	__mkcgo__dlsym(PKCS5_PBKDF2_HMAC)
+	__mkcgo__dlsym(RAND_bytes)
 }
 
 void __mkcgoLoad_111(void* handle) {
-	_g_EVP_DigestSign = (int (*)(_EVP_MD_CTX_PTR, unsigned char*, size_t*, const unsigned char*, size_t))dlsym(handle, "EVP_DigestSign");
-	_g_EVP_DigestVerify = (int (*)(_EVP_MD_CTX_PTR, const unsigned char*, size_t, const unsigned char*, size_t))dlsym(handle, "EVP_DigestVerify");
-	_g_EVP_PKEY_get_raw_private_key = (int (*)(const _EVP_PKEY_PTR, unsigned char*, size_t*))dlsym(handle, "EVP_PKEY_get_raw_private_key");
-	_g_EVP_PKEY_get_raw_public_key = (int (*)(const _EVP_PKEY_PTR, unsigned char*, size_t*))dlsym(handle, "EVP_PKEY_get_raw_public_key");
-	_g_EVP_PKEY_new_raw_private_key = (_EVP_PKEY_PTR (*)(int, _ENGINE_PTR, const unsigned char*, size_t))dlsym(handle, "EVP_PKEY_new_raw_private_key");
-	_g_EVP_PKEY_new_raw_public_key = (_EVP_PKEY_PTR (*)(int, _ENGINE_PTR, const unsigned char*, size_t))dlsym(handle, "EVP_PKEY_new_raw_public_key");
-	_g_EVP_sha3_224 = (const _EVP_MD_PTR (*)(void))dlsym(handle, "EVP_sha3_224");
-	_g_EVP_sha3_256 = (const _EVP_MD_PTR (*)(void))dlsym(handle, "EVP_sha3_256");
-	_g_EVP_sha3_384 = (const _EVP_MD_PTR (*)(void))dlsym(handle, "EVP_sha3_384");
-	_g_EVP_sha3_512 = (const _EVP_MD_PTR (*)(void))dlsym(handle, "EVP_sha3_512");
-	_g_EVP_sha512_224 = (const _EVP_MD_PTR (*)(void))dlsym(handle, "EVP_sha512_224");
-	_g_EVP_sha512_256 = (const _EVP_MD_PTR (*)(void))dlsym(handle, "EVP_sha512_256");
+	__mkcgo__dlsym(EVP_DigestSign)
+	__mkcgo__dlsym(EVP_DigestVerify)
+	__mkcgo__dlsym(EVP_PKEY_get_raw_private_key)
+	__mkcgo__dlsym(EVP_PKEY_get_raw_public_key)
+	__mkcgo__dlsym(EVP_PKEY_new_raw_private_key)
+	__mkcgo__dlsym(EVP_PKEY_new_raw_public_key)
+	__mkcgo__dlsym(EVP_sha3_224)
+	__mkcgo__dlsym(EVP_sha3_256)
+	__mkcgo__dlsym(EVP_sha3_384)
+	__mkcgo__dlsym(EVP_sha3_512)
+	__mkcgo__dlsym(EVP_sha512_224)
+	__mkcgo__dlsym(EVP_sha512_256)
 }
 
 void __mkcgoLoad_3(void* handle) {
-	_g_EC_POINT_set_affine_coordinates = (int (*)(const _EC_GROUP_PTR, _EC_POINT_PTR, const _BIGNUM_PTR, const _BIGNUM_PTR, _BN_CTX_PTR))dlsym(handle, "EC_POINT_set_affine_coordinates");
-	_g_ERR_get_error_all = (unsigned long (*)(const char**, int*, const char**, const char**, int*))dlsym(handle, "ERR_get_error_all");
-	_g_EVP_CIPHER_fetch = (_EVP_CIPHER_PTR (*)(_OSSL_LIB_CTX_PTR, const char*, const char*))dlsym(handle, "EVP_CIPHER_fetch");
-	_g_EVP_CIPHER_get0_name = (const char* (*)(const _EVP_CIPHER_PTR))dlsym(handle, "EVP_CIPHER_get0_name");
-	_g_EVP_CIPHER_get_block_size = (int (*)(const _EVP_CIPHER_PTR))dlsym(handle, "EVP_CIPHER_get_block_size");
-	_g_EVP_KDF_CTX_free = (void (*)(_EVP_KDF_CTX_PTR))dlsym(handle, "EVP_KDF_CTX_free");
-	_g_EVP_KDF_CTX_get_kdf_size = (size_t (*)(_EVP_KDF_CTX_PTR))dlsym(handle, "EVP_KDF_CTX_get_kdf_size");
-	_g_EVP_KDF_CTX_new = (_EVP_KDF_CTX_PTR (*)(_EVP_KDF_PTR))dlsym(handle, "EVP_KDF_CTX_new");
-	_g_EVP_KDF_CTX_set_params = (int (*)(_EVP_KDF_CTX_PTR, const _OSSL_PARAM_PTR))dlsym(handle, "EVP_KDF_CTX_set_params");
-	_g_EVP_KDF_derive = (int (*)(_EVP_KDF_CTX_PTR, unsigned char*, size_t, const _OSSL_PARAM_PTR))dlsym(handle, "EVP_KDF_derive");
-	_g_EVP_KDF_fetch = (_EVP_KDF_PTR (*)(_OSSL_LIB_CTX_PTR, const char*, const char*))dlsym(handle, "EVP_KDF_fetch");
-	_g_EVP_KDF_free = (void (*)(_EVP_KDF_PTR))dlsym(handle, "EVP_KDF_free");
-	_g_EVP_MAC_CTX_dup = (_EVP_MAC_CTX_PTR (*)(const _EVP_MAC_CTX_PTR))dlsym(handle, "EVP_MAC_CTX_dup");
-	_g_EVP_MAC_CTX_free = (void (*)(_EVP_MAC_CTX_PTR))dlsym(handle, "EVP_MAC_CTX_free");
-	_g_EVP_MAC_CTX_new = (_EVP_MAC_CTX_PTR (*)(_EVP_MAC_PTR))dlsym(handle, "EVP_MAC_CTX_new");
-	_g_EVP_MAC_CTX_set_params = (int (*)(_EVP_MAC_CTX_PTR, const _OSSL_PARAM_PTR))dlsym(handle, "EVP_MAC_CTX_set_params");
-	_g_EVP_MAC_fetch = (_EVP_MAC_PTR (*)(_OSSL_LIB_CTX_PTR, const char*, const char*))dlsym(handle, "EVP_MAC_fetch");
-	_g_EVP_MAC_final = (int (*)(_EVP_MAC_CTX_PTR, unsigned char*, size_t*, size_t))dlsym(handle, "EVP_MAC_final");
-	_g_EVP_MAC_init = (int (*)(_EVP_MAC_CTX_PTR, const unsigned char*, size_t, const _OSSL_PARAM_PTR))dlsym(handle, "EVP_MAC_init");
-	_g_EVP_MAC_update = (int (*)(_EVP_MAC_CTX_PTR, const unsigned char*, size_t))dlsym(handle, "EVP_MAC_update");
-	_g_EVP_MD_fetch = (_EVP_MD_PTR (*)(_OSSL_LIB_CTX_PTR, const char*, const char*))dlsym(handle, "EVP_MD_fetch");
-	_g_EVP_MD_free = (void (*)(_EVP_MD_PTR))dlsym(handle, "EVP_MD_free");
-	_g_EVP_MD_get0_name = (const char* (*)(const _EVP_MD_PTR))dlsym(handle, "EVP_MD_get0_name");
-	_g_EVP_MD_get0_provider = (const _OSSL_PROVIDER_PTR (*)(const _EVP_MD_PTR))dlsym(handle, "EVP_MD_get0_provider");
-	_g_EVP_MD_get_block_size = (int (*)(const _EVP_MD_PTR))dlsym(handle, "EVP_MD_get_block_size");
-	_g_EVP_MD_get_size = (int (*)(const _EVP_MD_PTR))dlsym(handle, "EVP_MD_get_size");
-	_g_EVP_MD_get_type = (int (*)(const _EVP_MD_PTR))dlsym(handle, "EVP_MD_get_type");
-	_g_EVP_PKEY_CTX_add1_hkdf_info = (int (*)(_EVP_PKEY_CTX_PTR, const unsigned char*, int))dlsym(handle, "EVP_PKEY_CTX_add1_hkdf_info");
-	_g_EVP_PKEY_CTX_new_from_pkey = (_EVP_PKEY_CTX_PTR (*)(_OSSL_LIB_CTX_PTR, _EVP_PKEY_PTR, const char*))dlsym(handle, "EVP_PKEY_CTX_new_from_pkey");
-	_g_EVP_PKEY_CTX_set0_rsa_oaep_label = (int (*)(_EVP_PKEY_CTX_PTR, void*, int))dlsym(handle, "EVP_PKEY_CTX_set0_rsa_oaep_label");
-	_g_EVP_PKEY_CTX_set1_hkdf_key = (int (*)(_EVP_PKEY_CTX_PTR, const unsigned char*, int))dlsym(handle, "EVP_PKEY_CTX_set1_hkdf_key");
-	_g_EVP_PKEY_CTX_set1_hkdf_salt = (int (*)(_EVP_PKEY_CTX_PTR, const unsigned char*, int))dlsym(handle, "EVP_PKEY_CTX_set1_hkdf_salt");
-	_g_EVP_PKEY_CTX_set_hkdf_md = (int (*)(_EVP_PKEY_CTX_PTR, const _EVP_MD_PTR))dlsym(handle, "EVP_PKEY_CTX_set_hkdf_md");
-	_g_EVP_PKEY_CTX_set_hkdf_mode = (int (*)(_EVP_PKEY_CTX_PTR, int))dlsym(handle, "EVP_PKEY_CTX_set_hkdf_mode");
-	_g_EVP_PKEY_Q_keygen = (_EVP_PKEY_PTR (*)(_OSSL_LIB_CTX_PTR, const char*, const char*))dlsym(handle, "EVP_PKEY_Q_keygen");
-	_g_EVP_PKEY_Q_keygen_EC = (_EVP_PKEY_PTR (*)(_OSSL_LIB_CTX_PTR, const char*, const char*, const char*))dlsym(handle, "EVP_PKEY_Q_keygen");
-	_g_EVP_PKEY_Q_keygen_RSA = (_EVP_PKEY_PTR (*)(_OSSL_LIB_CTX_PTR, const char*, const char*, size_t))dlsym(handle, "EVP_PKEY_Q_keygen");
-	_g_EVP_PKEY_fromdata = (int (*)(_EVP_PKEY_CTX_PTR, _EVP_PKEY_PTR*, int, _OSSL_PARAM_PTR))dlsym(handle, "EVP_PKEY_fromdata");
-	_g_EVP_PKEY_fromdata_init = (int (*)(_EVP_PKEY_CTX_PTR))dlsym(handle, "EVP_PKEY_fromdata_init");
-	_g_EVP_PKEY_get1_encoded_public_key = (size_t (*)(_EVP_PKEY_PTR, unsigned char**))dlsym(handle, "EVP_PKEY_get1_encoded_public_key");
-	_g_EVP_PKEY_get_bits = (int (*)(const _EVP_PKEY_PTR))dlsym(handle, "EVP_PKEY_get_bits");
-	_g_EVP_PKEY_get_bn_param = (int (*)(const _EVP_PKEY_PTR, const char*, _BIGNUM_PTR*))dlsym(handle, "EVP_PKEY_get_bn_param");
-	_g_EVP_PKEY_get_size = (int (*)(const _EVP_PKEY_PTR))dlsym(handle, "EVP_PKEY_get_size");
-	_g_EVP_PKEY_private_check = (int (*)(_EVP_PKEY_CTX_PTR))dlsym(handle, "EVP_PKEY_private_check");
-	_g_EVP_PKEY_public_check_quick = (int (*)(_EVP_PKEY_CTX_PTR))dlsym(handle, "EVP_PKEY_public_check_quick");
-	_g_EVP_PKEY_set1_encoded_public_key = (int (*)(_EVP_PKEY_PTR, const unsigned char*, size_t))dlsym(handle, "EVP_PKEY_set1_encoded_public_key");
-	_g_EVP_PKEY_up_ref = (int (*)(_EVP_PKEY_PTR))dlsym(handle, "EVP_PKEY_up_ref");
-	_g_EVP_SIGNATURE_fetch = (_EVP_SIGNATURE_PTR (*)(_OSSL_LIB_CTX_PTR, const char*, const char*))dlsym(handle, "EVP_SIGNATURE_fetch");
-	_g_EVP_SIGNATURE_free = (void (*)(_EVP_SIGNATURE_PTR))dlsym(handle, "EVP_SIGNATURE_free");
-	_g_EVP_default_properties_enable_fips = (int (*)(_OSSL_LIB_CTX_PTR, int))dlsym(handle, "EVP_default_properties_enable_fips");
-	_g_EVP_default_properties_is_fips_enabled = (int (*)(_OSSL_LIB_CTX_PTR))dlsym(handle, "EVP_default_properties_is_fips_enabled");
-	_g_OSSL_PARAM_BLD_free = (void (*)(_OSSL_PARAM_BLD_PTR))dlsym(handle, "OSSL_PARAM_BLD_free");
-	_g_OSSL_PARAM_BLD_new = (_OSSL_PARAM_BLD_PTR (*)(void))dlsym(handle, "OSSL_PARAM_BLD_new");
-	_g_OSSL_PARAM_BLD_push_BN = (int (*)(_OSSL_PARAM_BLD_PTR, const char*, const _BIGNUM_PTR))dlsym(handle, "OSSL_PARAM_BLD_push_BN");
-	_g_OSSL_PARAM_BLD_push_int32 = (int (*)(_OSSL_PARAM_BLD_PTR, const char*, int32_t))dlsym(handle, "OSSL_PARAM_BLD_push_int32");
-	_g_OSSL_PARAM_BLD_push_octet_string = (int (*)(_OSSL_PARAM_BLD_PTR, const char*, const void*, size_t))dlsym(handle, "OSSL_PARAM_BLD_push_octet_string");
-	_g_OSSL_PARAM_BLD_push_utf8_string = (int (*)(_OSSL_PARAM_BLD_PTR, const char*, const char*, size_t))dlsym(handle, "OSSL_PARAM_BLD_push_utf8_string");
-	_g_OSSL_PARAM_BLD_to_param = (_OSSL_PARAM_PTR (*)(_OSSL_PARAM_BLD_PTR))dlsym(handle, "OSSL_PARAM_BLD_to_param");
-	_g_OSSL_PARAM_free = (void (*)(_OSSL_PARAM_PTR))dlsym(handle, "OSSL_PARAM_free");
-	_g_OSSL_PROVIDER_available = (int (*)(_OSSL_LIB_CTX_PTR, const char*))dlsym(handle, "OSSL_PROVIDER_available");
-	_g_OSSL_PROVIDER_get0_name = (const char* (*)(const _OSSL_PROVIDER_PTR))dlsym(handle, "OSSL_PROVIDER_get0_name");
-	_g_OSSL_PROVIDER_try_load = (_OSSL_PROVIDER_PTR (*)(_OSSL_LIB_CTX_PTR, const char*, int))dlsym(handle, "OSSL_PROVIDER_try_load");
+	__mkcgo__dlsym(EC_POINT_set_affine_coordinates)
+	__mkcgo__dlsym(ERR_get_error_all)
+	__mkcgo__dlsym(EVP_CIPHER_fetch)
+	__mkcgo__dlsym(EVP_CIPHER_get0_name)
+	__mkcgo__dlsym(EVP_CIPHER_get_block_size)
+	__mkcgo__dlsym(EVP_KDF_CTX_free)
+	__mkcgo__dlsym(EVP_KDF_CTX_get_kdf_size)
+	__mkcgo__dlsym(EVP_KDF_CTX_new)
+	__mkcgo__dlsym(EVP_KDF_CTX_set_params)
+	__mkcgo__dlsym(EVP_KDF_derive)
+	__mkcgo__dlsym(EVP_KDF_fetch)
+	__mkcgo__dlsym(EVP_KDF_free)
+	__mkcgo__dlsym(EVP_MAC_CTX_dup)
+	__mkcgo__dlsym(EVP_MAC_CTX_free)
+	__mkcgo__dlsym(EVP_MAC_CTX_new)
+	__mkcgo__dlsym(EVP_MAC_CTX_set_params)
+	__mkcgo__dlsym(EVP_MAC_fetch)
+	__mkcgo__dlsym(EVP_MAC_final)
+	__mkcgo__dlsym(EVP_MAC_init)
+	__mkcgo__dlsym(EVP_MAC_update)
+	__mkcgo__dlsym(EVP_MD_fetch)
+	__mkcgo__dlsym(EVP_MD_free)
+	__mkcgo__dlsym(EVP_MD_get0_name)
+	__mkcgo__dlsym(EVP_MD_get0_provider)
+	__mkcgo__dlsym(EVP_MD_get_block_size)
+	__mkcgo__dlsym(EVP_MD_get_size)
+	__mkcgo__dlsym(EVP_MD_get_type)
+	__mkcgo__dlsym(EVP_PKEY_CTX_add1_hkdf_info)
+	__mkcgo__dlsym(EVP_PKEY_CTX_new_from_pkey)
+	__mkcgo__dlsym(EVP_PKEY_CTX_set0_rsa_oaep_label)
+	__mkcgo__dlsym(EVP_PKEY_CTX_set1_hkdf_key)
+	__mkcgo__dlsym(EVP_PKEY_CTX_set1_hkdf_salt)
+	__mkcgo__dlsym(EVP_PKEY_CTX_set_hkdf_md)
+	__mkcgo__dlsym(EVP_PKEY_CTX_set_hkdf_mode)
+	__mkcgo__dlsym(EVP_PKEY_Q_keygen)
+	__mkcgo__dlsym2(EVP_PKEY_Q_keygen_EC, EVP_PKEY_Q_keygen)
+	__mkcgo__dlsym2(EVP_PKEY_Q_keygen_RSA, EVP_PKEY_Q_keygen)
+	__mkcgo__dlsym(EVP_PKEY_fromdata)
+	__mkcgo__dlsym(EVP_PKEY_fromdata_init)
+	__mkcgo__dlsym(EVP_PKEY_get1_encoded_public_key)
+	__mkcgo__dlsym(EVP_PKEY_get_bits)
+	__mkcgo__dlsym(EVP_PKEY_get_bn_param)
+	__mkcgo__dlsym(EVP_PKEY_get_size)
+	__mkcgo__dlsym(EVP_PKEY_private_check)
+	__mkcgo__dlsym(EVP_PKEY_public_check_quick)
+	__mkcgo__dlsym(EVP_PKEY_set1_encoded_public_key)
+	__mkcgo__dlsym(EVP_PKEY_up_ref)
+	__mkcgo__dlsym(EVP_SIGNATURE_fetch)
+	__mkcgo__dlsym(EVP_SIGNATURE_free)
+	__mkcgo__dlsym(EVP_default_properties_enable_fips)
+	__mkcgo__dlsym(EVP_default_properties_is_fips_enabled)
+	__mkcgo__dlsym(OSSL_PARAM_BLD_free)
+	__mkcgo__dlsym(OSSL_PARAM_BLD_new)
+	__mkcgo__dlsym(OSSL_PARAM_BLD_push_BN)
+	__mkcgo__dlsym(OSSL_PARAM_BLD_push_int32)
+	__mkcgo__dlsym(OSSL_PARAM_BLD_push_octet_string)
+	__mkcgo__dlsym(OSSL_PARAM_BLD_push_utf8_string)
+	__mkcgo__dlsym(OSSL_PARAM_BLD_to_param)
+	__mkcgo__dlsym(OSSL_PARAM_free)
+	__mkcgo__dlsym(OSSL_PROVIDER_available)
+	__mkcgo__dlsym(OSSL_PROVIDER_get0_name)
+	__mkcgo__dlsym(OSSL_PROVIDER_try_load)
 }
 
 void __mkcgoLoad_legacy_1(void* handle) {
-	_g_DSA_free = (void (*)(_DSA_PTR))dlsym(handle, "DSA_free");
-	_g_DSA_generate_key = (int (*)(_DSA_PTR))dlsym(handle, "DSA_generate_key");
-	_g_DSA_get0_key = (void (*)(const _DSA_PTR, const _BIGNUM_PTR*, const _BIGNUM_PTR*))dlsym(handle, "DSA_get0_key");
-	_g_DSA_get0_pqg = (void (*)(const _DSA_PTR, const _BIGNUM_PTR*, const _BIGNUM_PTR*, const _BIGNUM_PTR*))dlsym(handle, "DSA_get0_pqg");
-	_g_DSA_new = (_DSA_PTR (*)(void))dlsym(handle, "DSA_new");
-	_g_DSA_set0_key = (int (*)(_DSA_PTR, _BIGNUM_PTR, _BIGNUM_PTR))dlsym(handle, "DSA_set0_key");
-	_g_DSA_set0_pqg = (int (*)(_DSA_PTR, _BIGNUM_PTR, _BIGNUM_PTR, _BIGNUM_PTR))dlsym(handle, "DSA_set0_pqg");
-	_g_EC_KEY_check_key = (int (*)(const _EC_KEY_PTR))dlsym(handle, "EC_KEY_check_key");
-	_g_EC_KEY_free = (void (*)(_EC_KEY_PTR))dlsym(handle, "EC_KEY_free");
-	_g_EC_KEY_get0_group = (const _EC_GROUP_PTR (*)(const _EC_KEY_PTR))dlsym(handle, "EC_KEY_get0_group");
-	_g_EC_KEY_get0_private_key = (const _BIGNUM_PTR (*)(const _EC_KEY_PTR))dlsym(handle, "EC_KEY_get0_private_key");
-	_g_EC_KEY_get0_public_key = (const _EC_POINT_PTR (*)(const _EC_KEY_PTR))dlsym(handle, "EC_KEY_get0_public_key");
-	_g_EC_KEY_new_by_curve_name = (_EC_KEY_PTR (*)(int))dlsym(handle, "EC_KEY_new_by_curve_name");
-	_g_EC_KEY_set_private_key = (int (*)(_EC_KEY_PTR, const _BIGNUM_PTR))dlsym(handle, "EC_KEY_set_private_key");
-	_g_EC_KEY_set_public_key = (int (*)(_EC_KEY_PTR, const _EC_POINT_PTR))dlsym(handle, "EC_KEY_set_public_key");
-	_g_EC_KEY_set_public_key_affine_coordinates = (int (*)(_EC_KEY_PTR, _BIGNUM_PTR, _BIGNUM_PTR))dlsym(handle, "EC_KEY_set_public_key_affine_coordinates");
-	_g_EC_POINT_get_affine_coordinates_GFp = (int (*)(const _EC_GROUP_PTR, const _EC_POINT_PTR, _BIGNUM_PTR, _BIGNUM_PTR, _BN_CTX_PTR))dlsym(handle, "EC_POINT_get_affine_coordinates_GFp");
-	_g_ERR_get_error_line = (unsigned long (*)(const char**, int*))dlsym(handle, "ERR_get_error_line");
-	_g_EVP_CIPHER_block_size = (int (*)(const _EVP_CIPHER_PTR))dlsym(handle, "EVP_CIPHER_block_size");
-	_g_EVP_MD_block_size = (int (*)(const _EVP_MD_PTR))dlsym(handle, "EVP_MD_block_size");
-	_g_EVP_MD_size = (int (*)(const _EVP_MD_PTR))dlsym(handle, "EVP_MD_size");
-	_g_EVP_PKEY_assign = (int (*)(_EVP_PKEY_PTR, int, void*))dlsym(handle, "EVP_PKEY_assign");
-	_g_EVP_PKEY_bits = (int (*)(const _EVP_PKEY_PTR))dlsym(handle, "EVP_PKEY_bits");
-	_g_EVP_PKEY_get0_DSA = (_DSA_PTR (*)(_EVP_PKEY_PTR))dlsym(handle, "EVP_PKEY_get0_DSA");
-	_g_EVP_PKEY_get0_EC_KEY = (_EC_KEY_PTR (*)(_EVP_PKEY_PTR))dlsym(handle, "EVP_PKEY_get0_EC_KEY");
-	_g_EVP_PKEY_get1_RSA = (_RSA_PTR (*)(_EVP_PKEY_PTR))dlsym(handle, "EVP_PKEY_get1_RSA");
-	_g_EVP_PKEY_set1_EC_KEY = (int (*)(_EVP_PKEY_PTR, _EC_KEY_PTR))dlsym(handle, "EVP_PKEY_set1_EC_KEY");
-	_g_EVP_PKEY_size = (int (*)(const _EVP_PKEY_PTR))dlsym(handle, "EVP_PKEY_size");
-	_g_FIPS_mode = (int (*)(void))dlsym(handle, "FIPS_mode");
-	_g_FIPS_mode_set = (int (*)(int))dlsym(handle, "FIPS_mode_set");
-	_g_HMAC_CTX_copy = (int (*)(_HMAC_CTX_PTR, _HMAC_CTX_PTR))dlsym(handle, "HMAC_CTX_copy");
-	_g_HMAC_CTX_free = (void (*)(_HMAC_CTX_PTR))dlsym(handle, "HMAC_CTX_free");
-	_g_HMAC_CTX_new = (_HMAC_CTX_PTR (*)(void))dlsym(handle, "HMAC_CTX_new");
-	_g_HMAC_Final = (int (*)(_HMAC_CTX_PTR, unsigned char*, unsigned int*))dlsym(handle, "HMAC_Final");
-	_g_HMAC_Init_ex = (int (*)(_HMAC_CTX_PTR, const void*, int, const _EVP_MD_PTR, _ENGINE_PTR))dlsym(handle, "HMAC_Init_ex");
-	_g_HMAC_Update = (int (*)(_HMAC_CTX_PTR, const unsigned char*, size_t))dlsym(handle, "HMAC_Update");
-	_g_RSA_free = (void (*)(_RSA_PTR))dlsym(handle, "RSA_free");
-	_g_RSA_get0_crt_params = (void (*)(const _RSA_PTR, const _BIGNUM_PTR*, const _BIGNUM_PTR*, const _BIGNUM_PTR*))dlsym(handle, "RSA_get0_crt_params");
-	_g_RSA_get0_factors = (void (*)(const _RSA_PTR, const _BIGNUM_PTR*, const _BIGNUM_PTR*))dlsym(handle, "RSA_get0_factors");
-	_g_RSA_get0_key = (void (*)(const _RSA_PTR, const _BIGNUM_PTR*, const _BIGNUM_PTR*, const _BIGNUM_PTR*))dlsym(handle, "RSA_get0_key");
-	_g_RSA_new = (_RSA_PTR (*)(void))dlsym(handle, "RSA_new");
-	_g_RSA_set0_crt_params = (int (*)(_RSA_PTR, _BIGNUM_PTR, _BIGNUM_PTR, _BIGNUM_PTR))dlsym(handle, "RSA_set0_crt_params");
-	_g_RSA_set0_factors = (int (*)(_RSA_PTR, _BIGNUM_PTR, _BIGNUM_PTR))dlsym(handle, "RSA_set0_factors");
-	_g_RSA_set0_key = (int (*)(_RSA_PTR, _BIGNUM_PTR, _BIGNUM_PTR, _BIGNUM_PTR))dlsym(handle, "RSA_set0_key");
+	__mkcgo__dlsym(DSA_free)
+	__mkcgo__dlsym(DSA_generate_key)
+	__mkcgo__dlsym(DSA_get0_key)
+	__mkcgo__dlsym(DSA_get0_pqg)
+	__mkcgo__dlsym(DSA_new)
+	__mkcgo__dlsym(DSA_set0_key)
+	__mkcgo__dlsym(DSA_set0_pqg)
+	__mkcgo__dlsym(EC_KEY_check_key)
+	__mkcgo__dlsym(EC_KEY_free)
+	__mkcgo__dlsym(EC_KEY_get0_group)
+	__mkcgo__dlsym(EC_KEY_get0_private_key)
+	__mkcgo__dlsym(EC_KEY_get0_public_key)
+	__mkcgo__dlsym(EC_KEY_new_by_curve_name)
+	__mkcgo__dlsym(EC_KEY_set_private_key)
+	__mkcgo__dlsym(EC_KEY_set_public_key)
+	__mkcgo__dlsym(EC_KEY_set_public_key_affine_coordinates)
+	__mkcgo__dlsym(EC_POINT_get_affine_coordinates_GFp)
+	__mkcgo__dlsym(ERR_get_error_line)
+	__mkcgo__dlsym(EVP_CIPHER_block_size)
+	__mkcgo__dlsym(EVP_MD_block_size)
+	__mkcgo__dlsym(EVP_MD_size)
+	__mkcgo__dlsym(EVP_PKEY_assign)
+	__mkcgo__dlsym(EVP_PKEY_bits)
+	__mkcgo__dlsym(EVP_PKEY_get0_DSA)
+	__mkcgo__dlsym(EVP_PKEY_get0_EC_KEY)
+	__mkcgo__dlsym(EVP_PKEY_get1_RSA)
+	__mkcgo__dlsym(EVP_PKEY_set1_EC_KEY)
+	__mkcgo__dlsym(EVP_PKEY_size)
+	__mkcgo__dlsym(FIPS_mode)
+	__mkcgo__dlsym(FIPS_mode_set)
+	__mkcgo__dlsym(HMAC_CTX_copy)
+	__mkcgo__dlsym(HMAC_CTX_free)
+	__mkcgo__dlsym(HMAC_CTX_new)
+	__mkcgo__dlsym(HMAC_Final)
+	__mkcgo__dlsym(HMAC_Init_ex)
+	__mkcgo__dlsym(HMAC_Update)
+	__mkcgo__dlsym(RSA_free)
+	__mkcgo__dlsym(RSA_get0_crt_params)
+	__mkcgo__dlsym(RSA_get0_factors)
+	__mkcgo__dlsym(RSA_get0_key)
+	__mkcgo__dlsym(RSA_new)
+	__mkcgo__dlsym(RSA_set0_crt_params)
+	__mkcgo__dlsym(RSA_set0_factors)
+	__mkcgo__dlsym(RSA_set0_key)
 }
 
 _BIGNUM_PTR BN_bin2bn(const unsigned char* _arg0, int _arg1, _BIGNUM_PTR _arg2) {

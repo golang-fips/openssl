@@ -99,6 +99,7 @@ func (src *source) generateC(w io.Writer) {
 	fmt.Fprintf(w, "#include <stddef.h>\n")
 	fmt.Fprintf(w, "#include <stdlib.h>\n")
 	fmt.Fprintf(w, "#include <stdint.h>\n")
+	fmt.Fprintf(w, "#include <stdio.h>\n")
 	fmt.Fprintf(w, "\n")
 
 	// Platform-specific includes.
@@ -118,6 +119,15 @@ func (src *source) generateC(w io.Writer) {
 	}
 	fmt.Fprintf(w, "\n")
 
+	fmt.Fprintf(w, "#define __mkcgo__dlsym(name) __mkcgo__dlsym2(name, name)\n\n")
+
+	fmt.Fprintf(w, "#define __mkcgo__dlsym2(cname, importname)								\\\n")
+	fmt.Fprintf(w, "\t_g_##cname = (typeof(_g_##cname))dlsym(handle, #cname);				\\\n")
+	fmt.Fprintf(w, "\tif (_g_##cname == NULL) {												\\\n")
+	fmt.Fprintf(w, "\t\tfprintf(stderr, \"Cannot get required symbol \" #cname \"\\n\");	\\\n")
+	fmt.Fprintf(w, "\t\tabort();															\\\n")
+	fmt.Fprintf(w, "\t}\n\n")
+
 	// Loader functions for each tag.
 	for _, tag := range src.tags() {
 		fmt.Fprintf(w, "void __mkcgoLoad_%s(void* handle) {\n", tag)
@@ -125,7 +135,11 @@ func (src *source) generateC(w io.Writer) {
 			if fn.variadic || fn.tag != tag {
 				continue
 			}
-			fmt.Fprintf(w, "\t_g_%s = (%s (*)(%s))dlsym(handle, %q);\n", fn.cName, fn.rets.typ, fn.toCArgs(false, true), fn.importName)
+			if fn.cName == fn.importName {
+				fmt.Fprintf(w, "\t__mkcgo__dlsym(%s)\n", fn.cName)
+			} else {
+				fmt.Fprintf(w, "\t__mkcgo__dlsym2(%s, %s)\n", fn.cName, fn.importName)
+			}
 		}
 		fmt.Fprintf(w, "}\n\n")
 	}
