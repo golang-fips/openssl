@@ -234,7 +234,7 @@ int (*_g_RSA_set0_key)(_RSA_PTR, _BIGNUM_PTR, _BIGNUM_PTR, _BIGNUM_PTR);
 #define __mkcgo__dlsym(name) __mkcgo__dlsym2(name, name)
 
 #define __mkcgo__dlsym2(cname, importname)								\
-	_g_##cname = (typeof(_g_##cname))dlsym(handle, #cname);				\
+	_g_##cname = (typeof(_g_##cname))dlsym(handle, #importname);			\
 	if (_g_##cname == NULL) {												\
 		fprintf(stderr, "Cannot get required symbol " #cname "\n");	\
 		abort();															\

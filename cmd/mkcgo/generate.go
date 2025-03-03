@@ -122,7 +122,7 @@ func (src *source) generateC(w io.Writer) {
 	fmt.Fprintf(w, "#define __mkcgo__dlsym(name) __mkcgo__dlsym2(name, name)\n\n")
 
 	fmt.Fprintf(w, "#define __mkcgo__dlsym2(cname, importname)								\\\n")
-	fmt.Fprintf(w, "\t_g_##cname = (typeof(_g_##cname))dlsym(handle, #cname);				\\\n")
+	fmt.Fprintf(w, "\t_g_##cname = (typeof(_g_##cname))dlsym(handle, #importname);			\\\n")
 	fmt.Fprintf(w, "\tif (_g_##cname == NULL) {												\\\n")
 	fmt.Fprintf(w, "\t\tfprintf(stderr, \"Cannot get required symbol \" #cname \"\\n\");	\\\n")
 	fmt.Fprintf(w, "\t\tabort();															\\\n")
