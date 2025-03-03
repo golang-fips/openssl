@@ -109,6 +109,12 @@ func (c *hkdf1) Read(p []byte) (int, error) {
 	return n, nil
 }
 
+// maxHKDFHashLength is maximum output length of any hash used with HKDF
+const maxHKDFHashLength = 64
+
+// hkdfAllZerosSalt is a preallocated buffer of zeros used in ExtractHKDF()
+var hkdfAllZerosSalt = make([]byte, maxHKDFHashLength)
+
 func ExtractHKDF(h func() hash.Hash, secret, salt []byte) ([]byte, error) {
 	if !SupportsHKDF() {
 		return nil, errUnsupportedVersion()
@@ -117,6 +123,18 @@ func ExtractHKDF(h func() hash.Hash, secret, salt []byte) ([]byte, error) {
 	md, err := hashFuncToMD(h)
 	if err != nil {
 		return nil, err
+	}
+
+	// If calling code specifies nil salt, replace it with a buffer of hashLen
+	// zeros, as specified in RFC 5896 and as OpenSSL EVP_KDF-HKDF documentation
+	// instructs. Take a slice of a preallocated buffer to avoid allocating new
+	// buffer per call.
+	if salt == nil {
+		hlen := h().Size()
+		if hlen > maxHKDFHashLength {
+			return nil, errors.New("nil salt is not supported for the specified hash algorithm")
+		}
+		salt = hkdfAllZerosSalt[:hlen]
 	}
 
 	switch vMajor {
