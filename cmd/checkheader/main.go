@@ -201,7 +201,7 @@ func tryConvertDefineFunc(w io.Writer, l string, i int) bool {
 	}
 	if strings.Contains(l, "[[mkcgo::variadic(") {
 		// Variadic functions are not supported. There is not enough
-		// information to create use it in writeDefineFunc.
+		// information to create it in writeDefineFunc.
 		return false
 	}
 	i1 := strings.LastIndex(l, "*/ ")
