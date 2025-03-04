@@ -192,10 +192,13 @@ func newFn(s string, opts fnAttributes) (*Func, error) {
 		return nil, errors.New("could not extract function name from \"" + s + "\"")
 	}
 	name, typ := trim(prefix[nameIdx+1:]), trim(prefix[:nameIdx])
+	// Remove leading asterisks from the name and add them to the type.
 	for strings.HasPrefix(name, "*") {
 		name = name[1:]
 		typ += "*"
 	}
+	// Remove all spaces between the asterisks and the type.
+	typ = strings.ReplaceAll(typ, " *", "*")
 	fn.CName = trim(name)
 	if opts.importName != "" {
 		fn.ImportName = opts.importName

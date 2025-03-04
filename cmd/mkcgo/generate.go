@@ -171,9 +171,8 @@ func generateC(src *mkcgo.Source, w io.Writer) {
 // generateGoFn generates Go function f.
 func generateGoFn(fn *mkcgo.Func, w io.Writer) {
 	fmt.Fprintf(w, "func %s(%s)", fn.GoName, fnToGoParams(fn))
-	ret := retToGoParams(fn.Ret)
-	if len(ret) > 0 {
-		fmt.Fprintf(w, " %s ", ret)
+	if !retIsVoid(fn.Ret) {
+		fmt.Fprintf(w, " %s ", cTypeToGo(fn.Ret.Type, false))
 	}
 	fmt.Fprintf(w, "{\n")
 	fmt.Fprintf(w, "\t")
@@ -267,7 +266,7 @@ func cTypeToGo(t string, cgo bool) string {
 	if t == "void" {
 		return ""
 	}
-	if strings.HasSuffix(t, "void*") {
+	if strings.HasPrefix(t, "void*") {
 		return "unsafe.Pointer"
 	}
 	if strings.HasSuffix(t, "*") {
@@ -319,32 +318,8 @@ func paramToC(i int, p *mkcgo.Param, addType bool) string {
 	return s
 }
 
-// retToGoParams returns source code of return parameters.
-func retToGoParams(r *mkcgo.Return) string {
-	if retIsVoid(r) {
-		return ""
-	}
-	return cTypeToGo(r.Type, false)
-}
-
 func retIsVoid(r *mkcgo.Return) bool {
 	return r.Type == "void"
-}
-
-// retToGoSource returns Go source code that sets return parameters.
-func retToGoSource(r *mkcgo.Return) string {
-	if retIsVoid(r) {
-		return ""
-	}
-	goType := cTypeToGo(r.Type, false)
-	s := ""
-	switch {
-	case goType[0] == '*':
-		s = fmt.Sprintf("%s = (%s)(unsafe.Pointer(r0))", r.Name, goType)
-	default:
-		s = fmt.Sprintf("%s = %s(r0)", r.Name, goType)
-	}
-	return s
 }
 
 // fnToGoParams returns source code for function f parameters.
