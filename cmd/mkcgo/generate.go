@@ -18,6 +18,7 @@ func generateGo(src *mkcgo.Source, w io.Writer) {
 
 	// This block outputs C header includes and forward declarations for loader functions.
 	fmt.Fprintf(w, "/*\n")
+	fmt.Fprintf(w, "#cgo CFLAGS: -Wno-attributes\n")
 	if *includeHeader != "" {
 		fmt.Fprintf(w, "#include \"%s\"\n", *includeHeader)
 	}
@@ -129,21 +130,20 @@ func generateC(src *mkcgo.Source, w io.Writer) {
 	fmt.Fprintf(w, "#endif\n\n")
 
 	// Function pointer declarations.
+	fmt.Fprintf(w, "#define __mkcgo__funcptr(name) typeof(name) *_g_##name;\n\n")
 	for _, fn := range src.Funcs {
 		if fn.VariadicInst {
 			continue
 		}
-		fmt.Fprintf(w, "%s (*_g_%s)(%s);\n", fn.Ret.Type, fn.CName, fnToCArgs(fn, false, true))
+		fmt.Fprintf(w, "__mkcgo__funcptr(%s);\n", fn.ImportName)
 	}
 	fmt.Fprintf(w, "\n")
 
-	fmt.Fprintf(w, "#define __mkcgo__dlsym(name) __mkcgo__dlsym2(name, name)\n\n")
-
-	fmt.Fprintf(w, "#define __mkcgo__dlsym2(cname, importname)								\\\n")
-	fmt.Fprintf(w, "\t_g_##cname = (typeof(_g_##cname))dlsym(handle, #importname);			\\\n")
-	fmt.Fprintf(w, "\tif (_g_##cname == NULL) {												\\\n")
-	fmt.Fprintf(w, "\t\tfprintf(stderr, \"Cannot get required symbol \" #cname \"\\n\");	\\\n")
-	fmt.Fprintf(w, "\t\tabort();															\\\n")
+	fmt.Fprintf(w, "#define __mkcgo__dlsym(name) \\\n")
+	fmt.Fprintf(w, "\t_g_##name = (typeof(_g_##name))dlsym(handle, #name); \\\n")
+	fmt.Fprintf(w, "\tif (_g_##name == NULL) { \\\n")
+	fmt.Fprintf(w, "\t\tfprintf(stderr, \"Cannot get required symbol \" #name \"\\n\"); \\\n")
+	fmt.Fprintf(w, "\t\tabort(); \\\n")
 	fmt.Fprintf(w, "\t}\n\n")
 
 	// Loader functions for each tag.
@@ -153,11 +153,7 @@ func generateC(src *mkcgo.Source, w io.Writer) {
 			if fn.VariadicInst || fn.Tag != tag {
 				continue
 			}
-			if fn.CName == fn.ImportName {
-				fmt.Fprintf(w, "\t__mkcgo__dlsym(%s)\n", fn.CName)
-			} else {
-				fmt.Fprintf(w, "\t__mkcgo__dlsym2(%s, %s)\n", fn.CName, fn.ImportName)
-			}
+			fmt.Fprintf(w, "\t__mkcgo__dlsym(%s)\n", fn.ImportName)
 		}
 		fmt.Fprintf(w, "}\n\n")
 	}
@@ -196,11 +192,11 @@ func generateGoFn(fn *mkcgo.Func, w io.Writer) {
 }
 
 func generateCFn(fn *mkcgo.Func, w io.Writer) {
-	fmt.Fprintf(w, "%s %s(%s) {\n\t", fn.Ret.Type, fn.CName, fnToCArgs(fn, true, true))
+	fmt.Fprintf(w, "%s %s(%s) {\n\t", fn.Ret.Type, fn.CName, fnToCArgs(fn, true))
 	if fn.Ret.Type != "void" {
 		fmt.Fprintf(w, "return ")
 	}
-	fmt.Fprintf(w, "_g_%s(%s);\n", fn.ImportName, fnToCArgs(fn, true, false))
+	fmt.Fprintf(w, "_g_%s(%s);\n", fn.ImportName, fnToCArgs(fn, false))
 	fmt.Fprintf(w, "}\n\n")
 }
 
@@ -336,12 +332,12 @@ func cTypeToGo(t string) string {
 }
 
 // paramToC returns C source code of parameter p.
-func paramToC(i int, p *mkcgo.Param, paramNames, paramTypes bool) string {
+func paramToC(i int, p *mkcgo.Param, addType bool) string {
 	var s string
-	if paramTypes {
+	if addType {
 		s += p.Type
 	}
-	if paramNames && p.Type != "void" && p.Type != "..." {
+	if p.Type != "void" && p.Type != "..." {
 		if len(s) > 0 {
 			s += " "
 		}
@@ -380,45 +376,38 @@ func retToGoSource(r *mkcgo.Return) string {
 
 // fnToGoParams returns source code for function f parameters.
 func fnToGoParams(fn *mkcgo.Func) string {
-	return join(fn.Params, func(p *mkcgo.Param) string {
+	return join(fn.Params, func(_ int, p *mkcgo.Param) string {
 		return p.Name + " " + cTypeToGo(p.Type)
 	}, ", ")
 }
 
 // argList returns source code for C parameters for function f.
 func fnToGoArgs(fn *mkcgo.Func) string {
-	a := make([]string, 0, len(fn.Params))
-	for _, p := range fn.Params {
-		a = append(a, paramToGo(p))
-	}
-	a = slices.DeleteFunc(a, func(s string) bool {
-		return s == ""
-	})
-	return strings.Join(a, ", ")
+	return join(fn.Params, func(_ int, p *mkcgo.Param) string {
+		return paramToGo(p)
+	}, ", ")
 }
 
 // fnToCArgs returns source code for C parameters for function f.
-func fnToCArgs(fn *mkcgo.Func, paramNames, paramTypes bool) string {
-	a := make([]string, 0, len(fn.Params))
-	for i, p := range fn.Params {
-		a = append(a, paramToC(i, p, paramNames, paramTypes))
-	}
-	a = slices.DeleteFunc(a, func(s string) bool {
-		return s == ""
-	})
-	return strings.Join(a, ", ")
+func fnToCArgs(fn *mkcgo.Func, addType bool) string {
+	return join(fn.Params, func(i int, p *mkcgo.Param) string {
+		return paramToC(i, p, addType)
+	}, ", ")
 }
 
 // join concatenates parameters ps into a string with sep separator.
 // Each parameter is converted into string by applying fn to it
 // before conversion.
-func join(ps []*mkcgo.Param, fn func(*mkcgo.Param) string, sep string) string {
+func join(ps []*mkcgo.Param, fn func(int, *mkcgo.Param) string, sep string) string {
 	if len(ps) == 0 {
 		return ""
 	}
-	a := make([]string, 0, len(ps))
-	for _, p := range ps {
-		a = append(a, fn(p))
+	params := make([]string, 0, len(ps))
+	for i, p := range ps {
+		param := fn(i, p)
+		if param != "" {
+			params = append(params, param)
+		}
 	}
-	return strings.Join(a, sep)
+	return strings.Join(params, sep)
 }

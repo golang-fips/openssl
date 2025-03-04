@@ -3,6 +3,7 @@
 package openssl
 
 /*
+#cgo CFLAGS: -Wno-attributes
 #include "shims.h"
 void __mkcgoLoad_(void* handle);
 void __mkcgoLoad_111(void* handle);
