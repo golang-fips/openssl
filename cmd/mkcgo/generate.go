@@ -79,6 +79,9 @@ func generateGoAliases(funcs []*mkcgo.Func, w io.Writer) {
 			ctypes[typ] = struct{}{}
 		}
 		for _, p := range fn.Params {
+			if p.IsVariadic() {
+				continue
+			}
 			handleType(p.Type)
 		}
 		handleType(fn.Ret.Type)
@@ -185,9 +188,6 @@ func generateGoFn(fn *mkcgo.Func, w io.Writer) {
 }
 
 func generateCFn(fn *mkcgo.Func, w io.Writer) {
-	if fn.Variadic {
-		return
-	}
 	fmt.Fprintf(w, "%s %s(%s) {\n\t", fn.Ret.Type, fn.CName, fnToCArgs(fn, true, true))
 	if fn.Ret.Type != "void" {
 		fmt.Fprintf(w, "return ")
@@ -372,13 +372,21 @@ func retToGoSource(r *mkcgo.Return) string {
 
 // fnToGoParams returns source code for function f parameters.
 func fnToGoParams(fn *mkcgo.Func) string {
-	return join(fn.Params, func(p *mkcgo.Param) string { return p.Name + " " + cTypeToGo(p.Type) }, ", ")
+	return join(fn.Params, func(p *mkcgo.Param) string {
+		if p.IsVariadic() {
+			return ""
+		}
+		return p.Name + " " + cTypeToGo(p.Type)
+	}, ", ")
 }
 
 // argList returns source code for C parameters for function f.
 func fnToGoArgs(fn *mkcgo.Func) string {
 	a := make([]string, 0, len(fn.Params))
 	for _, p := range fn.Params {
+		if p.IsVariadic() {
+			continue
+		}
 		a = append(a, paramToGo(p))
 	}
 	a = slices.DeleteFunc(a, func(s string) bool {
@@ -391,6 +399,9 @@ func fnToGoArgs(fn *mkcgo.Func) string {
 func fnToCArgs(fn *mkcgo.Func, paramNames, paramTypes bool) string {
 	a := make([]string, 0, len(fn.Params))
 	for i, p := range fn.Params {
+		if p.IsVariadic() {
+			continue
+		}
 		a = append(a, paramToC(i, p, paramNames, paramTypes))
 	}
 	a = slices.DeleteFunc(a, func(s string) bool {

@@ -41,6 +41,10 @@ type Param struct {
 	Type string
 }
 
+func (p *Param) IsVariadic() bool {
+	return p.Type == "..."
+}
+
 // Return is a function return value.
 type Return struct {
 	Name string

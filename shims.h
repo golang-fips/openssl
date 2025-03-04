@@ -234,7 +234,7 @@ int EVP_PKEY_paramgen_init(_EVP_PKEY_CTX_PTR ctx);
 int EVP_PKEY_paramgen(_EVP_PKEY_CTX_PTR ctx, _EVP_PKEY_PTR *ppkey);
 int EVP_PKEY_keygen_init(_EVP_PKEY_CTX_PTR ctx);
 int EVP_PKEY_keygen(_EVP_PKEY_CTX_PTR ctx, _EVP_PKEY_PTR *ppkey);
-_EVP_PKEY_PTR EVP_PKEY_Q_keygen(_OSSL_LIB_CTX_PTR ctx, const char *propq, const char *type) __attribute__((tag("3"),variadic("EVP_PKEY_Q_keygen")));
+_EVP_PKEY_PTR EVP_PKEY_Q_keygen(_OSSL_LIB_CTX_PTR ctx, const char *propq, const char *type, ...) __attribute__((tag("3")));
 _EVP_PKEY_PTR EVP_PKEY_Q_keygen_RSA(_OSSL_LIB_CTX_PTR ctx, const char *propq, const char *type, size_t arg1) __attribute__((tag("3"),variadic("EVP_PKEY_Q_keygen")));
 _EVP_PKEY_PTR EVP_PKEY_Q_keygen_EC(_OSSL_LIB_CTX_PTR ctx, const char *propq, const char *type, const char *arg1) __attribute__((tag("3"),variadic("EVP_PKEY_Q_keygen")));
 void EVP_PKEY_CTX_free(_EVP_PKEY_CTX_PTR arg0);

@@ -172,16 +172,18 @@ func newTypeDef(line string) (*TypeDef, error) {
 
 // newFn parses string s and return created function Fn.
 func newFn(s string, opts fnAttributes) (*Func, error) {
-	f := &Func{
-		Ret: &Return{},
-	}
 	// function name and args
 	prefix, body, _, found := extractSection(s, "(", ")")
 	if !found || prefix == "" {
 		return nil, errors.New("could not extract function name and parameters from \"" + s + "\"")
 	}
+	fn := &Func{
+		Ret:      &Return{},
+		Variadic: opts.variadic,
+		Tag:      opts.tag,
+	}
 	var err error
-	f.Params, err = extractParams(body)
+	fn.Params, err = extractParams(body)
 	if err != nil {
 		return nil, err
 	}
@@ -194,19 +196,18 @@ func newFn(s string, opts fnAttributes) (*Func, error) {
 		name = name[1:]
 		typ += "*"
 	}
-	f.CName = trim(name)
+	fn.CName = trim(name)
 	if opts.importName != "" {
-		f.ImportName = opts.importName
+		fn.ImportName = opts.importName
 	} else {
-		f.ImportName = f.CName
+		fn.ImportName = fn.CName
 	}
-	f.GoName = "go_openssl_" + f.CName
-	f.Tag = opts.tag
-	f.Ret = &Return{
+	fn.GoName = "go_openssl_" + fn.CName
+	fn.Ret = &Return{
 		Type: trim(typ),
 		Name: "_r0",
 	}
-	return f, nil
+	return fn, nil
 }
 
 // trim returns s with leading and trailing spaces and tabs removed.

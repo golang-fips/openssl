@@ -121,8 +121,6 @@ int (*_g_EVP_PKEY_CTX_set1_hkdf_salt)(_EVP_PKEY_CTX_PTR, const unsigned char*, i
 int (*_g_EVP_PKEY_CTX_set_hkdf_md)(_EVP_PKEY_CTX_PTR, const _EVP_MD_PTR);
 int (*_g_EVP_PKEY_CTX_set_hkdf_mode)(_EVP_PKEY_CTX_PTR, int);
 _EVP_PKEY_PTR (*_g_EVP_PKEY_Q_keygen)(_OSSL_LIB_CTX_PTR, const char*, const char*);
-_EVP_PKEY_PTR (*_g_EVP_PKEY_Q_keygen_EC)(_OSSL_LIB_CTX_PTR, const char*, const char*, const char*);
-_EVP_PKEY_PTR (*_g_EVP_PKEY_Q_keygen_RSA)(_OSSL_LIB_CTX_PTR, const char*, const char*, size_t);
 int (*_g_EVP_PKEY_assign)(_EVP_PKEY_PTR, int, void*);
 int (*_g_EVP_PKEY_bits)(const _EVP_PKEY_PTR);
 int (*_g_EVP_PKEY_decrypt)(_EVP_PKEY_CTX_PTR, unsigned char*, size_t*, const unsigned char*, size_t);
@@ -393,8 +391,6 @@ void __mkcgoLoad_3(void* handle) {
 	__mkcgo__dlsym(EVP_PKEY_CTX_set_hkdf_md)
 	__mkcgo__dlsym(EVP_PKEY_CTX_set_hkdf_mode)
 	__mkcgo__dlsym(EVP_PKEY_Q_keygen)
-	__mkcgo__dlsym2(EVP_PKEY_Q_keygen_EC, EVP_PKEY_Q_keygen)
-	__mkcgo__dlsym2(EVP_PKEY_Q_keygen_RSA, EVP_PKEY_Q_keygen)
 	__mkcgo__dlsym(EVP_PKEY_fromdata)
 	__mkcgo__dlsym(EVP_PKEY_fromdata_init)
 	__mkcgo__dlsym(EVP_PKEY_get1_encoded_public_key)
