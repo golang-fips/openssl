@@ -1,14 +1,14 @@
 package main
 
 import (
-	"bufio"
 	"flag"
 	"fmt"
-	"io"
 	"log"
 	"os"
 	"os/exec"
 	"strings"
+
+	"github.com/golang-fips/openssl/v2/internal/mkcgo"
 )
 
 // checkheader is a static analyzer that detects incompatibilities between wrapper definitions and OpenSSL headers.
@@ -20,11 +20,11 @@ import (
 // - Lines are added in order of appearance.
 // - Blank lines are discarded.
 // - Comments are discarded unless they contain a C directive, i.e #include, #if or #endif. The directive in the comment is included in the output.
-// - Typedefs following the pattern "typedef void* GO_%name%_PTR" are translated into "#define %name% GO_%name%_PTR".
+// - Typedefs following the pattern "typedef void* _%name%_PTR" are translated into "#define %name% _%name%_PTR".
 // - Go constants are validated against their definition in the OpenSSL headers. Example:
 //   "const { _EVP_CTRL_GCM_SET_TAG = 0x11 }" => "_Static_assert(EVP_CTRL_GCM_SET_TAG == 0x11);"
 // - Function macros are validated against their definition in the OpenSSL headers. Example:
-//   "DEFINEFUNC(int, RAND_bytes, (unsigned char *a0, int a1), (a0, a1))" => "int(*__check_0)(unsigned char *, int) = RAND_bytes;"
+//   "int RAND_bytes(unsigned char *a0, int a1)" => "int(*__check_0)(unsigned char *, int) = RAND_bytes;"
 
 const description = `
 Example: A check operation:
@@ -100,170 +100,77 @@ func gccRun(program string) error {
 }
 
 func generate(header string) (string, error) {
-	f, err := os.Open(header)
+	src, err := mkcgo.Parse(header)
 	if err != nil {
 		return "", err
 	}
-	defer f.Close()
-	var b strings.Builder
-	sc := bufio.NewScanner(f)
-	var i int
-	var enum bool
-	for sc.Scan() {
-		l := strings.TrimSpace(sc.Text())
-		if enum {
-			if !strings.HasPrefix(l, ")") {
-				tryConvertGoConst(&b, l)
-			} else {
-				enum = false
-			}
+	w := &strings.Builder{}
+
+	for _, c := range src.Comments {
+		if strings.HasPrefix(c, "#") {
+			fmt.Fprintln(w, c)
+		}
+	}
+
+	for _, enum := range src.Enums {
+		if enum.Name == "_EVP_PKEY_OP_DERIVE" {
+			// This is defined differently in OpenSSL 3,
+			// but in our code it is only used in OpenSSL 1.
 			continue
 		}
-		if strings.HasPrefix(l, "const (") && !strings.HasSuffix(l, "//checkheader:ignore") {
-			enum = true
+		name := strings.TrimPrefix(enum.Name, "_")
+		fmt.Fprintf(w, "#ifdef %s\n", name)
+		fmt.Fprintf(w, "_Static_assert(%s == %s, \"%s\");\n", enum.Value, name, enum.Name)
+		fmt.Fprintln(w, "#endif")
+	}
+
+	for _, def := range src.TypeDefs {
+		name := strings.TrimPrefix(def.Name, "_")
+		name = strings.Replace(name, "_PTR", "*", 1)
+		fmt.Fprintf(w, "#define %s %s\n", def.Name, name)
+	}
+
+	for i, fn := range src.Funcs {
+		if fn.Variadic {
+			// Variadic functions are not supported, there is not enough
+			// information to check it.
 			continue
 		}
-		if tryConvertDirective(&b, l) {
-			continue
-		}
-		if tryConvertTypedef(&b, l) {
-			continue
-		}
-		if tryConvertDefineFunc(&b, l, i) {
-			i++
-		}
-	}
-	if err := sc.Err(); err != nil {
-		return "", err
-	}
-	return b.String(), nil
-}
-
-func tryConvertDirective(w io.Writer, l string) bool {
-	if strings.HasPrefix(l, "// #") {
-		fmt.Fprintln(w, l[len("// "):])
-		return true
-	}
-	return false
-}
-
-// tryConvertTypedef converts a typedef contained in the line l
-// into a #define pointing to the corresponding OpenSSL type.
-// Only void* typedefs starting with GO_ are converted.
-// If l does not contain a typedef it does nothing and returns false.
-func tryConvertTypedef(w io.Writer, l string) bool {
-	if !strings.HasPrefix(l, "typedef void* _") {
-		return false
-	}
-	// Replace custom opaque pointer typedef with the proper OpenSSL type
-	// so gcc does not complain about pointer mismatch.
-	i1 := strings.Index(l, "_")
-	i2 := strings.Index(l, "_PTR")
-	if i2 < 0 {
-		log.Println("unexpected line in typedef: " + l)
-		return false
-	}
-	name := l[i1+len("_") : i2]
-	fmt.Fprintf(w, "#define _%s_PTR %s*\n", name, name)
-	return true
-}
-
-// tryConvertGoConst adds a static check which verifies that
-// the const contained in the line l
-// matches the corresponding OpenSSL value.
-// Only const names starting with _ are converted.
-func tryConvertGoConst(w io.Writer, l string) {
-	if !strings.HasPrefix(l, "_") || strings.HasSuffix(l, "//checkheader:ignore") {
-		return
-	}
-	split := strings.Split(l, " ")
-	if len(split) < 2 {
-		log.Printf("unexpected enum definition in function line: %s\n", l)
-		return
-	}
-	name := split[0][len("_"):]
-	fmt.Fprintf(w, "#ifdef %s\n", name)
-	fmt.Fprintf(w, "_Static_assert(%s == %s, \"%s\");\n", name, split[len(split)-1], name)
-	fmt.Fprintln(w, "#endif")
-}
-
-// tryConvertDefineFunc adds a static check which verifies that
-// the function definition macro contained in the line l
-// matches the corresponding OpenSSL function signature.
-// If l does not contain a function definition macro
-// it does nothing and returns false.
-// i is used to create a unique name: if tryConvertDefineFunc returns true,
-// the same value of i must not be passed again in a future call.
-// The value of i should be generated by a counter.
-func tryConvertDefineFunc(w io.Writer, l string, i int) bool {
-	if !strings.HasPrefix(l, "/*[[mkcgo") {
-		return false
-	}
-	if strings.Contains(l, "[[mkcgo::variadic(") {
-		// Variadic functions are not supported. There is not enough
-		// information to create it in writeDefineFunc.
-		return false
-	}
-	i1 := strings.LastIndex(l, "*/ ")
-	i2 := strings.LastIndexByte(l, ')')
-	if i1 < 0 || i2 < 0 {
-		log.Println("unexpected argument list in function line: " + l)
-		return false
-	}
-	subs := l[i1+3 : i2+1]
-	writeCheck := func(ret, name, args string) {
-		fmt.Fprintf(w, "%s(*__check_%d)(%s) = %s;\n", ret, i, args, name)
-	}
-	writeDefineFunc := func(cond string) {
-		argsAndName, subs, ok := strings.Cut(subs, "(")
-		if !ok {
-			log.Printf("can't retrive return function name and return type in line: %s\n", l)
-			return
-		}
-		idx := strings.LastIndexByte(argsAndName, ' ')
-		if idx < 0 {
-			log.Printf("can't retrive return type in line: %s\n", l)
-			return
-		}
-		fnret := argsAndName[:idx]
-		fnname := argsAndName[idx+1:]
-		if fnname[0] == '*' {
-			fnret += "*"
-			fnname = fnname[1:]
-		}
-		// Hardcode version condition for some functions.
-		var versionCond string
-		switch fnname {
+		var specialCond, tagCond string
+		switch fn.CName {
 		// EVP_PKEY_size and EVP_PKEY_bits pkey parameter is const since OpenSSL 1.1.1.
 		case "EVP_PKEY_size", "EVP_PKEY_bits":
-			versionCond = "OPENSSL_VERSION_NUMBER >= 0x10101000L"
+			specialCond = "OPENSSL_VERSION_NUMBER >= 0x10101000L"
 		}
-		fnargs := strings.TrimRight(subs, ");")
-		if versionCond != "" {
-			fmt.Fprintf(w, "#if %s\n", versionCond)
+		switch fn.Tag {
+		case "legacy_1":
+			tagCond = "OPENSSL_VERSION_NUMBER < 0x30000000L"
+		case "111":
+			tagCond = "OPENSSL_VERSION_NUMBER >= 0x10101000L"
+		case "3":
+			tagCond = "OPENSSL_VERSION_NUMBER >= 0x30000000L"
+		case "":
+			// No tag, the function is available in all versions.
+		default:
+			panic("unexpected tag: " + fn.Tag)
 		}
-		if cond != "" {
-			fmt.Fprintf(w, "#if %s\n", cond)
+		if specialCond != "" {
+			fmt.Fprintf(w, "#if %s\n", specialCond)
 		}
-		writeCheck(fnret, fnname, fnargs)
-		if cond != "" {
+		if tagCond != "" {
+			fmt.Fprintf(w, "#if %s\n", tagCond)
+		}
+		params := make([]string, 0, len(fn.Params))
+		for _, p := range fn.Params {
+			params = append(params, p.Type)
+		}
+		fmt.Fprintf(w, "%s (*__check_%d)(%s) = %s;\n", fn.Ret.Type, i, strings.Join(params, ", "), fn.ImportName)
+		if tagCond != "" {
 			fmt.Fprintln(w, "#endif")
 		}
-		if versionCond != "" {
+		if specialCond != "" {
 			fmt.Fprintln(w, "#endif")
 		}
 	}
-	switch l[2 : strings.Index(l[:], "]]")+2] {
-	case `[[mkcgo]]`:
-		writeDefineFunc("")
-	case `[[mkcgo::tag("legacy_1")]]`:
-		writeDefineFunc("OPENSSL_VERSION_NUMBER < 0x30000000L")
-	case `[[mkcgo::tag("111")]]`:
-		writeDefineFunc("OPENSSL_VERSION_NUMBER >= 0x10101000L")
-	case `[[mkcgo::tag("3")]]`:
-		writeDefineFunc("OPENSSL_VERSION_NUMBER >= 0x30000000L")
-	default:
-		log.Printf("unexpected function comment in line: %s\n", l)
-	}
-	return true
+	return w.String(), nil
 }
