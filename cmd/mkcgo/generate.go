@@ -177,17 +177,24 @@ func generateGoFn(fn *mkcgo.Func, w io.Writer) {
 	}
 	fmt.Fprintf(w, "{\n")
 	fmt.Fprintf(w, "\t")
+	var closePar int
 	if !retIsVoid(fn.Ret) {
-		fmt.Fprintf(w, "r0 := ")
-	}
-	fmt.Fprintf(w, "C.%s(%s)\n", fn.CName, fnToGoArgs(fn))
-	if !retIsVoid(fn.Ret) {
-		errSrc := retToGoSource(fn.Ret)
-		if len(errSrc) > 0 {
-			fmt.Fprintf(w, "\t%s\n", errSrc)
+		fmt.Fprintf(w, "return ")
+		goType := cTypeToGo(fn.Ret.Type, false)
+		if goType != "" && goType != fn.Ret.Type {
+			closePar++
+			if goType[0] == '*' {
+				goType = fmt.Sprintf("(%s)(unsafe.Pointer", goType)
+				closePar++
+			}
+			fmt.Fprintf(w, "%s (", goType)
 		}
-		fmt.Fprintf(w, "\treturn\n")
 	}
+	fmt.Fprintf(w, "C.%s(%s)", fn.CName, fnToGoArgs(fn))
+	if closePar > 0 {
+		fmt.Fprint(w, strings.Repeat(")", closePar))
+	}
+	fmt.Fprintf(w, "\n")
 	fmt.Fprintf(w, "}\n\n")
 }
 
@@ -317,7 +324,7 @@ func retToGoParams(r *mkcgo.Return) string {
 	if retIsVoid(r) {
 		return ""
 	}
-	return fmt.Sprintf("(%s %s)", r.Name, cTypeToGo(r.Type, false))
+	return cTypeToGo(r.Type, false)
 }
 
 func retIsVoid(r *mkcgo.Return) bool {
