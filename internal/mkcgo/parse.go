@@ -191,14 +191,8 @@ func newFn(s string, opts fnAttributes) (*Func, error) {
 	if nameIdx < 0 || nameIdx+1 >= len(prefix) {
 		return nil, errors.New("could not extract function name from \"" + s + "\"")
 	}
-	name, typ := trim(prefix[nameIdx+1:]), trim(prefix[:nameIdx])
-	// Remove leading asterisks from the name and add them to the type.
-	for strings.HasPrefix(name, "*") {
-		name = name[1:]
-		typ += "*"
-	}
-	// Remove all spaces between the asterisks and the type.
-	typ = strings.ReplaceAll(typ, " *", "*")
+	name, typ := prefix[nameIdx+1:], prefix[:nameIdx]
+	name, typ = normalizeParam(name, typ)
 	fn.CName = trim(name)
 	if opts.importName != "" {
 		fn.ImportName = opts.importName
@@ -211,6 +205,23 @@ func newFn(s string, opts fnAttributes) (*Func, error) {
 		Name: "_r0",
 	}
 	return fn, nil
+}
+
+// normalizeParam normalizes parameter name and type.
+func normalizeParam(name, typ string) (string, string) {
+	name, typ = trim(name), trim(typ)
+	// Remove leading asterisks from the name and add them to the type.
+	for strings.HasPrefix(name, "*") {
+		name = name[1:]
+		typ += "*"
+	}
+	switch name {
+	case "type", "func":
+		name = "__" + name
+	}
+	// Remove all spaces between the asterisks and the type.
+	typ = strings.ReplaceAll(typ, " *", "*")
+	return name, typ
 }
 
 // trim returns s with leading and trailing spaces and tabs removed.
@@ -316,29 +327,15 @@ func extractParams(s string) ([]*Param, error) {
 		b := strings.LastIndexByte(s2, ' ')
 		var name, typ string
 		if b != -1 {
-			name, typ = trim(s2[b+1:]), trim(s2[:b])
+			name, typ = s2[b+1:], s2[:b]
 		} else {
-			typ = trim(s2)
+			typ = s2
 		}
-		for strings.HasPrefix(name, "*") {
-			name = name[1:]
-			typ += "*"
-		}
+		name, typ = normalizeParam(name, typ)
 		ps = append(ps, &Param{
-			Name: sanitizeParamName(name),
+			Name: name,
 			Type: typ,
 		})
 	}
 	return ps, nil
-}
-
-// sanitizeParamName returns a sanitized version of the parameter name
-// to avoid conflicts with Go keywords.
-func sanitizeParamName(name string) string {
-	name = trim(name)
-	switch name {
-	case "type", "func":
-		name = "__" + name
-	}
-	return name
 }
