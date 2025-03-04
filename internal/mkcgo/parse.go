@@ -178,9 +178,9 @@ func newFn(s string, opts fnAttributes) (*Func, error) {
 		return nil, errors.New("could not extract function name and parameters from \"" + s + "\"")
 	}
 	fn := &Func{
-		Ret:      &Return{},
-		Variadic: opts.variadic,
-		Tag:      opts.tag,
+		Ret:          &Return{},
+		VariadicInst: opts.variadic,
+		Tag:          opts.tag,
 	}
 	var err error
 	fn.Params, err = extractParams(body)

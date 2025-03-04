@@ -203,7 +203,7 @@ func generateEVPPKey(id, bits int32, curve string) (_EVP_PKEY_PTR, error) {
 		case _EVP_PKEY_EC:
 			pkey = go_openssl_EVP_PKEY_Q_keygen_EC(nil, nil, _KeyTypeEC.ptr(), go_openssl_OBJ_nid2sn(curveNID(curve)))
 		case _EVP_PKEY_ED25519:
-			pkey = go_openssl_EVP_PKEY_Q_keygen(nil, nil, _KeyTypeED25519.ptr())
+			pkey = go_openssl_EVP_PKEY_Q_keygen_ED25519(nil, nil, _KeyTypeED25519.ptr())
 		default:
 			panic("unsupported key type '" + strconv.Itoa(int(id)) + "'")
 		}

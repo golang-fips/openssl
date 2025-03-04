@@ -26,13 +26,17 @@ type Enum struct {
 
 // Func describes a function.
 type Func struct {
-	GoName     string
-	CName      string
-	ImportName string
-	Tag        string
-	Params     []*Param
-	Ret        *Return
-	Variadic   bool
+	GoName       string
+	CName        string
+	ImportName   string
+	Tag          string
+	Params       []*Param
+	Ret          *Return
+	VariadicInst bool // true if the function is a variadic instantiation
+}
+
+func (f *Func) Variadic() bool {
+	return len(f.Params) > 0 && f.Params[len(f.Params)-1].Variadic()
 }
 
 // Param is a function parameter.
@@ -41,7 +45,7 @@ type Param struct {
 	Type string
 }
 
-func (p *Param) IsVariadic() bool {
+func (p *Param) Variadic() bool {
 	return p.Type == "..."
 }
 

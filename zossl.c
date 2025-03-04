@@ -120,7 +120,7 @@ int (*_g_EVP_PKEY_CTX_set1_hkdf_key)(_EVP_PKEY_CTX_PTR, const unsigned char*, in
 int (*_g_EVP_PKEY_CTX_set1_hkdf_salt)(_EVP_PKEY_CTX_PTR, const unsigned char*, int);
 int (*_g_EVP_PKEY_CTX_set_hkdf_md)(_EVP_PKEY_CTX_PTR, const _EVP_MD_PTR);
 int (*_g_EVP_PKEY_CTX_set_hkdf_mode)(_EVP_PKEY_CTX_PTR, int);
-_EVP_PKEY_PTR (*_g_EVP_PKEY_Q_keygen)(_OSSL_LIB_CTX_PTR, const char*, const char*);
+_EVP_PKEY_PTR (*_g_EVP_PKEY_Q_keygen)(_OSSL_LIB_CTX_PTR, const char*, const char*, ...);
 int (*_g_EVP_PKEY_assign)(_EVP_PKEY_PTR, int, void*);
 int (*_g_EVP_PKEY_bits)(const _EVP_PKEY_PTR);
 int (*_g_EVP_PKEY_decrypt)(_EVP_PKEY_CTX_PTR, unsigned char*, size_t*, const unsigned char*, size_t);
@@ -893,16 +893,16 @@ int EVP_PKEY_CTX_set_hkdf_mode(_EVP_PKEY_CTX_PTR _arg0, int _arg1) {
 	return _g_EVP_PKEY_CTX_set_hkdf_mode(_arg0, _arg1);
 }
 
-_EVP_PKEY_PTR EVP_PKEY_Q_keygen(_OSSL_LIB_CTX_PTR _arg0, const char* _arg1, const char* _arg2) {
+_EVP_PKEY_PTR EVP_PKEY_Q_keygen_EC(_OSSL_LIB_CTX_PTR _arg0, const char* _arg1, const char* _arg2, const char* _arg3) {
+	return _g_EVP_PKEY_Q_keygen(_arg0, _arg1, _arg2, _arg3);
+}
+
+_EVP_PKEY_PTR EVP_PKEY_Q_keygen_ED25519(_OSSL_LIB_CTX_PTR _arg0, const char* _arg1, const char* _arg2) {
 	return _g_EVP_PKEY_Q_keygen(_arg0, _arg1, _arg2);
 }
 
-_EVP_PKEY_PTR EVP_PKEY_Q_keygen_EC(_OSSL_LIB_CTX_PTR _arg0, const char* _arg1, const char* _arg2, const char* _arg3) {
-	return _g_EVP_PKEY_Q_keygen_EC(_arg0, _arg1, _arg2, _arg3);
-}
-
 _EVP_PKEY_PTR EVP_PKEY_Q_keygen_RSA(_OSSL_LIB_CTX_PTR _arg0, const char* _arg1, const char* _arg2, size_t _arg3) {
-	return _g_EVP_PKEY_Q_keygen_RSA(_arg0, _arg1, _arg2, _arg3);
+	return _g_EVP_PKEY_Q_keygen(_arg0, _arg1, _arg2, _arg3);
 }
 
 int EVP_PKEY_assign(_EVP_PKEY_PTR _arg0, int _arg1, void* _arg2) {

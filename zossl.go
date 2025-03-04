@@ -711,14 +711,14 @@ func go_openssl_EVP_PKEY_CTX_set_hkdf_mode(arg0 _EVP_PKEY_CTX_PTR, arg1 int32) (
 	return
 }
 
-func go_openssl_EVP_PKEY_Q_keygen(ctx _OSSL_LIB_CTX_PTR, propq *byte, __type *byte) (_r0 _EVP_PKEY_PTR) {
-	r0 := C.EVP_PKEY_Q_keygen(ctx, (*C.char)(unsafe.Pointer(propq)), (*C.char)(unsafe.Pointer(__type)))
+func go_openssl_EVP_PKEY_Q_keygen_EC(ctx _OSSL_LIB_CTX_PTR, propq *byte, __type *byte, arg1 *byte) (_r0 _EVP_PKEY_PTR) {
+	r0 := C.EVP_PKEY_Q_keygen_EC(ctx, (*C.char)(unsafe.Pointer(propq)), (*C.char)(unsafe.Pointer(__type)), (*C.char)(unsafe.Pointer(arg1)))
 	_r0 = _EVP_PKEY_PTR(r0)
 	return
 }
 
-func go_openssl_EVP_PKEY_Q_keygen_EC(ctx _OSSL_LIB_CTX_PTR, propq *byte, __type *byte, arg1 *byte) (_r0 _EVP_PKEY_PTR) {
-	r0 := C.EVP_PKEY_Q_keygen_EC(ctx, (*C.char)(unsafe.Pointer(propq)), (*C.char)(unsafe.Pointer(__type)), (*C.char)(unsafe.Pointer(arg1)))
+func go_openssl_EVP_PKEY_Q_keygen_ED25519(ctx _OSSL_LIB_CTX_PTR, propq *byte, __type *byte) (_r0 _EVP_PKEY_PTR) {
+	r0 := C.EVP_PKEY_Q_keygen_ED25519(ctx, (*C.char)(unsafe.Pointer(propq)), (*C.char)(unsafe.Pointer(__type)))
 	_r0 = _EVP_PKEY_PTR(r0)
 	return
 }

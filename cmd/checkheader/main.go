@@ -131,9 +131,9 @@ func generate(header string) (string, error) {
 	}
 
 	for i, fn := range src.Funcs {
-		if fn.Variadic {
-			// Variadic functions are not supported, there is not enough
-			// information to check it.
+		if fn.VariadicInst {
+			// Variadic instantiations are not real OpenSSL functions,
+			// skip them.
 			continue
 		}
 		var specialCond, tagCond string
