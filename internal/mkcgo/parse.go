@@ -173,7 +173,7 @@ func newTypeDef(line string) (*TypeDef, error) {
 // newFn parses string s and return created function Fn.
 func newFn(s string, opts fnAttributes) (*Func, error) {
 	// function name and args
-	prefix, body, _, found := extractSection(s, false, "(", ")")
+	prefix, body, _, found := extractSection(s, "(", ")")
 	if !found || prefix == "" {
 		return nil, errors.New("could not extract function name and parameters from \"" + s + "\"")
 	}
@@ -232,7 +232,7 @@ func trim(s string) string {
 // extractSection extracts text out of string s starting after start
 // and ending just before end. found return value will indicate success,
 // and prefix, body and suffix will contain correspondent parts of string s.
-func extractSection(s string, scanBackwards bool, start, end string) (prefix, body, suffix string, found bool) {
+func extractSection(s string, start, end string) (prefix, body, suffix string, found bool) {
 	s = trim(s)
 	if v, ok := strings.CutPrefix(s, start); ok {
 		// no prefix
@@ -245,12 +245,11 @@ func extractSection(s string, scanBackwards bool, start, end string) (prefix, bo
 		prefix = a[0]
 		body = a[1]
 	}
-	idx := strings.LastIndex(body, end)
-	if idx < 0 {
+	a := strings.SplitN(body, end, 2)
+	if len(a) != 2 {
 		return "", "", "", false
 	}
-	body, suffix = body[:idx], body[idx+len(end):]
-	return prefix, body, suffix, true
+	return prefix, a[0], a[1], true
 }
 
 // processComments removes comments from line and returns the result.
@@ -270,7 +269,7 @@ func processComments(line string, inBlockComment *bool) (comment, remmaining str
 		return comment, before
 	}
 	// Remove block comments.
-	if prefix, _, suffix, found := extractSection(line, false, "/*", "*/"); found {
+	if prefix, _, suffix, found := extractSection(line, "/*", "*/"); found {
 		line = prefix + suffix
 	}
 	// Remove block comments that span multiple lines.
@@ -289,7 +288,7 @@ func extractFunctionAttributes(s string, fnAttrs *fnAttributes) (string, error) 
 	if !found {
 		return s, nil
 	}
-	_, body, suffix, found := extractSection(after, true, "((", "))")
+	_, body, suffix, found := extractSection(after, "((", "));")
 	if !found {
 		return s, nil
 	}
@@ -304,7 +303,7 @@ func extractFunctionAttributes(s string, fnAttrs *fnAttributes) (string, error) 
 			var arg string
 			if attr.hasParameter {
 				var ok bool
-				if _, arg, _, ok = extractSection(v, false, "(", ")"); !ok {
+				if _, arg, _, ok = extractSection(v, "(", ")"); !ok {
 					return "", errors.New("could not extract mkcgo attribute argument from \"" + v + "\"")
 				}
 				arg = strings.Trim(arg, `"`)
