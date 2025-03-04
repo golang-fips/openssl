@@ -1,3 +1,6 @@
+// This header file is used by the mkcgo tool to generate cgo and Go bindings for the
+// OpenSSL C API. Run "go generate ." to regenerate the bindings.
+
 #include <stdlib.h> // size_t
 #include <stdint.h> // uint64_t
 
@@ -31,12 +34,13 @@ typedef void* go_MD5_CTX_PTR;
 typedef void* go_SHA_CTX_PTR;
 typedef int point_conversion_form_t;
 
-// Tags used to determine which OpenSSL version the function is available in:
-// no tag: OpenSSL 1.0 or later
-// legacy_1: Only OpenSSL 1
-// 3: OpenSSL 3.0 or later
-// 111: OpenSSL 1.1.1 or later
+// Tags used by mkcgo to determine which OpenSSL version each function is available in:
+// - no tag: OpenSSL 1.0 or later
+// - legacy_1: Only OpenSSL 1
+// - 3: OpenSSL 3.0 or later
+// - 111: OpenSSL 1.1.1 or later
 
+// The following includes are used be the headercheck tool.
 // #include <openssl/crypto.h>
 // #include <openssl/err.h>
 // #include <openssl/rsa.h>
