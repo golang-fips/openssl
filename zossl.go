@@ -308,19 +308,19 @@ func go_openssl_ERR_clear_error() {
 	C.ERR_clear_error()
 }
 
-func go_openssl_ERR_error_string_n(e uint64, buf *byte, len int) {
+func go_openssl_ERR_error_string_n(e uint32, buf *byte, len int) {
 	C.ERR_error_string_n(C.ulong(e), (*C.char)(unsafe.Pointer(buf)), C.size_t(len))
 }
 
-func go_openssl_ERR_get_error_all(file **byte, line *int32, __func **byte, data **byte, flags *int32) (_r0 uint64) {
+func go_openssl_ERR_get_error_all(file **byte, line *int32, __func **byte, data **byte, flags *int32) (_r0 uint32) {
 	r0 := C.ERR_get_error_all((**C.char)(unsafe.Pointer(file)), (*C.int)(unsafe.Pointer(line)), (**C.char)(unsafe.Pointer(__func)), (**C.char)(unsafe.Pointer(data)), (*C.int)(unsafe.Pointer(flags)))
-	_r0 = uint64(r0)
+	_r0 = uint32(r0)
 	return
 }
 
-func go_openssl_ERR_get_error_line(file **byte, line *int32) (_r0 uint64) {
+func go_openssl_ERR_get_error_line(file **byte, line *int32) (_r0 uint32) {
 	r0 := C.ERR_get_error_line((**C.char)(unsafe.Pointer(file)), (*C.int)(unsafe.Pointer(line)))
-	_r0 = uint64(r0)
+	_r0 = uint32(r0)
 	return
 }
 

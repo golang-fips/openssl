@@ -202,7 +202,7 @@ func generateCFn(fn *mkcgo.Func, w io.Writer) {
 
 // paramToGo converts C parameter p to Go parameter.
 func paramToGo(p *mkcgo.Param) string {
-	goType := cArgToCgo(p.Type)
+	goType := cTypeToGo(p.Type, true)
 	switch {
 	case goType == "unsafe.Pointer" || goType == "":
 		return p.Name
@@ -212,67 +212,50 @@ func paramToGo(p *mkcgo.Param) string {
 	return fmt.Sprintf("%s(%s)", goType, p.Name)
 }
 
+// isStdType reports whether t is a standard C type.
 func isStdType(t string) bool {
-	switch t {
-	case "int8_t", "uint8_t", "int16_t", "uint16_t", "int32_t", "uint32_t", "int64_t", "uint64_t",
-		"int", "unsigned int", "long", "unsigned long", "size_t", "uintptr_t", "char", "unsigned char",
-		"void", "unsigned long long", "long long", "signed char":
-		return true
-	}
-	return false
+	_, found := cstdTypesToGo[t]
+	return found
 }
 
-// cArgToCgo converts C parameter type t to a cgo type,
-// that is, a Go type that can be used in a cgo call.
-func cArgToCgo(t string) string {
-	t, _ = strings.CutPrefix(t, "const ")
-	if t == "void" {
-		return ""
-	}
-	if strings.Contains(t, "void*") {
-		return "unsafe.Pointer"
-	}
-	if strings.HasSuffix(t, "*") {
-		// Remove all trailing '*' characters.
-		var i, n int
-		for i = len(t) - 1; i >= 0; i-- {
-			if t[i] != '*' {
-				break
-			}
-			n++
-		}
-		s := cArgToCgo(t[:i+1])
-		if s != "" {
-			s = strings.Repeat("*", n) + s
-		}
-		return s
-	}
-	// Map C types with spaces to cgo special-cased types.
-	if isStdType(t) {
-		switch t {
-		case "signed char":
-			t = "schar"
-		case "unsigned char":
-			t = "uchar"
-		case "unsigned short":
-			t = "ushort"
-		case "unsigned int":
-			t = "uint"
-		case "unsigned long":
-			t = "ulong"
-		case "long long":
-			t = "longlong"
-		case "unsigned long long":
-			t = "ulonglong"
-		}
-		return "C." + t
-	}
-	// Non-standard C types are aliased to C.<type>.
-	return ""
+// cstdTypesToGo maps C standard types to Go types.
+var cstdTypesToGo = map[string]string{
+	"int8_t":             "int8",
+	"uint8_t":            "uint8",
+	"int16_t":            "int16",
+	"uint16_t":           "uint16",
+	"int32_t":            "int32",
+	"uint32_t":           "uint32",
+	"int64_t":            "int64",
+	"uint64_t":           "uint64",
+	"int":                "int32",
+	"unsigned int":       "uint32",
+	"long":               "int32",
+	"unsigned long":      "uint32",
+	"long long":          "int64",
+	"unsigned long long": "uint64",
+	"size_t":             "int",
+	"uintptr_t":          "uintptr",
+	"char":               "byte",
+	"unsigned char":      "byte",
+	"signed char":        "byte",
+	"void":               "",
+}
+
+// cstdTypesToCgo maps C standard types to special cgo types.
+// Most C don't need any special handling, only the ones that have spaces.
+var cstdTypesToCgo = map[string]string{
+	"signed char":        "schar",
+	"unsigned char":      "uchar",
+	"unsigned short":     "ushort",
+	"unsigned int":       "uint",
+	"unsigned long":      "ulong",
+	"long long":          "longlong",
+	"unsigned long long": "ulonglong",
 }
 
 // cTypeToGo converts C type t to a Go type.
-func cTypeToGo(t string) string {
+func cTypeToGo(t string, cgo bool) string {
 	t, _ = strings.CutPrefix(t, "const ")
 	if t == "void" {
 		return ""
@@ -289,46 +272,29 @@ func cTypeToGo(t string) string {
 			}
 			n++
 		}
-		s := cTypeToGo(t[:i+1])
-		s = strings.Repeat("*", n) + s
+		s := cTypeToGo(t[:i+1], cgo)
+		if s != "" {
+			s = strings.Repeat("*", n) + s
+		}
 		return s
 	}
-	var s string
-	switch t {
-	case "int8_t":
-		s = "int8"
-	case "uint8_t":
-		s = "uint8"
-	case "int16_t":
-		s = "int16"
-	case "uint16_t":
-		s = "uint16"
-	case "int32_t":
-		s = "int32"
-	case "uint32_t":
-		s = "uint32"
-	case "int64_t":
-		s = "int64"
-	case "uint64_t":
-		s = "uint64"
-	case "int":
-		s = "int32"
-	case "unsigned int":
-		s = "uint32"
-	case "long":
-		s = "int64"
-	case "unsigned long":
-		s = "uint64"
-	case "size_t":
-		s = "int"
-	case "uintptr_t":
-		s = "uintptr"
-	case "char", "unsigned char":
-		s = "byte"
-	default:
-		s = t
+	if !isStdType(t) {
+		if cgo {
+			// Non-standard C types are aliased so C.<type> so they don't need to be converted.
+			return ""
+		}
+		return t
 	}
-	return s
+	if cgo {
+		if s, ok := cstdTypesToCgo[t]; ok {
+			t = s
+		}
+		return "C." + t
+	}
+	if t, ok := cstdTypesToGo[t]; ok {
+		return t
+	}
+	return t
 }
 
 // paramToC returns C source code of parameter p.
@@ -351,7 +317,7 @@ func retToGoParams(r *mkcgo.Return) string {
 	if retIsVoid(r) {
 		return ""
 	}
-	return fmt.Sprintf("(%s %s)", r.Name, cTypeToGo(r.Type))
+	return fmt.Sprintf("(%s %s)", r.Name, cTypeToGo(r.Type, false))
 }
 
 func retIsVoid(r *mkcgo.Return) bool {
@@ -363,7 +329,7 @@ func retToGoSource(r *mkcgo.Return) string {
 	if retIsVoid(r) {
 		return ""
 	}
-	goType := cTypeToGo(r.Type)
+	goType := cTypeToGo(r.Type, false)
 	s := ""
 	switch {
 	case goType[0] == '*':
@@ -377,7 +343,7 @@ func retToGoSource(r *mkcgo.Return) string {
 // fnToGoParams returns source code for function f parameters.
 func fnToGoParams(fn *mkcgo.Func) string {
 	return join(fn.Params, func(_ int, p *mkcgo.Param) string {
-		return p.Name + " " + cTypeToGo(p.Type)
+		return p.Name + " " + cTypeToGo(p.Type, false)
 	}, ", ")
 }
 

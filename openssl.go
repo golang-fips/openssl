@@ -292,7 +292,7 @@ func newOpenSSLError(msg string) error {
 	b.WriteString("\nopenssl error(s):")
 	for {
 		var (
-			e    uint64
+			e    uint32
 			file *byte
 			line int32
 		)
