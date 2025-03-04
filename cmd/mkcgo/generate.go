@@ -193,7 +193,7 @@ func generateGoFn(fn *mkcgo.Func, w io.Writer) {
 
 func generateCFn(fn *mkcgo.Func, w io.Writer) {
 	fmt.Fprintf(w, "%s %s(%s) {\n\t", fn.Ret.Type, fn.CName, fnToCArgs(fn, true))
-	if fn.Ret.Type != "void" {
+	if !retIsVoid(fn.Ret) {
 		fmt.Fprintf(w, "return ")
 	}
 	fmt.Fprintf(w, "_g_%s(%s);\n", fn.ImportName, fnToCArgs(fn, false))
