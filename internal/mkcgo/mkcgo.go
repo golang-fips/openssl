@@ -10,7 +10,7 @@ type Source struct {
 	Enums    []*Enum
 	Funcs    []*Func
 	Files    []string
-	Comments []string // Directives starting with "// #"
+	Comments []string // All line comments. Directives in this slice start with "#"
 }
 
 // TypeDef describes a type definition.
