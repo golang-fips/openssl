@@ -265,10 +265,7 @@ func baseNeverEmpty(b []byte) *byte {
 // pbase returns the address of the underlying array in b,
 // being careful not to panic when b has zero length.
 func pbase(b []byte) unsafe.Pointer {
-	if len(b) == 0 {
-		return nil
-	}
-	return unsafe.Pointer(&b[0])
+	return unsafe.Pointer(base(b))
 }
 
 // base returns the address of the underlying array in b,
@@ -278,12 +275,6 @@ func base(b []byte) *byte {
 		return nil
 	}
 	return unsafe.SliceData(b)
-}
-
-// sbase returns the address of the underlying array in b,
-// being careful not to panic when b has zero length.
-func sbase(b []byte) unsafe.Pointer {
-	return unsafe.Pointer(base(b))
 }
 
 func newOpenSSLError(msg string) error {

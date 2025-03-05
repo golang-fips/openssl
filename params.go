@@ -106,7 +106,7 @@ func (b *paramBuilder) addOctetString(name cString, value []byte) {
 	if len(value) != 0 {
 		b.pinner.Pin(&value[0])
 	}
-	if go_openssl_OSSL_PARAM_BLD_push_octet_string(b.bld, name.ptr(), sbase(value), len(value)) != 1 {
+	if go_openssl_OSSL_PARAM_BLD_push_octet_string(b.bld, name.ptr(), pbase(value), len(value)) != 1 {
 		b.err = newOpenSSLError("OSSL_PARAM_BLD_push_octet_string(" + name.str() + ")")
 	}
 }

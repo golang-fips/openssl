@@ -10,10 +10,8 @@ package openssl
 // then Sum again, and the second Sum acts as if the first didn't happen.
 // It is written in C because Sum() tend to be in the hot path,
 // and doing one cgo call instead of two is a significant performance win.
-int EVP_MD_CTX_copy(_EVP_MD_CTX_PTR ctx, _EVP_MD_CTX_PTR ctx2);
-int EVP_DigestFinal_ex(_EVP_MD_CTX_PTR ctx, unsigned char *md, unsigned int *s);
 static inline int
-go_hash_sum(_EVP_MD_CTX_PTR ctx, _EVP_MD_CTX_PTR ctx2, unsigned char *out)
+go_hash_sum(const _EVP_MD_CTX_PTR ctx, _EVP_MD_CTX_PTR ctx2, unsigned char *out)
 {
     if (EVP_MD_CTX_copy(ctx2, ctx) != 1)
         return 0;
@@ -327,7 +325,7 @@ func (h *evpHash) Write(p []byte) (int, error) {
 	defer h.pinner.Unpin()
 	h.pinner.Pin(&p[0])
 	h.init()
-	if go_openssl_EVP_DigestUpdate(h.ctx, sbase(p), len(p)) != 1 {
+	if go_openssl_EVP_DigestUpdate(h.ctx, pbase(p), len(p)) != 1 {
 		panic(newOpenSSLError("EVP_DigestUpdate"))
 	}
 	runtime.KeepAlive(h)

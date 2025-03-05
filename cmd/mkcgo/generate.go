@@ -186,7 +186,7 @@ func generateGoFn(fn *mkcgo.Func, w io.Writer) {
 				goType = fmt.Sprintf("(%s)(unsafe.Pointer", goType)
 				closePar++
 			}
-			fmt.Fprintf(w, "%s (", goType)
+			fmt.Fprintf(w, "%s(", goType)
 		}
 	}
 	fmt.Fprintf(w, "C.%s(%s)", fn.CName, fnToGoArgs(fn))

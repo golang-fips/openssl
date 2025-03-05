@@ -58,8 +58,15 @@ func main() {
 	// Write output. If no explicit output file is specified,
 	// // write both Go and C output to stdout.
 	if *fileName == "" {
-		for _, d := range [][]byte{data, cbuf.Bytes()} {
-			if _, err = os.Stdout.Write(d); err != nil {
+		for _, d := range []struct {
+			name string
+			data []byte
+		}{
+			{"Go", data},
+			{"C", cbuf.Bytes()},
+		} {
+			os.Stdout.WriteString("// === " + d.name + " ===\n\n")
+			if _, err = os.Stdout.Write(d.data); err != nil {
 				log.Fatal(err)
 			}
 		}

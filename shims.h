@@ -41,7 +41,7 @@ enum {
 	_EVP_PKEY_HKDF        = 1036,
 	_EVP_PKEY_ED25519     = 1087,
 	_EVP_PKEY_DSA         = 116,
-	_EVP_PKEY_OP_DERIVE = (1 << 10),
+	_EVP_PKEY_OP_DERIVE = (1 << 10), // this value differs between OpenSSL 1 and 3, but we only use it in 1
 	_EVP_MAX_MD_SIZE    = 64,
 
 	_EVP_PKEY_PUBLIC_KEY = 0x86,
