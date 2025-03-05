@@ -155,11 +155,7 @@ func newEVPCipher(key []byte, kind cipherKind) (*evpCipher, error) {
 	}
 	c := &evpCipher{key: make([]byte, len(key)), kind: kind}
 	copy(c.key, key)
-	if vMajor == 1 {
-		c.blockSize = int(go_openssl_EVP_CIPHER_block_size(cipher))
-	} else {
-		c.blockSize = int(go_openssl_EVP_CIPHER_get_block_size(cipher))
-	}
+	c.blockSize = int(go_openssl_EVP_CIPHER_get_block_size(cipher))
 	return c, nil
 }
 

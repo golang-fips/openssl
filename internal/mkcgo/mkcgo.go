@@ -19,6 +19,7 @@ type TypeDef struct {
 	Type string
 }
 
+// Enum describes an enum definition.
 type Enum struct {
 	Name  string
 	Value string
@@ -29,7 +30,7 @@ type Func struct {
 	GoName       string
 	CName        string
 	ImportName   string
-	Tag          string
+	Tags         []TagAttr // if TagAttr.Name is set, it's the import name for the tag
 	Params       []*Param
 	Ret          *Return
 	VariadicInst bool // true if the function is a variadic instantiation
@@ -37,6 +38,12 @@ type Func struct {
 
 func (f *Func) Variadic() bool {
 	return len(f.Params) > 0 && f.Params[len(f.Params)-1].Variadic()
+}
+
+// TagAttr is an attribute of a tag with an optional name.
+type TagAttr struct {
+	Tag  string
+	Name string
 }
 
 // Param is a function parameter.
@@ -56,10 +63,13 @@ type Return struct {
 }
 
 func (src *Source) Tags() []string {
-	var tags []string
+	tags := make([]string, 0, len(src.Funcs)+1)
+	tags = append(tags, "") // default tag
 	for _, fn := range src.Funcs {
-		if !slices.Contains(tags, fn.Tag) {
-			tags = append(tags, fn.Tag)
+		for _, tag := range fn.Tags {
+			if !slices.Contains(tags, tag.Tag) {
+				tags = append(tags, tag.Tag)
+			}
 		}
 	}
 	slices.Sort(tags)

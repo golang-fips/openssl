@@ -291,12 +291,7 @@ func GenerateKeyECDH(curve string) (*PrivateKeyECDH, []byte, error) {
 	// The fixed length is the order of the large prime subgroup of the curve,
 	// returned by EVP_PKEY_get_bits, which is generally the upper bound for
 	// generating a private ECDH key.
-	var bits int32
-	if vMajor == 1 {
-		bits = go_openssl_EVP_PKEY_bits(pkey)
-	} else {
-		bits = go_openssl_EVP_PKEY_get_bits(pkey)
-	}
+	bits := go_openssl_EVP_PKEY_get_bits(pkey)
 	bytes := make([]byte, (bits+7)/8)
 	if err := bnToBinPad(priv, bytes); err != nil {
 		return nil, nil, err

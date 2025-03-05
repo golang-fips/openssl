@@ -142,17 +142,17 @@ func generate(header string) (string, error) {
 		case "EVP_PKEY_size", "EVP_PKEY_bits":
 			specialCond = "OPENSSL_VERSION_NUMBER >= 0x10101000L"
 		}
-		switch fn.Tag {
-		case "legacy_1":
-			tagCond = "OPENSSL_VERSION_NUMBER < 0x30000000L"
-		case "111":
-			tagCond = "OPENSSL_VERSION_NUMBER >= 0x10101000L"
-		case "3":
-			tagCond = "OPENSSL_VERSION_NUMBER >= 0x30000000L"
-		case "":
-			// No tag, the function is available in all versions.
-		default:
-			panic("unexpected tag: " + fn.Tag)
+		if len(fn.Tags) == 1 {
+			switch fn.Tags[0].Tag {
+			case "legacy_1":
+				tagCond = "OPENSSL_VERSION_NUMBER < 0x30000000L"
+			case "111":
+				tagCond = "OPENSSL_VERSION_NUMBER >= 0x10101000L"
+			case "3":
+				tagCond = "OPENSSL_VERSION_NUMBER >= 0x30000000L"
+			default:
+				panic("unexpected tag: " + fn.Tags[0].Tag)
+			}
 		}
 		if specialCond != "" {
 			fmt.Fprintf(w, "#if %s\n", specialCond)

@@ -143,13 +143,8 @@ func loadHash(ch crypto.Hash) *hashAlgorithm {
 		return nil
 	}
 	hash.ch = ch
-	if vMajor == 1 {
-		hash.size = int(go_openssl_EVP_MD_size(hash.md))
-		hash.blockSize = int(go_openssl_EVP_MD_block_size(hash.md))
-	} else {
-		hash.size = int(go_openssl_EVP_MD_get_size(hash.md))
-		hash.blockSize = int(go_openssl_EVP_MD_get_block_size(hash.md))
-	}
+	hash.size = int(go_openssl_EVP_MD_get_size(hash.md))
+	hash.blockSize = int(go_openssl_EVP_MD_get_block_size(hash.md))
 	if vMajor == 3 {
 		// On OpenSSL 3, directly operating on a EVP_MD object
 		// not created by EVP_MD_fetch has negative performance
@@ -355,9 +350,6 @@ func cryptEVP(withKey withKeyFunc, padding int32,
 	}
 	defer go_openssl_EVP_PKEY_CTX_free(ctx)
 	pkeySize := withKey(func(pkey _EVP_PKEY_PTR) int32 {
-		if vMajor == 1 {
-			return go_openssl_EVP_PKEY_size(pkey)
-		}
 		return go_openssl_EVP_PKEY_get_size(pkey)
 	})
 	outLen := int(pkeySize)

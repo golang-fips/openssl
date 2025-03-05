@@ -139,10 +139,12 @@ func generateC(src *mkcgo.Source, w io.Writer) {
 	}
 	fmt.Fprintf(w, "\n")
 
-	fmt.Fprintf(w, "#define __mkcgo__dlsym(name) \\\n")
-	fmt.Fprintf(w, "\t_g_##name = (typeof(_g_##name))dlsym(handle, #name); \\\n")
-	fmt.Fprintf(w, "\tif (_g_##name == NULL) { \\\n")
-	fmt.Fprintf(w, "\t\tfprintf(stderr, \"Cannot get required symbol \" #name \"\\n\"); \\\n")
+	fmt.Fprintf(w, "#define __mkcgo__dlsym(name) __mkcgo__dlsym2(name, name)\n\n")
+
+	fmt.Fprintf(w, "#define __mkcgo__dlsym2(varname, funcname) \\\n")
+	fmt.Fprintf(w, "\t_g_##varname = (typeof(_g_##varname))dlsym(handle, #funcname); \\\n")
+	fmt.Fprintf(w, "\tif (_g_##varname == NULL) { \\\n")
+	fmt.Fprintf(w, "\t\tfprintf(stderr, \"Cannot get required symbol \" #funcname \"\\n\"); \\\n")
 	fmt.Fprintf(w, "\t\tabort(); \\\n")
 	fmt.Fprintf(w, "\t}\n\n")
 
@@ -150,10 +152,24 @@ func generateC(src *mkcgo.Source, w io.Writer) {
 	for _, tag := range src.Tags() {
 		fmt.Fprintf(w, "void __mkcgoLoad_%s(void* handle) {\n", tag)
 		for _, fn := range src.Funcs {
-			if fn.VariadicInst || fn.Tag != tag {
+			if fn.VariadicInst {
 				continue
 			}
-			fmt.Fprintf(w, "\t__mkcgo__dlsym(%s)\n", fn.ImportName)
+			if len(fn.Tags) == 0 && tag == "" {
+				// Default tag.
+				fmt.Fprintf(w, "\t__mkcgo__dlsym(%s)\n", fn.ImportName)
+			} else {
+				for _, tagAttr := range fn.Tags {
+					if tagAttr.Tag == tag {
+						if tagAttr.Name != "" {
+							fmt.Fprintf(w, "\t__mkcgo__dlsym2(%s, %s)\n", fn.ImportName, tagAttr.Name)
+						} else {
+							fmt.Fprintf(w, "\t__mkcgo__dlsym(%s)\n", fn.ImportName)
+						}
+						break
+					}
+				}
+			}
 		}
 		fmt.Fprintf(w, "}\n\n")
 	}

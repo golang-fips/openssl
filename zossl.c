@@ -60,7 +60,6 @@ __mkcgo__funcptr(EVP_CIPHER_CTX_free);
 __mkcgo__funcptr(EVP_CIPHER_CTX_new);
 __mkcgo__funcptr(EVP_CIPHER_CTX_set_key_length);
 __mkcgo__funcptr(EVP_CIPHER_CTX_set_padding);
-__mkcgo__funcptr(EVP_CIPHER_block_size);
 __mkcgo__funcptr(EVP_CIPHER_fetch);
 __mkcgo__funcptr(EVP_CIPHER_get0_name);
 __mkcgo__funcptr(EVP_CIPHER_get_block_size);
@@ -102,7 +101,6 @@ __mkcgo__funcptr(EVP_MD_CTX_copy);
 __mkcgo__funcptr(EVP_MD_CTX_copy_ex);
 __mkcgo__funcptr(EVP_MD_CTX_free);
 __mkcgo__funcptr(EVP_MD_CTX_new);
-__mkcgo__funcptr(EVP_MD_block_size);
 __mkcgo__funcptr(EVP_MD_fetch);
 __mkcgo__funcptr(EVP_MD_free);
 __mkcgo__funcptr(EVP_MD_get0_name);
@@ -110,7 +108,6 @@ __mkcgo__funcptr(EVP_MD_get0_provider);
 __mkcgo__funcptr(EVP_MD_get_block_size);
 __mkcgo__funcptr(EVP_MD_get_size);
 __mkcgo__funcptr(EVP_MD_get_type);
-__mkcgo__funcptr(EVP_MD_size);
 __mkcgo__funcptr(EVP_PKEY_CTX_add1_hkdf_info);
 __mkcgo__funcptr(EVP_PKEY_CTX_ctrl);
 __mkcgo__funcptr(EVP_PKEY_CTX_free);
@@ -124,7 +121,6 @@ __mkcgo__funcptr(EVP_PKEY_CTX_set_hkdf_md);
 __mkcgo__funcptr(EVP_PKEY_CTX_set_hkdf_mode);
 __mkcgo__funcptr(EVP_PKEY_Q_keygen);
 __mkcgo__funcptr(EVP_PKEY_assign);
-__mkcgo__funcptr(EVP_PKEY_bits);
 __mkcgo__funcptr(EVP_PKEY_decrypt);
 __mkcgo__funcptr(EVP_PKEY_decrypt_init);
 __mkcgo__funcptr(EVP_PKEY_derive);
@@ -157,7 +153,6 @@ __mkcgo__funcptr(EVP_PKEY_set1_EC_KEY);
 __mkcgo__funcptr(EVP_PKEY_set1_encoded_public_key);
 __mkcgo__funcptr(EVP_PKEY_sign);
 __mkcgo__funcptr(EVP_PKEY_sign_init);
-__mkcgo__funcptr(EVP_PKEY_size);
 __mkcgo__funcptr(EVP_PKEY_up_ref);
 __mkcgo__funcptr(EVP_PKEY_verify);
 __mkcgo__funcptr(EVP_PKEY_verify_init);
@@ -231,10 +226,12 @@ __mkcgo__funcptr(RSA_set0_crt_params);
 __mkcgo__funcptr(RSA_set0_factors);
 __mkcgo__funcptr(RSA_set0_key);
 
-#define __mkcgo__dlsym(name) \
-	_g_##name = (typeof(_g_##name))dlsym(handle, #name); \
-	if (_g_##name == NULL) { \
-		fprintf(stderr, "Cannot get required symbol " #name "\n"); \
+#define __mkcgo__dlsym(name) __mkcgo__dlsym2(name, name)
+
+#define __mkcgo__dlsym2(varname, funcname) \
+	_g_##varname = (typeof(_g_##varname))dlsym(handle, #funcname); \
+	if (_g_##varname == NULL) { \
+		fprintf(stderr, "Cannot get required symbol " #funcname "\n"); \
 		abort(); \
 	}
 
@@ -437,16 +434,16 @@ void __mkcgoLoad_legacy_1(void* handle) {
 	__mkcgo__dlsym(EC_KEY_set_public_key_affine_coordinates)
 	__mkcgo__dlsym(EC_POINT_get_affine_coordinates_GFp)
 	__mkcgo__dlsym(ERR_get_error_line)
-	__mkcgo__dlsym(EVP_CIPHER_block_size)
-	__mkcgo__dlsym(EVP_MD_block_size)
-	__mkcgo__dlsym(EVP_MD_size)
+	__mkcgo__dlsym2(EVP_CIPHER_get_block_size, EVP_CIPHER_block_size)
+	__mkcgo__dlsym2(EVP_MD_get_block_size, EVP_MD_block_size)
+	__mkcgo__dlsym2(EVP_MD_get_size, EVP_MD_size)
 	__mkcgo__dlsym(EVP_PKEY_assign)
-	__mkcgo__dlsym(EVP_PKEY_bits)
 	__mkcgo__dlsym(EVP_PKEY_get0_DSA)
 	__mkcgo__dlsym(EVP_PKEY_get0_EC_KEY)
 	__mkcgo__dlsym(EVP_PKEY_get1_RSA)
+	__mkcgo__dlsym2(EVP_PKEY_get_bits, EVP_PKEY_bits)
+	__mkcgo__dlsym2(EVP_PKEY_get_size, EVP_PKEY_size)
 	__mkcgo__dlsym(EVP_PKEY_set1_EC_KEY)
-	__mkcgo__dlsym(EVP_PKEY_size)
 	__mkcgo__dlsym(FIPS_mode)
 	__mkcgo__dlsym(FIPS_mode_set)
 	__mkcgo__dlsym(HMAC_CTX_copy)
@@ -645,10 +642,6 @@ int EVP_CIPHER_CTX_set_padding(_EVP_CIPHER_CTX_PTR _arg0, int _arg1) {
 	return _g_EVP_CIPHER_CTX_set_padding(_arg0, _arg1);
 }
 
-int EVP_CIPHER_block_size(const _EVP_CIPHER_PTR _arg0) {
-	return _g_EVP_CIPHER_block_size(_arg0);
-}
-
 _EVP_CIPHER_PTR EVP_CIPHER_fetch(_OSSL_LIB_CTX_PTR _arg0, const char* _arg1, const char* _arg2) {
 	return _g_EVP_CIPHER_fetch(_arg0, _arg1, _arg2);
 }
@@ -813,10 +806,6 @@ _EVP_MD_CTX_PTR EVP_MD_CTX_new(void) {
 	return _g_EVP_MD_CTX_new();
 }
 
-int EVP_MD_block_size(const _EVP_MD_PTR _arg0) {
-	return _g_EVP_MD_block_size(_arg0);
-}
-
 _EVP_MD_PTR EVP_MD_fetch(_OSSL_LIB_CTX_PTR _arg0, const char* _arg1, const char* _arg2) {
 	return _g_EVP_MD_fetch(_arg0, _arg1, _arg2);
 }
@@ -843,10 +832,6 @@ int EVP_MD_get_size(const _EVP_MD_PTR _arg0) {
 
 int EVP_MD_get_type(const _EVP_MD_PTR _arg0) {
 	return _g_EVP_MD_get_type(_arg0);
-}
-
-int EVP_MD_size(const _EVP_MD_PTR _arg0) {
-	return _g_EVP_MD_size(_arg0);
 }
 
 int EVP_PKEY_CTX_add1_hkdf_info(_EVP_PKEY_CTX_PTR _arg0, const unsigned char* _arg1, int _arg2) {
@@ -907,10 +892,6 @@ _EVP_PKEY_PTR EVP_PKEY_Q_keygen_RSA(_OSSL_LIB_CTX_PTR _arg0, const char* _arg1, 
 
 int EVP_PKEY_assign(_EVP_PKEY_PTR _arg0, int _arg1, void* _arg2) {
 	return _g_EVP_PKEY_assign(_arg0, _arg1, _arg2);
-}
-
-int EVP_PKEY_bits(const _EVP_PKEY_PTR _arg0) {
-	return _g_EVP_PKEY_bits(_arg0);
 }
 
 int EVP_PKEY_decrypt(_EVP_PKEY_CTX_PTR _arg0, unsigned char* _arg1, size_t* _arg2, const unsigned char* _arg3, size_t _arg4) {
@@ -1039,10 +1020,6 @@ int EVP_PKEY_sign(_EVP_PKEY_CTX_PTR _arg0, unsigned char* _arg1, size_t* _arg2, 
 
 int EVP_PKEY_sign_init(_EVP_PKEY_CTX_PTR _arg0) {
 	return _g_EVP_PKEY_sign_init(_arg0);
-}
-
-int EVP_PKEY_size(const _EVP_PKEY_PTR _arg0) {
-	return _g_EVP_PKEY_size(_arg0);
 }
 
 int EVP_PKEY_up_ref(_EVP_PKEY_PTR _arg0) {

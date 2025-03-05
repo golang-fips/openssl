@@ -288,10 +288,6 @@ func go_openssl_EVP_CIPHER_CTX_set_padding(x _EVP_CIPHER_CTX_PTR, padding int32)
 	return int32(C.EVP_CIPHER_CTX_set_padding(x, C.int(padding)))
 }
 
-func go_openssl_EVP_CIPHER_block_size(cipher _EVP_CIPHER_PTR) int32 {
-	return int32(C.EVP_CIPHER_block_size(cipher))
-}
-
 func go_openssl_EVP_CIPHER_fetch(ctx _OSSL_LIB_CTX_PTR, algorithm *byte, properties *byte) _EVP_CIPHER_PTR {
 	return C.EVP_CIPHER_fetch(ctx, (*C.char)(unsafe.Pointer(algorithm)), (*C.char)(unsafe.Pointer(properties)))
 }
@@ -456,10 +452,6 @@ func go_openssl_EVP_MD_CTX_new() _EVP_MD_CTX_PTR {
 	return C.EVP_MD_CTX_new()
 }
 
-func go_openssl_EVP_MD_block_size(md _EVP_MD_PTR) int32 {
-	return int32(C.EVP_MD_block_size(md))
-}
-
 func go_openssl_EVP_MD_fetch(ctx _OSSL_LIB_CTX_PTR, algorithm *byte, properties *byte) _EVP_MD_PTR {
 	return C.EVP_MD_fetch(ctx, (*C.char)(unsafe.Pointer(algorithm)), (*C.char)(unsafe.Pointer(properties)))
 }
@@ -486,10 +478,6 @@ func go_openssl_EVP_MD_get_size(md _EVP_MD_PTR) int32 {
 
 func go_openssl_EVP_MD_get_type(md _EVP_MD_PTR) int32 {
 	return int32(C.EVP_MD_get_type(md))
-}
-
-func go_openssl_EVP_MD_size(md _EVP_MD_PTR) int32 {
-	return int32(C.EVP_MD_size(md))
 }
 
 func go_openssl_EVP_PKEY_CTX_add1_hkdf_info(arg0 _EVP_PKEY_CTX_PTR, arg1 *byte, arg2 int32) int32 {
@@ -550,10 +538,6 @@ func go_openssl_EVP_PKEY_Q_keygen_RSA(ctx _OSSL_LIB_CTX_PTR, propq *byte, __type
 
 func go_openssl_EVP_PKEY_assign(pkey _EVP_PKEY_PTR, __type int32, key unsafe.Pointer) int32 {
 	return int32(C.EVP_PKEY_assign(pkey, C.int(__type), key))
-}
-
-func go_openssl_EVP_PKEY_bits(pkey _EVP_PKEY_PTR) int32 {
-	return int32(C.EVP_PKEY_bits(pkey))
 }
 
 func go_openssl_EVP_PKEY_decrypt(arg0 _EVP_PKEY_CTX_PTR, arg1 *byte, arg2 *int, arg3 *byte, arg4 int) int32 {
@@ -682,10 +666,6 @@ func go_openssl_EVP_PKEY_sign(arg0 _EVP_PKEY_CTX_PTR, arg1 *byte, arg2 *int, arg
 
 func go_openssl_EVP_PKEY_sign_init(arg0 _EVP_PKEY_CTX_PTR) int32 {
 	return int32(C.EVP_PKEY_sign_init(arg0))
-}
-
-func go_openssl_EVP_PKEY_size(pkey _EVP_PKEY_PTR) int32 {
-	return int32(C.EVP_PKEY_size(pkey))
 }
 
 func go_openssl_EVP_PKEY_up_ref(key _EVP_PKEY_PTR) int32 {

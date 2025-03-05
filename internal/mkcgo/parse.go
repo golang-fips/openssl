@@ -10,34 +10,35 @@ import (
 )
 
 type fnAttributes struct {
-	tag        string
+	tags       []TagAttr
 	variadic   bool
 	importName string
 }
 
 type attribute struct {
-	name         string
-	description  string
-	hasParameter bool
-	handle       func(string, *fnAttributes)
+	name        string
+	description string
+	handle      func(*fnAttributes, ...string)
 }
 
 var attributes = [...]attribute{
 	{
-		name:         "tag",
-		description:  "the function will be loaded together with other functions with the same tag.",
-		hasParameter: true,
-		handle: func(s string, opts *fnAttributes) {
-			opts.tag = s
+		name:        "tag",
+		description: "The function will be loaded together with other functions with the same tag. It can contain an optional name, which is the import name for the tag.",
+		handle: func(opts *fnAttributes, s ...string) {
+			var name string
+			if len(s) > 1 {
+				name = s[1]
+			}
+			opts.tags = append(opts.tags, TagAttr{Tag: s[0], Name: name})
 		},
 	},
 	{
-		name:         "variadic",
-		description:  "the function has variadic arguments, and its name is a custom wrapper for the actual C name, defined in this attribute.",
-		hasParameter: true,
-		handle: func(s string, opts *fnAttributes) {
+		name:        "variadic",
+		description: "The function has variadic arguments, and its name is a custom wrapper for the actual C name, defined in this attribute.",
+		handle: func(opts *fnAttributes, s ...string) {
 			opts.variadic = true
-			opts.importName = s
+			opts.importName = s[0]
 		},
 	},
 }
@@ -180,7 +181,7 @@ func newFn(s string, opts fnAttributes) (*Func, error) {
 	fn := &Func{
 		Ret:          &Return{},
 		VariadicInst: opts.variadic,
-		Tag:          opts.tag,
+		Tags:         opts.tags,
 	}
 	var err error
 	fn.Params, err = extractParams(body)
@@ -245,11 +246,28 @@ func extractSection(s string, start, end string) (prefix, body, suffix string, f
 		prefix = a[0]
 		body = a[1]
 	}
-	a := strings.SplitN(body, end, 2)
-	if len(a) != 2 {
-		return "", "", "", false
+	idxStart := strings.Index(body, start)
+	idxEnd := strings.Index(body, end)
+	needBalancing := idxStart != -1 && idxEnd != -1 && idxStart < idxEnd
+	if !needBalancing {
+		a := strings.SplitN(body, end, 2)
+		if len(a) != 2 {
+			return "", "", "", false
+		}
+		return prefix, a[0], a[1], true
 	}
-	return prefix, a[0], a[1], true
+	depth := 1
+	for i := range len(body) {
+		if strings.HasPrefix(body[i:], start) {
+			depth++
+		} else if strings.HasPrefix(body[i:], end) {
+			depth--
+			if depth == 0 {
+				return prefix, body[:i], body[i+len(end):], true
+			}
+		}
+	}
+	return "", "", s, false
 }
 
 // processComments removes comments from line and returns the result.
@@ -281,39 +299,61 @@ func processComments(line string, inBlockComment *bool) (comment, remmaining str
 
 // extractFunctionAttributes extracts mkcgo attributes from string s.
 // The attributes format follows the GCC __attribute__ syntax as
-// described in https://gcc.gnu.org/onlinedocs/gcc/Function-Attributes.html.
+// described in https://gcc.gnu.org/onlinedocs/gcc/Attribute-Syntax.html.
 func extractFunctionAttributes(s string, fnAttrs *fnAttributes) (string, error) {
 	// There can be spaces between __attribute__ and the opening parenthesis.
-	prefix, after, found := strings.Cut(s, "__attribute__")
+	prefix, body, found := strings.Cut(s, "__attribute__")
 	if !found {
 		return s, nil
 	}
-	_, body, suffix, found := extractSection(after, "((", "));")
+	_, body, suffix, found := extractSection(body, "(", ")")
 	if !found {
 		return s, nil
 	}
-	for _, v := range strings.Split(body, ",") {
-		v = trim(v)
+	if !strings.HasPrefix(body, "(") || !strings.HasSuffix(body, ")") {
+		// Attributes are enclosed in double parentheses.
+		return s, nil
+	}
+	body = trim(body[1 : len(body)-1])
+	for {
+		if body == "" {
+			break
+		}
+		// Attributes are separated by commas. Get the next attribute.
+		// We can't just use strings.Split because the attribute argument
+		// can contain commas.
+		var name, args string
+		idxComma := strings.IndexByte(body, ',')
+		idxParen := strings.IndexByte(body, '(')
+		if idxComma != -1 && (idxParen == -1 || idxComma < idxParen) {
+			// The attribute has no arguments.
+			name = body[:idxComma]
+			body = body[idxComma+1:]
+		} else if idxParen != -1 && (idxComma == -1 || idxComma > idxParen) {
+			// The attribute has arguments, possibly with commas.
+			name = body[:idxParen]
+			_, args, body, found = extractSection(body[idxParen:], "(", ")")
+			if !found {
+				return "", errors.New("unbalanced parentheses in mkcgo attribute: " + s)
+			}
+			body = strings.TrimPrefix(body, ",")
+		}
+		name, args = trim(name), trim(args)
 		var handled bool
 		for _, attr := range attributes {
-			if (!attr.hasParameter && v != attr.name) ||
-				(attr.hasParameter && !strings.HasPrefix(v, attr.name+"(")) {
+			if name != attr.name {
 				continue
 			}
-			var arg string
-			if attr.hasParameter {
-				var ok bool
-				if _, arg, _, ok = extractSection(v, "(", ")"); !ok {
-					return "", errors.New("could not extract mkcgo attribute argument from \"" + v + "\"")
-				}
-				arg = strings.Trim(arg, `"`)
+			vargs := strings.Split(args, ",")
+			for i := range vargs {
+				vargs[i] = trim(strings.Trim(vargs[i], `"`))
 			}
-			attr.handle(arg, fnAttrs)
+			attr.handle(fnAttrs, vargs...)
 			handled = true
 			break
 		}
 		if !handled {
-			return "", errors.New("unknown mkcgo attribute: " + v)
+			return "", errors.New("unknown mkcgo attribute: " + s)
 		}
 	}
 	return trim(prefix + suffix), nil

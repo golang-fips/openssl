@@ -278,12 +278,7 @@ func HashSignRSAPKCS1v15(priv *PrivateKeyRSA, h crypto.Hash, msg []byte) ([]byte
 
 func VerifyRSAPKCS1v15(pub *PublicKeyRSA, h crypto.Hash, hashed, sig []byte) error {
 	if pub.withKey(func(pkey _EVP_PKEY_PTR) int32 {
-		var size int32
-		if vMajor == 1 {
-			size = go_openssl_EVP_PKEY_size(pkey)
-		} else {
-			size = go_openssl_EVP_PKEY_get_size(pkey)
-		}
+		size := go_openssl_EVP_PKEY_get_size(pkey)
 		if len(sig) < int(size) {
 			return 0
 		}

@@ -198,12 +198,7 @@ func ExpandHKDF(h func() hash.Hash, pseudorandomKey, info []byte) (io.Reader, er
 		return nil, err
 	}
 
-	var size int
-	if vMajor == 1 {
-		size = int(go_openssl_EVP_MD_size(md))
-	} else {
-		size = int(go_openssl_EVP_MD_get_size(md))
-	}
+	size := int(go_openssl_EVP_MD_get_size(md))
 
 	switch vMajor {
 	case 1:
