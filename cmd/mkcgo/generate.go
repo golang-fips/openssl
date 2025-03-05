@@ -260,7 +260,7 @@ var cstdTypesToGo = map[string]string{
 	"uintptr_t":          "uintptr",
 	"char":               "byte",
 	"unsigned char":      "byte",
-	"signed char":        "byte",
+	"signed char":        "int8",
 	"void":               "",
 }
 
