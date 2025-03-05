@@ -4,7 +4,7 @@
 #include <stdlib.h> // size_t
 #include <stdint.h> // uint64_t
 
-// The following includes are used be the headercheck tool.
+// The following includes are used by the checkheader tool.
 // #include <openssl/crypto.h>
 // #include <openssl/evp.h>
 // #include <openssl/ec.h>
