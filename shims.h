@@ -119,7 +119,7 @@ typedef int point_conversion_form_t;
 
 // ERR API
 void ERR_error_string_n(unsigned long e, char *buf, size_t len);
-void ERR_clear_error(void);
+void ERR_clear_error(void) __attribute__((tag(""),tag("init_3")));
 unsigned long ERR_get_error_line(const char **file, int *line) __attribute__((tag("legacy_1")));
 unsigned long ERR_get_error_all(const char **file, int *line, const char **func, const char **data, int *flags) __attribute__((tag("3")));
 
@@ -127,17 +127,21 @@ unsigned long ERR_get_error_all(const char **file, int *line, const char **func,
 const char *OpenSSL_version(int type);
 void OPENSSL_init(void);
 int OPENSSL_init_crypto(uint64_t ops, const _OPENSSL_INIT_SETTINGS_PTR settings);
+unsigned long OpenSSL_version_num(void) __attribute__((tag("version"),optional));
+unsigned int OPENSSL_version_major(void) __attribute__((tag("version"),optional));
+unsigned int OPENSSL_version_minor(void) __attribute__((tag("version"),optional));
+unsigned int OPENSSL_version_patch(void) __attribute__((tag("version"),optional));
 
 // CRYPTO API
 void *CRYPTO_malloc(size_t num, const char *file, int line);
 void CRYPTO_free(void *str, const char *file, int line);
 
 // FIPS API
-int FIPS_mode(void) __attribute__((tag("legacy_1")));
-int FIPS_mode_set(int r) __attribute__((tag("legacy_1")));
+int FIPS_mode(void) __attribute__((tag("legacy_1"),tag("init_1")));
+int FIPS_mode_set(int r) __attribute__((tag("legacy_1"),tag("init_1")));
 
 // EVP Config API
-int EVP_default_properties_is_fips_enabled(_OSSL_LIB_CTX_PTR libctx) __attribute__((tag("3")));
+int EVP_default_properties_is_fips_enabled(_OSSL_LIB_CTX_PTR libctx) __attribute__((tag("3"),tag("init_3")));
 int EVP_default_properties_enable_fips(_OSSL_LIB_CTX_PTR libctx, int enable) __attribute__((tag("3")));
 
 // OSSL_PROVIDER API
@@ -149,11 +153,11 @@ const char *OSSL_PROVIDER_get0_name(const _OSSL_PROVIDER_PTR prov) __attribute__
 int RAND_bytes(unsigned char *arg0, int arg1);
 
 // EVP_MD API
-_EVP_MD_PTR EVP_MD_fetch(_OSSL_LIB_CTX_PTR ctx, const char *algorithm, const char *properties) __attribute__((tag("3")));
-void EVP_MD_free(_EVP_MD_PTR md) __attribute__((tag("3")));
+_EVP_MD_PTR EVP_MD_fetch(_OSSL_LIB_CTX_PTR ctx, const char *algorithm, const char *properties) __attribute__((tag("3"),tag("init_3")));
+void EVP_MD_free(_EVP_MD_PTR md) __attribute__((tag("3"),tag("init_3")));
 const char *EVP_MD_get0_name(const _EVP_MD_PTR md) __attribute__((tag("3")));
 int EVP_MD_get_type(const _EVP_MD_PTR md) __attribute__((tag("3")));
-const _OSSL_PROVIDER_PTR EVP_MD_get0_provider(const _EVP_MD_PTR md) __attribute__((tag("3")));
+const _OSSL_PROVIDER_PTR EVP_MD_get0_provider(const _EVP_MD_PTR md) __attribute__((tag("3"),tag("init_3")));
 int EVP_MD_get_size(const _EVP_MD_PTR md) __attribute__((tag("3"),tag("legacy_1","EVP_MD_size")));
 int EVP_MD_get_block_size(const _EVP_MD_PTR md) __attribute__((tag("3"),tag("legacy_1","EVP_MD_block_size")));
 const _EVP_MD_PTR EVP_md5_sha1(void);

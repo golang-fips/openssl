@@ -21,8 +21,6 @@ go_openssl_do_leak_check(void)
     __lsan_do_leak_check();
 #endif
 }
-
-int go_openssl_fips_enabled(void* handle);
 */
 import "C"
 import (
@@ -50,20 +48,13 @@ var isBigEndian bool
 // CheckVersion checks if the OpenSSL version can be loaded
 // and if the FIPS mode is enabled.
 // This function can be called before Init.
+// All OpenSSL functions used in here should be tagged with "init_1" or "init_3" in shims.h.
 func CheckVersion(version string) (exists, fips bool) {
-	handle, _ := dlopen(version)
-	if handle == nil {
+	err := opensslInit(version, true)
+	if err != nil {
 		return false, false
 	}
-	defer dlclose(handle)
-	enabled := C.go_openssl_fips_enabled(handle)
-	fips = enabled == 1
-	// If go_openssl_fips_enabled returns -1, it means that all or some of the necessary
-	// functions are not available. This can be due to the version of OpenSSL being too old,
-	// too incompatible, or the shared library not being an OpenSSL library. In any case,
-	// we shouldn't consider this library to be valid for our purposes.
-	exists = enabled != -1
-	return
+	return true, FIPS()
 }
 
 // Init loads and initializes OpenSSL from the shared library at path.
@@ -88,7 +79,7 @@ func Init(file string) error {
 		default:
 			panic("Could not determine native endianness.")
 		}
-		vMajor, vMinor, vPatch, initErr = opensslInit(file)
+		initErr = opensslInit(file, false)
 	})
 	return initErr
 }
@@ -119,6 +110,7 @@ func VersionText() string {
 
 // FIPS returns true if OpenSSL is running in FIPS mode and there is
 // a provider available that supports FIPS. It returns false otherwise.
+// All OpenSSL functions used in here should be tagged with "init_1" or "init_3" in shims.h.
 func FIPS() bool {
 	switch vMajor {
 	case 1:

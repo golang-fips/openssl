@@ -34,6 +34,7 @@ type Func struct {
 	Params       []*Param
 	Ret          *Return
 	VariadicInst bool // true if the function is a variadic instantiation
+	Optional     bool
 }
 
 func (f *Func) Variadic() bool {

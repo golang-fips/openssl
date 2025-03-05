@@ -13,6 +13,7 @@ type fnAttributes struct {
 	tags       []TagAttr
 	variadic   bool
 	importName string
+	optional   bool
 }
 
 type attribute struct {
@@ -39,6 +40,13 @@ var attributes = [...]attribute{
 		handle: func(opts *fnAttributes, s ...string) {
 			opts.variadic = true
 			opts.importName = s[0]
+		},
+	},
+	{
+		name:        "optional",
+		description: "The function is optional",
+		handle: func(opts *fnAttributes, s ...string) {
+			opts.optional = true
 		},
 	},
 }
@@ -182,6 +190,7 @@ func newFn(s string, opts fnAttributes) (*Func, error) {
 		Ret:          &Return{},
 		VariadicInst: opts.variadic,
 		Tags:         opts.tags,
+		Optional:     opts.optional,
 	}
 	var err error
 	fn.Params, err = extractParams(body)
@@ -337,6 +346,10 @@ func extractFunctionAttributes(s string, fnAttrs *fnAttributes) (string, error) 
 				return "", errors.New("unbalanced parentheses in mkcgo attribute: " + s)
 			}
 			body = strings.TrimPrefix(body, ",")
+		} else if idxComma == -1 && idxParen == -1 {
+			// The attribute has no arguments and is the last one.
+			name = body
+			body = ""
 		}
 		name, args = trim(name), trim(args)
 		var handled bool
@@ -353,7 +366,7 @@ func extractFunctionAttributes(s string, fnAttrs *fnAttributes) (string, error) 
 			break
 		}
 		if !handled {
-			return "", errors.New("unknown mkcgo attribute: " + s)
+			return "", errors.New("unknown mkcgo attribute: " + name)
 		}
 	}
 	return trim(prefix + suffix), nil

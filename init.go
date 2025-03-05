@@ -2,56 +2,70 @@
 
 package openssl
 
-/*
-int go_openssl_version_major(void* handle);
-int go_openssl_version_minor(void* handle);
-int go_openssl_version_patch(void* handle);
-*/
 import "C"
-import (
-	"errors"
-)
+import "errors"
 
 // opensslInit loads and initialize OpenSSL.
 // If successful, it returns the major and minor OpenSSL version
 // as reported by the OpenSSL API.
 //
 // See Init() for details about file.
-func opensslInit(file string) (major, minor, patch uint, err error) {
+func opensslInit(file string, initOnly bool) error {
+	vMajor, vMinor, vPatch = 0, 0, 0
 	// Load the OpenSSL shared library using dlopen.
 	handle, err := dlopen(file)
 	if err != nil {
-		return 0, 0, 0, err
+		return err
 	}
 
 	// Retrieve the loaded OpenSSL version and check if it is supported.
 	// Notice that major and minor could not match with the version parameter
 	// in case the name of the shared library file differs from the OpenSSL
 	// version it contains.
-	imajor := int(C.go_openssl_version_major(handle))
-	iminor := int(C.go_openssl_version_minor(handle))
-	ipatch := int(C.go_openssl_version_patch(handle))
-	if imajor < 0 || iminor < 0 || ipatch < 0 {
-		return 0, 0, 0, errors.New("openssl: can't retrieve OpenSSL version")
+	mkcgoLoad_version(handle)
+	if go_openssl_OPENSSL_version_major_Available() &&
+		go_openssl_OPENSSL_version_minor_Available() &&
+		go_openssl_OPENSSL_version_patch_Available() {
+		// Likely OpenSSL 3 or later.
+		vMajor = uint(go_openssl_OPENSSL_version_major())
+		vMinor = uint(go_openssl_OPENSSL_version_minor())
+		vPatch = uint(go_openssl_OPENSSL_version_patch())
+	} else if go_openssl_OpenSSL_version_num_Available() {
+		// Likely OpenSSL 1.
+		ver := go_openssl_OpenSSL_version_num()
+		vMajor = uint(ver >> 28)
+		vMinor = uint(ver >> 20 & 0xFF)
+		vPatch = uint(ver >> 12 & 0xFF)
+	} else {
+		return errors.New("openssl: version not available")
 	}
-	major, minor, patch = uint(imajor), uint(iminor), uint(ipatch)
 	var supported bool
-	if major == 1 {
-		supported = minor == 1
-	} else if major == 3 {
+	if vMajor == 1 {
+		supported = vMinor == 1
+	} else if vMajor == 3 {
 		// OpenSSL guarantees API and ABI compatibility within the same major version since OpenSSL 3.
 		supported = true
 	}
 	if !supported {
-		return 0, 0, 0, errUnsupportedVersion()
+		return errUnsupportedVersion()
+	}
+
+	if initOnly {
+		switch vMajor {
+		case 1:
+			mkcgoLoad_init_1(handle)
+		case 3:
+			mkcgoLoad_init_3(handle)
+		}
+		return nil
 	}
 
 	// Load the OpenSSL functions.
 	// See shims.go for the complete list of supported functions.
 	mkcgoLoad_(handle)
-	if major == 1 {
+	if vMajor == 1 {
 		mkcgoLoad_legacy_1(handle)
-		if patch == 1 {
+		if vPatch == 1 {
 			mkcgoLoad_111(handle)
 		}
 	} else {
@@ -67,7 +81,7 @@ func opensslInit(file string) (major, minor, patch uint, err error) {
 			_OPENSSL_INIT_LOAD_CONFIG|
 			_OPENSSL_INIT_LOAD_CRYPTO_STRINGS,
 		nil) != 1 {
-		return 0, 0, 0, fail("openssl: init crypto")
+		return fail("openssl: init crypto")
 	}
-	return major, minor, patch, nil
+	return nil
 }

@@ -28,6 +28,11 @@ func generateGo(src *mkcgo.Source, w io.Writer) {
 	for _, tag := range src.Tags() {
 		fmt.Fprintf(w, "void __mkcgoLoad_%s(void* handle);\n", tag)
 	}
+	for _, fn := range src.Funcs {
+		if fn.Optional {
+			fmt.Fprintf(w, "int %s_Available();\n", fn.ImportName)
+		}
+	}
 	fmt.Fprintf(w, "*/\n")
 	fmt.Fprintf(w, "import \"C\"\n")
 	fmt.Fprintf(w, "import \"unsafe\"\n\n")
@@ -50,6 +55,12 @@ func generateGo(src *mkcgo.Source, w io.Writer) {
 		if fn.Variadic() {
 			// cgo doesn't support variadic functions
 			continue
+		}
+		if fn.Optional {
+			// Generate a function that returns true if the function is available.
+			fmt.Fprintf(w, "func %s_Available() bool {\n", fn.GoName)
+			fmt.Fprintf(w, "\treturn C.%s_Available() != 0\n", fn.ImportName)
+			fmt.Fprintf(w, "}\n\n")
 		}
 		generateGoFn(fn, w)
 	}
@@ -139,10 +150,10 @@ func generateC(src *mkcgo.Source, w io.Writer) {
 	}
 	fmt.Fprintf(w, "\n")
 
+	fmt.Fprintf(w, "#define __mkcgo__dlsym_nocheck(varname, funcname) _g_##varname = (typeof(_g_##varname))dlsym(handle, #funcname);\n\n")
 	fmt.Fprintf(w, "#define __mkcgo__dlsym(name) __mkcgo__dlsym2(name, name)\n\n")
-
 	fmt.Fprintf(w, "#define __mkcgo__dlsym2(varname, funcname) \\\n")
-	fmt.Fprintf(w, "\t_g_##varname = (typeof(_g_##varname))dlsym(handle, #funcname); \\\n")
+	fmt.Fprintf(w, "\t__mkcgo__dlsym_nocheck(varname, funcname) \\\n")
 	fmt.Fprintf(w, "\tif (_g_##varname == NULL) { \\\n")
 	fmt.Fprintf(w, "\t\tfprintf(stderr, \"Cannot get required symbol \" #funcname \"\\n\"); \\\n")
 	fmt.Fprintf(w, "\t\tabort(); \\\n")
@@ -157,12 +168,19 @@ func generateC(src *mkcgo.Source, w io.Writer) {
 			}
 			if len(fn.Tags) == 0 && tag == "" {
 				// Default tag.
-				fmt.Fprintf(w, "\t__mkcgo__dlsym(%s)\n", fn.ImportName)
+				if fn.Optional {
+					fmt.Fprintf(w, "\t__mkcgo__dlsym_nocheck(%s, %s)\n", fn.ImportName, fn.ImportName)
+				} else {
+					fmt.Fprintf(w, "\t__mkcgo__dlsym(%s)\n", fn.ImportName)
+				}
 			} else {
 				for _, tagAttr := range fn.Tags {
 					if tagAttr.Tag == tag {
 						if tagAttr.Name != "" {
+							// TODO: if necessary, support optional functions in here too.
 							fmt.Fprintf(w, "\t__mkcgo__dlsym2(%s, %s)\n", fn.ImportName, tagAttr.Name)
+						} else if fn.Optional {
+							fmt.Fprintf(w, "\t__mkcgo__dlsym_nocheck(%s, %s)\n", fn.ImportName, fn.ImportName)
 						} else {
 							fmt.Fprintf(w, "\t__mkcgo__dlsym(%s)\n", fn.ImportName)
 						}
@@ -179,6 +197,12 @@ func generateC(src *mkcgo.Source, w io.Writer) {
 		if fn.Variadic() {
 			// cgo doesn't support variadic functions
 			continue
+		}
+		if fn.Optional {
+			// Generate a function that returns true if the function is available.
+			fmt.Fprintf(w, "int %s_Available() {\n", fn.CName)
+			fmt.Fprintf(w, "\treturn _g_%s != NULL;\n", fn.ImportName)
+			fmt.Fprintf(w, "}\n\n")
 		}
 		generateCFn(fn, w)
 	}

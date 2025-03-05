@@ -203,6 +203,9 @@ __mkcgo__funcptr(HMAC_Update);
 __mkcgo__funcptr(OBJ_nid2sn);
 __mkcgo__funcptr(OPENSSL_init);
 __mkcgo__funcptr(OPENSSL_init_crypto);
+__mkcgo__funcptr(OPENSSL_version_major);
+__mkcgo__funcptr(OPENSSL_version_minor);
+__mkcgo__funcptr(OPENSSL_version_patch);
 __mkcgo__funcptr(OSSL_PARAM_BLD_free);
 __mkcgo__funcptr(OSSL_PARAM_BLD_new);
 __mkcgo__funcptr(OSSL_PARAM_BLD_push_BN);
@@ -215,6 +218,7 @@ __mkcgo__funcptr(OSSL_PROVIDER_available);
 __mkcgo__funcptr(OSSL_PROVIDER_get0_name);
 __mkcgo__funcptr(OSSL_PROVIDER_try_load);
 __mkcgo__funcptr(OpenSSL_version);
+__mkcgo__funcptr(OpenSSL_version_num);
 __mkcgo__funcptr(PKCS5_PBKDF2_HMAC);
 __mkcgo__funcptr(RAND_bytes);
 __mkcgo__funcptr(RSA_free);
@@ -226,10 +230,12 @@ __mkcgo__funcptr(RSA_set0_crt_params);
 __mkcgo__funcptr(RSA_set0_factors);
 __mkcgo__funcptr(RSA_set0_key);
 
+#define __mkcgo__dlsym_nocheck(varname, funcname) _g_##varname = (typeof(_g_##varname))dlsym(handle, #funcname);
+
 #define __mkcgo__dlsym(name) __mkcgo__dlsym2(name, name)
 
 #define __mkcgo__dlsym2(varname, funcname) \
-	_g_##varname = (typeof(_g_##varname))dlsym(handle, #funcname); \
+	__mkcgo__dlsym_nocheck(varname, funcname) \
 	if (_g_##varname == NULL) { \
 		fprintf(stderr, "Cannot get required symbol " #funcname "\n"); \
 		abort(); \
@@ -415,6 +421,19 @@ void __mkcgoLoad_3(void* handle) {
 	__mkcgo__dlsym(OSSL_PROVIDER_try_load)
 }
 
+void __mkcgoLoad_init_1(void* handle) {
+	__mkcgo__dlsym(FIPS_mode)
+	__mkcgo__dlsym(FIPS_mode_set)
+}
+
+void __mkcgoLoad_init_3(void* handle) {
+	__mkcgo__dlsym(ERR_clear_error)
+	__mkcgo__dlsym(EVP_MD_fetch)
+	__mkcgo__dlsym(EVP_MD_free)
+	__mkcgo__dlsym(EVP_MD_get0_provider)
+	__mkcgo__dlsym(EVP_default_properties_is_fips_enabled)
+}
+
 void __mkcgoLoad_legacy_1(void* handle) {
 	__mkcgo__dlsym(DSA_free)
 	__mkcgo__dlsym(DSA_generate_key)
@@ -460,6 +479,13 @@ void __mkcgoLoad_legacy_1(void* handle) {
 	__mkcgo__dlsym(RSA_set0_crt_params)
 	__mkcgo__dlsym(RSA_set0_factors)
 	__mkcgo__dlsym(RSA_set0_key)
+}
+
+void __mkcgoLoad_version(void* handle) {
+	__mkcgo__dlsym_nocheck(OPENSSL_version_major, OPENSSL_version_major)
+	__mkcgo__dlsym_nocheck(OPENSSL_version_minor, OPENSSL_version_minor)
+	__mkcgo__dlsym_nocheck(OPENSSL_version_patch, OPENSSL_version_patch)
+	__mkcgo__dlsym_nocheck(OpenSSL_version_num, OpenSSL_version_num)
 }
 
 _BIGNUM_PTR BN_bin2bn(const unsigned char* _arg0, int _arg1, _BIGNUM_PTR _arg2) {
@@ -1222,6 +1248,30 @@ int OPENSSL_init_crypto(uint64_t _arg0, const _OPENSSL_INIT_SETTINGS_PTR _arg1) 
 	return _g_OPENSSL_init_crypto(_arg0, _arg1);
 }
 
+int OPENSSL_version_major_Available() {
+	return _g_OPENSSL_version_major != NULL;
+}
+
+unsigned int OPENSSL_version_major(void) {
+	return _g_OPENSSL_version_major();
+}
+
+int OPENSSL_version_minor_Available() {
+	return _g_OPENSSL_version_minor != NULL;
+}
+
+unsigned int OPENSSL_version_minor(void) {
+	return _g_OPENSSL_version_minor();
+}
+
+int OPENSSL_version_patch_Available() {
+	return _g_OPENSSL_version_patch != NULL;
+}
+
+unsigned int OPENSSL_version_patch(void) {
+	return _g_OPENSSL_version_patch();
+}
+
 void OSSL_PARAM_BLD_free(_OSSL_PARAM_BLD_PTR _arg0) {
 	_g_OSSL_PARAM_BLD_free(_arg0);
 }
@@ -1268,6 +1318,14 @@ _OSSL_PROVIDER_PTR OSSL_PROVIDER_try_load(_OSSL_LIB_CTX_PTR _arg0, const char* _
 
 const char* OpenSSL_version(int _arg0) {
 	return _g_OpenSSL_version(_arg0);
+}
+
+int OpenSSL_version_num_Available() {
+	return _g_OpenSSL_version_num != NULL;
+}
+
+unsigned long OpenSSL_version_num(void) {
+	return _g_OpenSSL_version_num();
 }
 
 int PKCS5_PBKDF2_HMAC(const char* _arg0, int _arg1, const unsigned char* _arg2, int _arg3, int _arg4, const _EVP_MD_PTR _arg5, int _arg6, unsigned char* _arg7) {
