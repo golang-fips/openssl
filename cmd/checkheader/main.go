@@ -130,63 +130,50 @@ func generate(header string) (string, error) {
 		fmt.Fprintf(w, "#define %s %s\n", def.Name, name)
 	}
 	var i int
-	writeDefineFunc := func(tagCond string, importName string, params []*mkcgo.Param, ret *mkcgo.Return) {
-		var specialCond string
-		switch importName {
-		// EVP_PKEY_size and EVP_PKEY_bits pkey parameter is const since OpenSSL 1.1.1.
-		case "EVP_PKEY_size", "EVP_PKEY_bits":
-			specialCond = "OPENSSL_VERSION_NUMBER >= 0x10101000L"
-		}
-		if specialCond != "" {
-			fmt.Fprintf(w, "#if %s\n", specialCond)
-		}
-		if tagCond != "" {
-			fmt.Fprintf(w, "#if %s\n", tagCond)
-		}
-		sparams := make([]string, 0, len(params))
-		for _, p := range params {
-			sparams = append(sparams, p.Type)
-		}
-		fmt.Fprintf(w, "%s (*__check_%d)(%s) = %s;\n", ret.Type, i, strings.Join(sparams, ", "), importName)
-		if tagCond != "" {
-			fmt.Fprintln(w, "#endif")
-		}
-		if specialCond != "" {
-			fmt.Fprintln(w, "#endif")
-		}
-		i++
-	}
-
 	for _, fn := range src.Funcs {
 		if fn.VariadicInst {
 			// Variadic instantiations are not real OpenSSL functions,
 			// skip them.
 			continue
 		}
-		if len(fn.Tags) == 0 {
-			writeDefineFunc("", fn.ImportName, fn.Params, fn.Ret)
-			continue
+		tags := fn.Tags
+		if len(tags) == 0 {
+			tags = []mkcgo.TagAttr{{}}
 		}
-		for _, tag := range fn.Tags {
-			var tagCond string
-			switch tag.Tag {
-			case "legacy_1":
-				tagCond = "OPENSSL_VERSION_NUMBER < 0x30000000L"
-			case "111":
-				tagCond = "OPENSSL_VERSION_NUMBER >= 0x10101000L"
-			case "3":
-				tagCond = "OPENSSL_VERSION_NUMBER >= 0x30000000L"
-			case "", "init_1", "init_3", "version":
-				// Nothing to check.
-				continue
-			default:
-				panic("unexpected tag: " + tag.Tag)
-			}
+		for _, tag := range tags {
 			importName := fn.ImportName
 			if tag.Name != "" {
 				importName = tag.Name
 			}
-			writeDefineFunc(tagCond, importName, fn.Params, fn.Ret)
+			var conds []string
+			if fn.Optional {
+				conds = append(conds, "defined("+importName+")")
+			}
+			switch importName {
+			case "EVP_PKEY_size", "EVP_PKEY_bits":
+				// EVP_PKEY_size and EVP_PKEY_bits pkey parameter is const since OpenSSL 1.1.1.
+				conds = append(conds, "OPENSSL_VERSION_NUMBER >= 0x10101000L")
+			}
+			switch tag.Tag {
+			case "legacy_1", "init_1":
+				conds = append(conds, "OPENSSL_VERSION_NUMBER < 0x30000000L")
+			case "111":
+				conds = append(conds, "OPENSSL_VERSION_NUMBER >= 0x10101000L")
+			case "3", "init_3":
+				conds = append(conds, "OPENSSL_VERSION_NUMBER >= 0x30000000L")
+			}
+			for _, cond := range conds {
+				fmt.Fprintf(w, "#if %s\n", cond)
+			}
+			sparams := make([]string, 0, len(fn.Params))
+			for _, p := range fn.Params {
+				sparams = append(sparams, p.Type)
+			}
+			fmt.Fprintf(w, "%s (*__check_%d)(%s) = %s;\n", fn.Ret.Type, i, strings.Join(sparams, ", "), importName)
+			for range conds {
+				fmt.Fprintf(w, "#endif\n")
+			}
+			i++
 		}
 	}
 	return w.String(), nil
