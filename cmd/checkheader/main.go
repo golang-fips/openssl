@@ -176,6 +176,9 @@ func generate(header string) (string, error) {
 				tagCond = "OPENSSL_VERSION_NUMBER >= 0x10101000L"
 			case "3":
 				tagCond = "OPENSSL_VERSION_NUMBER >= 0x30000000L"
+			case "", "init_1", "init_3", "version":
+				// Nothing to check.
+				continue
 			default:
 				panic("unexpected tag: " + tag.Tag)
 			}
