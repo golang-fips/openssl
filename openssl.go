@@ -50,10 +50,11 @@ var isBigEndian bool
 // This function can be called before Init.
 // All OpenSSL functions used in here should be tagged with "init_1" or "init_3" in shims.h.
 func CheckVersion(version string) (exists, fips bool) {
-	err := opensslInit(version, true)
+	close, err := initForCheckVersion(version)
 	if err != nil {
 		return false, false
 	}
+	defer close()
 	return true, FIPS()
 }
 
@@ -79,7 +80,7 @@ func Init(file string) error {
 		default:
 			panic("Could not determine native endianness.")
 		}
-		initErr = opensslInit(file, false)
+		initErr = opensslInit(file)
 	})
 	return initErr
 }

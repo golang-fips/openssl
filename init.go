@@ -3,21 +3,86 @@
 package openssl
 
 import "C"
-import "errors"
+import (
+	"errors"
+	"unsafe"
+)
 
 // opensslInit loads and initialize OpenSSL.
 // If successful, it returns the major and minor OpenSSL version
 // as reported by the OpenSSL API.
 //
 // See Init() for details about file.
-func opensslInit(file string, initOnly bool) error {
-	vMajor, vMinor, vPatch = 0, 0, 0
+func opensslInit(file string) error {
 	// Load the OpenSSL shared library using dlopen.
-	handle, err := dlopen(file)
+	handle, err := openLibrary(file)
 	if err != nil {
 		return err
 	}
 
+	// Load the OpenSSL functions.
+	// See shims.go for the complete list of supported functions.
+	mkcgoLoad_(handle)
+	if vMajor == 1 {
+		mkcgoLoad_legacy_1(handle)
+		if vPatch == 1 {
+			mkcgoLoad_111(handle)
+		}
+	} else {
+		mkcgoLoad_111(handle)
+		mkcgoLoad_3(handle)
+	}
+
+	// Initialize OpenSSL.
+	go_openssl_OPENSSL_init()
+	if go_openssl_OPENSSL_init_crypto(
+		_OPENSSL_INIT_ADD_ALL_CIPHERS|
+			_OPENSSL_INIT_ADD_ALL_DIGESTS|
+			_OPENSSL_INIT_LOAD_CONFIG|
+			_OPENSSL_INIT_LOAD_CRYPTO_STRINGS,
+		nil) != 1 {
+		return fail("init crypto")
+	}
+	return nil
+}
+
+// initForCheckVersion loads and initialize only the
+// functions required in [CheckVersion].
+// It returns a function that must be called to release the resources.
+func initForCheckVersion(file string) (func(), error) {
+	// Load the OpenSSL shared library using dlopen.
+	handle, err := openLibrary(file)
+	if err != nil {
+		return nil, err
+	}
+
+	switch vMajor {
+	case 1:
+		mkcgoLoad_init_1(handle)
+	case 3:
+		mkcgoLoad_init_3(handle)
+	default:
+		panic(errUnsupportedVersion())
+	}
+	return func() {
+		dlclose(handle)
+	}, nil
+}
+
+// openLibrary loads and initialize the version of OpenSSL.
+func openLibrary(file string) (unsafe.Pointer, error) {
+	handle, err := dlopen(file)
+	if err != nil {
+		return nil, err
+	}
+	if err := initVersion(handle); err != nil {
+		return nil, err
+	}
+	return handle, nil
+}
+
+func initVersion(handle unsafe.Pointer) error {
+	vMajor, vMinor, vPatch = 0, 0, 0
 	// Retrieve the loaded OpenSSL version and check if it is supported.
 	// Notice that major and minor could not match with the version parameter
 	// in case the name of the shared library file differs from the OpenSSL
@@ -48,40 +113,6 @@ func opensslInit(file string, initOnly bool) error {
 	}
 	if !supported {
 		return errUnsupportedVersion()
-	}
-
-	if initOnly {
-		switch vMajor {
-		case 1:
-			mkcgoLoad_init_1(handle)
-		case 3:
-			mkcgoLoad_init_3(handle)
-		}
-		return nil
-	}
-
-	// Load the OpenSSL functions.
-	// See shims.go for the complete list of supported functions.
-	mkcgoLoad_(handle)
-	if vMajor == 1 {
-		mkcgoLoad_legacy_1(handle)
-		if vPatch == 1 {
-			mkcgoLoad_111(handle)
-		}
-	} else {
-		mkcgoLoad_111(handle)
-		mkcgoLoad_3(handle)
-	}
-
-	// Initialize OpenSSL.
-	go_openssl_OPENSSL_init()
-	if go_openssl_OPENSSL_init_crypto(
-		_OPENSSL_INIT_ADD_ALL_CIPHERS|
-			_OPENSSL_INIT_ADD_ALL_DIGESTS|
-			_OPENSSL_INIT_LOAD_CONFIG|
-			_OPENSSL_INIT_LOAD_CRYPTO_STRINGS,
-		nil) != 1 {
-		return fail("openssl: init crypto")
 	}
 	return nil
 }
