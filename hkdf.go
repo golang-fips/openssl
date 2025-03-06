@@ -110,9 +110,9 @@ func (c *hkdf1) Read(p []byte) (int, error) {
 }
 
 // hkdfAllZerosSalt is a preallocated buffer of zeros used in ExtractHKDF().
-// The size should be kept larger than the output length of any hash algorithm
+// The size should be kept as large as the output length of any hash algorithm
 // used with HKDF.
-var hkdfAllZerosSalt [512]byte
+var hkdfAllZerosSalt [64]byte
 
 // ExtractHDKF implements the HDKF extract step.
 // If salt is nil, then this function replaces it internally with a buffer of
@@ -130,13 +130,15 @@ func ExtractHKDF(h func() hash.Hash, secret, salt []byte) ([]byte, error) {
 	// If calling code specifies nil salt, replace it with a buffer of hashLen
 	// zeros, as specified in RFC 5896 and as OpenSSL EVP_KDF-HKDF documentation
 	// instructs. Take a slice of a preallocated buffer to avoid allocating new
-	// buffer per call.
+	// buffer per call, but fall back to allocating a buffer if preallocated
+	// buffer is not large enough.
 	if salt == nil {
 		hlen := h().Size()
 		if hlen > len(hkdfAllZerosSalt) {
-			return nil, errors.New("nil salt is not supported: hash output length exceeds internal buffer size")
+			salt = make([]byte, hlen)
+		} else {
+			salt = hkdfAllZerosSalt[:hlen]
 		}
-		salt = hkdfAllZerosSalt[:hlen]
 	}
 
 	switch vMajor {
