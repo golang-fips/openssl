@@ -62,6 +62,7 @@ func initForCheckVersion(file string) (func(), error) {
 	case 3:
 		mkcgoLoad_init_3(handle)
 	default:
+		// We shouldn't get here: openLibrary should have already returned an error.
 		panic(errUnsupportedVersion())
 	}
 	return func() {
