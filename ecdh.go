@@ -184,7 +184,7 @@ func newECDHPkey3(nid int32, bytes []byte, isPrivate bool) (_EVP_PKEY_PTR, error
 	if isPrivate {
 		priv, err := go_openssl_BN_bin2bn(base(bytes), int32(len(bytes)), nil)
 		if err != nil {
-			return nil, nil
+			return nil, err
 		}
 		defer go_openssl_BN_clear_free(priv)
 		pubBytes, err := generateAndEncodeEcPublicKey(nid, func(group _EC_GROUP_PTR) (_EC_POINT_PTR, error) {
