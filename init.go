@@ -8,6 +8,9 @@ import (
 	"unsafe"
 )
 
+// osslHandle is the handle to the OpenSSL shared library loaded in the [Init] function.
+var osslHandle unsafe.Pointer
+
 // opensslInit loads and initialize OpenSSL.
 // If successful, it returns the major and minor OpenSSL version
 // as reported by the OpenSSL API.
@@ -20,8 +23,26 @@ func opensslInit(file string) error {
 		return err
 	}
 
-	// Load the OpenSSL functions.
-	// See shims.go for the complete list of supported functions.
+	loadOpenSSLFuncs(handle)
+
+	// Initialize OpenSSL.
+	go_openssl_OPENSSL_init()
+	if go_openssl_OPENSSL_init_crypto(
+		_OPENSSL_INIT_ADD_ALL_CIPHERS|
+			_OPENSSL_INIT_ADD_ALL_DIGESTS|
+			_OPENSSL_INIT_LOAD_CONFIG|
+			_OPENSSL_INIT_LOAD_CRYPTO_STRINGS,
+		nil) != 1 {
+		dlclose(handle)
+		return fail("init crypto")
+	}
+	osslHandle = handle
+	return nil
+}
+
+// loadFuncs loads and initialize the OpenSSL functions.
+// See shims.go for the complete list of supported functions.
+func loadOpenSSLFuncs(handle unsafe.Pointer) {
 	mkcgoLoad_(handle)
 	if vMajor == 1 {
 		mkcgoLoad_legacy_1(handle)
@@ -32,27 +53,20 @@ func opensslInit(file string) error {
 		mkcgoLoad_111(handle)
 		mkcgoLoad_3(handle)
 	}
-
-	// Initialize OpenSSL.
-	go_openssl_OPENSSL_init()
-	if go_openssl_OPENSSL_init_crypto(
-		_OPENSSL_INIT_ADD_ALL_CIPHERS|
-			_OPENSSL_INIT_ADD_ALL_DIGESTS|
-			_OPENSSL_INIT_LOAD_CONFIG|
-			_OPENSSL_INIT_LOAD_CRYPTO_STRINGS,
-		nil) != 1 {
-		return fail("init crypto")
-	}
-	return nil
 }
 
 // initForCheckVersion loads and initialize only the
 // functions required in [CheckVersion].
 // It returns a function that must be called to release the resources.
+// The function leaves all the global variables in the same state as they were
+// before the call.
 func initForCheckVersion(file string) (func(), error) {
+	// This function can be called when the
+	prevMajor, prevMinor, prevPatch := vMajor, vMinor, vPatch
 	// Load the OpenSSL shared library using dlopen.
 	handle, err := openLibrary(file)
 	if err != nil {
+		vMajor, vMinor, vPatch = prevMajor, prevMinor, prevPatch
 		return nil, err
 	}
 
@@ -66,6 +80,8 @@ func initForCheckVersion(file string) (func(), error) {
 		panic(errUnsupportedVersion())
 	}
 	return func() {
+		dlclose(handle)
+		// Undo all the changes made in this function.
 		mkcgoUnload_version()
 		switch vMajor {
 		case 1:
@@ -75,8 +91,10 @@ func initForCheckVersion(file string) (func(), error) {
 		default:
 			panic(errUnsupportedVersion())
 		}
-		dlclose(handle)
-		vMajor, vMinor, vPatch = 0, 0, 0
+		vMajor, vMinor, vPatch = prevMajor, prevMinor, prevPatch
+		if osslHandle != nil {
+			loadOpenSSLFuncs(osslHandle)
+		}
 	}, nil
 }
 
