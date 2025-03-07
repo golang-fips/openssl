@@ -27,14 +27,11 @@ type Enum struct {
 
 // Func describes a function.
 type Func struct {
-	GoName       string
-	CName        string
-	ImportName   string
-	Tags         []TagAttr // if TagAttr.Name is set, it's the import name for the tag
-	Params       []*Param
-	Ret          *Return
-	VariadicInst bool // true if the function is a variadic instantiation
-	Optional     bool
+	FuncAttributes
+	GoName string
+	CName  string
+	Params []*Param
+	Ret    *Return
 }
 
 func (f *Func) Variadic() bool {

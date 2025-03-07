@@ -4,49 +4,77 @@ import (
 	"bufio"
 	"cmp"
 	"errors"
+	"fmt"
 	"os"
 	"slices"
 	"strings"
 )
 
-type fnAttributes struct {
-	tags       []TagAttr
-	variadic   bool
-	importName string
-	optional   bool
+type FuncAttributes struct {
+	Tags         []TagAttr
+	VariadicInst bool
+	ImportName   string
+	Optional     bool
+	NoError      bool
+	ErrCond      string
 }
 
 type attribute struct {
 	name        string
 	description string
-	handle      func(*fnAttributes, ...string)
+	handle      func(*FuncAttributes, ...string) error
 }
 
 var attributes = [...]attribute{
 	{
 		name:        "tag",
 		description: "The function will be loaded together with other functions with the same tag. It can contain an optional name, which is the import name for the tag.",
-		handle: func(opts *fnAttributes, s ...string) {
+		handle: func(opts *FuncAttributes, s ...string) error {
 			var name string
 			if len(s) > 1 {
 				name = s[1]
 			}
-			opts.tags = append(opts.tags, TagAttr{Tag: s[0], Name: name})
+			opts.Tags = append(opts.Tags, TagAttr{Tag: s[0], Name: name})
+			return nil
 		},
 	},
 	{
 		name:        "variadic",
 		description: "The function has variadic arguments, and its name is a custom wrapper for the actual C name, defined in this attribute.",
-		handle: func(opts *fnAttributes, s ...string) {
-			opts.variadic = true
-			opts.importName = s[0]
+		handle: func(opts *FuncAttributes, s ...string) error {
+			opts.VariadicInst = true
+			opts.ImportName = s[0]
+			return nil
 		},
 	},
 	{
 		name:        "optional",
 		description: "The function is optional",
-		handle: func(opts *fnAttributes, s ...string) {
-			opts.optional = true
+		handle: func(opts *FuncAttributes, s ...string) error {
+			opts.Optional = true
+			return nil
+		},
+	},
+	{
+		name:        "noerror",
+		description: "The function does not return an error, and the program will panic if the function returns an error.",
+		handle: func(opts *FuncAttributes, s ...string) error {
+			if opts.ErrCond != "" {
+				return errors.New("noerror attribute is not allowed with errcond attribute")
+			}
+			opts.NoError = true
+			return nil
+		},
+	},
+	{
+		name:        "errcond",
+		description: "The function returns an error if the C function returns a value that matches the condition in this attribute.",
+		handle: func(opts *FuncAttributes, s ...string) error {
+			if opts.NoError {
+				return errors.New("errcond attribute is not allowed with noerror attribute")
+			}
+			opts.ErrCond = s[0]
+			return nil
 		},
 	},
 }
@@ -127,7 +155,7 @@ func (src *Source) parseFile(name string) error {
 		}
 
 		// Process attributes.
-		var fnOps fnAttributes
+		var fnOps FuncAttributes
 		line, err = extractFunctionAttributes(line, &fnOps)
 		if err != nil {
 			return err
@@ -180,17 +208,15 @@ func newTypeDef(line string) (*TypeDef, error) {
 }
 
 // newFn parses string s and return created function Fn.
-func newFn(s string, opts fnAttributes) (*Func, error) {
+func newFn(s string, attrs FuncAttributes) (*Func, error) {
 	// function name and args
 	prefix, body, _, found := extractSection(s, "(", ")")
 	if !found || prefix == "" {
 		return nil, errors.New("could not extract function name and parameters from \"" + s + "\"")
 	}
 	fn := &Func{
-		Ret:          &Return{},
-		VariadicInst: opts.variadic,
-		Tags:         opts.tags,
-		Optional:     opts.optional,
+		FuncAttributes: attrs,
+		Ret:            &Return{},
 	}
 	var err error
 	fn.Params, err = extractParams(body)
@@ -204,8 +230,8 @@ func newFn(s string, opts fnAttributes) (*Func, error) {
 	name, typ := prefix[nameIdx+1:], prefix[:nameIdx]
 	name, typ = normalizeParam(name, typ)
 	fn.CName = trim(name)
-	if opts.importName != "" {
-		fn.ImportName = opts.importName
+	if attrs.ImportName != "" {
+		fn.ImportName = attrs.ImportName
 	} else {
 		fn.ImportName = fn.CName
 	}
@@ -309,7 +335,7 @@ func processComments(line string, inBlockComment *bool) (comment, remmaining str
 // extractFunctionAttributes extracts mkcgo attributes from string s.
 // The attributes format follows the GCC __attribute__ syntax as
 // described in https://gcc.gnu.org/onlinedocs/gcc/Attribute-Syntax.html.
-func extractFunctionAttributes(s string, fnAttrs *fnAttributes) (string, error) {
+func extractFunctionAttributes(s string, fnAttrs *FuncAttributes) (string, error) {
 	// There can be spaces between __attribute__ and the opening parenthesis.
 	prefix, body, found := strings.Cut(s, "__attribute__")
 	if !found {
@@ -343,7 +369,7 @@ func extractFunctionAttributes(s string, fnAttrs *fnAttributes) (string, error) 
 			name = body[:idxParen]
 			_, args, body, found = extractSection(body[idxParen:], "(", ")")
 			if !found {
-				return "", errors.New("unbalanced parentheses in mkcgo attribute: " + s)
+				return "", errors.New("unbalanced parentheses in line: " + s)
 			}
 			body = strings.TrimPrefix(body, ",")
 		} else if idxComma == -1 && idxParen == -1 {
@@ -361,7 +387,9 @@ func extractFunctionAttributes(s string, fnAttrs *fnAttributes) (string, error) 
 			for i := range vargs {
 				vargs[i] = trim(strings.Trim(vargs[i], `"`))
 			}
-			attr.handle(fnAttrs, vargs...)
+			if err := attr.handle(fnAttrs, vargs...); err != nil {
+				return "", fmt.Errorf("error parsing attribute in line: %v: %w", s, err)
+			}
 			handled = true
 			break
 		}

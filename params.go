@@ -7,6 +7,15 @@ import (
 	"runtime"
 )
 
+type addParamError struct {
+	name string
+	err  error
+}
+
+func (e addParamError) Error() string {
+	return "failed to add parameter " + e.name + ": " + e.err.Error()
+}
+
 type bnParam struct {
 	value   _BIGNUM_PTR
 	private bool
@@ -26,9 +35,9 @@ type paramBuilder struct {
 
 // newParamBuilder creates a new paramBuilder.
 func newParamBuilder() (*paramBuilder, error) {
-	bld := go_openssl_OSSL_PARAM_BLD_new()
-	if bld == nil {
-		return nil, newOpenSSLError("OSSL_PARAM_BLD_new")
+	bld, err := go_openssl_OSSL_PARAM_BLD_new()
+	if err != nil {
+		return nil, err
 	}
 	pb := &paramBuilder{
 		bld:      bld,
@@ -78,9 +87,9 @@ func (b *paramBuilder) build() (_OSSL_PARAM_PTR, error) {
 	if !b.check() {
 		return nil, b.err
 	}
-	param := go_openssl_OSSL_PARAM_BLD_to_param(b.bld)
-	if param == nil {
-		return nil, newOpenSSLError("OSSL_PARAM_BLD_build")
+	param, err := go_openssl_OSSL_PARAM_BLD_to_param(b.bld)
+	if err != nil {
+		return nil, err
 	}
 	return param, nil
 }
@@ -92,8 +101,8 @@ func (b *paramBuilder) addUTF8String(name cString, value *byte, size int) {
 		return
 	}
 	// OSSL_PARAM_BLD_push_utf8_string calculates the size if it is zero.
-	if go_openssl_OSSL_PARAM_BLD_push_utf8_string(b.bld, name.ptr(), value, size) != 1 {
-		b.err = newOpenSSLError("OSSL_PARAM_BLD_push_utf8_string(" + name.str() + ")")
+	if _, err := go_openssl_OSSL_PARAM_BLD_push_utf8_string(b.bld, name.ptr(), value, size); err != nil {
+		b.err = addParamError{name.str(), err}
 	}
 }
 
@@ -106,8 +115,8 @@ func (b *paramBuilder) addOctetString(name cString, value []byte) {
 	if len(value) != 0 {
 		b.pinner.Pin(&value[0])
 	}
-	if go_openssl_OSSL_PARAM_BLD_push_octet_string(b.bld, name.ptr(), pbase(value), len(value)) != 1 {
-		b.err = newOpenSSLError("OSSL_PARAM_BLD_push_octet_string(" + name.str() + ")")
+	if _, err := go_openssl_OSSL_PARAM_BLD_push_octet_string(b.bld, name.ptr(), pbase(value), len(value)); err != nil {
+		b.err = addParamError{name.str(), err}
 	}
 }
 
@@ -116,8 +125,8 @@ func (b *paramBuilder) addInt32(name cString, value int32) {
 	if !b.check() {
 		return
 	}
-	if go_openssl_OSSL_PARAM_BLD_push_int32(b.bld, name.ptr(), value) != 1 {
-		b.err = newOpenSSLError("OSSL_PARAM_BLD_push_int32(" + name.str() + ")")
+	if _, err := go_openssl_OSSL_PARAM_BLD_push_int32(b.bld, name.ptr(), value); err != nil {
+		b.err = addParamError{name.str(), err}
 	}
 }
 
@@ -126,8 +135,8 @@ func (b *paramBuilder) addBN(name cString, value _BIGNUM_PTR) {
 	if !b.check() {
 		return
 	}
-	if go_openssl_OSSL_PARAM_BLD_push_BN(b.bld, name.ptr(), value) != 1 {
-		b.err = newOpenSSLError("OSSL_PARAM_BLD_push_BN(" + name.str() + ")")
+	if _, err := go_openssl_OSSL_PARAM_BLD_push_BN(b.bld, name.ptr(), value); err != nil {
+		b.err = addParamError{name.str(), err}
 	}
 }
 
@@ -143,9 +152,9 @@ func (b *paramBuilder) addBin(name cString, value []byte, private bool) {
 		// Nothing to do.
 		return
 	}
-	bn := go_openssl_BN_bin2bn(base(value), int32(len(value)), nil)
-	if bn == nil {
-		b.err = newOpenSSLError("BN_bin2bn")
+	bn, err := go_openssl_BN_bin2bn(base(value), int32(len(value)), nil)
+	if err != nil {
+		b.err = err
 		return
 	}
 	b.bnToFree = append(b.bnToFree, bnParam{bn, private})
@@ -164,9 +173,9 @@ func (b *paramBuilder) addBigInt(name cString, value BigInt, private bool) {
 		// Nothing to do.
 		return
 	}
-	bn := bigToBN(value)
-	if bn == nil {
-		b.err = newOpenSSLError("bigToBN")
+	bn, err := bigToBN(value)
+	if err != nil {
+		b.err = err
 		return
 	}
 	b.bnToFree = append(b.bnToFree, bnParam{bn, private})

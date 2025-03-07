@@ -84,7 +84,7 @@ func loadCipher(k cipherKind, mode cipherMode) (cipher _EVP_CIPHER_PTR) {
 			// not created by EVP_CIPHER has negative performance
 			// implications, as cipher operations will have
 			// to fetch it on every call. Better to just fetch it once here.
-			cipher = go_openssl_EVP_CIPHER_fetch(nil, go_openssl_EVP_CIPHER_get0_name(cipher), nil)
+			cipher, _ = go_openssl_EVP_CIPHER_fetch(nil, go_openssl_EVP_CIPHER_get0_name(cipher), nil)
 		}
 		cacheCipher.Store(cacheCipherKey{k, mode}, cipher)
 	}()
@@ -178,8 +178,8 @@ func (c *evpCipher) encrypt(dst, src []byte) error {
 	defer go_openssl_EVP_CIPHER_CTX_free(enc_ctx)
 
 	var outl int32
-	if go_openssl_EVP_EncryptUpdate(enc_ctx, base(dst), &outl, base(src), int32(c.blockSize)) != 1 {
-		return errors.New("EncryptUpdate failed")
+	if _, err := go_openssl_EVP_EncryptUpdate(enc_ctx, base(dst), &outl, base(src), int32(c.blockSize)); err != nil {
+		return err
 	}
 	runtime.KeepAlive(c)
 	return nil
@@ -203,8 +203,8 @@ func (c *evpCipher) decrypt(dst, src []byte) error {
 	}
 	defer go_openssl_EVP_CIPHER_CTX_free(dec_ctx)
 
-	if go_openssl_EVP_CIPHER_CTX_set_padding(dec_ctx, 0) != 1 {
-		return errors.New("could not disable cipher padding")
+	if _, err := go_openssl_EVP_CIPHER_CTX_set_padding(dec_ctx, 0); err != nil {
+		return err
 	}
 
 	var outl int32
@@ -236,8 +236,8 @@ func (x *cipherCBC) CryptBlocks(dst, src []byte) {
 	}
 	if len(src) > 0 {
 		var outl int32
-		if go_openssl_EVP_CipherUpdate(x.ctx, base(dst), &outl, base(src), int32(len(src))) != 1 {
-			panic("crypto/cipher: CipherUpdate failed")
+		if _, err := go_openssl_EVP_CipherUpdate(x.ctx, base(dst), &outl, base(src), int32(len(src))); err != nil {
+			panic("crypto/cipher: " + err.Error())
 		}
 		runtime.KeepAlive(x)
 	}
@@ -245,10 +245,10 @@ func (x *cipherCBC) CryptBlocks(dst, src []byte) {
 
 func (x *cipherCBC) SetIV(iv []byte) {
 	if len(iv) != x.blockSize {
-		panic("cipher: incorrect length IV")
+		panic("crypto/cipher: incorrect length IV")
 	}
-	if go_openssl_EVP_CipherInit_ex(x.ctx, nil, nil, nil, base(iv), int32(cipherOpNone)) != 1 {
-		panic("cipher: unable to initialize EVP cipher ctx")
+	if _, err := go_openssl_EVP_CipherInit_ex(x.ctx, nil, nil, nil, base(iv), int32(cipherOpNone)); err != nil {
+		panic("crypto/cipher: " + err.Error())
 	}
 }
 
@@ -259,8 +259,8 @@ func (c *evpCipher) newCBC(iv []byte, op cipherOp) cipher.BlockMode {
 	}
 	x := &cipherCBC{ctx: ctx, blockSize: c.blockSize}
 	runtime.SetFinalizer(x, (*cipherCBC).finalize)
-	if go_openssl_EVP_CIPHER_CTX_set_padding(x.ctx, 0) != 1 {
-		panic("cipher: unable to set padding")
+	if _, err := go_openssl_EVP_CIPHER_CTX_set_padding(x.ctx, 0); err != nil {
+		panic("crypto/cipher: " + err.Error())
 	}
 	return x
 }
@@ -280,8 +280,8 @@ func (x *cipherCTR) XORKeyStream(dst, src []byte) {
 		return
 	}
 	var outl int32
-	if go_openssl_EVP_EncryptUpdate(x.ctx, base(dst), &outl, base(src), int32(len(src))) != 1 {
-		panic("crypto/cipher: EncryptUpdate failed")
+	if _, err := go_openssl_EVP_EncryptUpdate(x.ctx, base(dst), &outl, base(src), int32(len(src))); err != nil {
+		panic("crypto/cipher: " + err.Error())
 	}
 	runtime.KeepAlive(x)
 }
@@ -455,22 +455,24 @@ func (g *cipherGCM) Seal(dst, nonce, plaintext, aad []byte) []byte {
 	// relying in the explicit nonce being securely set externally,
 	// and it also gives some interesting speed gains.
 	// Unfortunately we can't use it because Go expects AEAD.Seal to honor the provided nonce.
-	if go_openssl_EVP_EncryptInit_ex(ctx, nil, nil, nil, base(nonce)) != 1 {
-		panic(newOpenSSLError("EVP_EncryptInit_ex"))
+	if _, err := go_openssl_EVP_EncryptInit_ex(ctx, nil, nil, nil, base(nonce)); err != nil {
+		panic(err)
 	}
 	var outl, discard int32
-	if go_openssl_EVP_EncryptUpdate(ctx, nil, &discard, baseNeverEmpty(aad), int32(len(aad))) != 1 ||
-		go_openssl_EVP_EncryptUpdate(ctx, base(out), &outl, baseNeverEmpty(plaintext), int32(len(plaintext))) != 1 {
-		panic(newOpenSSLError("EVP_EncryptUpdate"))
+	if _, err := go_openssl_EVP_EncryptUpdate(ctx, nil, &discard, baseNeverEmpty(aad), int32(len(aad))); err != nil {
+		panic(err)
+	}
+	if _, err := go_openssl_EVP_EncryptUpdate(ctx, base(out), &outl, baseNeverEmpty(plaintext), int32(len(plaintext))); err != nil {
+		panic(err)
 	}
 	if len(plaintext) != int(outl) {
 		panic("cipher: incorrect length returned from GCM EncryptUpdate")
 	}
-	if go_openssl_EVP_EncryptFinal_ex(ctx, base(out[outl:]), &discard) != 1 {
-		panic(newOpenSSLError("EVP_EncryptFinal_ex"))
+	if _, err := go_openssl_EVP_EncryptFinal_ex(ctx, base(out[outl:]), &discard); err != nil {
+		panic(err)
 	}
-	if go_openssl_EVP_CIPHER_CTX_ctrl(ctx, _EVP_CTRL_GCM_GET_TAG, 16, unsafe.Pointer(base(out[outl:]))) != 1 {
-		panic(newOpenSSLError("EVP_CIPHER_CTX_ctrl"))
+	if _, err := go_openssl_EVP_CIPHER_CTX_ctrl(ctx, _EVP_CTRL_GCM_GET_TAG, 16, unsafe.Pointer(base(out[outl:]))); err != nil {
+		panic(err)
 	}
 	runtime.KeepAlive(g)
 	return ret
@@ -515,21 +517,23 @@ func (g *cipherGCM) Open(dst, nonce, ciphertext, aad []byte) (_ []byte, err erro
 			}
 		}
 	}()
-	if go_openssl_EVP_DecryptInit_ex(ctx, nil, nil, nil, base(nonce)) != 1 {
+	if _, err := go_openssl_EVP_DecryptInit_ex(ctx, nil, nil, nil, base(nonce)); err != nil {
 		return nil, errOpen
 	}
-	if go_openssl_EVP_CIPHER_CTX_ctrl(ctx, _EVP_CTRL_GCM_SET_TAG, 16, unsafe.Pointer(base(tag))) != 1 {
+	if _, err := go_openssl_EVP_CIPHER_CTX_ctrl(ctx, _EVP_CTRL_GCM_SET_TAG, 16, unsafe.Pointer(base(tag))); err != nil {
 		return nil, errOpen
 	}
 	var outl, discard int32
-	if go_openssl_EVP_DecryptUpdate(ctx, nil, &discard, baseNeverEmpty(aad), int32(len(aad))) != 1 ||
-		go_openssl_EVP_DecryptUpdate(ctx, base(out), &outl, baseNeverEmpty(ciphertext), int32(len(ciphertext))) != 1 {
+	if _, err := go_openssl_EVP_DecryptUpdate(ctx, nil, &discard, baseNeverEmpty(aad), int32(len(aad))); err != nil {
+		return nil, errOpen
+	}
+	if _, err := go_openssl_EVP_DecryptUpdate(ctx, base(out), &outl, baseNeverEmpty(ciphertext), int32(len(ciphertext))); err != nil {
 		return nil, errOpen
 	}
 	if len(ciphertext) != int(outl) {
 		return nil, errOpen
 	}
-	if go_openssl_EVP_DecryptFinal_ex(ctx, base(out[outl:]), &discard) != 1 {
+	if _, err := go_openssl_EVP_DecryptFinal_ex(ctx, base(out[outl:]), &discard); err != nil {
 		return nil, errOpen
 	}
 	runtime.KeepAlive(g)
@@ -553,9 +557,9 @@ func newCipherCtx(kind cipherKind, mode cipherMode, encrypt cipherOp, key, iv []
 	if cipher == nil {
 		panic("crypto/cipher: unsupported cipher: " + kind.String())
 	}
-	ctx := go_openssl_EVP_CIPHER_CTX_new()
-	if ctx == nil {
-		return nil, fail("unable to create EVP cipher ctx")
+	ctx, err := go_openssl_EVP_CIPHER_CTX_new()
+	if err != nil {
+		return nil, err
 	}
 	defer func() {
 		if err != nil {
@@ -566,17 +570,17 @@ func newCipherCtx(kind cipherKind, mode cipherMode, encrypt cipherOp, key, iv []
 		// RC4 cipher supports a variable key length.
 		// We need to set the key length before setting the key,
 		// and to do so we need to have an initialized cipher ctx.
-		if go_openssl_EVP_CipherInit_ex(ctx, cipher, nil, nil, nil, int32(encrypt)) != 1 {
-			return nil, newOpenSSLError("EVP_CipherInit_ex")
+		if _, err := go_openssl_EVP_CipherInit_ex(ctx, cipher, nil, nil, nil, int32(encrypt)); err != nil {
+			return nil, err
 		}
-		if go_openssl_EVP_CIPHER_CTX_set_key_length(ctx, int32(len(key))) != 1 {
-			return nil, newOpenSSLError("EVP_CIPHER_CTX_set_key_length")
+		if _, err := go_openssl_EVP_CIPHER_CTX_set_key_length(ctx, int32(len(key))); err != nil {
+			return nil, err
 		}
 		// Pass nil to the next call to EVP_CipherInit_ex to avoid resetting ctx's cipher.
 		cipher = nil
 	}
-	if go_openssl_EVP_CipherInit_ex(ctx, cipher, nil, base(key), base(iv), int32(encrypt)) != 1 {
-		return nil, newOpenSSLError("unable to initialize EVP cipher ctx")
+	if _, err := go_openssl_EVP_CipherInit_ex(ctx, cipher, nil, base(key), base(iv), int32(encrypt)); err != nil {
+		return nil, err
 	}
 	return ctx, nil
 }

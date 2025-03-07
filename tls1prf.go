@@ -60,44 +60,44 @@ func TLS1PRF(result, secret, label, seed []byte, fh func() hash.Hash) error {
 func tls1PRF1(result, secret, label, seed []byte, md _EVP_MD_PTR) error {
 	checkMajorVersion(1)
 
-	ctx := go_openssl_EVP_PKEY_CTX_new_id(_EVP_PKEY_TLS1_PRF, nil)
-	if ctx == nil {
-		return newOpenSSLError("EVP_PKEY_CTX_new_id")
+	ctx, err := go_openssl_EVP_PKEY_CTX_new_id(_EVP_PKEY_TLS1_PRF, nil)
+	if err != nil {
+		return err
 	}
 	defer func() {
 		go_openssl_EVP_PKEY_CTX_free(ctx)
 	}()
 
-	if go_openssl_EVP_PKEY_derive_init(ctx) != 1 {
-		return newOpenSSLError("EVP_PKEY_derive_init")
+	if _, err := go_openssl_EVP_PKEY_derive_init(ctx); err != nil {
+		return err
 	}
-	if go_openssl_EVP_PKEY_CTX_ctrl(ctx, -1,
+	if _, err := go_openssl_EVP_PKEY_CTX_ctrl(ctx, -1,
 		_EVP_PKEY_OP_DERIVE,
 		_EVP_PKEY_CTRL_TLS_MD,
-		0, unsafe.Pointer(md)) != 1 {
-		return newOpenSSLError("EVP_PKEY_CTX_set_tls1_prf_md")
+		0, unsafe.Pointer(md)); err != nil {
+		return err
 	}
-	if go_openssl_EVP_PKEY_CTX_ctrl(ctx, -1,
+	if _, err := go_openssl_EVP_PKEY_CTX_ctrl(ctx, -1,
 		_EVP_PKEY_OP_DERIVE,
 		_EVP_PKEY_CTRL_TLS_SECRET,
-		int32(len(secret)), unsafe.Pointer(base(secret))) != 1 {
-		return newOpenSSLError("EVP_PKEY_CTX_set1_tls1_prf_secret")
+		int32(len(secret)), unsafe.Pointer(base(secret))); err != nil {
+		return err
 	}
-	if go_openssl_EVP_PKEY_CTX_ctrl(ctx, -1,
+	if _, err := go_openssl_EVP_PKEY_CTX_ctrl(ctx, -1,
 		_EVP_PKEY_OP_DERIVE,
 		_EVP_PKEY_CTRL_TLS_SEED,
-		int32(len(label)), unsafe.Pointer(base(label))) != 1 {
-		return newOpenSSLError("EVP_PKEY_CTX_add1_tls1_prf_seed")
+		int32(len(label)), unsafe.Pointer(base(label))); err != nil {
+		return err
 	}
-	if go_openssl_EVP_PKEY_CTX_ctrl(ctx, -1,
+	if _, err := go_openssl_EVP_PKEY_CTX_ctrl(ctx, -1,
 		_EVP_PKEY_OP_DERIVE,
 		_EVP_PKEY_CTRL_TLS_SEED,
-		int32(len(seed)), unsafe.Pointer(base(seed))) != 1 {
-		return newOpenSSLError("EVP_PKEY_CTX_add1_tls1_prf_seed")
+		int32(len(seed)), unsafe.Pointer(base(seed))); err != nil {
+		return err
 	}
 	outLen := len(result)
-	if go_openssl_EVP_PKEY_derive(ctx, base(result), &outLen) != 1 {
-		return newOpenSSLError("EVP_PKEY_derive")
+	if _, err := go_openssl_EVP_PKEY_derive(ctx, base(result), &outLen); err != nil {
+		return err
 	}
 	// The Go standard library expects TLS1PRF to return the requested number of bytes,
 	// fail if it doesn't. While there is no known situation where this will happen,
@@ -115,9 +115,9 @@ func tls1PRF1(result, secret, label, seed []byte, md _EVP_MD_PTR) error {
 var fetchTLS1PRF3 = sync.OnceValues(func() (_EVP_KDF_PTR, error) {
 	checkMajorVersion(3)
 
-	kdf := go_openssl_EVP_KDF_fetch(nil, _OSSL_KDF_NAME_TLS1_PRF.ptr(), nil)
-	if kdf == nil {
-		return nil, newOpenSSLError("EVP_KDF_fetch")
+	kdf, err := go_openssl_EVP_KDF_fetch(nil, _OSSL_KDF_NAME_TLS1_PRF.ptr(), nil)
+	if err != nil {
+		return nil, err
 	}
 	return kdf, nil
 })
@@ -130,9 +130,9 @@ func tls1PRF3(result, secret, label, seed []byte, md _EVP_MD_PTR) error {
 	if err != nil {
 		return err
 	}
-	ctx := go_openssl_EVP_KDF_CTX_new(kdf)
-	if ctx == nil {
-		return newOpenSSLError("EVP_KDF_CTX_new")
+	ctx, err := go_openssl_EVP_KDF_CTX_new(kdf)
+	if err != nil {
+		return err
 	}
 	defer go_openssl_EVP_KDF_CTX_free(ctx)
 
@@ -150,8 +150,8 @@ func tls1PRF3(result, secret, label, seed []byte, md _EVP_MD_PTR) error {
 	}
 	defer go_openssl_OSSL_PARAM_free(params)
 
-	if go_openssl_EVP_KDF_derive(ctx, base(result), len(result), params) != 1 {
-		return newOpenSSLError("EVP_KDF_derive")
+	if _, err := go_openssl_EVP_KDF_derive(ctx, base(result), len(result), params); err != nil {
+		return err
 	}
 	return nil
 }

@@ -195,8 +195,8 @@ func SetFIPS(enable bool) error {
 	}
 	switch vMajor {
 	case 1:
-		if go_openssl_FIPS_mode_set(mode) != 1 {
-			return newOpenSSLError("FIPS_mode_set")
+		if _, err := go_openssl_FIPS_mode_set(mode); err != nil {
+			return err
 		}
 		return nil
 	case 3:
@@ -211,16 +211,14 @@ func SetFIPS(enable bool) error {
 		if !proveSHA256(shaProps) {
 			// There is no provider available that supports the desired FIPS mode.
 			// Try to load the built-in provider associated with the given mode.
-			if go_openssl_OSSL_PROVIDER_try_load(nil, provName.ptr(), 1) == nil {
+			if p, _ := go_openssl_OSSL_PROVIDER_try_load(nil, provName.ptr(), 1); p == nil {
 				// The built-in provider was not loaded successfully, we can't enable FIPS mode.
 				go_openssl_ERR_clear_error()
 				return errors.New("openssl: FIPS mode not supported by any provider")
 			}
 		}
-		if go_openssl_EVP_default_properties_enable_fips(nil, mode) != 1 {
-			return newOpenSSLError("EVP_default_properties_enable_fips")
-		}
-		return nil
+		_, err := go_openssl_EVP_default_properties_enable_fips(nil, mode)
+		return err
 	default:
 		panic(errUnsupportedVersion())
 	}
@@ -229,7 +227,7 @@ func SetFIPS(enable bool) error {
 // sha256Provider returns the provider for the SHA-256 algorithm
 // using the given properties.
 func sha256Provider(props cString) _OSSL_PROVIDER_PTR {
-	md := go_openssl_EVP_MD_fetch(nil, _DigestNameSHA2_256.ptr(), props.ptr())
+	md, _ := go_openssl_EVP_MD_fetch(nil, _DigestNameSHA2_256.ptr(), props.ptr())
 	if md == nil {
 		go_openssl_ERR_clear_error()
 		return nil
@@ -311,7 +309,7 @@ func newOpenSSLError(msg string) error {
 // freed by OPENSSL_free / CRYPTO_free) need to be allocated on the OpenSSL
 // heap.
 func cryptoMalloc(n int) unsafe.Pointer {
-	p := go_openssl_CRYPTO_malloc(n, nil, 0)
+	p, _ := go_openssl_CRYPTO_malloc(n, nil, 0)
 	if p == nil {
 		// Un-recover()-ably crash the program in the same manner as the
 		// C.malloc() wrapper function.
@@ -348,9 +346,9 @@ func wbase(b BigInt) *byte {
 	return (*byte)(unsafe.Pointer(unsafe.SliceData(b)))
 }
 
-func bigToBN(x BigInt) _BIGNUM_PTR {
+func bigToBN(x BigInt) (_BIGNUM_PTR, error) {
 	if len(x) == 0 {
-		return nil
+		return nil, nil
 	}
 	if isBigEndian {
 		z := make(BigInt, len(x))
@@ -360,7 +358,11 @@ func bigToBN(x BigInt) _BIGNUM_PTR {
 	}
 	// Limbs are always ordered in LSB first, so we can safely apply
 	// BN_lebin2bn regardless of host endianness.
-	return go_openssl_BN_lebin2bn(wbase(x), int32(len(x)*wordBytes), nil)
+	bn, err := go_openssl_BN_lebin2bn(wbase(x), int32(len(x)*wordBytes), nil)
+	if err != nil {
+		return nil, err
+	}
+	return bn, nil
 }
 
 func bnToBig(bn _BIGNUM_PTR) BigInt {
@@ -371,8 +373,8 @@ func bnToBig(bn _BIGNUM_PTR) BigInt {
 	// Limbs are always ordered in LSB first, so we can safely apply
 	// BN_bn2lebinpad regardless of host endianness.
 	x := make(BigInt, go_openssl_BN_num_bits(bn))
-	if go_openssl_BN_bn2lebinpad(bn, wbase(x), int32(len(x)*wordBytes)) == 0 {
-		panic("openssl: bignum conversion failed")
+	if _, err := go_openssl_BN_bn2lebinpad(bn, wbase(x), int32(len(x)*wordBytes)); err != nil {
+		panic(err)
 	}
 	if isBigEndian {
 		x.byteSwap()
@@ -384,10 +386,8 @@ func bnToBig(bn _BIGNUM_PTR) BigInt {
 // it at to, padding with zeroes if necessary. If len(to) is not large enough to
 // hold the result, an error is returned.
 func bnToBinPad(bn _BIGNUM_PTR, to []byte) error {
-	if go_openssl_BN_bn2binpad(bn, base(to), int32(len(to))) < 0 {
-		return newOpenSSLError("BN_bn2binpad")
-	}
-	return nil
+	_, err := go_openssl_BN_bn2binpad(bn, base(to), int32(len(to)))
+	return err
 }
 
 func CheckLeaks() {

@@ -54,6 +54,11 @@ func generateGo(src *mkcgo.Source, w io.Writer) {
 		fmt.Fprintf(w, "}\n\n")
 	}
 
+	typedefs := make(map[string]string, len(src.TypeDefs))
+	for _, def := range src.TypeDefs {
+		typedefs[def.Name] = def.Type
+	}
+
 	// Generate function wrappers.
 	for _, fn := range src.Funcs {
 		if fn.Variadic() {
@@ -66,7 +71,7 @@ func generateGo(src *mkcgo.Source, w io.Writer) {
 			fmt.Fprintf(w, "\treturn C.%s_Available() != 0\n", fn.ImportName)
 			fmt.Fprintf(w, "}\n\n")
 		}
-		generateGoFn(fn, w)
+		generateGoFn(typedefs, fn, w)
 	}
 }
 
@@ -226,31 +231,75 @@ func generateC(src *mkcgo.Source, w io.Writer) {
 }
 
 // generateGoFn generates Go function f.
-func generateGoFn(fn *mkcgo.Func, w io.Writer) {
+func generateGoFn(typedefs map[string]string, fn *mkcgo.Func, w io.Writer) {
+	fnCall := fmt.Sprintf("C.%s(%s)", fn.CName, fnToGoArgs(fn))
+	// Function definition
 	fmt.Fprintf(w, "func %s(%s)", fn.GoName, fnToGoParams(fn))
-	if !retIsVoid(fn.Ret) {
-		fmt.Fprintf(w, " %s ", cTypeToGo(fn.Ret.Type, false))
+	if retIsVoid(fn.Ret) {
+		// Easy path, just call the C function. No need to write the return types,
+		// nor do error handling, nor cast the return value.
+		fmt.Fprintf(w, "{\n")
+		fmt.Fprintf(w, "\t%s\n", fnCall)
+		fmt.Fprintf(w, "}\n\n")
+		return
+	}
+	typ, _ := cTypeToGo(fn.Ret.Type, false)
+	if fn.NoError {
+		fmt.Fprintf(w, " %s ", typ)
+	} else {
+		fmt.Fprintf(w, " (%s, error) ", typ)
 	}
 	fmt.Fprintf(w, "{\n")
-	fmt.Fprintf(w, "\t")
-	var closePar int
-	if !retIsVoid(fn.Ret) {
-		fmt.Fprintf(w, "return ")
-		goType := cTypeToGo(fn.Ret.Type, false)
-		if goType != "" && goType != fn.Ret.Type {
-			closePar++
-			if goType[0] == '*' {
-				goType = fmt.Sprintf("(%s)(unsafe.Pointer", goType)
-				closePar++
+
+	// Function call
+	var needUnsafeCast bool
+	goType, needCast := cTypeToGo(fn.Ret.Type, false)
+	if needCast && goType[0] == '*' {
+		goType = fmt.Sprintf("(%s)(unsafe.Pointer", goType)
+		needUnsafeCast = true
+	}
+	if fn.NoError {
+		// No error handling, just cast the return value if necessary.
+		fmt.Fprintf(w, "\treturn ")
+		if needCast {
+			fmt.Fprintf(w, "%s(%s)", goType, fnCall)
+			if needUnsafeCast {
+				fmt.Fprintf(w, ")")
 			}
-			fmt.Fprintf(w, "%s(", goType)
+		} else {
+			fmt.Fprintf(w, "%s", fnCall)
 		}
+		fmt.Fprintf(w, "\n")
+		fmt.Fprintf(w, "}\n\n")
+		return
 	}
-	fmt.Fprintf(w, "C.%s(%s)", fn.CName, fnToGoArgs(fn))
-	if closePar > 0 {
-		fmt.Fprint(w, strings.Repeat(")", closePar))
+	fmt.Fprintf(w, "\t_ret := C.%s(%s)\n", fn.CName, fnToGoArgs(fn))
+
+	// Error handling
+	errCond := "<= 0"
+	if fn.ErrCond != "" {
+		errCond = fn.ErrCond
+	} else if strings.Contains(goType, "unsafe.Pointer") {
+		errCond = "== nil"
+	} else if typ, ok := typedefs[goType]; ok && typ == "void*" {
+		errCond = "== nil"
 	}
-	fmt.Fprintf(w, "\n")
+	fmt.Fprintf(w, "\tvar _err error\n")
+	fmt.Fprintf(w, "\tif _ret %s {\n", errCond)
+	fmt.Fprintf(w, "\t\t_err = newOpenSSLError(\"%s\")\n", fn.CName)
+	fmt.Fprintf(w, "\t}\n")
+
+	// Return the value
+	fmt.Fprintf(w, "\treturn ")
+	if needCast {
+		fmt.Fprintf(w, "%s(_ret)", goType)
+		if needUnsafeCast {
+			fmt.Fprintf(w, ")")
+		}
+	} else {
+		fmt.Fprintf(w, "_ret")
+	}
+	fmt.Fprintf(w, ", _err\n")
 	fmt.Fprintf(w, "}\n\n")
 }
 
@@ -265,7 +314,10 @@ func generateCFn(fn *mkcgo.Func, w io.Writer) {
 
 // paramToGo converts C parameter p to Go parameter.
 func paramToGo(p *mkcgo.Param) string {
-	goType := cTypeToGo(p.Type, true)
+	goType, needCast := cTypeToGo(p.Type, true)
+	if !needCast {
+		return p.Name
+	}
 	switch {
 	case goType == "unsafe.Pointer" || goType == "":
 		return p.Name
@@ -318,13 +370,17 @@ var cstdTypesToCgo = map[string]string{
 }
 
 // cTypeToGo converts C type t to a Go type.
-func cTypeToGo(t string, cgo bool) string {
+// If cgo is true, it returns the type that can be
+// passed to a cgo function call.
+// It returns the Go type and a boolean that reports whether
+// the type needs to be casted to goType or not.
+func cTypeToGo(t string, cgo bool) (string, bool) {
 	t, _ = strings.CutPrefix(t, "const ")
 	if t == "void" {
-		return ""
+		return "", true
 	}
 	if strings.HasPrefix(t, "void*") {
-		return "unsafe.Pointer"
+		return "unsafe.Pointer", false
 	}
 	if strings.HasSuffix(t, "*") {
 		// Remove all trailing '*' characters.
@@ -335,29 +391,25 @@ func cTypeToGo(t string, cgo bool) string {
 			}
 			n++
 		}
-		s := cTypeToGo(t[:i+1], cgo)
+		s, std := cTypeToGo(t[:i+1], cgo)
 		if s != "" {
 			s = strings.Repeat("*", n) + s
 		}
-		return s
+		return s, std
 	}
 	if !isStdType(t) {
-		if cgo {
-			// Non-standard C types are aliased so C.<type> so they don't need to be converted.
-			return ""
-		}
-		return t
+		return t, false
 	}
 	if cgo {
 		if s, ok := cstdTypesToCgo[t]; ok {
 			t = s
 		}
-		return "C." + t
+		return "C." + t, true
 	}
 	if t, ok := cstdTypesToGo[t]; ok {
-		return t
+		return t, true
 	}
-	return t
+	return t, true
 }
 
 // paramToC returns C source code of parameter p.
@@ -382,7 +434,8 @@ func retIsVoid(r *mkcgo.Return) bool {
 // fnToGoParams returns source code for function f parameters.
 func fnToGoParams(fn *mkcgo.Func) string {
 	return join(fn.Params, func(_ int, p *mkcgo.Param) string {
-		return p.Name + " " + cTypeToGo(p.Type, false)
+		typ, _ := cTypeToGo(p.Type, false)
+		return p.Name + " " + typ
 	}, ", ")
 }
 

@@ -75,21 +75,21 @@ type opensslHMAC struct {
 }
 
 func newHMAC1(key []byte, md _EVP_MD_PTR) hmacCtx1 {
-	ctx := go_openssl_HMAC_CTX_new()
-	if ctx == nil {
-		panic("openssl: EVP_MAC_CTX_new failed")
+	ctx, err := go_openssl_HMAC_CTX_new()
+	if err != nil {
+		panic(err)
 	}
-	if go_openssl_HMAC_Init_ex(ctx, unsafe.Pointer(&key[0]), int32(len(key)), md, nil) == 0 {
-		panic(newOpenSSLError("HMAC_Init_ex failed"))
+	if _, err := go_openssl_HMAC_Init_ex(ctx, unsafe.Pointer(&key[0]), int32(len(key)), md, nil); err != nil {
+		panic(err)
 	}
 	return hmacCtx1{ctx}
 }
 
 var hmacDigestsSupported sync.Map
 var fetchHMAC3 = sync.OnceValue(func() _EVP_MAC_PTR {
-	mac := go_openssl_EVP_MAC_fetch(nil, _OSSL_MAC_NAME_HMAC.ptr(), nil)
-	if mac == nil {
-		panic("openssl: HMAC not supported")
+	mac, err := go_openssl_EVP_MAC_fetch(nil, _OSSL_MAC_NAME_HMAC.ptr(), nil)
+	if err != nil {
+		panic(err)
 	}
 	return mac
 })
@@ -109,9 +109,9 @@ func isHMAC3DigestSupported(md _EVP_MD_PTR) bool {
 	if v, ok := hmacDigestsSupported.Load(nid); ok {
 		return v.(bool)
 	}
-	ctx := go_openssl_EVP_MAC_CTX_new(fetchHMAC3())
-	if ctx == nil {
-		panic(newOpenSSLError("EVP_MAC_CTX_new"))
+	ctx, err := go_openssl_EVP_MAC_CTX_new(fetchHMAC3())
+	if err != nil {
+		panic(err)
 	}
 	defer go_openssl_EVP_MAC_CTX_free(ctx)
 
@@ -121,7 +121,8 @@ func isHMAC3DigestSupported(md _EVP_MD_PTR) bool {
 	}
 	defer go_openssl_OSSL_PARAM_free(params)
 
-	supported := go_openssl_EVP_MAC_CTX_set_params(ctx, params) != 0
+	_, err = go_openssl_EVP_MAC_CTX_set_params(ctx, params)
+	supported := err == nil
 	hmacDigestsSupported.Store(nid, supported)
 	return supported
 }
@@ -140,14 +141,14 @@ func newHMAC3(key []byte, md _EVP_MD_PTR) hmacCtx3 {
 	}
 	defer go_openssl_OSSL_PARAM_free(params)
 
-	ctx := go_openssl_EVP_MAC_CTX_new(fetchHMAC3())
-	if ctx == nil {
-		panic(newOpenSSLError("EVP_MAC_CTX_new"))
+	ctx, err := go_openssl_EVP_MAC_CTX_new(fetchHMAC3())
+	if err != nil {
+		panic(err)
 	}
 
-	if go_openssl_EVP_MAC_init(ctx, base(key), len(key), params) == 0 {
+	if _, err := go_openssl_EVP_MAC_init(ctx, base(key), len(key), params); err != nil {
 		go_openssl_EVP_MAC_CTX_free(ctx)
-		panic(newOpenSSLError("EVP_MAC_init"))
+		panic(err)
 	}
 	var hkey []byte
 	if vMinor == 0 && vPatch <= 2 {
@@ -165,12 +166,12 @@ func newHMAC3(key []byte, md _EVP_MD_PTR) hmacCtx3 {
 func (h *opensslHMAC) Reset() {
 	switch vMajor {
 	case 1:
-		if go_openssl_HMAC_Init_ex(h.ctx1.ctx, nil, 0, nil, nil) == 0 {
-			panic(newOpenSSLError("HMAC_Init_ex failed"))
+		if _, err := go_openssl_HMAC_Init_ex(h.ctx1.ctx, nil, 0, nil, nil); err != nil {
+			panic(err)
 		}
 	case 3:
-		if go_openssl_EVP_MAC_init(h.ctx3.ctx, base(h.ctx3.key), len(h.ctx3.key), nil) == 0 {
-			panic(newOpenSSLError("EVP_MAC_init failed"))
+		if _, err := go_openssl_EVP_MAC_init(h.ctx3.ctx, base(h.ctx3.key), len(h.ctx3.key), nil); err != nil {
+			panic(err)
 		}
 	default:
 		panic(errUnsupportedVersion())
@@ -225,19 +226,19 @@ func (h *opensslHMAC) Sum(in []byte) []byte {
 	// and the second Sum acts as if the first didn't happen.
 	switch vMajor {
 	case 1:
-		ctx2 := go_openssl_HMAC_CTX_new()
-		if ctx2 == nil {
-			panic("openssl: HMAC_CTX_new failed")
+		ctx2, err := go_openssl_HMAC_CTX_new()
+		if err != nil {
+			panic(err)
 		}
 		defer go_openssl_HMAC_CTX_free(ctx2)
-		if go_openssl_HMAC_CTX_copy(ctx2, h.ctx1.ctx) == 0 {
-			panic("openssl: HMAC_CTX_copy failed")
+		if _, err := go_openssl_HMAC_CTX_copy(ctx2, h.ctx1.ctx); err != nil {
+			panic(err)
 		}
 		go_openssl_HMAC_Final(ctx2, base(h.sum), nil)
 	case 3:
-		ctx2 := go_openssl_EVP_MAC_CTX_dup(h.ctx3.ctx)
-		if ctx2 == nil {
-			panic("openssl: EVP_MAC_CTX_dup failed")
+		ctx2, err := go_openssl_EVP_MAC_CTX_dup(h.ctx3.ctx)
+		if err != nil {
+			panic(err)
 		}
 		defer go_openssl_EVP_MAC_CTX_free(ctx2)
 		go_openssl_EVP_MAC_final(ctx2, base(h.sum), nil, len(h.sum))

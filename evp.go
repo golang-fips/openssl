@@ -150,7 +150,7 @@ func loadHash(ch crypto.Hash) *hashAlgorithm {
 		// not created by EVP_MD_fetch has negative performance
 		// implications, as digest operations will have
 		// to fetch it on every call. Better to just fetch it once here.
-		md := go_openssl_EVP_MD_fetch(nil, go_openssl_EVP_MD_get0_name(hash.md), nil)
+		md, _ := go_openssl_EVP_MD_fetch(nil, go_openssl_EVP_MD_get0_name(hash.md), nil)
 		// Don't overwrite md in case it can't be fetched, as the md may still be used
 		// outside of EVP_MD_CTX, for example to sign and verify RSA signatures.
 		if md != nil {
@@ -170,40 +170,41 @@ func generateEVPPKey(id, bits int32, curve string) (_EVP_PKEY_PTR, error) {
 	var pkey _EVP_PKEY_PTR
 	switch vMajor {
 	case 1:
-		ctx := go_openssl_EVP_PKEY_CTX_new_id(id, nil)
-		if ctx == nil {
-			return nil, newOpenSSLError("EVP_PKEY_CTX_new_id")
+		ctx, err := go_openssl_EVP_PKEY_CTX_new_id(id, nil)
+		if err != nil {
+			return nil, err
 		}
 		defer go_openssl_EVP_PKEY_CTX_free(ctx)
-		if go_openssl_EVP_PKEY_keygen_init(ctx) != 1 {
-			return nil, newOpenSSLError("EVP_PKEY_keygen_init")
+		if _, err := go_openssl_EVP_PKEY_keygen_init(ctx); err != nil {
+			return nil, err
 		}
 		if bits != 0 {
-			if go_openssl_EVP_PKEY_CTX_ctrl(ctx, id, -1, _EVP_PKEY_CTRL_RSA_KEYGEN_BITS, bits, nil) != 1 {
-				return nil, newOpenSSLError("EVP_PKEY_CTX_ctrl")
+			if _, err := go_openssl_EVP_PKEY_CTX_ctrl(ctx, id, -1, _EVP_PKEY_CTRL_RSA_KEYGEN_BITS, bits, nil); err != nil {
+				return nil, err
 			}
 		}
 		if curve != "" {
-			if go_openssl_EVP_PKEY_CTX_ctrl(ctx, id, -1, _EVP_PKEY_CTRL_EC_PARAMGEN_CURVE_NID, curveNID(curve), nil) != 1 {
-				return nil, newOpenSSLError("EVP_PKEY_CTX_ctrl")
+			if _, err := go_openssl_EVP_PKEY_CTX_ctrl(ctx, id, -1, _EVP_PKEY_CTRL_EC_PARAMGEN_CURVE_NID, curveNID(curve), nil); err != nil {
+				return nil, err
 			}
 		}
-		if go_openssl_EVP_PKEY_keygen(ctx, &pkey) != 1 {
-			return nil, newOpenSSLError("EVP_PKEY_keygen")
+		if _, err := go_openssl_EVP_PKEY_keygen(ctx, &pkey); err != nil {
+			return nil, err
 		}
 	case 3:
+		var err error
 		switch id {
 		case _EVP_PKEY_RSA:
-			pkey = go_openssl_EVP_PKEY_Q_keygen_RSA(nil, nil, _KeyTypeRSA.ptr(), int(bits))
+			pkey, err = go_openssl_EVP_PKEY_Q_keygen_RSA(nil, nil, _KeyTypeRSA.ptr(), int(bits))
 		case _EVP_PKEY_EC:
-			pkey = go_openssl_EVP_PKEY_Q_keygen_EC(nil, nil, _KeyTypeEC.ptr(), go_openssl_OBJ_nid2sn(curveNID(curve)))
+			pkey, err = go_openssl_EVP_PKEY_Q_keygen_EC(nil, nil, _KeyTypeEC.ptr(), go_openssl_OBJ_nid2sn(curveNID(curve)))
 		case _EVP_PKEY_ED25519:
-			pkey = go_openssl_EVP_PKEY_Q_keygen_ED25519(nil, nil, _KeyTypeED25519.ptr())
+			pkey, err = go_openssl_EVP_PKEY_Q_keygen_ED25519(nil, nil, _KeyTypeED25519.ptr())
 		default:
 			panic("unsupported key type '" + strconv.Itoa(int(id)) + "'")
 		}
-		if pkey == nil {
-			return nil, newOpenSSLError("EVP_PKEY_Q_keygen")
+		if err != nil {
+			return nil, err
 		}
 	default:
 		panic(errUnsupportedVersion())
@@ -212,7 +213,7 @@ func generateEVPPKey(id, bits int32, curve string) (_EVP_PKEY_PTR, error) {
 	return pkey, nil
 }
 
-type withKeyFunc func(func(_EVP_PKEY_PTR) int32) int32
+type withKeyFunc func(func(_EVP_PKEY_PTR) (int32, error)) (int32, error)
 type initFunc func(_EVP_PKEY_CTX_PTR) error
 type cryptFunc func(_EVP_PKEY_CTX_PTR, *byte, *int, *byte, int) error
 type verifyFunc func(_EVP_PKEY_CTX_PTR, *byte, int, *byte, int) error
@@ -221,12 +222,11 @@ func setupEVP(withKey withKeyFunc, padding int32,
 	h, mgfHash hash.Hash, label []byte, saltLen int32, ch crypto.Hash,
 	init initFunc) (_ _EVP_PKEY_CTX_PTR, err error) {
 	var ctx _EVP_PKEY_CTX_PTR
-	withKey(func(pkey _EVP_PKEY_PTR) int32 {
-		ctx = go_openssl_EVP_PKEY_CTX_new(pkey, nil)
-		return 1
-	})
-	if ctx == nil {
-		return nil, newOpenSSLError("EVP_PKEY_CTX_new failed")
+	if _, err := withKey(func(pkey _EVP_PKEY_PTR) (int32, error) {
+		ctx, err = go_openssl_EVP_PKEY_CTX_new(pkey, nil)
+		return 0, err
+	}); err != nil {
+		return nil, err
 	}
 	defer func() {
 		if err != nil {
@@ -245,10 +245,8 @@ func setupEVP(withKey withKeyFunc, padding int32,
 	// Each padding type has its own requirements in terms of when to apply the padding,
 	// so it can't be just set at this point.
 	setPadding := func() error {
-		if go_openssl_EVP_PKEY_CTX_ctrl(ctx, _EVP_PKEY_RSA, -1, _EVP_PKEY_CTRL_RSA_PADDING, padding, nil) != 1 {
-			return newOpenSSLError("EVP_PKEY_CTX_ctrl failed")
-		}
-		return nil
+		_, err := go_openssl_EVP_PKEY_CTX_ctrl(ctx, _EVP_PKEY_RSA, -1, _EVP_PKEY_CTRL_RSA_PADDING, padding, nil)
+		return err
 	}
 	switch padding {
 	case _RSA_PKCS1_OAEP_PADDING:
@@ -268,12 +266,12 @@ func setupEVP(withKey withKeyFunc, padding int32,
 		if err := setPadding(); err != nil {
 			return nil, err
 		}
-		if go_openssl_EVP_PKEY_CTX_ctrl(ctx, _EVP_PKEY_RSA, -1, _EVP_PKEY_CTRL_RSA_OAEP_MD, 0, unsafe.Pointer(md)) != 1 {
-			return nil, newOpenSSLError("EVP_PKEY_CTX_ctrl failed")
+		if _, err := go_openssl_EVP_PKEY_CTX_ctrl(ctx, _EVP_PKEY_RSA, -1, _EVP_PKEY_CTRL_RSA_OAEP_MD, 0, unsafe.Pointer(md)); err != nil {
+			return nil, err
 		}
 		if mgfHash != nil {
-			if go_openssl_EVP_PKEY_CTX_ctrl(ctx, _EVP_PKEY_RSA, -1, _EVP_PKEY_CTRL_RSA_MGF1_MD, 0, unsafe.Pointer(mgfMD)) != 1 {
-				return nil, newOpenSSLError("EVP_PKEY_CTX_ctrl failed")
+			if _, err := go_openssl_EVP_PKEY_CTX_ctrl(ctx, _EVP_PKEY_RSA, -1, _EVP_PKEY_CTRL_RSA_MGF1_MD, 0, unsafe.Pointer(mgfMD)); err != nil {
+				return nil, err
 			}
 		}
 		// ctx takes ownership of label, so malloc a copy for OpenSSL to free.
@@ -285,15 +283,9 @@ func setupEVP(withKey withKeyFunc, padding int32,
 			copy((*[1 << 30]byte)(unsafe.Pointer(clabel))[:len(label)], label)
 			var err error
 			if vMajor == 3 {
-				ret := go_openssl_EVP_PKEY_CTX_set0_rsa_oaep_label(ctx, unsafe.Pointer(clabel), int32(len(label)))
-				if ret != 1 {
-					err = newOpenSSLError("EVP_PKEY_CTX_set0_rsa_oaep_label failed")
-				}
+				_, err = go_openssl_EVP_PKEY_CTX_set0_rsa_oaep_label(ctx, unsafe.Pointer(clabel), int32(len(label)))
 			} else {
-				ret := go_openssl_EVP_PKEY_CTX_ctrl(ctx, _EVP_PKEY_RSA, -1, _EVP_PKEY_CTRL_RSA_OAEP_LABEL, int32(len(label)), unsafe.Pointer(clabel))
-				if ret != 1 {
-					err = newOpenSSLError("EVP_PKEY_CTX_ctrl failed")
-				}
+				_, err = go_openssl_EVP_PKEY_CTX_ctrl(ctx, _EVP_PKEY_RSA, -1, _EVP_PKEY_CTRL_RSA_OAEP_LABEL, int32(len(label)), unsafe.Pointer(clabel))
 			}
 			if err != nil {
 				cryptoFree(unsafe.Pointer(clabel))
@@ -305,16 +297,16 @@ func setupEVP(withKey withKeyFunc, padding int32,
 		if alg == nil {
 			return nil, errors.New("crypto/rsa: unsupported hash function")
 		}
-		if go_openssl_EVP_PKEY_CTX_ctrl(ctx, _EVP_PKEY_RSA, -1, _EVP_PKEY_CTRL_MD, 0, unsafe.Pointer(alg.md)) != 1 {
-			return nil, newOpenSSLError("EVP_PKEY_CTX_ctrl failed")
+		if _, err := go_openssl_EVP_PKEY_CTX_ctrl(ctx, _EVP_PKEY_RSA, -1, _EVP_PKEY_CTRL_MD, 0, unsafe.Pointer(alg.md)); err != nil {
+			return nil, err
 		}
 		// setPadding must happen after setting EVP_PKEY_CTRL_MD.
 		if err := setPadding(); err != nil {
 			return nil, err
 		}
 		if saltLen != 0 {
-			if go_openssl_EVP_PKEY_CTX_ctrl(ctx, _EVP_PKEY_RSA, -1, _EVP_PKEY_CTRL_RSA_PSS_SALTLEN, saltLen, nil) != 1 {
-				return nil, newOpenSSLError("EVP_PKEY_CTX_ctrl failed")
+			if _, err := go_openssl_EVP_PKEY_CTX_ctrl(ctx, _EVP_PKEY_RSA, -1, _EVP_PKEY_CTRL_RSA_PSS_SALTLEN, saltLen, nil); err != nil {
+				return nil, err
 			}
 		}
 
@@ -325,8 +317,8 @@ func setupEVP(withKey withKeyFunc, padding int32,
 			if alg == nil {
 				return nil, errors.New("crypto/rsa: unsupported hash function")
 			}
-			if go_openssl_EVP_PKEY_CTX_ctrl(ctx, -1, -1, _EVP_PKEY_CTRL_MD, 0, unsafe.Pointer(alg.md)) != 1 {
-				return nil, newOpenSSLError("EVP_PKEY_CTX_ctrl failed")
+			if _, err := go_openssl_EVP_PKEY_CTX_ctrl(ctx, -1, -1, _EVP_PKEY_CTRL_MD, 0, unsafe.Pointer(alg.md)); err != nil {
+				return nil, err
 			}
 			if err := setPadding(); err != nil {
 				return nil, err
@@ -349,9 +341,12 @@ func cryptEVP(withKey withKeyFunc, padding int32,
 		return nil, err
 	}
 	defer go_openssl_EVP_PKEY_CTX_free(ctx)
-	pkeySize := withKey(func(pkey _EVP_PKEY_PTR) int32 {
+	pkeySize, err := withKey(func(pkey _EVP_PKEY_PTR) (int32, error) {
 		return go_openssl_EVP_PKEY_get_size(pkey)
 	})
+	if err != nil {
+		return nil, err
+	}
 	outLen := int(pkeySize)
 	out := make([]byte, pkeySize)
 	if err := crypt(ctx, base(out), &outLen, base(in), len(in)); err != nil {
@@ -377,14 +372,12 @@ func verifyEVP(withKey withKeyFunc, padding int32,
 
 func evpEncrypt(withKey withKeyFunc, padding int32, h, mgfHash hash.Hash, label, msg []byte) ([]byte, error) {
 	encryptInit := func(ctx _EVP_PKEY_CTX_PTR) error {
-		if ret := go_openssl_EVP_PKEY_encrypt_init(ctx); ret != 1 {
-			return newOpenSSLError("EVP_PKEY_encrypt_init failed")
-		}
-		return nil
+		_, err := go_openssl_EVP_PKEY_encrypt_init(ctx)
+		return err
 	}
 	encrypt := func(ctx _EVP_PKEY_CTX_PTR, out *byte, outLen *int, in *byte, inLen int) error {
-		if ret := go_openssl_EVP_PKEY_encrypt(ctx, out, outLen, in, inLen); ret != 1 {
-			return newOpenSSLError("EVP_PKEY_encrypt failed")
+		if _, err := go_openssl_EVP_PKEY_encrypt(ctx, out, outLen, in, inLen); err != nil {
+			return err
 		}
 		return nil
 	}
@@ -393,48 +386,36 @@ func evpEncrypt(withKey withKeyFunc, padding int32, h, mgfHash hash.Hash, label,
 
 func evpDecrypt(withKey withKeyFunc, padding int32, h, mgfHash hash.Hash, label, msg []byte) ([]byte, error) {
 	decryptInit := func(ctx _EVP_PKEY_CTX_PTR) error {
-		if ret := go_openssl_EVP_PKEY_decrypt_init(ctx); ret != 1 {
-			return newOpenSSLError("EVP_PKEY_decrypt_init failed")
-		}
-		return nil
+		_, err := go_openssl_EVP_PKEY_decrypt_init(ctx)
+		return err
 	}
 	decrypt := func(ctx _EVP_PKEY_CTX_PTR, out *byte, outLen *int, in *byte, inLen int) error {
-		if ret := go_openssl_EVP_PKEY_decrypt(ctx, out, outLen, in, inLen); ret != 1 {
-			return newOpenSSLError("EVP_PKEY_decrypt failed")
-		}
-		return nil
+		_, err := go_openssl_EVP_PKEY_decrypt(ctx, out, outLen, in, inLen)
+		return err
 	}
 	return cryptEVP(withKey, padding, h, mgfHash, label, 0, 0, decryptInit, decrypt, msg)
 }
 
 func evpSign(withKey withKeyFunc, padding int32, saltLen int32, h crypto.Hash, hashed []byte) ([]byte, error) {
 	signtInit := func(ctx _EVP_PKEY_CTX_PTR) error {
-		if ret := go_openssl_EVP_PKEY_sign_init(ctx); ret != 1 {
-			return newOpenSSLError("EVP_PKEY_sign_init failed")
-		}
-		return nil
+		_, err := go_openssl_EVP_PKEY_sign_init(ctx)
+		return err
 	}
 	sign := func(ctx _EVP_PKEY_CTX_PTR, out *byte, outLen *int, in *byte, inLen int) error {
-		if ret := go_openssl_EVP_PKEY_sign(ctx, out, outLen, in, inLen); ret != 1 {
-			return newOpenSSLError("EVP_PKEY_sign failed")
-		}
-		return nil
+		_, err := go_openssl_EVP_PKEY_sign(ctx, out, outLen, in, inLen)
+		return err
 	}
 	return cryptEVP(withKey, padding, nil, nil, nil, saltLen, h, signtInit, sign, hashed)
 }
 
 func evpVerify(withKey withKeyFunc, padding int32, saltLen int32, h crypto.Hash, sig, hashed []byte) error {
 	verifyInit := func(ctx _EVP_PKEY_CTX_PTR) error {
-		if ret := go_openssl_EVP_PKEY_verify_init(ctx); ret != 1 {
-			return newOpenSSLError("EVP_PKEY_verify_init failed")
-		}
-		return nil
+		_, err := go_openssl_EVP_PKEY_verify_init(ctx)
+		return err
 	}
 	verify := func(ctx _EVP_PKEY_CTX_PTR, out *byte, outLen int, in *byte, inLen int) error {
-		if ret := go_openssl_EVP_PKEY_verify(ctx, out, outLen, in, inLen); ret != 1 {
-			return newOpenSSLError("EVP_PKEY_verify failed")
-		}
-		return nil
+		_, err := go_openssl_EVP_PKEY_verify(ctx, out, outLen, in, inLen)
+		return err
 	}
 	return verifyEVP(withKey, padding, nil, nil, saltLen, h, verifyInit, verify, sig, hashed)
 }
@@ -446,27 +427,27 @@ func evpHashSign(withKey withKeyFunc, h crypto.Hash, msg []byte) ([]byte, error)
 	}
 	var out []byte
 	var outLen int
-	ctx := go_openssl_EVP_MD_CTX_new()
-	if ctx == nil {
-		return nil, newOpenSSLError("EVP_MD_CTX_new failed")
+	ctx, err := go_openssl_EVP_MD_CTX_new()
+	if err != nil {
+		return nil, err
 	}
 	defer go_openssl_EVP_MD_CTX_free(ctx)
-	if withKey(func(key _EVP_PKEY_PTR) int32 {
+	if _, err := withKey(func(key _EVP_PKEY_PTR) (int32, error) {
 		return go_openssl_EVP_DigestSignInit(ctx, nil, alg.md, nil, key)
-	}) != 1 {
-		return nil, newOpenSSLError("EVP_DigestSignInit failed")
+	}); err != nil {
+		return nil, err
 	}
-	if go_openssl_EVP_DigestUpdate(ctx, unsafe.Pointer(base(msg)), len(msg)) != 1 {
-		return nil, newOpenSSLError("EVP_DigestUpdate failed")
+	if _, err := go_openssl_EVP_DigestUpdate(ctx, unsafe.Pointer(base(msg)), len(msg)); err != nil {
+		return nil, err
 	}
 	// Obtain the signature length
-	if go_openssl_EVP_DigestSignFinal(ctx, nil, &outLen) != 1 {
-		return nil, newOpenSSLError("EVP_DigestSignFinal failed")
+	if _, err := go_openssl_EVP_DigestSignFinal(ctx, nil, &outLen); err != nil {
+		return nil, err
 	}
 	out = make([]byte, outLen)
 	// Obtain the signature
-	if go_openssl_EVP_DigestSignFinal(ctx, base(out), &outLen) != 1 {
-		return nil, newOpenSSLError("EVP_DigestSignFinal failed")
+	if _, err := go_openssl_EVP_DigestSignFinal(ctx, base(out), &outLen); err != nil {
+		return nil, err
 	}
 	return out[:outLen], nil
 }
@@ -476,33 +457,33 @@ func evpHashVerify(withKey withKeyFunc, h crypto.Hash, msg, sig []byte) error {
 	if alg == nil {
 		return errors.New("unsupported hash function: " + strconv.Itoa(int(h)))
 	}
-	ctx := go_openssl_EVP_MD_CTX_new()
-	if ctx == nil {
-		return newOpenSSLError("EVP_MD_CTX_new failed")
+	ctx, err := go_openssl_EVP_MD_CTX_new()
+	if err != nil {
+		return err
 	}
 	defer go_openssl_EVP_MD_CTX_free(ctx)
-	if withKey(func(key _EVP_PKEY_PTR) int32 {
+	if _, err := withKey(func(key _EVP_PKEY_PTR) (int32, error) {
 		return go_openssl_EVP_DigestVerifyInit(ctx, nil, alg.md, nil, key)
-	}) != 1 {
-		return newOpenSSLError("EVP_DigestVerifyInit failed")
+	}); err != nil {
+		return err
 	}
-	if go_openssl_EVP_DigestUpdate(ctx, unsafe.Pointer(base(msg)), len(msg)) != 1 {
-		return newOpenSSLError("EVP_DigestUpdate failed")
+	if _, err := go_openssl_EVP_DigestUpdate(ctx, unsafe.Pointer(base(msg)), len(msg)); err != nil {
+		return err
 	}
-	if go_openssl_EVP_DigestVerifyFinal(ctx, base(sig), len(sig)) != 1 {
-		return newOpenSSLError("EVP_DigestVerifyFinal failed")
+	if _, err := go_openssl_EVP_DigestVerifyFinal(ctx, base(sig), len(sig)); err != nil {
+		return err
 	}
 	return nil
 }
 
 func newEVPPKEY(key _EC_KEY_PTR) (_EVP_PKEY_PTR, error) {
-	pkey := go_openssl_EVP_PKEY_new()
-	if pkey == nil {
-		return nil, newOpenSSLError("EVP_PKEY_new failed")
+	pkey, err := go_openssl_EVP_PKEY_new()
+	if err != nil {
+		return nil, err
 	}
-	if go_openssl_EVP_PKEY_assign(pkey, _EVP_PKEY_EC, unsafe.Pointer(key)) != 1 {
+	if _, err := go_openssl_EVP_PKEY_assign(pkey, _EVP_PKEY_EC, unsafe.Pointer(key)); err != nil {
 		go_openssl_EVP_PKEY_free(pkey)
-		return nil, newOpenSSLError("EVP_PKEY_assign failed")
+		return nil, err
 	}
 	return pkey, nil
 }
@@ -511,49 +492,49 @@ func newEVPPKEY(key _EC_KEY_PTR) (_EVP_PKEY_PTR, error) {
 // If pkey does not contain an EC_KEY it panics.
 // The returned key should not be freed.
 func getECKey(pkey _EVP_PKEY_PTR) _EC_KEY_PTR {
-	key := go_openssl_EVP_PKEY_get0_EC_KEY(pkey)
-	if key == nil {
-		panic("pkey does not contain an EC_KEY")
+	key, err := go_openssl_EVP_PKEY_get0_EC_KEY(pkey)
+	if err != nil {
+		panic(err)
 	}
 	return key
 }
 
 func newEvpFromParams(id int32, selection int32, params _OSSL_PARAM_PTR) (_EVP_PKEY_PTR, error) {
-	ctx := go_openssl_EVP_PKEY_CTX_new_id(id, nil)
-	if ctx == nil {
-		return nil, newOpenSSLError("EVP_PKEY_CTX_new_id")
+	ctx, err := go_openssl_EVP_PKEY_CTX_new_id(id, nil)
+	if err != nil {
+		return nil, err
 	}
 	defer go_openssl_EVP_PKEY_CTX_free(ctx)
-	if go_openssl_EVP_PKEY_fromdata_init(ctx) != 1 {
-		return nil, newOpenSSLError("EVP_PKEY_fromdata_init")
+	if _, err := go_openssl_EVP_PKEY_fromdata_init(ctx); err != nil {
+		return nil, err
 	}
 	var pkey _EVP_PKEY_PTR
-	if go_openssl_EVP_PKEY_fromdata(ctx, &pkey, selection, params) != 1 {
+	if _, err := go_openssl_EVP_PKEY_fromdata(ctx, &pkey, selection, params); err != nil {
 		if vMajor == 3 && vMinor <= 2 {
 			// OpenSSL 3.0.1 and 3.0.2 have a bug where EVP_PKEY_fromdata
 			// does not free the internally allocated EVP_PKEY on error.
 			// See https://github.com/openssl/openssl/issues/17407.
 			go_openssl_EVP_PKEY_free(pkey)
 		}
-		return nil, newOpenSSLError("EVP_PKEY_fromdata")
+		return nil, err
 	}
 	return pkey, nil
 }
 
 func checkPkey(pkey _EVP_PKEY_PTR, isPrivate bool) error {
-	ctx := go_openssl_EVP_PKEY_CTX_new(pkey, nil)
-	if ctx == nil {
-		return newOpenSSLError("EVP_PKEY_CTX_new")
+	ctx, err := go_openssl_EVP_PKEY_CTX_new(pkey, nil)
+	if err != nil {
+		return err
 	}
 	defer go_openssl_EVP_PKEY_CTX_free(ctx)
 	if isPrivate {
-		if go_openssl_EVP_PKEY_private_check(ctx) != 1 {
+		if _, err := go_openssl_EVP_PKEY_private_check(ctx); err != nil {
 			// Match upstream error message.
 			return errors.New("invalid private key")
 		}
 	} else {
 		// Upstream Go does a partial check here, so do we.
-		if go_openssl_EVP_PKEY_public_check_quick(ctx) != 1 {
+		if _, err := go_openssl_EVP_PKEY_public_check_quick(ctx); err != nil {
 			// Match upstream error message.
 			return errors.New("invalid public key")
 		}

@@ -38,24 +38,23 @@ func curveSize(curve string) int {
 // encodeEcPoint encodes pt.
 func encodeEcPoint(group _EC_GROUP_PTR, pt _EC_POINT_PTR) ([]byte, error) {
 	// Get encoded point size.
-	n := go_openssl_EC_POINT_point2oct(group, pt, _POINT_CONVERSION_UNCOMPRESSED, nil, 0, nil)
-	if n == 0 {
-		return nil, newOpenSSLError("EC_POINT_point2oct")
+	n, err := go_openssl_EC_POINT_point2oct(group, pt, _POINT_CONVERSION_UNCOMPRESSED, nil, 0, nil)
+	if err != nil {
+		return nil, err
 	}
 	// Encode point into bytes.
 	bytes := make([]byte, n)
-	n = go_openssl_EC_POINT_point2oct(group, pt, _POINT_CONVERSION_UNCOMPRESSED, base(bytes), n, nil)
-	if n == 0 {
-		return nil, newOpenSSLError("EC_POINT_point2oct")
+	if _, err = go_openssl_EC_POINT_point2oct(group, pt, _POINT_CONVERSION_UNCOMPRESSED, base(bytes), n, nil); err != nil {
+		return nil, err
 	}
 	return bytes, nil
 }
 
 // generateAndEncodeEcPublicKey calls newPubKeyPointFn to generate a public key point and then encodes it.
 func generateAndEncodeEcPublicKey(nid int32, newPubKeyPointFn func(group _EC_GROUP_PTR) (_EC_POINT_PTR, error)) ([]byte, error) {
-	group := go_openssl_EC_GROUP_new_by_curve_name(nid)
-	if group == nil {
-		return nil, newOpenSSLError("EC_GROUP_new_by_curve_name")
+	group, err := go_openssl_EC_GROUP_new_by_curve_name(nid)
+	if err != nil {
+		return nil, err
 	}
 	defer go_openssl_EC_GROUP_free(group)
 	pt, err := newPubKeyPointFn(group)

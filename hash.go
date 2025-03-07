@@ -38,7 +38,8 @@ func hashOneShot(ch crypto.Hash, p []byte, sum []byte) bool {
 		defer pinner.Unpin()
 		pinner.Pin(&p[0])
 	}
-	return go_openssl_EVP_Digest(pbase(p), len(p), base(sum), nil, loadHash(ch).md, nil) != 0
+	_, err := go_openssl_EVP_Digest(pbase(p), len(p), base(sum), nil, loadHash(ch).md, nil)
+	return err == nil
 }
 
 func MD4(p []byte) (sum [16]byte) {
@@ -121,8 +122,9 @@ func SupportsHash(h crypto.Hash) bool {
 	// in a EVP_MD_CTX, e.g. MD5 in FIPS mode. We need to prove
 	// if they can be used by passing them to a EVP_MD_CTX.
 	var supported bool
-	if ctx := go_openssl_EVP_MD_CTX_new(); ctx != nil {
-		supported = go_openssl_EVP_DigestInit_ex(ctx, alg.md, nil) == 1
+	if ctx, _ := go_openssl_EVP_MD_CTX_new(); ctx != nil {
+		_, err := go_openssl_EVP_DigestInit_ex(ctx, alg.md, nil)
+		supported = err == nil
 		go_openssl_EVP_MD_CTX_free(ctx)
 	}
 	cacheHashSupported.Store(h, supported)
@@ -296,12 +298,20 @@ func (h *evpHash) init() {
 	if h.ctx != nil {
 		return
 	}
-	h.ctx = go_openssl_EVP_MD_CTX_new()
-	if go_openssl_EVP_DigestInit_ex(h.ctx, h.alg.md, nil) != 1 {
-		go_openssl_EVP_MD_CTX_free(h.ctx)
-		panic(newOpenSSLError("EVP_DigestInit_ex"))
+	var err error
+	h.ctx, err = go_openssl_EVP_MD_CTX_new()
+	if err != nil {
+		panic(err)
 	}
-	h.ctx2 = go_openssl_EVP_MD_CTX_new()
+	if _, err := go_openssl_EVP_DigestInit_ex(h.ctx, h.alg.md, nil); err != nil {
+		go_openssl_EVP_MD_CTX_free(h.ctx)
+		panic(err)
+	}
+	h.ctx2, err = go_openssl_EVP_MD_CTX_new()
+	if err != nil {
+		go_openssl_EVP_MD_CTX_free(h.ctx)
+		panic(err)
+	}
 	runtime.SetFinalizer(h, (*evpHash).finalize)
 }
 
@@ -312,8 +322,8 @@ func (h *evpHash) Reset() {
 	}
 	// There is no need to reset h.ctx2 because it is always reset after
 	// use in evpHash.sum.
-	if go_openssl_EVP_DigestInit_ex(h.ctx, nil, nil) != 1 {
-		panic(newOpenSSLError("EVP_DigestInit_ex"))
+	if _, err := go_openssl_EVP_DigestInit_ex(h.ctx, nil, nil); err != nil {
+		panic(err)
 	}
 	runtime.KeepAlive(h)
 }
@@ -325,8 +335,8 @@ func (h *evpHash) Write(p []byte) (int, error) {
 	defer h.pinner.Unpin()
 	h.pinner.Pin(&p[0])
 	h.init()
-	if go_openssl_EVP_DigestUpdate(h.ctx, pbase(p), len(p)) != 1 {
-		panic(newOpenSSLError("EVP_DigestUpdate"))
+	if _, err := go_openssl_EVP_DigestUpdate(h.ctx, pbase(p), len(p)); err != nil {
+		panic(err)
 	}
 	runtime.KeepAlive(h)
 	return len(p), nil
@@ -337,8 +347,8 @@ func (h *evpHash) WriteString(s string) (int, error) {
 		return 0, nil
 	}
 	h.init()
-	if go_openssl_EVP_DigestUpdate(h.ctx, unsafe.Pointer(unsafe.StringData(s)), len(s)) == 0 {
-		panic("openssl: EVP_DigestUpdate failed")
+	if _, err := go_openssl_EVP_DigestUpdate(h.ctx, unsafe.Pointer(unsafe.StringData(s)), len(s)); err != nil {
+		panic(err)
 	}
 	runtime.KeepAlive(h)
 	return len(s), nil
@@ -346,8 +356,8 @@ func (h *evpHash) WriteString(s string) (int, error) {
 
 func (h *evpHash) WriteByte(c byte) error {
 	h.init()
-	if go_openssl_EVP_DigestUpdate(h.ctx, unsafe.Pointer(&c), 1) == 0 {
-		panic("openssl: EVP_DigestUpdate failed")
+	if _, err := go_openssl_EVP_DigestUpdate(h.ctx, unsafe.Pointer(&c), 1); err != nil {
+		panic(err)
 	}
 	runtime.KeepAlive(h)
 	return nil
@@ -377,18 +387,19 @@ func (h *evpHash) Sum(in []byte) []byte {
 func (h *evpHash) Clone() hash.Hash {
 	h2 := &evpHash{alg: h.alg}
 	if h.ctx != nil {
-		h2.ctx = go_openssl_EVP_MD_CTX_new()
-		if h2.ctx == nil {
-			panic(newOpenSSLError("EVP_MD_CTX_new"))
+		var err error
+		h2.ctx, err = go_openssl_EVP_MD_CTX_new()
+		if err != nil {
+			panic(err)
 		}
-		if go_openssl_EVP_MD_CTX_copy_ex(h2.ctx, h.ctx) != 1 {
+		if _, err := go_openssl_EVP_MD_CTX_copy_ex(h2.ctx, h.ctx); err != nil {
 			go_openssl_EVP_MD_CTX_free(h2.ctx)
-			panic(newOpenSSLError("EVP_MD_CTX_copy"))
+			panic(err)
 		}
-		h2.ctx2 = go_openssl_EVP_MD_CTX_new()
-		if h2.ctx2 == nil {
+		h2.ctx2, err = go_openssl_EVP_MD_CTX_new()
+		if err != nil {
 			go_openssl_EVP_MD_CTX_free(h2.ctx)
-			panic(newOpenSSLError("EVP_MD_CTX_new"))
+			panic(err)
 		}
 		runtime.SetFinalizer(h2, (*evpHash).finalize)
 	}

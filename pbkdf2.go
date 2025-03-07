@@ -28,9 +28,9 @@ func SupportsPBKDF2() bool {
 var fetchPBKDF2 = sync.OnceValues(func() (_EVP_KDF_PTR, error) {
 	checkMajorVersion(3)
 
-	kdf := go_openssl_EVP_KDF_fetch(nil, _OSSL_KDF_NAME_PBKDF2.ptr(), nil)
-	if kdf == nil {
-		return nil, newOpenSSLError("EVP_KDF_fetch")
+	kdf, err := go_openssl_EVP_KDF_fetch(nil, _OSSL_KDF_NAME_PBKDF2.ptr(), nil)
+	if err != nil {
+		return nil, err
 	}
 	return kdf, nil
 })
@@ -45,9 +45,9 @@ func PBKDF2(password, salt []byte, iter, keyLen int, fh func() hash.Hash) ([]byt
 		return nil, errors.New("unsupported hash function")
 	}
 	out := make([]byte, keyLen)
-	ok := go_openssl_PKCS5_PBKDF2_HMAC(base(password), int32(len(password)), base(salt), int32(len(salt)), int32(iter), md, int32(keyLen), base(out))
-	if ok != 1 {
-		return nil, newOpenSSLError("PKCS5_PBKDF2_HMAC")
+	_, err = go_openssl_PKCS5_PBKDF2_HMAC(base(password), int32(len(password)), base(salt), int32(len(salt)), int32(iter), md, int32(keyLen), base(out))
+	if err != nil {
+		return nil, err
 	}
 	return out, nil
 }

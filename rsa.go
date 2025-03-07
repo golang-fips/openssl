@@ -23,9 +23,9 @@ func GenerateKeyRSA(bits int) (N, E, D, P, Q, Dp, Dq, Qinv BigInt, err error) {
 	defer go_openssl_EVP_PKEY_free(pkey)
 	switch vMajor {
 	case 1:
-		key := go_openssl_EVP_PKEY_get1_RSA(pkey)
-		if key == nil {
-			return bad(newOpenSSLError("EVP_PKEY_get1_RSA failed"))
+		key, err := go_openssl_EVP_PKEY_get1_RSA(pkey)
+		if err != nil {
+			return bad(err)
 		}
 		defer go_openssl_RSA_free(key)
 		var n, e, d, p, q, dmp1, dmq1, iqmp _BIGNUM_PTR
@@ -36,20 +36,18 @@ func GenerateKeyRSA(bits int) (N, E, D, P, Q, Dp, Dq, Qinv BigInt, err error) {
 		P, Q = bnToBig(p), bnToBig(q)
 		Dp, Dq, Qinv = bnToBig(dmp1), bnToBig(dmq1), bnToBig(iqmp)
 	case 3:
-		tmp := go_openssl_BN_new()
-		if tmp == nil {
-			return bad(newOpenSSLError("BN_new failed"))
+		tmp, err := go_openssl_BN_new()
+		if err != nil {
+			return bad(err)
 		}
 		defer func() {
 			go_openssl_BN_clear_free(tmp)
 		}()
-		var err error
 		setBigInt := func(bi *BigInt, param cString) bool {
 			if err != nil {
 				return false
 			}
-			if go_openssl_EVP_PKEY_get_bn_param(pkey, param.ptr(), &tmp) != 1 {
-				err = newOpenSSLError("EVP_PKEY_get_bn_param failed")
+			if _, err = go_openssl_EVP_PKEY_get_bn_param(pkey, param.ptr(), &tmp); err != nil {
 				return false
 			}
 			*bi = bnToBig(tmp)
@@ -81,22 +79,29 @@ func NewPublicKeyRSA(n, e BigInt) (*PublicKeyRSA, error) {
 	var pkey _EVP_PKEY_PTR
 	switch vMajor {
 	case 1:
-		key := go_openssl_RSA_new()
-		if key == nil {
-			return nil, newOpenSSLError("RSA_new failed")
+		key, err := go_openssl_RSA_new()
+		if err != nil {
+			return nil, err
 		}
-		if go_openssl_RSA_set0_key(key, bigToBN(n), bigToBN(e), nil) != 1 {
-			return nil, fail("RSA_set0_key")
-		}
-		pkey = go_openssl_EVP_PKEY_new()
-		if pkey == nil {
+		// No need to check for errors here, RSA_set0_* functions will fail
+		// if the BNs are NULL and we will free non-NULL BNs in the error handling.
+		bn, _ := bigToBN(n)
+		be, _ := bigToBN(e)
+		if _, err := go_openssl_RSA_set0_key(key, bn, be, nil); err != nil {
+			go_openssl_BN_free(bn)
+			go_openssl_BN_free(be)
 			go_openssl_RSA_free(key)
-			return nil, newOpenSSLError("EVP_PKEY_new failed")
+			return nil, err
 		}
-		if go_openssl_EVP_PKEY_assign(pkey, _EVP_PKEY_RSA, (unsafe.Pointer)(key)) != 1 {
+		pkey, err = go_openssl_EVP_PKEY_new()
+		if err != nil {
+			go_openssl_RSA_free(key)
+			return nil, err
+		}
+		if _, err := go_openssl_EVP_PKEY_assign(pkey, _EVP_PKEY_RSA, (unsafe.Pointer)(key)); err != nil {
 			go_openssl_RSA_free(key)
 			go_openssl_EVP_PKEY_free(pkey)
-			return nil, newOpenSSLError("EVP_PKEY_assign failed")
+			return nil, err
 		}
 	case 3:
 		var err error
@@ -115,7 +120,7 @@ func (k *PublicKeyRSA) finalize() {
 	go_openssl_EVP_PKEY_free(k._pkey)
 }
 
-func (k *PublicKeyRSA) withKey(f func(_EVP_PKEY_PTR) int32) int32 {
+func (k *PublicKeyRSA) withKey(f func(_EVP_PKEY_PTR) (int32, error)) (int32, error) {
 	// Because of the finalizer, any time _pkey is passed to cgo, that call must
 	// be followed by a call to runtime.KeepAlive, to make sure k is not
 	// collected (and finalized) before the cgo call returns.
@@ -132,32 +137,50 @@ func NewPrivateKeyRSA(n, e, d, p, q, dp, dq, qinv BigInt) (*PrivateKeyRSA, error
 	var pkey _EVP_PKEY_PTR
 	switch vMajor {
 	case 1:
-		key := go_openssl_RSA_new()
-		if key == nil {
-			return nil, newOpenSSLError("RSA_new failed")
+		key, err := go_openssl_RSA_new()
+		if err != nil {
+			return nil, err
 		}
-		if go_openssl_RSA_set0_key(key, bigToBN(n), bigToBN(e), bigToBN(d)) != 1 {
-			return nil, fail("RSA_set0_key")
+		// No need to check for errors here, RSA_set0_* functions will fail
+		// if the BNs are NULL and we will free non-NULL BNs in the error handling.
+		bn, _ := bigToBN(n)
+		be, _ := bigToBN(e)
+		bd, _ := bigToBN(d)
+		if _, err := go_openssl_RSA_set0_key(key, bn, be, bd); err != nil {
+			go_openssl_BN_free(bn)
+			go_openssl_BN_free(be)
+			go_openssl_BN_clear_free(bd)
+			return nil, err
 		}
 		if p != nil && q != nil {
-			if go_openssl_RSA_set0_factors(key, bigToBN(p), bigToBN(q)) != 1 {
-				return nil, fail("RSA_set0_factors")
+			bp, _ := bigToBN(p)
+			bq, _ := bigToBN(q)
+			if _, err := go_openssl_RSA_set0_factors(key, bp, bq); err != nil {
+				go_openssl_BN_clear_free(bp)
+				go_openssl_BN_clear_free(bq)
+				return nil, err
 			}
 		}
 		if dp != nil && dq != nil && qinv != nil {
-			if go_openssl_RSA_set0_crt_params(key, bigToBN(dp), bigToBN(dq), bigToBN(qinv)) != 1 {
-				return nil, fail("RSA_set0_crt_params")
+			bdp, _ := bigToBN(dp)
+			bdq, _ := bigToBN(dq)
+			bqinv, _ := bigToBN(qinv)
+			if _, err := go_openssl_RSA_set0_crt_params(key, bdp, bdq, bqinv); err != nil {
+				go_openssl_BN_free(bdp)
+				go_openssl_BN_free(bdq)
+				go_openssl_BN_free(bqinv)
+				return nil, err
 			}
 		}
-		pkey = go_openssl_EVP_PKEY_new()
-		if pkey == nil {
+		pkey, err = go_openssl_EVP_PKEY_new()
+		if err != nil {
 			go_openssl_RSA_free(key)
-			return nil, newOpenSSLError("EVP_PKEY_new failed")
+			return nil, err
 		}
-		if go_openssl_EVP_PKEY_assign(pkey, _EVP_PKEY_RSA, (unsafe.Pointer)(key)) != 1 {
+		if _, err := go_openssl_EVP_PKEY_assign(pkey, _EVP_PKEY_RSA, (unsafe.Pointer)(key)); err != nil {
 			go_openssl_RSA_free(key)
 			go_openssl_EVP_PKEY_free(pkey)
-			return nil, newOpenSSLError("EVP_PKEY_assign failed")
+			return nil, err
 		}
 	case 3:
 		var err error
@@ -176,7 +199,7 @@ func (k *PrivateKeyRSA) finalize() {
 	go_openssl_EVP_PKEY_free(k._pkey)
 }
 
-func (k *PrivateKeyRSA) withKey(f func(_EVP_PKEY_PTR) int32) int32 {
+func (k *PrivateKeyRSA) withKey(f func(_EVP_PKEY_PTR) (int32, error)) (int32, error) {
 	// Because of the finalizer, any time _pkey is passed to cgo, that call must
 	// be followed by a call to runtime.KeepAlive, to make sure k is not
 	// collected (and finalized) before the cgo call returns.
@@ -277,14 +300,18 @@ func HashSignRSAPKCS1v15(priv *PrivateKeyRSA, h crypto.Hash, msg []byte) ([]byte
 }
 
 func VerifyRSAPKCS1v15(pub *PublicKeyRSA, h crypto.Hash, hashed, sig []byte) error {
-	if pub.withKey(func(pkey _EVP_PKEY_PTR) int32 {
-		size := go_openssl_EVP_PKEY_get_size(pkey)
-		if len(sig) < int(size) {
-			return 0
+	defer runtime.KeepAlive(pub)
+	if _, err := pub.withKey(func(pkey _EVP_PKEY_PTR) (int32, error) {
+		size, err := go_openssl_EVP_PKEY_get_size(pkey)
+		if err != nil {
+			return 0, err
 		}
-		return 1
-	}) == 0 {
-		return errors.New("crypto/rsa: verification error")
+		if len(sig) < int(size) {
+			return 0, errors.New("crypto/rsa: verification error")
+		}
+		return 0, nil
+	}); err != nil {
+		return err
 	}
 	return evpVerify(pub.withKey, _RSA_PKCS1_PADDING, 0, h, sig, hashed)
 }

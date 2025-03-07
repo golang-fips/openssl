@@ -120,34 +120,34 @@ typedef int point_conversion_form_t;
 // ERR API
 void ERR_error_string_n(unsigned long e, char *buf, size_t len);
 void ERR_clear_error(void) __attribute__((tag(""),tag("init_3")));
-unsigned long ERR_get_error_line(const char **file, int *line) __attribute__((tag("legacy_1")));
-unsigned long ERR_get_error_all(const char **file, int *line, const char **func, const char **data, int *flags) __attribute__((tag("3")));
+unsigned long ERR_get_error_line(const char **file, int *line) __attribute__((tag("legacy_1"),noerror));
+unsigned long ERR_get_error_all(const char **file, int *line, const char **func, const char **data, int *flags) __attribute__((tag("3"),noerror));
 
 // OPENSSL API
-const char *OpenSSL_version(int type);
+const char *OpenSSL_version(int type) __attribute__((noerror));
 void OPENSSL_init(void);
 int OPENSSL_init_crypto(uint64_t ops, const _OPENSSL_INIT_SETTINGS_PTR settings);
-unsigned long OpenSSL_version_num(void) __attribute__((tag("version"),optional));
-unsigned int OPENSSL_version_major(void) __attribute__((tag("version"),optional));
-unsigned int OPENSSL_version_minor(void) __attribute__((tag("version"),optional));
-unsigned int OPENSSL_version_patch(void) __attribute__((tag("version"),optional));
+unsigned long OpenSSL_version_num(void) __attribute__((tag("version"),optional,noerror));
+unsigned int OPENSSL_version_major(void) __attribute__((tag("version"),optional,noerror));
+unsigned int OPENSSL_version_minor(void) __attribute__((tag("version"),optional,noerror));
+unsigned int OPENSSL_version_patch(void) __attribute__((tag("version"),optional,noerror));
 
 // CRYPTO API
 void *CRYPTO_malloc(size_t num, const char *file, int line);
 void CRYPTO_free(void *str, const char *file, int line);
 
 // FIPS API
-int FIPS_mode(void) __attribute__((tag("legacy_1"),tag("init_1")));
+int FIPS_mode(void) __attribute__((tag("legacy_1"),tag("init_1"),noerror));
 int FIPS_mode_set(int r) __attribute__((tag("legacy_1"),tag("init_1")));
 
 // EVP Config API
-int EVP_default_properties_is_fips_enabled(_OSSL_LIB_CTX_PTR libctx) __attribute__((tag("3"),tag("init_3")));
+int EVP_default_properties_is_fips_enabled(_OSSL_LIB_CTX_PTR libctx) __attribute__((tag("3"),tag("init_3"),noerror));
 int EVP_default_properties_enable_fips(_OSSL_LIB_CTX_PTR libctx, int enable) __attribute__((tag("3")));
 
 // OSSL_PROVIDER API
-int OSSL_PROVIDER_available(_OSSL_LIB_CTX_PTR libctx, const char *name) __attribute__((tag("3")));
+int OSSL_PROVIDER_available(_OSSL_LIB_CTX_PTR libctx, const char *name) __attribute__((tag("3"),noerror));
 _OSSL_PROVIDER_PTR OSSL_PROVIDER_try_load(_OSSL_LIB_CTX_PTR libctx, const char *name, int retain_fallbacks) __attribute__((tag("3")));
-const char *OSSL_PROVIDER_get0_name(const _OSSL_PROVIDER_PTR prov) __attribute__((tag("3")));
+const char *OSSL_PROVIDER_get0_name(const _OSSL_PROVIDER_PTR prov) __attribute__((tag("3"),noerror));
 
 // RAND API
 int RAND_bytes(unsigned char *arg0, int arg1);
@@ -155,26 +155,26 @@ int RAND_bytes(unsigned char *arg0, int arg1);
 // EVP_MD API
 _EVP_MD_PTR EVP_MD_fetch(_OSSL_LIB_CTX_PTR ctx, const char *algorithm, const char *properties) __attribute__((tag("3"),tag("init_3")));
 void EVP_MD_free(_EVP_MD_PTR md) __attribute__((tag("3"),tag("init_3")));
-const char *EVP_MD_get0_name(const _EVP_MD_PTR md) __attribute__((tag("3")));
-int EVP_MD_get_type(const _EVP_MD_PTR md) __attribute__((tag("3")));
-const _OSSL_PROVIDER_PTR EVP_MD_get0_provider(const _EVP_MD_PTR md) __attribute__((tag("3"),tag("init_3")));
-int EVP_MD_get_size(const _EVP_MD_PTR md) __attribute__((tag("3"),tag("legacy_1","EVP_MD_size")));
-int EVP_MD_get_block_size(const _EVP_MD_PTR md) __attribute__((tag("3"),tag("legacy_1","EVP_MD_block_size")));
-const _EVP_MD_PTR EVP_md5_sha1(void);
-const _EVP_MD_PTR EVP_ripemd160(void);
-const _EVP_MD_PTR EVP_md4(void);
-const _EVP_MD_PTR EVP_md5(void);
-const _EVP_MD_PTR EVP_sha1(void);
-const _EVP_MD_PTR EVP_sha224(void);
-const _EVP_MD_PTR EVP_sha256(void);
-const _EVP_MD_PTR EVP_sha384(void);
-const _EVP_MD_PTR EVP_sha512(void);
-const _EVP_MD_PTR EVP_sha512_224(void) __attribute__((tag("111")));
-const _EVP_MD_PTR EVP_sha512_256(void) __attribute__((tag("111")));
-const _EVP_MD_PTR EVP_sha3_224(void) __attribute__((tag("111")));
-const _EVP_MD_PTR EVP_sha3_256(void) __attribute__((tag("111")));
-const _EVP_MD_PTR EVP_sha3_384(void) __attribute__((tag("111")));
-const _EVP_MD_PTR EVP_sha3_512(void) __attribute__((tag("111")));
+const char *EVP_MD_get0_name(const _EVP_MD_PTR md) __attribute__((tag("3"),noerror));
+int EVP_MD_get_type(const _EVP_MD_PTR md) __attribute__((tag("3"),noerror));
+const _OSSL_PROVIDER_PTR EVP_MD_get0_provider(const _EVP_MD_PTR md) __attribute__((tag("3"),tag("init_3"),noerror));
+int EVP_MD_get_size(const _EVP_MD_PTR md) __attribute__((tag("3"),tag("legacy_1","EVP_MD_size"),noerror));
+int EVP_MD_get_block_size(const _EVP_MD_PTR md) __attribute__((tag("3"),tag("legacy_1","EVP_MD_block_size"),noerror));
+const _EVP_MD_PTR EVP_md5_sha1(void) __attribute__((noerror));
+const _EVP_MD_PTR EVP_ripemd160(void) __attribute__((noerror));
+const _EVP_MD_PTR EVP_md4(void) __attribute__((noerror));
+const _EVP_MD_PTR EVP_md5(void) __attribute__((noerror));
+const _EVP_MD_PTR EVP_sha1(void) __attribute__((noerror));
+const _EVP_MD_PTR EVP_sha224(void) __attribute__((noerror));
+const _EVP_MD_PTR EVP_sha256(void) __attribute__((noerror));
+const _EVP_MD_PTR EVP_sha384(void) __attribute__((noerror));
+const _EVP_MD_PTR EVP_sha512(void) __attribute__((noerror));
+const _EVP_MD_PTR EVP_sha512_224(void) __attribute__((tag("111"),noerror));
+const _EVP_MD_PTR EVP_sha512_256(void) __attribute__((tag("111"),noerror));
+const _EVP_MD_PTR EVP_sha3_224(void) __attribute__((tag("111"),noerror));
+const _EVP_MD_PTR EVP_sha3_256(void) __attribute__((tag("111"),noerror));
+const _EVP_MD_PTR EVP_sha3_384(void) __attribute__((tag("111"),noerror));
+const _EVP_MD_PTR EVP_sha3_512(void) __attribute__((tag("111"),noerror));
 
 _EVP_MD_CTX_PTR EVP_MD_CTX_new(void);
 void EVP_MD_CTX_free(_EVP_MD_CTX_PTR ctx);
@@ -203,25 +203,25 @@ void HMAC_CTX_free(_HMAC_CTX_PTR arg0) __attribute__((tag("legacy_1")));
 
 // EVP_CIPHER API
 _EVP_CIPHER_PTR EVP_CIPHER_fetch(_OSSL_LIB_CTX_PTR ctx, const char *algorithm, const char *properties) __attribute__((tag("3")));
-const char *EVP_CIPHER_get0_name(const _EVP_CIPHER_PTR cipher) __attribute__((tag("3")));
-const _EVP_CIPHER_PTR EVP_aes_128_gcm(void);
-const _EVP_CIPHER_PTR EVP_aes_128_cbc(void);
-const _EVP_CIPHER_PTR EVP_aes_128_ctr(void);
-const _EVP_CIPHER_PTR EVP_aes_128_ecb(void);
-const _EVP_CIPHER_PTR EVP_aes_192_gcm(void);
-const _EVP_CIPHER_PTR EVP_aes_192_cbc(void);
-const _EVP_CIPHER_PTR EVP_aes_192_ctr(void);
-const _EVP_CIPHER_PTR EVP_aes_192_ecb(void);
-const _EVP_CIPHER_PTR EVP_aes_256_cbc(void);
-const _EVP_CIPHER_PTR EVP_aes_256_ctr(void);
-const _EVP_CIPHER_PTR EVP_aes_256_ecb(void);
-const _EVP_CIPHER_PTR EVP_aes_256_gcm(void);
-const _EVP_CIPHER_PTR EVP_des_ecb(void);
-const _EVP_CIPHER_PTR EVP_des_cbc(void);
-const _EVP_CIPHER_PTR EVP_des_ede3_ecb(void);
-const _EVP_CIPHER_PTR EVP_des_ede3_cbc(void);
-const _EVP_CIPHER_PTR EVP_rc4(void);
-int EVP_CIPHER_get_block_size(const _EVP_CIPHER_PTR cipher) __attribute__((tag("3"),tag("legacy_1","EVP_CIPHER_block_size")));
+const char *EVP_CIPHER_get0_name(const _EVP_CIPHER_PTR cipher) __attribute__((tag("3"),noerror));
+const _EVP_CIPHER_PTR EVP_aes_128_gcm(void) __attribute__((noerror));
+const _EVP_CIPHER_PTR EVP_aes_128_cbc(void) __attribute__((noerror));
+const _EVP_CIPHER_PTR EVP_aes_128_ctr(void) __attribute__((noerror));
+const _EVP_CIPHER_PTR EVP_aes_128_ecb(void) __attribute__((noerror));
+const _EVP_CIPHER_PTR EVP_aes_192_gcm(void) __attribute__((noerror));
+const _EVP_CIPHER_PTR EVP_aes_192_cbc(void) __attribute__((noerror));
+const _EVP_CIPHER_PTR EVP_aes_192_ctr(void) __attribute__((noerror));
+const _EVP_CIPHER_PTR EVP_aes_192_ecb(void) __attribute__((noerror));
+const _EVP_CIPHER_PTR EVP_aes_256_cbc(void) __attribute__((noerror));
+const _EVP_CIPHER_PTR EVP_aes_256_ctr(void) __attribute__((noerror));
+const _EVP_CIPHER_PTR EVP_aes_256_ecb(void) __attribute__((noerror));
+const _EVP_CIPHER_PTR EVP_aes_256_gcm(void) __attribute__((noerror));
+const _EVP_CIPHER_PTR EVP_des_ecb(void) __attribute__((noerror));
+const _EVP_CIPHER_PTR EVP_des_cbc(void) __attribute__((noerror));
+const _EVP_CIPHER_PTR EVP_des_ede3_ecb(void) __attribute__((noerror));
+const _EVP_CIPHER_PTR EVP_des_ede3_cbc(void) __attribute__((noerror));
+const _EVP_CIPHER_PTR EVP_rc4(void) __attribute__((noerror));
+int EVP_CIPHER_get_block_size(const _EVP_CIPHER_PTR cipher) __attribute__((tag("3"),tag("legacy_1","EVP_CIPHER_block_size"),noerror));
 
 _EVP_CIPHER_CTX_PTR EVP_CIPHER_CTX_new(void);
 int EVP_CIPHER_CTX_set_padding(_EVP_CIPHER_CTX_PTR x, int padding);
@@ -294,31 +294,31 @@ int EVP_PKEY_CTX_add1_hkdf_info(_EVP_PKEY_CTX_PTR arg0, const unsigned char *arg
 // RSA API
 _RSA_PTR RSA_new(void) __attribute__((tag("legacy_1")));
 void RSA_free(_RSA_PTR arg0) __attribute__((tag("legacy_1")));
+void RSA_get0_factors(const _RSA_PTR rsa, const _BIGNUM_PTR *p, const _BIGNUM_PTR *q) __attribute__((tag("legacy_1"),noerror));
 int RSA_set0_factors(_RSA_PTR rsa, _BIGNUM_PTR p, _BIGNUM_PTR q) __attribute__((tag("legacy_1")));
+void RSA_get0_crt_params(const _RSA_PTR r, const _BIGNUM_PTR *dmp1, const _BIGNUM_PTR *dmq1, const _BIGNUM_PTR *iqmp) __attribute__((tag("legacy_1"),noerror));
 int RSA_set0_crt_params(_RSA_PTR rsa, _BIGNUM_PTR dmp1, _BIGNUM_PTR dmp2, _BIGNUM_PTR iqmp) __attribute__((tag("legacy_1")));
-void RSA_get0_crt_params(const _RSA_PTR r, const _BIGNUM_PTR *dmp1, const _BIGNUM_PTR *dmq1, const _BIGNUM_PTR *iqmp) __attribute__((tag("legacy_1")));
+void RSA_get0_key(const _RSA_PTR rsa, const _BIGNUM_PTR *n, const _BIGNUM_PTR *e, const _BIGNUM_PTR *d) __attribute__((tag("legacy_1"),noerror));
 int RSA_set0_key(_RSA_PTR r, _BIGNUM_PTR n, _BIGNUM_PTR e, _BIGNUM_PTR d) __attribute__((tag("legacy_1")));
-void RSA_get0_factors(const _RSA_PTR rsa, const _BIGNUM_PTR *p, const _BIGNUM_PTR *q) __attribute__((tag("legacy_1")));
-void RSA_get0_key(const _RSA_PTR rsa, const _BIGNUM_PTR *n, const _BIGNUM_PTR *e, const _BIGNUM_PTR *d) __attribute__((tag("legacy_1")));
 
 // BIGNUM API
 _BIGNUM_PTR BN_new(void);
 void BN_free(_BIGNUM_PTR arg0);
 void BN_clear(_BIGNUM_PTR arg0);
 void BN_clear_free(_BIGNUM_PTR arg0);
-int BN_num_bits(const _BIGNUM_PTR arg0);
+int BN_num_bits(const _BIGNUM_PTR arg0) __attribute__((noerror));
 _BIGNUM_PTR BN_bin2bn(const unsigned char *arg0, int arg1, _BIGNUM_PTR arg2);
 _BIGNUM_PTR BN_lebin2bn(const unsigned char *s, int len, _BIGNUM_PTR ret);
-int BN_bn2lebinpad(const _BIGNUM_PTR a, unsigned char *to, int tolen);
-int BN_bn2binpad(const _BIGNUM_PTR a, unsigned char *to, int tolen);
+int BN_bn2lebinpad(const _BIGNUM_PTR a, unsigned char *to, int tolen) __attribute__((errcond("== -1")));
+int BN_bn2binpad(const _BIGNUM_PTR a, unsigned char *to, int tolen) __attribute__((errcond("== -1")));
 
 // EC API
 int EC_KEY_set_public_key_affine_coordinates(_EC_KEY_PTR key, _BIGNUM_PTR x, _BIGNUM_PTR y) __attribute__((tag("legacy_1")));
 int EC_KEY_set_public_key(_EC_KEY_PTR key, const _EC_POINT_PTR pub) __attribute__((tag("legacy_1")));
 void EC_KEY_free(_EC_KEY_PTR arg0) __attribute__((tag("legacy_1")));
-const _EC_GROUP_PTR EC_KEY_get0_group(const _EC_KEY_PTR arg0) __attribute__((tag("legacy_1")));
-const _BIGNUM_PTR EC_KEY_get0_private_key(const _EC_KEY_PTR arg0) __attribute__((tag("legacy_1")));
-const _EC_POINT_PTR EC_KEY_get0_public_key(const _EC_KEY_PTR arg0) __attribute__((tag("legacy_1")));
+const _EC_GROUP_PTR EC_KEY_get0_group(const _EC_KEY_PTR arg0) __attribute__((tag("legacy_1"),noerror));
+const _BIGNUM_PTR EC_KEY_get0_private_key(const _EC_KEY_PTR arg0) __attribute__((tag("legacy_1"),noerror));
+const _EC_POINT_PTR EC_KEY_get0_public_key(const _EC_KEY_PTR arg0) __attribute__((tag("legacy_1"),noerror));
 _EC_KEY_PTR EC_KEY_new_by_curve_name(int arg0) __attribute__((tag("legacy_1")));
 int EC_KEY_set_private_key(_EC_KEY_PTR arg0, const _BIGNUM_PTR arg1) __attribute__((tag("legacy_1")));
 int EC_KEY_check_key(const _EC_KEY_PTR key) __attribute__((tag("legacy_1")));
@@ -376,4 +376,4 @@ int EVP_KDF_derive(_EVP_KDF_CTX_PTR ctx, unsigned char *key, size_t keylen, cons
 int PKCS5_PBKDF2_HMAC(const char *pass, int passlen, const unsigned char *salt, int saltlen, int iter, const _EVP_MD_PTR digest, int keylen, unsigned char *out);
 
 // OBJ API
-const char *OBJ_nid2sn(int n);
+const char *OBJ_nid2sn(int n) __attribute__((noerror));

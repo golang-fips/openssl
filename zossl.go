@@ -162,16 +162,31 @@ func mkcgoUnload_version() {
 	C.__mkcgoUnload_version()
 }
 
-func go_openssl_BN_bin2bn(arg0 *byte, arg1 int32, arg2 _BIGNUM_PTR) _BIGNUM_PTR {
-	return C.BN_bin2bn((*C.uchar)(unsafe.Pointer(arg0)), C.int(arg1), arg2)
+func go_openssl_BN_bin2bn(arg0 *byte, arg1 int32, arg2 _BIGNUM_PTR) (_BIGNUM_PTR, error) {
+	_ret := C.BN_bin2bn((*C.uchar)(unsafe.Pointer(arg0)), C.int(arg1), arg2)
+	var _err error
+	if _ret == nil {
+		_err = newOpenSSLError("BN_bin2bn")
+	}
+	return _ret, _err
 }
 
-func go_openssl_BN_bn2binpad(a _BIGNUM_PTR, to *byte, tolen int32) int32 {
-	return int32(C.BN_bn2binpad(a, (*C.uchar)(unsafe.Pointer(to)), C.int(tolen)))
+func go_openssl_BN_bn2binpad(a _BIGNUM_PTR, to *byte, tolen int32) (int32, error) {
+	_ret := C.BN_bn2binpad(a, (*C.uchar)(unsafe.Pointer(to)), C.int(tolen))
+	var _err error
+	if _ret == -1 {
+		_err = newOpenSSLError("BN_bn2binpad")
+	}
+	return int32(_ret), _err
 }
 
-func go_openssl_BN_bn2lebinpad(a _BIGNUM_PTR, to *byte, tolen int32) int32 {
-	return int32(C.BN_bn2lebinpad(a, (*C.uchar)(unsafe.Pointer(to)), C.int(tolen)))
+func go_openssl_BN_bn2lebinpad(a _BIGNUM_PTR, to *byte, tolen int32) (int32, error) {
+	_ret := C.BN_bn2lebinpad(a, (*C.uchar)(unsafe.Pointer(to)), C.int(tolen))
+	var _err error
+	if _ret == -1 {
+		_err = newOpenSSLError("BN_bn2lebinpad")
+	}
+	return int32(_ret), _err
 }
 
 func go_openssl_BN_clear(arg0 _BIGNUM_PTR) {
@@ -186,12 +201,22 @@ func go_openssl_BN_free(arg0 _BIGNUM_PTR) {
 	C.BN_free(arg0)
 }
 
-func go_openssl_BN_lebin2bn(s *byte, len int32, ret _BIGNUM_PTR) _BIGNUM_PTR {
-	return C.BN_lebin2bn((*C.uchar)(unsafe.Pointer(s)), C.int(len), ret)
+func go_openssl_BN_lebin2bn(s *byte, len int32, ret _BIGNUM_PTR) (_BIGNUM_PTR, error) {
+	_ret := C.BN_lebin2bn((*C.uchar)(unsafe.Pointer(s)), C.int(len), ret)
+	var _err error
+	if _ret == nil {
+		_err = newOpenSSLError("BN_lebin2bn")
+	}
+	return _ret, _err
 }
 
-func go_openssl_BN_new() _BIGNUM_PTR {
-	return C.BN_new()
+func go_openssl_BN_new() (_BIGNUM_PTR, error) {
+	_ret := C.BN_new()
+	var _err error
+	if _ret == nil {
+		_err = newOpenSSLError("BN_new")
+	}
+	return _ret, _err
 }
 
 func go_openssl_BN_num_bits(arg0 _BIGNUM_PTR) int32 {
@@ -202,16 +227,26 @@ func go_openssl_CRYPTO_free(str unsafe.Pointer, file *byte, line int32) {
 	C.CRYPTO_free(str, (*C.char)(unsafe.Pointer(file)), C.int(line))
 }
 
-func go_openssl_CRYPTO_malloc(num int, file *byte, line int32) unsafe.Pointer {
-	return unsafe.Pointer(C.CRYPTO_malloc(C.size_t(num), (*C.char)(unsafe.Pointer(file)), C.int(line)))
+func go_openssl_CRYPTO_malloc(num int, file *byte, line int32) (unsafe.Pointer, error) {
+	_ret := C.CRYPTO_malloc(C.size_t(num), (*C.char)(unsafe.Pointer(file)), C.int(line))
+	var _err error
+	if _ret == nil {
+		_err = newOpenSSLError("CRYPTO_malloc")
+	}
+	return _ret, _err
 }
 
 func go_openssl_DSA_free(r _DSA_PTR) {
 	C.DSA_free(r)
 }
 
-func go_openssl_DSA_generate_key(a _DSA_PTR) int32 {
-	return int32(C.DSA_generate_key(a))
+func go_openssl_DSA_generate_key(a _DSA_PTR) (int32, error) {
+	_ret := C.DSA_generate_key(a)
+	var _err error
+	if _ret <= 0 {
+		_err = newOpenSSLError("DSA_generate_key")
+	}
+	return int32(_ret), _err
 }
 
 func go_openssl_DSA_get0_key(d _DSA_PTR, pub_key *_BIGNUM_PTR, priv_key *_BIGNUM_PTR) {
@@ -222,28 +257,53 @@ func go_openssl_DSA_get0_pqg(d _DSA_PTR, p *_BIGNUM_PTR, q *_BIGNUM_PTR, g *_BIG
 	C.DSA_get0_pqg(d, p, q, g)
 }
 
-func go_openssl_DSA_new() _DSA_PTR {
-	return C.DSA_new()
+func go_openssl_DSA_new() (_DSA_PTR, error) {
+	_ret := C.DSA_new()
+	var _err error
+	if _ret == nil {
+		_err = newOpenSSLError("DSA_new")
+	}
+	return _ret, _err
 }
 
-func go_openssl_DSA_set0_key(d _DSA_PTR, pub_key _BIGNUM_PTR, priv_key _BIGNUM_PTR) int32 {
-	return int32(C.DSA_set0_key(d, pub_key, priv_key))
+func go_openssl_DSA_set0_key(d _DSA_PTR, pub_key _BIGNUM_PTR, priv_key _BIGNUM_PTR) (int32, error) {
+	_ret := C.DSA_set0_key(d, pub_key, priv_key)
+	var _err error
+	if _ret <= 0 {
+		_err = newOpenSSLError("DSA_set0_key")
+	}
+	return int32(_ret), _err
 }
 
-func go_openssl_DSA_set0_pqg(d _DSA_PTR, p _BIGNUM_PTR, q _BIGNUM_PTR, g _BIGNUM_PTR) int32 {
-	return int32(C.DSA_set0_pqg(d, p, q, g))
+func go_openssl_DSA_set0_pqg(d _DSA_PTR, p _BIGNUM_PTR, q _BIGNUM_PTR, g _BIGNUM_PTR) (int32, error) {
+	_ret := C.DSA_set0_pqg(d, p, q, g)
+	var _err error
+	if _ret <= 0 {
+		_err = newOpenSSLError("DSA_set0_pqg")
+	}
+	return int32(_ret), _err
 }
 
 func go_openssl_EC_GROUP_free(group _EC_GROUP_PTR) {
 	C.EC_GROUP_free(group)
 }
 
-func go_openssl_EC_GROUP_new_by_curve_name(nid int32) _EC_GROUP_PTR {
-	return C.EC_GROUP_new_by_curve_name(C.int(nid))
+func go_openssl_EC_GROUP_new_by_curve_name(nid int32) (_EC_GROUP_PTR, error) {
+	_ret := C.EC_GROUP_new_by_curve_name(C.int(nid))
+	var _err error
+	if _ret == nil {
+		_err = newOpenSSLError("EC_GROUP_new_by_curve_name")
+	}
+	return _ret, _err
 }
 
-func go_openssl_EC_KEY_check_key(key _EC_KEY_PTR) int32 {
-	return int32(C.EC_KEY_check_key(key))
+func go_openssl_EC_KEY_check_key(key _EC_KEY_PTR) (int32, error) {
+	_ret := C.EC_KEY_check_key(key)
+	var _err error
+	if _ret <= 0 {
+		_err = newOpenSSLError("EC_KEY_check_key")
+	}
+	return int32(_ret), _err
 }
 
 func go_openssl_EC_KEY_free(arg0 _EC_KEY_PTR) {
@@ -251,59 +311,109 @@ func go_openssl_EC_KEY_free(arg0 _EC_KEY_PTR) {
 }
 
 func go_openssl_EC_KEY_get0_group(arg0 _EC_KEY_PTR) _EC_GROUP_PTR {
-	return _EC_GROUP_PTR(C.EC_KEY_get0_group(arg0))
+	return C.EC_KEY_get0_group(arg0)
 }
 
 func go_openssl_EC_KEY_get0_private_key(arg0 _EC_KEY_PTR) _BIGNUM_PTR {
-	return _BIGNUM_PTR(C.EC_KEY_get0_private_key(arg0))
+	return C.EC_KEY_get0_private_key(arg0)
 }
 
 func go_openssl_EC_KEY_get0_public_key(arg0 _EC_KEY_PTR) _EC_POINT_PTR {
-	return _EC_POINT_PTR(C.EC_KEY_get0_public_key(arg0))
+	return C.EC_KEY_get0_public_key(arg0)
 }
 
-func go_openssl_EC_KEY_new_by_curve_name(arg0 int32) _EC_KEY_PTR {
-	return C.EC_KEY_new_by_curve_name(C.int(arg0))
+func go_openssl_EC_KEY_new_by_curve_name(arg0 int32) (_EC_KEY_PTR, error) {
+	_ret := C.EC_KEY_new_by_curve_name(C.int(arg0))
+	var _err error
+	if _ret == nil {
+		_err = newOpenSSLError("EC_KEY_new_by_curve_name")
+	}
+	return _ret, _err
 }
 
-func go_openssl_EC_KEY_set_private_key(arg0 _EC_KEY_PTR, arg1 _BIGNUM_PTR) int32 {
-	return int32(C.EC_KEY_set_private_key(arg0, arg1))
+func go_openssl_EC_KEY_set_private_key(arg0 _EC_KEY_PTR, arg1 _BIGNUM_PTR) (int32, error) {
+	_ret := C.EC_KEY_set_private_key(arg0, arg1)
+	var _err error
+	if _ret <= 0 {
+		_err = newOpenSSLError("EC_KEY_set_private_key")
+	}
+	return int32(_ret), _err
 }
 
-func go_openssl_EC_KEY_set_public_key(key _EC_KEY_PTR, pub _EC_POINT_PTR) int32 {
-	return int32(C.EC_KEY_set_public_key(key, pub))
+func go_openssl_EC_KEY_set_public_key(key _EC_KEY_PTR, pub _EC_POINT_PTR) (int32, error) {
+	_ret := C.EC_KEY_set_public_key(key, pub)
+	var _err error
+	if _ret <= 0 {
+		_err = newOpenSSLError("EC_KEY_set_public_key")
+	}
+	return int32(_ret), _err
 }
 
-func go_openssl_EC_KEY_set_public_key_affine_coordinates(key _EC_KEY_PTR, x _BIGNUM_PTR, y _BIGNUM_PTR) int32 {
-	return int32(C.EC_KEY_set_public_key_affine_coordinates(key, x, y))
+func go_openssl_EC_KEY_set_public_key_affine_coordinates(key _EC_KEY_PTR, x _BIGNUM_PTR, y _BIGNUM_PTR) (int32, error) {
+	_ret := C.EC_KEY_set_public_key_affine_coordinates(key, x, y)
+	var _err error
+	if _ret <= 0 {
+		_err = newOpenSSLError("EC_KEY_set_public_key_affine_coordinates")
+	}
+	return int32(_ret), _err
 }
 
 func go_openssl_EC_POINT_free(arg0 _EC_POINT_PTR) {
 	C.EC_POINT_free(arg0)
 }
 
-func go_openssl_EC_POINT_get_affine_coordinates_GFp(arg0 _EC_GROUP_PTR, arg1 _EC_POINT_PTR, arg2 _BIGNUM_PTR, arg3 _BIGNUM_PTR, arg4 _BN_CTX_PTR) int32 {
-	return int32(C.EC_POINT_get_affine_coordinates_GFp(arg0, arg1, arg2, arg3, arg4))
+func go_openssl_EC_POINT_get_affine_coordinates_GFp(arg0 _EC_GROUP_PTR, arg1 _EC_POINT_PTR, arg2 _BIGNUM_PTR, arg3 _BIGNUM_PTR, arg4 _BN_CTX_PTR) (int32, error) {
+	_ret := C.EC_POINT_get_affine_coordinates_GFp(arg0, arg1, arg2, arg3, arg4)
+	var _err error
+	if _ret <= 0 {
+		_err = newOpenSSLError("EC_POINT_get_affine_coordinates_GFp")
+	}
+	return int32(_ret), _err
 }
 
-func go_openssl_EC_POINT_mul(group _EC_GROUP_PTR, r _EC_POINT_PTR, n _BIGNUM_PTR, q _EC_POINT_PTR, m _BIGNUM_PTR, ctx _BN_CTX_PTR) int32 {
-	return int32(C.EC_POINT_mul(group, r, n, q, m, ctx))
+func go_openssl_EC_POINT_mul(group _EC_GROUP_PTR, r _EC_POINT_PTR, n _BIGNUM_PTR, q _EC_POINT_PTR, m _BIGNUM_PTR, ctx _BN_CTX_PTR) (int32, error) {
+	_ret := C.EC_POINT_mul(group, r, n, q, m, ctx)
+	var _err error
+	if _ret <= 0 {
+		_err = newOpenSSLError("EC_POINT_mul")
+	}
+	return int32(_ret), _err
 }
 
-func go_openssl_EC_POINT_new(arg0 _EC_GROUP_PTR) _EC_POINT_PTR {
-	return C.EC_POINT_new(arg0)
+func go_openssl_EC_POINT_new(arg0 _EC_GROUP_PTR) (_EC_POINT_PTR, error) {
+	_ret := C.EC_POINT_new(arg0)
+	var _err error
+	if _ret == nil {
+		_err = newOpenSSLError("EC_POINT_new")
+	}
+	return _ret, _err
 }
 
-func go_openssl_EC_POINT_oct2point(group _EC_GROUP_PTR, p _EC_POINT_PTR, buf *byte, len int, ctx _BN_CTX_PTR) int32 {
-	return int32(C.EC_POINT_oct2point(group, p, (*C.uchar)(unsafe.Pointer(buf)), C.size_t(len), ctx))
+func go_openssl_EC_POINT_oct2point(group _EC_GROUP_PTR, p _EC_POINT_PTR, buf *byte, len int, ctx _BN_CTX_PTR) (int32, error) {
+	_ret := C.EC_POINT_oct2point(group, p, (*C.uchar)(unsafe.Pointer(buf)), C.size_t(len), ctx)
+	var _err error
+	if _ret <= 0 {
+		_err = newOpenSSLError("EC_POINT_oct2point")
+	}
+	return int32(_ret), _err
 }
 
-func go_openssl_EC_POINT_point2oct(group _EC_GROUP_PTR, p _EC_POINT_PTR, form point_conversion_form_t, buf *byte, len int, ctx _BN_CTX_PTR) int {
-	return int(C.EC_POINT_point2oct(group, p, form, (*C.uchar)(unsafe.Pointer(buf)), C.size_t(len), ctx))
+func go_openssl_EC_POINT_point2oct(group _EC_GROUP_PTR, p _EC_POINT_PTR, form point_conversion_form_t, buf *byte, len int, ctx _BN_CTX_PTR) (int, error) {
+	_ret := C.EC_POINT_point2oct(group, p, form, (*C.uchar)(unsafe.Pointer(buf)), C.size_t(len), ctx)
+	var _err error
+	if _ret <= 0 {
+		_err = newOpenSSLError("EC_POINT_point2oct")
+	}
+	return int(_ret), _err
 }
 
-func go_openssl_EC_POINT_set_affine_coordinates(arg0 _EC_GROUP_PTR, arg1 _EC_POINT_PTR, arg2 _BIGNUM_PTR, arg3 _BIGNUM_PTR, arg4 _BN_CTX_PTR) int32 {
-	return int32(C.EC_POINT_set_affine_coordinates(arg0, arg1, arg2, arg3, arg4))
+func go_openssl_EC_POINT_set_affine_coordinates(arg0 _EC_GROUP_PTR, arg1 _EC_POINT_PTR, arg2 _BIGNUM_PTR, arg3 _BIGNUM_PTR, arg4 _BN_CTX_PTR) (int32, error) {
+	_ret := C.EC_POINT_set_affine_coordinates(arg0, arg1, arg2, arg3, arg4)
+	var _err error
+	if _ret <= 0 {
+		_err = newOpenSSLError("EC_POINT_set_affine_coordinates")
+	}
+	return int32(_ret), _err
 }
 
 func go_openssl_ERR_clear_error() {
@@ -322,28 +432,53 @@ func go_openssl_ERR_get_error_line(file **byte, line *int32) uint32 {
 	return uint32(C.ERR_get_error_line((**C.char)(unsafe.Pointer(file)), (*C.int)(unsafe.Pointer(line))))
 }
 
-func go_openssl_EVP_CIPHER_CTX_ctrl(ctx _EVP_CIPHER_CTX_PTR, __type int32, arg int32, ptr unsafe.Pointer) int32 {
-	return int32(C.EVP_CIPHER_CTX_ctrl(ctx, C.int(__type), C.int(arg), ptr))
+func go_openssl_EVP_CIPHER_CTX_ctrl(ctx _EVP_CIPHER_CTX_PTR, __type int32, arg int32, ptr unsafe.Pointer) (int32, error) {
+	_ret := C.EVP_CIPHER_CTX_ctrl(ctx, C.int(__type), C.int(arg), ptr)
+	var _err error
+	if _ret <= 0 {
+		_err = newOpenSSLError("EVP_CIPHER_CTX_ctrl")
+	}
+	return int32(_ret), _err
 }
 
 func go_openssl_EVP_CIPHER_CTX_free(arg0 _EVP_CIPHER_CTX_PTR) {
 	C.EVP_CIPHER_CTX_free(arg0)
 }
 
-func go_openssl_EVP_CIPHER_CTX_new() _EVP_CIPHER_CTX_PTR {
-	return C.EVP_CIPHER_CTX_new()
+func go_openssl_EVP_CIPHER_CTX_new() (_EVP_CIPHER_CTX_PTR, error) {
+	_ret := C.EVP_CIPHER_CTX_new()
+	var _err error
+	if _ret == nil {
+		_err = newOpenSSLError("EVP_CIPHER_CTX_new")
+	}
+	return _ret, _err
 }
 
-func go_openssl_EVP_CIPHER_CTX_set_key_length(x _EVP_CIPHER_CTX_PTR, keylen int32) int32 {
-	return int32(C.EVP_CIPHER_CTX_set_key_length(x, C.int(keylen)))
+func go_openssl_EVP_CIPHER_CTX_set_key_length(x _EVP_CIPHER_CTX_PTR, keylen int32) (int32, error) {
+	_ret := C.EVP_CIPHER_CTX_set_key_length(x, C.int(keylen))
+	var _err error
+	if _ret <= 0 {
+		_err = newOpenSSLError("EVP_CIPHER_CTX_set_key_length")
+	}
+	return int32(_ret), _err
 }
 
-func go_openssl_EVP_CIPHER_CTX_set_padding(x _EVP_CIPHER_CTX_PTR, padding int32) int32 {
-	return int32(C.EVP_CIPHER_CTX_set_padding(x, C.int(padding)))
+func go_openssl_EVP_CIPHER_CTX_set_padding(x _EVP_CIPHER_CTX_PTR, padding int32) (int32, error) {
+	_ret := C.EVP_CIPHER_CTX_set_padding(x, C.int(padding))
+	var _err error
+	if _ret <= 0 {
+		_err = newOpenSSLError("EVP_CIPHER_CTX_set_padding")
+	}
+	return int32(_ret), _err
 }
 
-func go_openssl_EVP_CIPHER_fetch(ctx _OSSL_LIB_CTX_PTR, algorithm *byte, properties *byte) _EVP_CIPHER_PTR {
-	return C.EVP_CIPHER_fetch(ctx, (*C.char)(unsafe.Pointer(algorithm)), (*C.char)(unsafe.Pointer(properties)))
+func go_openssl_EVP_CIPHER_fetch(ctx _OSSL_LIB_CTX_PTR, algorithm *byte, properties *byte) (_EVP_CIPHER_PTR, error) {
+	_ret := C.EVP_CIPHER_fetch(ctx, (*C.char)(unsafe.Pointer(algorithm)), (*C.char)(unsafe.Pointer(properties)))
+	var _err error
+	if _ret == nil {
+		_err = newOpenSSLError("EVP_CIPHER_fetch")
+	}
+	return _ret, _err
 }
 
 func go_openssl_EVP_CIPHER_get0_name(cipher _EVP_CIPHER_PTR) *byte {
@@ -354,160 +489,335 @@ func go_openssl_EVP_CIPHER_get_block_size(cipher _EVP_CIPHER_PTR) int32 {
 	return int32(C.EVP_CIPHER_get_block_size(cipher))
 }
 
-func go_openssl_EVP_CipherInit_ex(ctx _EVP_CIPHER_CTX_PTR, __type _EVP_CIPHER_PTR, impl _ENGINE_PTR, key *byte, iv *byte, enc int32) int32 {
-	return int32(C.EVP_CipherInit_ex(ctx, __type, impl, (*C.uchar)(unsafe.Pointer(key)), (*C.uchar)(unsafe.Pointer(iv)), C.int(enc)))
+func go_openssl_EVP_CipherInit_ex(ctx _EVP_CIPHER_CTX_PTR, __type _EVP_CIPHER_PTR, impl _ENGINE_PTR, key *byte, iv *byte, enc int32) (int32, error) {
+	_ret := C.EVP_CipherInit_ex(ctx, __type, impl, (*C.uchar)(unsafe.Pointer(key)), (*C.uchar)(unsafe.Pointer(iv)), C.int(enc))
+	var _err error
+	if _ret <= 0 {
+		_err = newOpenSSLError("EVP_CipherInit_ex")
+	}
+	return int32(_ret), _err
 }
 
-func go_openssl_EVP_CipherUpdate(ctx _EVP_CIPHER_CTX_PTR, out *byte, outl *int32, in *byte, inl int32) int32 {
-	return int32(C.EVP_CipherUpdate(ctx, (*C.uchar)(unsafe.Pointer(out)), (*C.int)(unsafe.Pointer(outl)), (*C.uchar)(unsafe.Pointer(in)), C.int(inl)))
+func go_openssl_EVP_CipherUpdate(ctx _EVP_CIPHER_CTX_PTR, out *byte, outl *int32, in *byte, inl int32) (int32, error) {
+	_ret := C.EVP_CipherUpdate(ctx, (*C.uchar)(unsafe.Pointer(out)), (*C.int)(unsafe.Pointer(outl)), (*C.uchar)(unsafe.Pointer(in)), C.int(inl))
+	var _err error
+	if _ret <= 0 {
+		_err = newOpenSSLError("EVP_CipherUpdate")
+	}
+	return int32(_ret), _err
 }
 
-func go_openssl_EVP_DecryptFinal_ex(ctx _EVP_CIPHER_CTX_PTR, outm *byte, outl *int32) int32 {
-	return int32(C.EVP_DecryptFinal_ex(ctx, (*C.uchar)(unsafe.Pointer(outm)), (*C.int)(unsafe.Pointer(outl))))
+func go_openssl_EVP_DecryptFinal_ex(ctx _EVP_CIPHER_CTX_PTR, outm *byte, outl *int32) (int32, error) {
+	_ret := C.EVP_DecryptFinal_ex(ctx, (*C.uchar)(unsafe.Pointer(outm)), (*C.int)(unsafe.Pointer(outl)))
+	var _err error
+	if _ret <= 0 {
+		_err = newOpenSSLError("EVP_DecryptFinal_ex")
+	}
+	return int32(_ret), _err
 }
 
-func go_openssl_EVP_DecryptInit_ex(ctx _EVP_CIPHER_CTX_PTR, __type _EVP_CIPHER_PTR, impl _ENGINE_PTR, key *byte, iv *byte) int32 {
-	return int32(C.EVP_DecryptInit_ex(ctx, __type, impl, (*C.uchar)(unsafe.Pointer(key)), (*C.uchar)(unsafe.Pointer(iv))))
+func go_openssl_EVP_DecryptInit_ex(ctx _EVP_CIPHER_CTX_PTR, __type _EVP_CIPHER_PTR, impl _ENGINE_PTR, key *byte, iv *byte) (int32, error) {
+	_ret := C.EVP_DecryptInit_ex(ctx, __type, impl, (*C.uchar)(unsafe.Pointer(key)), (*C.uchar)(unsafe.Pointer(iv)))
+	var _err error
+	if _ret <= 0 {
+		_err = newOpenSSLError("EVP_DecryptInit_ex")
+	}
+	return int32(_ret), _err
 }
 
-func go_openssl_EVP_DecryptUpdate(ctx _EVP_CIPHER_CTX_PTR, out *byte, outl *int32, in *byte, inl int32) int32 {
-	return int32(C.EVP_DecryptUpdate(ctx, (*C.uchar)(unsafe.Pointer(out)), (*C.int)(unsafe.Pointer(outl)), (*C.uchar)(unsafe.Pointer(in)), C.int(inl)))
+func go_openssl_EVP_DecryptUpdate(ctx _EVP_CIPHER_CTX_PTR, out *byte, outl *int32, in *byte, inl int32) (int32, error) {
+	_ret := C.EVP_DecryptUpdate(ctx, (*C.uchar)(unsafe.Pointer(out)), (*C.int)(unsafe.Pointer(outl)), (*C.uchar)(unsafe.Pointer(in)), C.int(inl))
+	var _err error
+	if _ret <= 0 {
+		_err = newOpenSSLError("EVP_DecryptUpdate")
+	}
+	return int32(_ret), _err
 }
 
-func go_openssl_EVP_Digest(data unsafe.Pointer, count int, md *byte, size *uint32, __type _EVP_MD_PTR, impl _ENGINE_PTR) int32 {
-	return int32(C.EVP_Digest(data, C.size_t(count), (*C.uchar)(unsafe.Pointer(md)), (*C.uint)(unsafe.Pointer(size)), __type, impl))
+func go_openssl_EVP_Digest(data unsafe.Pointer, count int, md *byte, size *uint32, __type _EVP_MD_PTR, impl _ENGINE_PTR) (int32, error) {
+	_ret := C.EVP_Digest(data, C.size_t(count), (*C.uchar)(unsafe.Pointer(md)), (*C.uint)(unsafe.Pointer(size)), __type, impl)
+	var _err error
+	if _ret <= 0 {
+		_err = newOpenSSLError("EVP_Digest")
+	}
+	return int32(_ret), _err
 }
 
-func go_openssl_EVP_DigestFinal_ex(ctx _EVP_MD_CTX_PTR, md *byte, s *uint32) int32 {
-	return int32(C.EVP_DigestFinal_ex(ctx, (*C.uchar)(unsafe.Pointer(md)), (*C.uint)(unsafe.Pointer(s))))
+func go_openssl_EVP_DigestFinal_ex(ctx _EVP_MD_CTX_PTR, md *byte, s *uint32) (int32, error) {
+	_ret := C.EVP_DigestFinal_ex(ctx, (*C.uchar)(unsafe.Pointer(md)), (*C.uint)(unsafe.Pointer(s)))
+	var _err error
+	if _ret <= 0 {
+		_err = newOpenSSLError("EVP_DigestFinal_ex")
+	}
+	return int32(_ret), _err
 }
 
-func go_openssl_EVP_DigestInit(ctx _EVP_MD_CTX_PTR, __type _EVP_MD_PTR) int32 {
-	return int32(C.EVP_DigestInit(ctx, __type))
+func go_openssl_EVP_DigestInit(ctx _EVP_MD_CTX_PTR, __type _EVP_MD_PTR) (int32, error) {
+	_ret := C.EVP_DigestInit(ctx, __type)
+	var _err error
+	if _ret <= 0 {
+		_err = newOpenSSLError("EVP_DigestInit")
+	}
+	return int32(_ret), _err
 }
 
-func go_openssl_EVP_DigestInit_ex(ctx _EVP_MD_CTX_PTR, __type _EVP_MD_PTR, impl _ENGINE_PTR) int32 {
-	return int32(C.EVP_DigestInit_ex(ctx, __type, impl))
+func go_openssl_EVP_DigestInit_ex(ctx _EVP_MD_CTX_PTR, __type _EVP_MD_PTR, impl _ENGINE_PTR) (int32, error) {
+	_ret := C.EVP_DigestInit_ex(ctx, __type, impl)
+	var _err error
+	if _ret <= 0 {
+		_err = newOpenSSLError("EVP_DigestInit_ex")
+	}
+	return int32(_ret), _err
 }
 
-func go_openssl_EVP_DigestSign(ctx _EVP_MD_CTX_PTR, sigret *byte, siglen *int, tbs *byte, tbslen int) int32 {
-	return int32(C.EVP_DigestSign(ctx, (*C.uchar)(unsafe.Pointer(sigret)), (*C.size_t)(unsafe.Pointer(siglen)), (*C.uchar)(unsafe.Pointer(tbs)), C.size_t(tbslen)))
+func go_openssl_EVP_DigestSign(ctx _EVP_MD_CTX_PTR, sigret *byte, siglen *int, tbs *byte, tbslen int) (int32, error) {
+	_ret := C.EVP_DigestSign(ctx, (*C.uchar)(unsafe.Pointer(sigret)), (*C.size_t)(unsafe.Pointer(siglen)), (*C.uchar)(unsafe.Pointer(tbs)), C.size_t(tbslen))
+	var _err error
+	if _ret <= 0 {
+		_err = newOpenSSLError("EVP_DigestSign")
+	}
+	return int32(_ret), _err
 }
 
-func go_openssl_EVP_DigestSignFinal(ctx _EVP_MD_CTX_PTR, sig *byte, siglen *int) int32 {
-	return int32(C.EVP_DigestSignFinal(ctx, (*C.uchar)(unsafe.Pointer(sig)), (*C.size_t)(unsafe.Pointer(siglen))))
+func go_openssl_EVP_DigestSignFinal(ctx _EVP_MD_CTX_PTR, sig *byte, siglen *int) (int32, error) {
+	_ret := C.EVP_DigestSignFinal(ctx, (*C.uchar)(unsafe.Pointer(sig)), (*C.size_t)(unsafe.Pointer(siglen)))
+	var _err error
+	if _ret <= 0 {
+		_err = newOpenSSLError("EVP_DigestSignFinal")
+	}
+	return int32(_ret), _err
 }
 
-func go_openssl_EVP_DigestSignInit(ctx _EVP_MD_CTX_PTR, pctx *_EVP_PKEY_CTX_PTR, __type _EVP_MD_PTR, e _ENGINE_PTR, pkey _EVP_PKEY_PTR) int32 {
-	return int32(C.EVP_DigestSignInit(ctx, pctx, __type, e, pkey))
+func go_openssl_EVP_DigestSignInit(ctx _EVP_MD_CTX_PTR, pctx *_EVP_PKEY_CTX_PTR, __type _EVP_MD_PTR, e _ENGINE_PTR, pkey _EVP_PKEY_PTR) (int32, error) {
+	_ret := C.EVP_DigestSignInit(ctx, pctx, __type, e, pkey)
+	var _err error
+	if _ret <= 0 {
+		_err = newOpenSSLError("EVP_DigestSignInit")
+	}
+	return int32(_ret), _err
 }
 
-func go_openssl_EVP_DigestUpdate(ctx _EVP_MD_CTX_PTR, d unsafe.Pointer, cnt int) int32 {
-	return int32(C.EVP_DigestUpdate(ctx, d, C.size_t(cnt)))
+func go_openssl_EVP_DigestUpdate(ctx _EVP_MD_CTX_PTR, d unsafe.Pointer, cnt int) (int32, error) {
+	_ret := C.EVP_DigestUpdate(ctx, d, C.size_t(cnt))
+	var _err error
+	if _ret <= 0 {
+		_err = newOpenSSLError("EVP_DigestUpdate")
+	}
+	return int32(_ret), _err
 }
 
-func go_openssl_EVP_DigestVerify(ctx _EVP_MD_CTX_PTR, sigret *byte, siglen int, tbs *byte, tbslen int) int32 {
-	return int32(C.EVP_DigestVerify(ctx, (*C.uchar)(unsafe.Pointer(sigret)), C.size_t(siglen), (*C.uchar)(unsafe.Pointer(tbs)), C.size_t(tbslen)))
+func go_openssl_EVP_DigestVerify(ctx _EVP_MD_CTX_PTR, sigret *byte, siglen int, tbs *byte, tbslen int) (int32, error) {
+	_ret := C.EVP_DigestVerify(ctx, (*C.uchar)(unsafe.Pointer(sigret)), C.size_t(siglen), (*C.uchar)(unsafe.Pointer(tbs)), C.size_t(tbslen))
+	var _err error
+	if _ret <= 0 {
+		_err = newOpenSSLError("EVP_DigestVerify")
+	}
+	return int32(_ret), _err
 }
 
-func go_openssl_EVP_DigestVerifyFinal(ctx _EVP_MD_CTX_PTR, sig *byte, siglen int) int32 {
-	return int32(C.EVP_DigestVerifyFinal(ctx, (*C.uchar)(unsafe.Pointer(sig)), C.size_t(siglen)))
+func go_openssl_EVP_DigestVerifyFinal(ctx _EVP_MD_CTX_PTR, sig *byte, siglen int) (int32, error) {
+	_ret := C.EVP_DigestVerifyFinal(ctx, (*C.uchar)(unsafe.Pointer(sig)), C.size_t(siglen))
+	var _err error
+	if _ret <= 0 {
+		_err = newOpenSSLError("EVP_DigestVerifyFinal")
+	}
+	return int32(_ret), _err
 }
 
-func go_openssl_EVP_DigestVerifyInit(ctx _EVP_MD_CTX_PTR, pctx *_EVP_PKEY_CTX_PTR, __type _EVP_MD_PTR, e _ENGINE_PTR, pkey _EVP_PKEY_PTR) int32 {
-	return int32(C.EVP_DigestVerifyInit(ctx, pctx, __type, e, pkey))
+func go_openssl_EVP_DigestVerifyInit(ctx _EVP_MD_CTX_PTR, pctx *_EVP_PKEY_CTX_PTR, __type _EVP_MD_PTR, e _ENGINE_PTR, pkey _EVP_PKEY_PTR) (int32, error) {
+	_ret := C.EVP_DigestVerifyInit(ctx, pctx, __type, e, pkey)
+	var _err error
+	if _ret <= 0 {
+		_err = newOpenSSLError("EVP_DigestVerifyInit")
+	}
+	return int32(_ret), _err
 }
 
-func go_openssl_EVP_EncryptFinal_ex(ctx _EVP_CIPHER_CTX_PTR, out *byte, outl *int32) int32 {
-	return int32(C.EVP_EncryptFinal_ex(ctx, (*C.uchar)(unsafe.Pointer(out)), (*C.int)(unsafe.Pointer(outl))))
+func go_openssl_EVP_EncryptFinal_ex(ctx _EVP_CIPHER_CTX_PTR, out *byte, outl *int32) (int32, error) {
+	_ret := C.EVP_EncryptFinal_ex(ctx, (*C.uchar)(unsafe.Pointer(out)), (*C.int)(unsafe.Pointer(outl)))
+	var _err error
+	if _ret <= 0 {
+		_err = newOpenSSLError("EVP_EncryptFinal_ex")
+	}
+	return int32(_ret), _err
 }
 
-func go_openssl_EVP_EncryptInit_ex(ctx _EVP_CIPHER_CTX_PTR, __type _EVP_CIPHER_PTR, impl _ENGINE_PTR, key *byte, iv *byte) int32 {
-	return int32(C.EVP_EncryptInit_ex(ctx, __type, impl, (*C.uchar)(unsafe.Pointer(key)), (*C.uchar)(unsafe.Pointer(iv))))
+func go_openssl_EVP_EncryptInit_ex(ctx _EVP_CIPHER_CTX_PTR, __type _EVP_CIPHER_PTR, impl _ENGINE_PTR, key *byte, iv *byte) (int32, error) {
+	_ret := C.EVP_EncryptInit_ex(ctx, __type, impl, (*C.uchar)(unsafe.Pointer(key)), (*C.uchar)(unsafe.Pointer(iv)))
+	var _err error
+	if _ret <= 0 {
+		_err = newOpenSSLError("EVP_EncryptInit_ex")
+	}
+	return int32(_ret), _err
 }
 
-func go_openssl_EVP_EncryptUpdate(ctx _EVP_CIPHER_CTX_PTR, out *byte, outl *int32, in *byte, inl int32) int32 {
-	return int32(C.EVP_EncryptUpdate(ctx, (*C.uchar)(unsafe.Pointer(out)), (*C.int)(unsafe.Pointer(outl)), (*C.uchar)(unsafe.Pointer(in)), C.int(inl)))
+func go_openssl_EVP_EncryptUpdate(ctx _EVP_CIPHER_CTX_PTR, out *byte, outl *int32, in *byte, inl int32) (int32, error) {
+	_ret := C.EVP_EncryptUpdate(ctx, (*C.uchar)(unsafe.Pointer(out)), (*C.int)(unsafe.Pointer(outl)), (*C.uchar)(unsafe.Pointer(in)), C.int(inl))
+	var _err error
+	if _ret <= 0 {
+		_err = newOpenSSLError("EVP_EncryptUpdate")
+	}
+	return int32(_ret), _err
 }
 
 func go_openssl_EVP_KDF_CTX_free(ctx _EVP_KDF_CTX_PTR) {
 	C.EVP_KDF_CTX_free(ctx)
 }
 
-func go_openssl_EVP_KDF_CTX_get_kdf_size(ctx _EVP_KDF_CTX_PTR) int {
-	return int(C.EVP_KDF_CTX_get_kdf_size(ctx))
+func go_openssl_EVP_KDF_CTX_get_kdf_size(ctx _EVP_KDF_CTX_PTR) (int, error) {
+	_ret := C.EVP_KDF_CTX_get_kdf_size(ctx)
+	var _err error
+	if _ret <= 0 {
+		_err = newOpenSSLError("EVP_KDF_CTX_get_kdf_size")
+	}
+	return int(_ret), _err
 }
 
-func go_openssl_EVP_KDF_CTX_new(kdf _EVP_KDF_PTR) _EVP_KDF_CTX_PTR {
-	return C.EVP_KDF_CTX_new(kdf)
+func go_openssl_EVP_KDF_CTX_new(kdf _EVP_KDF_PTR) (_EVP_KDF_CTX_PTR, error) {
+	_ret := C.EVP_KDF_CTX_new(kdf)
+	var _err error
+	if _ret == nil {
+		_err = newOpenSSLError("EVP_KDF_CTX_new")
+	}
+	return _ret, _err
 }
 
-func go_openssl_EVP_KDF_CTX_set_params(ctx _EVP_KDF_CTX_PTR, params _OSSL_PARAM_PTR) int32 {
-	return int32(C.EVP_KDF_CTX_set_params(ctx, params))
+func go_openssl_EVP_KDF_CTX_set_params(ctx _EVP_KDF_CTX_PTR, params _OSSL_PARAM_PTR) (int32, error) {
+	_ret := C.EVP_KDF_CTX_set_params(ctx, params)
+	var _err error
+	if _ret <= 0 {
+		_err = newOpenSSLError("EVP_KDF_CTX_set_params")
+	}
+	return int32(_ret), _err
 }
 
-func go_openssl_EVP_KDF_derive(ctx _EVP_KDF_CTX_PTR, key *byte, keylen int, params _OSSL_PARAM_PTR) int32 {
-	return int32(C.EVP_KDF_derive(ctx, (*C.uchar)(unsafe.Pointer(key)), C.size_t(keylen), params))
+func go_openssl_EVP_KDF_derive(ctx _EVP_KDF_CTX_PTR, key *byte, keylen int, params _OSSL_PARAM_PTR) (int32, error) {
+	_ret := C.EVP_KDF_derive(ctx, (*C.uchar)(unsafe.Pointer(key)), C.size_t(keylen), params)
+	var _err error
+	if _ret <= 0 {
+		_err = newOpenSSLError("EVP_KDF_derive")
+	}
+	return int32(_ret), _err
 }
 
-func go_openssl_EVP_KDF_fetch(libctx _OSSL_LIB_CTX_PTR, algorithm *byte, properties *byte) _EVP_KDF_PTR {
-	return C.EVP_KDF_fetch(libctx, (*C.char)(unsafe.Pointer(algorithm)), (*C.char)(unsafe.Pointer(properties)))
+func go_openssl_EVP_KDF_fetch(libctx _OSSL_LIB_CTX_PTR, algorithm *byte, properties *byte) (_EVP_KDF_PTR, error) {
+	_ret := C.EVP_KDF_fetch(libctx, (*C.char)(unsafe.Pointer(algorithm)), (*C.char)(unsafe.Pointer(properties)))
+	var _err error
+	if _ret == nil {
+		_err = newOpenSSLError("EVP_KDF_fetch")
+	}
+	return _ret, _err
 }
 
 func go_openssl_EVP_KDF_free(kdf _EVP_KDF_PTR) {
 	C.EVP_KDF_free(kdf)
 }
 
-func go_openssl_EVP_MAC_CTX_dup(arg0 _EVP_MAC_CTX_PTR) _EVP_MAC_CTX_PTR {
-	return C.EVP_MAC_CTX_dup(arg0)
+func go_openssl_EVP_MAC_CTX_dup(arg0 _EVP_MAC_CTX_PTR) (_EVP_MAC_CTX_PTR, error) {
+	_ret := C.EVP_MAC_CTX_dup(arg0)
+	var _err error
+	if _ret == nil {
+		_err = newOpenSSLError("EVP_MAC_CTX_dup")
+	}
+	return _ret, _err
 }
 
 func go_openssl_EVP_MAC_CTX_free(arg0 _EVP_MAC_CTX_PTR) {
 	C.EVP_MAC_CTX_free(arg0)
 }
 
-func go_openssl_EVP_MAC_CTX_new(arg0 _EVP_MAC_PTR) _EVP_MAC_CTX_PTR {
-	return C.EVP_MAC_CTX_new(arg0)
+func go_openssl_EVP_MAC_CTX_new(arg0 _EVP_MAC_PTR) (_EVP_MAC_CTX_PTR, error) {
+	_ret := C.EVP_MAC_CTX_new(arg0)
+	var _err error
+	if _ret == nil {
+		_err = newOpenSSLError("EVP_MAC_CTX_new")
+	}
+	return _ret, _err
 }
 
-func go_openssl_EVP_MAC_CTX_set_params(ctx _EVP_MAC_CTX_PTR, params _OSSL_PARAM_PTR) int32 {
-	return int32(C.EVP_MAC_CTX_set_params(ctx, params))
+func go_openssl_EVP_MAC_CTX_set_params(ctx _EVP_MAC_CTX_PTR, params _OSSL_PARAM_PTR) (int32, error) {
+	_ret := C.EVP_MAC_CTX_set_params(ctx, params)
+	var _err error
+	if _ret <= 0 {
+		_err = newOpenSSLError("EVP_MAC_CTX_set_params")
+	}
+	return int32(_ret), _err
 }
 
-func go_openssl_EVP_MAC_fetch(ctx _OSSL_LIB_CTX_PTR, algorithm *byte, properties *byte) _EVP_MAC_PTR {
-	return C.EVP_MAC_fetch(ctx, (*C.char)(unsafe.Pointer(algorithm)), (*C.char)(unsafe.Pointer(properties)))
+func go_openssl_EVP_MAC_fetch(ctx _OSSL_LIB_CTX_PTR, algorithm *byte, properties *byte) (_EVP_MAC_PTR, error) {
+	_ret := C.EVP_MAC_fetch(ctx, (*C.char)(unsafe.Pointer(algorithm)), (*C.char)(unsafe.Pointer(properties)))
+	var _err error
+	if _ret == nil {
+		_err = newOpenSSLError("EVP_MAC_fetch")
+	}
+	return _ret, _err
 }
 
-func go_openssl_EVP_MAC_final(ctx _EVP_MAC_CTX_PTR, out *byte, outl *int, outsize int) int32 {
-	return int32(C.EVP_MAC_final(ctx, (*C.uchar)(unsafe.Pointer(out)), (*C.size_t)(unsafe.Pointer(outl)), C.size_t(outsize)))
+func go_openssl_EVP_MAC_final(ctx _EVP_MAC_CTX_PTR, out *byte, outl *int, outsize int) (int32, error) {
+	_ret := C.EVP_MAC_final(ctx, (*C.uchar)(unsafe.Pointer(out)), (*C.size_t)(unsafe.Pointer(outl)), C.size_t(outsize))
+	var _err error
+	if _ret <= 0 {
+		_err = newOpenSSLError("EVP_MAC_final")
+	}
+	return int32(_ret), _err
 }
 
-func go_openssl_EVP_MAC_init(ctx _EVP_MAC_CTX_PTR, key *byte, keylen int, params _OSSL_PARAM_PTR) int32 {
-	return int32(C.EVP_MAC_init(ctx, (*C.uchar)(unsafe.Pointer(key)), C.size_t(keylen), params))
+func go_openssl_EVP_MAC_init(ctx _EVP_MAC_CTX_PTR, key *byte, keylen int, params _OSSL_PARAM_PTR) (int32, error) {
+	_ret := C.EVP_MAC_init(ctx, (*C.uchar)(unsafe.Pointer(key)), C.size_t(keylen), params)
+	var _err error
+	if _ret <= 0 {
+		_err = newOpenSSLError("EVP_MAC_init")
+	}
+	return int32(_ret), _err
 }
 
-func go_openssl_EVP_MAC_update(ctx _EVP_MAC_CTX_PTR, data *byte, datalen int) int32 {
-	return int32(C.EVP_MAC_update(ctx, (*C.uchar)(unsafe.Pointer(data)), C.size_t(datalen)))
+func go_openssl_EVP_MAC_update(ctx _EVP_MAC_CTX_PTR, data *byte, datalen int) (int32, error) {
+	_ret := C.EVP_MAC_update(ctx, (*C.uchar)(unsafe.Pointer(data)), C.size_t(datalen))
+	var _err error
+	if _ret <= 0 {
+		_err = newOpenSSLError("EVP_MAC_update")
+	}
+	return int32(_ret), _err
 }
 
-func go_openssl_EVP_MD_CTX_copy(out _EVP_MD_CTX_PTR, in _EVP_MD_CTX_PTR) int32 {
-	return int32(C.EVP_MD_CTX_copy(out, in))
+func go_openssl_EVP_MD_CTX_copy(out _EVP_MD_CTX_PTR, in _EVP_MD_CTX_PTR) (int32, error) {
+	_ret := C.EVP_MD_CTX_copy(out, in)
+	var _err error
+	if _ret <= 0 {
+		_err = newOpenSSLError("EVP_MD_CTX_copy")
+	}
+	return int32(_ret), _err
 }
 
-func go_openssl_EVP_MD_CTX_copy_ex(out _EVP_MD_CTX_PTR, in _EVP_MD_CTX_PTR) int32 {
-	return int32(C.EVP_MD_CTX_copy_ex(out, in))
+func go_openssl_EVP_MD_CTX_copy_ex(out _EVP_MD_CTX_PTR, in _EVP_MD_CTX_PTR) (int32, error) {
+	_ret := C.EVP_MD_CTX_copy_ex(out, in)
+	var _err error
+	if _ret <= 0 {
+		_err = newOpenSSLError("EVP_MD_CTX_copy_ex")
+	}
+	return int32(_ret), _err
 }
 
 func go_openssl_EVP_MD_CTX_free(ctx _EVP_MD_CTX_PTR) {
 	C.EVP_MD_CTX_free(ctx)
 }
 
-func go_openssl_EVP_MD_CTX_new() _EVP_MD_CTX_PTR {
-	return C.EVP_MD_CTX_new()
+func go_openssl_EVP_MD_CTX_new() (_EVP_MD_CTX_PTR, error) {
+	_ret := C.EVP_MD_CTX_new()
+	var _err error
+	if _ret == nil {
+		_err = newOpenSSLError("EVP_MD_CTX_new")
+	}
+	return _ret, _err
 }
 
-func go_openssl_EVP_MD_fetch(ctx _OSSL_LIB_CTX_PTR, algorithm *byte, properties *byte) _EVP_MD_PTR {
-	return C.EVP_MD_fetch(ctx, (*C.char)(unsafe.Pointer(algorithm)), (*C.char)(unsafe.Pointer(properties)))
+func go_openssl_EVP_MD_fetch(ctx _OSSL_LIB_CTX_PTR, algorithm *byte, properties *byte) (_EVP_MD_PTR, error) {
+	_ret := C.EVP_MD_fetch(ctx, (*C.char)(unsafe.Pointer(algorithm)), (*C.char)(unsafe.Pointer(properties)))
+	var _err error
+	if _ret == nil {
+		_err = newOpenSSLError("EVP_MD_fetch")
+	}
+	return _ret, _err
 }
 
 func go_openssl_EVP_MD_free(md _EVP_MD_PTR) {
@@ -519,7 +829,7 @@ func go_openssl_EVP_MD_get0_name(md _EVP_MD_PTR) *byte {
 }
 
 func go_openssl_EVP_MD_get0_provider(md _EVP_MD_PTR) _OSSL_PROVIDER_PTR {
-	return _OSSL_PROVIDER_PTR(C.EVP_MD_get0_provider(md))
+	return C.EVP_MD_get0_provider(md)
 }
 
 func go_openssl_EVP_MD_get_block_size(md _EVP_MD_PTR) int32 {
@@ -534,208 +844,453 @@ func go_openssl_EVP_MD_get_type(md _EVP_MD_PTR) int32 {
 	return int32(C.EVP_MD_get_type(md))
 }
 
-func go_openssl_EVP_PKEY_CTX_add1_hkdf_info(arg0 _EVP_PKEY_CTX_PTR, arg1 *byte, arg2 int32) int32 {
-	return int32(C.EVP_PKEY_CTX_add1_hkdf_info(arg0, (*C.uchar)(unsafe.Pointer(arg1)), C.int(arg2)))
+func go_openssl_EVP_PKEY_CTX_add1_hkdf_info(arg0 _EVP_PKEY_CTX_PTR, arg1 *byte, arg2 int32) (int32, error) {
+	_ret := C.EVP_PKEY_CTX_add1_hkdf_info(arg0, (*C.uchar)(unsafe.Pointer(arg1)), C.int(arg2))
+	var _err error
+	if _ret <= 0 {
+		_err = newOpenSSLError("EVP_PKEY_CTX_add1_hkdf_info")
+	}
+	return int32(_ret), _err
 }
 
-func go_openssl_EVP_PKEY_CTX_ctrl(ctx _EVP_PKEY_CTX_PTR, keytype int32, optype int32, cmd int32, p1 int32, p2 unsafe.Pointer) int32 {
-	return int32(C.EVP_PKEY_CTX_ctrl(ctx, C.int(keytype), C.int(optype), C.int(cmd), C.int(p1), p2))
+func go_openssl_EVP_PKEY_CTX_ctrl(ctx _EVP_PKEY_CTX_PTR, keytype int32, optype int32, cmd int32, p1 int32, p2 unsafe.Pointer) (int32, error) {
+	_ret := C.EVP_PKEY_CTX_ctrl(ctx, C.int(keytype), C.int(optype), C.int(cmd), C.int(p1), p2)
+	var _err error
+	if _ret <= 0 {
+		_err = newOpenSSLError("EVP_PKEY_CTX_ctrl")
+	}
+	return int32(_ret), _err
 }
 
 func go_openssl_EVP_PKEY_CTX_free(arg0 _EVP_PKEY_CTX_PTR) {
 	C.EVP_PKEY_CTX_free(arg0)
 }
 
-func go_openssl_EVP_PKEY_CTX_new(arg0 _EVP_PKEY_PTR, arg1 _ENGINE_PTR) _EVP_PKEY_CTX_PTR {
-	return C.EVP_PKEY_CTX_new(arg0, arg1)
+func go_openssl_EVP_PKEY_CTX_new(arg0 _EVP_PKEY_PTR, arg1 _ENGINE_PTR) (_EVP_PKEY_CTX_PTR, error) {
+	_ret := C.EVP_PKEY_CTX_new(arg0, arg1)
+	var _err error
+	if _ret == nil {
+		_err = newOpenSSLError("EVP_PKEY_CTX_new")
+	}
+	return _ret, _err
 }
 
-func go_openssl_EVP_PKEY_CTX_new_from_pkey(libctx _OSSL_LIB_CTX_PTR, pkey _EVP_PKEY_PTR, propquery *byte) _EVP_PKEY_CTX_PTR {
-	return C.EVP_PKEY_CTX_new_from_pkey(libctx, pkey, (*C.char)(unsafe.Pointer(propquery)))
+func go_openssl_EVP_PKEY_CTX_new_from_pkey(libctx _OSSL_LIB_CTX_PTR, pkey _EVP_PKEY_PTR, propquery *byte) (_EVP_PKEY_CTX_PTR, error) {
+	_ret := C.EVP_PKEY_CTX_new_from_pkey(libctx, pkey, (*C.char)(unsafe.Pointer(propquery)))
+	var _err error
+	if _ret == nil {
+		_err = newOpenSSLError("EVP_PKEY_CTX_new_from_pkey")
+	}
+	return _ret, _err
 }
 
-func go_openssl_EVP_PKEY_CTX_new_id(id int32, e _ENGINE_PTR) _EVP_PKEY_CTX_PTR {
-	return C.EVP_PKEY_CTX_new_id(C.int(id), e)
+func go_openssl_EVP_PKEY_CTX_new_id(id int32, e _ENGINE_PTR) (_EVP_PKEY_CTX_PTR, error) {
+	_ret := C.EVP_PKEY_CTX_new_id(C.int(id), e)
+	var _err error
+	if _ret == nil {
+		_err = newOpenSSLError("EVP_PKEY_CTX_new_id")
+	}
+	return _ret, _err
 }
 
-func go_openssl_EVP_PKEY_CTX_set0_rsa_oaep_label(ctx _EVP_PKEY_CTX_PTR, label unsafe.Pointer, len int32) int32 {
-	return int32(C.EVP_PKEY_CTX_set0_rsa_oaep_label(ctx, label, C.int(len)))
+func go_openssl_EVP_PKEY_CTX_set0_rsa_oaep_label(ctx _EVP_PKEY_CTX_PTR, label unsafe.Pointer, len int32) (int32, error) {
+	_ret := C.EVP_PKEY_CTX_set0_rsa_oaep_label(ctx, label, C.int(len))
+	var _err error
+	if _ret <= 0 {
+		_err = newOpenSSLError("EVP_PKEY_CTX_set0_rsa_oaep_label")
+	}
+	return int32(_ret), _err
 }
 
-func go_openssl_EVP_PKEY_CTX_set1_hkdf_key(arg0 _EVP_PKEY_CTX_PTR, arg1 *byte, arg2 int32) int32 {
-	return int32(C.EVP_PKEY_CTX_set1_hkdf_key(arg0, (*C.uchar)(unsafe.Pointer(arg1)), C.int(arg2)))
+func go_openssl_EVP_PKEY_CTX_set1_hkdf_key(arg0 _EVP_PKEY_CTX_PTR, arg1 *byte, arg2 int32) (int32, error) {
+	_ret := C.EVP_PKEY_CTX_set1_hkdf_key(arg0, (*C.uchar)(unsafe.Pointer(arg1)), C.int(arg2))
+	var _err error
+	if _ret <= 0 {
+		_err = newOpenSSLError("EVP_PKEY_CTX_set1_hkdf_key")
+	}
+	return int32(_ret), _err
 }
 
-func go_openssl_EVP_PKEY_CTX_set1_hkdf_salt(arg0 _EVP_PKEY_CTX_PTR, arg1 *byte, arg2 int32) int32 {
-	return int32(C.EVP_PKEY_CTX_set1_hkdf_salt(arg0, (*C.uchar)(unsafe.Pointer(arg1)), C.int(arg2)))
+func go_openssl_EVP_PKEY_CTX_set1_hkdf_salt(arg0 _EVP_PKEY_CTX_PTR, arg1 *byte, arg2 int32) (int32, error) {
+	_ret := C.EVP_PKEY_CTX_set1_hkdf_salt(arg0, (*C.uchar)(unsafe.Pointer(arg1)), C.int(arg2))
+	var _err error
+	if _ret <= 0 {
+		_err = newOpenSSLError("EVP_PKEY_CTX_set1_hkdf_salt")
+	}
+	return int32(_ret), _err
 }
 
-func go_openssl_EVP_PKEY_CTX_set_hkdf_md(arg0 _EVP_PKEY_CTX_PTR, arg1 _EVP_MD_PTR) int32 {
-	return int32(C.EVP_PKEY_CTX_set_hkdf_md(arg0, arg1))
+func go_openssl_EVP_PKEY_CTX_set_hkdf_md(arg0 _EVP_PKEY_CTX_PTR, arg1 _EVP_MD_PTR) (int32, error) {
+	_ret := C.EVP_PKEY_CTX_set_hkdf_md(arg0, arg1)
+	var _err error
+	if _ret <= 0 {
+		_err = newOpenSSLError("EVP_PKEY_CTX_set_hkdf_md")
+	}
+	return int32(_ret), _err
 }
 
-func go_openssl_EVP_PKEY_CTX_set_hkdf_mode(arg0 _EVP_PKEY_CTX_PTR, arg1 int32) int32 {
-	return int32(C.EVP_PKEY_CTX_set_hkdf_mode(arg0, C.int(arg1)))
+func go_openssl_EVP_PKEY_CTX_set_hkdf_mode(arg0 _EVP_PKEY_CTX_PTR, arg1 int32) (int32, error) {
+	_ret := C.EVP_PKEY_CTX_set_hkdf_mode(arg0, C.int(arg1))
+	var _err error
+	if _ret <= 0 {
+		_err = newOpenSSLError("EVP_PKEY_CTX_set_hkdf_mode")
+	}
+	return int32(_ret), _err
 }
 
-func go_openssl_EVP_PKEY_Q_keygen_EC(ctx _OSSL_LIB_CTX_PTR, propq *byte, __type *byte, arg1 *byte) _EVP_PKEY_PTR {
-	return C.EVP_PKEY_Q_keygen_EC(ctx, (*C.char)(unsafe.Pointer(propq)), (*C.char)(unsafe.Pointer(__type)), (*C.char)(unsafe.Pointer(arg1)))
+func go_openssl_EVP_PKEY_Q_keygen_EC(ctx _OSSL_LIB_CTX_PTR, propq *byte, __type *byte, arg1 *byte) (_EVP_PKEY_PTR, error) {
+	_ret := C.EVP_PKEY_Q_keygen_EC(ctx, (*C.char)(unsafe.Pointer(propq)), (*C.char)(unsafe.Pointer(__type)), (*C.char)(unsafe.Pointer(arg1)))
+	var _err error
+	if _ret == nil {
+		_err = newOpenSSLError("EVP_PKEY_Q_keygen_EC")
+	}
+	return _ret, _err
 }
 
-func go_openssl_EVP_PKEY_Q_keygen_ED25519(ctx _OSSL_LIB_CTX_PTR, propq *byte, __type *byte) _EVP_PKEY_PTR {
-	return C.EVP_PKEY_Q_keygen_ED25519(ctx, (*C.char)(unsafe.Pointer(propq)), (*C.char)(unsafe.Pointer(__type)))
+func go_openssl_EVP_PKEY_Q_keygen_ED25519(ctx _OSSL_LIB_CTX_PTR, propq *byte, __type *byte) (_EVP_PKEY_PTR, error) {
+	_ret := C.EVP_PKEY_Q_keygen_ED25519(ctx, (*C.char)(unsafe.Pointer(propq)), (*C.char)(unsafe.Pointer(__type)))
+	var _err error
+	if _ret == nil {
+		_err = newOpenSSLError("EVP_PKEY_Q_keygen_ED25519")
+	}
+	return _ret, _err
 }
 
-func go_openssl_EVP_PKEY_Q_keygen_RSA(ctx _OSSL_LIB_CTX_PTR, propq *byte, __type *byte, arg1 int) _EVP_PKEY_PTR {
-	return C.EVP_PKEY_Q_keygen_RSA(ctx, (*C.char)(unsafe.Pointer(propq)), (*C.char)(unsafe.Pointer(__type)), C.size_t(arg1))
+func go_openssl_EVP_PKEY_Q_keygen_RSA(ctx _OSSL_LIB_CTX_PTR, propq *byte, __type *byte, arg1 int) (_EVP_PKEY_PTR, error) {
+	_ret := C.EVP_PKEY_Q_keygen_RSA(ctx, (*C.char)(unsafe.Pointer(propq)), (*C.char)(unsafe.Pointer(__type)), C.size_t(arg1))
+	var _err error
+	if _ret == nil {
+		_err = newOpenSSLError("EVP_PKEY_Q_keygen_RSA")
+	}
+	return _ret, _err
 }
 
-func go_openssl_EVP_PKEY_assign(pkey _EVP_PKEY_PTR, __type int32, key unsafe.Pointer) int32 {
-	return int32(C.EVP_PKEY_assign(pkey, C.int(__type), key))
+func go_openssl_EVP_PKEY_assign(pkey _EVP_PKEY_PTR, __type int32, key unsafe.Pointer) (int32, error) {
+	_ret := C.EVP_PKEY_assign(pkey, C.int(__type), key)
+	var _err error
+	if _ret <= 0 {
+		_err = newOpenSSLError("EVP_PKEY_assign")
+	}
+	return int32(_ret), _err
 }
 
-func go_openssl_EVP_PKEY_decrypt(arg0 _EVP_PKEY_CTX_PTR, arg1 *byte, arg2 *int, arg3 *byte, arg4 int) int32 {
-	return int32(C.EVP_PKEY_decrypt(arg0, (*C.uchar)(unsafe.Pointer(arg1)), (*C.size_t)(unsafe.Pointer(arg2)), (*C.uchar)(unsafe.Pointer(arg3)), C.size_t(arg4)))
+func go_openssl_EVP_PKEY_decrypt(arg0 _EVP_PKEY_CTX_PTR, arg1 *byte, arg2 *int, arg3 *byte, arg4 int) (int32, error) {
+	_ret := C.EVP_PKEY_decrypt(arg0, (*C.uchar)(unsafe.Pointer(arg1)), (*C.size_t)(unsafe.Pointer(arg2)), (*C.uchar)(unsafe.Pointer(arg3)), C.size_t(arg4))
+	var _err error
+	if _ret <= 0 {
+		_err = newOpenSSLError("EVP_PKEY_decrypt")
+	}
+	return int32(_ret), _err
 }
 
-func go_openssl_EVP_PKEY_decrypt_init(arg0 _EVP_PKEY_CTX_PTR) int32 {
-	return int32(C.EVP_PKEY_decrypt_init(arg0))
+func go_openssl_EVP_PKEY_decrypt_init(arg0 _EVP_PKEY_CTX_PTR) (int32, error) {
+	_ret := C.EVP_PKEY_decrypt_init(arg0)
+	var _err error
+	if _ret <= 0 {
+		_err = newOpenSSLError("EVP_PKEY_decrypt_init")
+	}
+	return int32(_ret), _err
 }
 
-func go_openssl_EVP_PKEY_derive(ctx _EVP_PKEY_CTX_PTR, key *byte, keylen *int) int32 {
-	return int32(C.EVP_PKEY_derive(ctx, (*C.uchar)(unsafe.Pointer(key)), (*C.size_t)(unsafe.Pointer(keylen))))
+func go_openssl_EVP_PKEY_derive(ctx _EVP_PKEY_CTX_PTR, key *byte, keylen *int) (int32, error) {
+	_ret := C.EVP_PKEY_derive(ctx, (*C.uchar)(unsafe.Pointer(key)), (*C.size_t)(unsafe.Pointer(keylen)))
+	var _err error
+	if _ret <= 0 {
+		_err = newOpenSSLError("EVP_PKEY_derive")
+	}
+	return int32(_ret), _err
 }
 
-func go_openssl_EVP_PKEY_derive_init(ctx _EVP_PKEY_CTX_PTR) int32 {
-	return int32(C.EVP_PKEY_derive_init(ctx))
+func go_openssl_EVP_PKEY_derive_init(ctx _EVP_PKEY_CTX_PTR) (int32, error) {
+	_ret := C.EVP_PKEY_derive_init(ctx)
+	var _err error
+	if _ret <= 0 {
+		_err = newOpenSSLError("EVP_PKEY_derive_init")
+	}
+	return int32(_ret), _err
 }
 
-func go_openssl_EVP_PKEY_derive_set_peer(ctx _EVP_PKEY_CTX_PTR, peer _EVP_PKEY_PTR) int32 {
-	return int32(C.EVP_PKEY_derive_set_peer(ctx, peer))
+func go_openssl_EVP_PKEY_derive_set_peer(ctx _EVP_PKEY_CTX_PTR, peer _EVP_PKEY_PTR) (int32, error) {
+	_ret := C.EVP_PKEY_derive_set_peer(ctx, peer)
+	var _err error
+	if _ret <= 0 {
+		_err = newOpenSSLError("EVP_PKEY_derive_set_peer")
+	}
+	return int32(_ret), _err
 }
 
-func go_openssl_EVP_PKEY_encrypt(arg0 _EVP_PKEY_CTX_PTR, arg1 *byte, arg2 *int, arg3 *byte, arg4 int) int32 {
-	return int32(C.EVP_PKEY_encrypt(arg0, (*C.uchar)(unsafe.Pointer(arg1)), (*C.size_t)(unsafe.Pointer(arg2)), (*C.uchar)(unsafe.Pointer(arg3)), C.size_t(arg4)))
+func go_openssl_EVP_PKEY_encrypt(arg0 _EVP_PKEY_CTX_PTR, arg1 *byte, arg2 *int, arg3 *byte, arg4 int) (int32, error) {
+	_ret := C.EVP_PKEY_encrypt(arg0, (*C.uchar)(unsafe.Pointer(arg1)), (*C.size_t)(unsafe.Pointer(arg2)), (*C.uchar)(unsafe.Pointer(arg3)), C.size_t(arg4))
+	var _err error
+	if _ret <= 0 {
+		_err = newOpenSSLError("EVP_PKEY_encrypt")
+	}
+	return int32(_ret), _err
 }
 
-func go_openssl_EVP_PKEY_encrypt_init(arg0 _EVP_PKEY_CTX_PTR) int32 {
-	return int32(C.EVP_PKEY_encrypt_init(arg0))
+func go_openssl_EVP_PKEY_encrypt_init(arg0 _EVP_PKEY_CTX_PTR) (int32, error) {
+	_ret := C.EVP_PKEY_encrypt_init(arg0)
+	var _err error
+	if _ret <= 0 {
+		_err = newOpenSSLError("EVP_PKEY_encrypt_init")
+	}
+	return int32(_ret), _err
 }
 
 func go_openssl_EVP_PKEY_free(arg0 _EVP_PKEY_PTR) {
 	C.EVP_PKEY_free(arg0)
 }
 
-func go_openssl_EVP_PKEY_fromdata(ctx _EVP_PKEY_CTX_PTR, pkey *_EVP_PKEY_PTR, selection int32, params _OSSL_PARAM_PTR) int32 {
-	return int32(C.EVP_PKEY_fromdata(ctx, pkey, C.int(selection), params))
+func go_openssl_EVP_PKEY_fromdata(ctx _EVP_PKEY_CTX_PTR, pkey *_EVP_PKEY_PTR, selection int32, params _OSSL_PARAM_PTR) (int32, error) {
+	_ret := C.EVP_PKEY_fromdata(ctx, pkey, C.int(selection), params)
+	var _err error
+	if _ret <= 0 {
+		_err = newOpenSSLError("EVP_PKEY_fromdata")
+	}
+	return int32(_ret), _err
 }
 
-func go_openssl_EVP_PKEY_fromdata_init(ctx _EVP_PKEY_CTX_PTR) int32 {
-	return int32(C.EVP_PKEY_fromdata_init(ctx))
+func go_openssl_EVP_PKEY_fromdata_init(ctx _EVP_PKEY_CTX_PTR) (int32, error) {
+	_ret := C.EVP_PKEY_fromdata_init(ctx)
+	var _err error
+	if _ret <= 0 {
+		_err = newOpenSSLError("EVP_PKEY_fromdata_init")
+	}
+	return int32(_ret), _err
 }
 
-func go_openssl_EVP_PKEY_get0_DSA(pkey _EVP_PKEY_PTR) _DSA_PTR {
-	return C.EVP_PKEY_get0_DSA(pkey)
+func go_openssl_EVP_PKEY_get0_DSA(pkey _EVP_PKEY_PTR) (_DSA_PTR, error) {
+	_ret := C.EVP_PKEY_get0_DSA(pkey)
+	var _err error
+	if _ret == nil {
+		_err = newOpenSSLError("EVP_PKEY_get0_DSA")
+	}
+	return _ret, _err
 }
 
-func go_openssl_EVP_PKEY_get0_EC_KEY(pkey _EVP_PKEY_PTR) _EC_KEY_PTR {
-	return C.EVP_PKEY_get0_EC_KEY(pkey)
+func go_openssl_EVP_PKEY_get0_EC_KEY(pkey _EVP_PKEY_PTR) (_EC_KEY_PTR, error) {
+	_ret := C.EVP_PKEY_get0_EC_KEY(pkey)
+	var _err error
+	if _ret == nil {
+		_err = newOpenSSLError("EVP_PKEY_get0_EC_KEY")
+	}
+	return _ret, _err
 }
 
-func go_openssl_EVP_PKEY_get1_RSA(pkey _EVP_PKEY_PTR) _RSA_PTR {
-	return C.EVP_PKEY_get1_RSA(pkey)
+func go_openssl_EVP_PKEY_get1_RSA(pkey _EVP_PKEY_PTR) (_RSA_PTR, error) {
+	_ret := C.EVP_PKEY_get1_RSA(pkey)
+	var _err error
+	if _ret == nil {
+		_err = newOpenSSLError("EVP_PKEY_get1_RSA")
+	}
+	return _ret, _err
 }
 
-func go_openssl_EVP_PKEY_get1_encoded_public_key(pkey _EVP_PKEY_PTR, ppub **byte) int {
-	return int(C.EVP_PKEY_get1_encoded_public_key(pkey, (**C.uchar)(unsafe.Pointer(ppub))))
+func go_openssl_EVP_PKEY_get1_encoded_public_key(pkey _EVP_PKEY_PTR, ppub **byte) (int, error) {
+	_ret := C.EVP_PKEY_get1_encoded_public_key(pkey, (**C.uchar)(unsafe.Pointer(ppub)))
+	var _err error
+	if _ret <= 0 {
+		_err = newOpenSSLError("EVP_PKEY_get1_encoded_public_key")
+	}
+	return int(_ret), _err
 }
 
-func go_openssl_EVP_PKEY_get_bits(pkey _EVP_PKEY_PTR) int32 {
-	return int32(C.EVP_PKEY_get_bits(pkey))
+func go_openssl_EVP_PKEY_get_bits(pkey _EVP_PKEY_PTR) (int32, error) {
+	_ret := C.EVP_PKEY_get_bits(pkey)
+	var _err error
+	if _ret <= 0 {
+		_err = newOpenSSLError("EVP_PKEY_get_bits")
+	}
+	return int32(_ret), _err
 }
 
-func go_openssl_EVP_PKEY_get_bn_param(pkey _EVP_PKEY_PTR, key_name *byte, bn *_BIGNUM_PTR) int32 {
-	return int32(C.EVP_PKEY_get_bn_param(pkey, (*C.char)(unsafe.Pointer(key_name)), bn))
+func go_openssl_EVP_PKEY_get_bn_param(pkey _EVP_PKEY_PTR, key_name *byte, bn *_BIGNUM_PTR) (int32, error) {
+	_ret := C.EVP_PKEY_get_bn_param(pkey, (*C.char)(unsafe.Pointer(key_name)), bn)
+	var _err error
+	if _ret <= 0 {
+		_err = newOpenSSLError("EVP_PKEY_get_bn_param")
+	}
+	return int32(_ret), _err
 }
 
-func go_openssl_EVP_PKEY_get_raw_private_key(pkey _EVP_PKEY_PTR, priv *byte, len *int) int32 {
-	return int32(C.EVP_PKEY_get_raw_private_key(pkey, (*C.uchar)(unsafe.Pointer(priv)), (*C.size_t)(unsafe.Pointer(len))))
+func go_openssl_EVP_PKEY_get_raw_private_key(pkey _EVP_PKEY_PTR, priv *byte, len *int) (int32, error) {
+	_ret := C.EVP_PKEY_get_raw_private_key(pkey, (*C.uchar)(unsafe.Pointer(priv)), (*C.size_t)(unsafe.Pointer(len)))
+	var _err error
+	if _ret <= 0 {
+		_err = newOpenSSLError("EVP_PKEY_get_raw_private_key")
+	}
+	return int32(_ret), _err
 }
 
-func go_openssl_EVP_PKEY_get_raw_public_key(pkey _EVP_PKEY_PTR, pub *byte, len *int) int32 {
-	return int32(C.EVP_PKEY_get_raw_public_key(pkey, (*C.uchar)(unsafe.Pointer(pub)), (*C.size_t)(unsafe.Pointer(len))))
+func go_openssl_EVP_PKEY_get_raw_public_key(pkey _EVP_PKEY_PTR, pub *byte, len *int) (int32, error) {
+	_ret := C.EVP_PKEY_get_raw_public_key(pkey, (*C.uchar)(unsafe.Pointer(pub)), (*C.size_t)(unsafe.Pointer(len)))
+	var _err error
+	if _ret <= 0 {
+		_err = newOpenSSLError("EVP_PKEY_get_raw_public_key")
+	}
+	return int32(_ret), _err
 }
 
-func go_openssl_EVP_PKEY_get_size(pkey _EVP_PKEY_PTR) int32 {
-	return int32(C.EVP_PKEY_get_size(pkey))
+func go_openssl_EVP_PKEY_get_size(pkey _EVP_PKEY_PTR) (int32, error) {
+	_ret := C.EVP_PKEY_get_size(pkey)
+	var _err error
+	if _ret <= 0 {
+		_err = newOpenSSLError("EVP_PKEY_get_size")
+	}
+	return int32(_ret), _err
 }
 
-func go_openssl_EVP_PKEY_keygen(ctx _EVP_PKEY_CTX_PTR, ppkey *_EVP_PKEY_PTR) int32 {
-	return int32(C.EVP_PKEY_keygen(ctx, ppkey))
+func go_openssl_EVP_PKEY_keygen(ctx _EVP_PKEY_CTX_PTR, ppkey *_EVP_PKEY_PTR) (int32, error) {
+	_ret := C.EVP_PKEY_keygen(ctx, ppkey)
+	var _err error
+	if _ret <= 0 {
+		_err = newOpenSSLError("EVP_PKEY_keygen")
+	}
+	return int32(_ret), _err
 }
 
-func go_openssl_EVP_PKEY_keygen_init(ctx _EVP_PKEY_CTX_PTR) int32 {
-	return int32(C.EVP_PKEY_keygen_init(ctx))
+func go_openssl_EVP_PKEY_keygen_init(ctx _EVP_PKEY_CTX_PTR) (int32, error) {
+	_ret := C.EVP_PKEY_keygen_init(ctx)
+	var _err error
+	if _ret <= 0 {
+		_err = newOpenSSLError("EVP_PKEY_keygen_init")
+	}
+	return int32(_ret), _err
 }
 
-func go_openssl_EVP_PKEY_new() _EVP_PKEY_PTR {
-	return C.EVP_PKEY_new()
+func go_openssl_EVP_PKEY_new() (_EVP_PKEY_PTR, error) {
+	_ret := C.EVP_PKEY_new()
+	var _err error
+	if _ret == nil {
+		_err = newOpenSSLError("EVP_PKEY_new")
+	}
+	return _ret, _err
 }
 
-func go_openssl_EVP_PKEY_new_raw_private_key(__type int32, e _ENGINE_PTR, key *byte, keylen int) _EVP_PKEY_PTR {
-	return C.EVP_PKEY_new_raw_private_key(C.int(__type), e, (*C.uchar)(unsafe.Pointer(key)), C.size_t(keylen))
+func go_openssl_EVP_PKEY_new_raw_private_key(__type int32, e _ENGINE_PTR, key *byte, keylen int) (_EVP_PKEY_PTR, error) {
+	_ret := C.EVP_PKEY_new_raw_private_key(C.int(__type), e, (*C.uchar)(unsafe.Pointer(key)), C.size_t(keylen))
+	var _err error
+	if _ret == nil {
+		_err = newOpenSSLError("EVP_PKEY_new_raw_private_key")
+	}
+	return _ret, _err
 }
 
-func go_openssl_EVP_PKEY_new_raw_public_key(__type int32, e _ENGINE_PTR, key *byte, keylen int) _EVP_PKEY_PTR {
-	return C.EVP_PKEY_new_raw_public_key(C.int(__type), e, (*C.uchar)(unsafe.Pointer(key)), C.size_t(keylen))
+func go_openssl_EVP_PKEY_new_raw_public_key(__type int32, e _ENGINE_PTR, key *byte, keylen int) (_EVP_PKEY_PTR, error) {
+	_ret := C.EVP_PKEY_new_raw_public_key(C.int(__type), e, (*C.uchar)(unsafe.Pointer(key)), C.size_t(keylen))
+	var _err error
+	if _ret == nil {
+		_err = newOpenSSLError("EVP_PKEY_new_raw_public_key")
+	}
+	return _ret, _err
 }
 
-func go_openssl_EVP_PKEY_paramgen(ctx _EVP_PKEY_CTX_PTR, ppkey *_EVP_PKEY_PTR) int32 {
-	return int32(C.EVP_PKEY_paramgen(ctx, ppkey))
+func go_openssl_EVP_PKEY_paramgen(ctx _EVP_PKEY_CTX_PTR, ppkey *_EVP_PKEY_PTR) (int32, error) {
+	_ret := C.EVP_PKEY_paramgen(ctx, ppkey)
+	var _err error
+	if _ret <= 0 {
+		_err = newOpenSSLError("EVP_PKEY_paramgen")
+	}
+	return int32(_ret), _err
 }
 
-func go_openssl_EVP_PKEY_paramgen_init(ctx _EVP_PKEY_CTX_PTR) int32 {
-	return int32(C.EVP_PKEY_paramgen_init(ctx))
+func go_openssl_EVP_PKEY_paramgen_init(ctx _EVP_PKEY_CTX_PTR) (int32, error) {
+	_ret := C.EVP_PKEY_paramgen_init(ctx)
+	var _err error
+	if _ret <= 0 {
+		_err = newOpenSSLError("EVP_PKEY_paramgen_init")
+	}
+	return int32(_ret), _err
 }
 
-func go_openssl_EVP_PKEY_private_check(ctx _EVP_PKEY_CTX_PTR) int32 {
-	return int32(C.EVP_PKEY_private_check(ctx))
+func go_openssl_EVP_PKEY_private_check(ctx _EVP_PKEY_CTX_PTR) (int32, error) {
+	_ret := C.EVP_PKEY_private_check(ctx)
+	var _err error
+	if _ret <= 0 {
+		_err = newOpenSSLError("EVP_PKEY_private_check")
+	}
+	return int32(_ret), _err
 }
 
-func go_openssl_EVP_PKEY_public_check_quick(ctx _EVP_PKEY_CTX_PTR) int32 {
-	return int32(C.EVP_PKEY_public_check_quick(ctx))
+func go_openssl_EVP_PKEY_public_check_quick(ctx _EVP_PKEY_CTX_PTR) (int32, error) {
+	_ret := C.EVP_PKEY_public_check_quick(ctx)
+	var _err error
+	if _ret <= 0 {
+		_err = newOpenSSLError("EVP_PKEY_public_check_quick")
+	}
+	return int32(_ret), _err
 }
 
-func go_openssl_EVP_PKEY_set1_EC_KEY(pkey _EVP_PKEY_PTR, key _EC_KEY_PTR) int32 {
-	return int32(C.EVP_PKEY_set1_EC_KEY(pkey, key))
+func go_openssl_EVP_PKEY_set1_EC_KEY(pkey _EVP_PKEY_PTR, key _EC_KEY_PTR) (int32, error) {
+	_ret := C.EVP_PKEY_set1_EC_KEY(pkey, key)
+	var _err error
+	if _ret <= 0 {
+		_err = newOpenSSLError("EVP_PKEY_set1_EC_KEY")
+	}
+	return int32(_ret), _err
 }
 
-func go_openssl_EVP_PKEY_set1_encoded_public_key(pkey _EVP_PKEY_PTR, pub *byte, publen int) int32 {
-	return int32(C.EVP_PKEY_set1_encoded_public_key(pkey, (*C.uchar)(unsafe.Pointer(pub)), C.size_t(publen)))
+func go_openssl_EVP_PKEY_set1_encoded_public_key(pkey _EVP_PKEY_PTR, pub *byte, publen int) (int32, error) {
+	_ret := C.EVP_PKEY_set1_encoded_public_key(pkey, (*C.uchar)(unsafe.Pointer(pub)), C.size_t(publen))
+	var _err error
+	if _ret <= 0 {
+		_err = newOpenSSLError("EVP_PKEY_set1_encoded_public_key")
+	}
+	return int32(_ret), _err
 }
 
-func go_openssl_EVP_PKEY_sign(arg0 _EVP_PKEY_CTX_PTR, arg1 *byte, arg2 *int, arg3 *byte, arg4 int) int32 {
-	return int32(C.EVP_PKEY_sign(arg0, (*C.uchar)(unsafe.Pointer(arg1)), (*C.size_t)(unsafe.Pointer(arg2)), (*C.uchar)(unsafe.Pointer(arg3)), C.size_t(arg4)))
+func go_openssl_EVP_PKEY_sign(arg0 _EVP_PKEY_CTX_PTR, arg1 *byte, arg2 *int, arg3 *byte, arg4 int) (int32, error) {
+	_ret := C.EVP_PKEY_sign(arg0, (*C.uchar)(unsafe.Pointer(arg1)), (*C.size_t)(unsafe.Pointer(arg2)), (*C.uchar)(unsafe.Pointer(arg3)), C.size_t(arg4))
+	var _err error
+	if _ret <= 0 {
+		_err = newOpenSSLError("EVP_PKEY_sign")
+	}
+	return int32(_ret), _err
 }
 
-func go_openssl_EVP_PKEY_sign_init(arg0 _EVP_PKEY_CTX_PTR) int32 {
-	return int32(C.EVP_PKEY_sign_init(arg0))
+func go_openssl_EVP_PKEY_sign_init(arg0 _EVP_PKEY_CTX_PTR) (int32, error) {
+	_ret := C.EVP_PKEY_sign_init(arg0)
+	var _err error
+	if _ret <= 0 {
+		_err = newOpenSSLError("EVP_PKEY_sign_init")
+	}
+	return int32(_ret), _err
 }
 
-func go_openssl_EVP_PKEY_up_ref(key _EVP_PKEY_PTR) int32 {
-	return int32(C.EVP_PKEY_up_ref(key))
+func go_openssl_EVP_PKEY_up_ref(key _EVP_PKEY_PTR) (int32, error) {
+	_ret := C.EVP_PKEY_up_ref(key)
+	var _err error
+	if _ret <= 0 {
+		_err = newOpenSSLError("EVP_PKEY_up_ref")
+	}
+	return int32(_ret), _err
 }
 
-func go_openssl_EVP_PKEY_verify(ctx _EVP_PKEY_CTX_PTR, sig *byte, siglen int, tbs *byte, tbslen int) int32 {
-	return int32(C.EVP_PKEY_verify(ctx, (*C.uchar)(unsafe.Pointer(sig)), C.size_t(siglen), (*C.uchar)(unsafe.Pointer(tbs)), C.size_t(tbslen)))
+func go_openssl_EVP_PKEY_verify(ctx _EVP_PKEY_CTX_PTR, sig *byte, siglen int, tbs *byte, tbslen int) (int32, error) {
+	_ret := C.EVP_PKEY_verify(ctx, (*C.uchar)(unsafe.Pointer(sig)), C.size_t(siglen), (*C.uchar)(unsafe.Pointer(tbs)), C.size_t(tbslen))
+	var _err error
+	if _ret <= 0 {
+		_err = newOpenSSLError("EVP_PKEY_verify")
+	}
+	return int32(_ret), _err
 }
 
-func go_openssl_EVP_PKEY_verify_init(arg0 _EVP_PKEY_CTX_PTR) int32 {
-	return int32(C.EVP_PKEY_verify_init(arg0))
+func go_openssl_EVP_PKEY_verify_init(arg0 _EVP_PKEY_CTX_PTR) (int32, error) {
+	_ret := C.EVP_PKEY_verify_init(arg0)
+	var _err error
+	if _ret <= 0 {
+		_err = newOpenSSLError("EVP_PKEY_verify_init")
+	}
+	return int32(_ret), _err
 }
 
-func go_openssl_EVP_SIGNATURE_fetch(ctx _OSSL_LIB_CTX_PTR, algorithm *byte, properties *byte) _EVP_SIGNATURE_PTR {
-	return C.EVP_SIGNATURE_fetch(ctx, (*C.char)(unsafe.Pointer(algorithm)), (*C.char)(unsafe.Pointer(properties)))
+func go_openssl_EVP_SIGNATURE_fetch(ctx _OSSL_LIB_CTX_PTR, algorithm *byte, properties *byte) (_EVP_SIGNATURE_PTR, error) {
+	_ret := C.EVP_SIGNATURE_fetch(ctx, (*C.char)(unsafe.Pointer(algorithm)), (*C.char)(unsafe.Pointer(properties)))
+	var _err error
+	if _ret == nil {
+		_err = newOpenSSLError("EVP_SIGNATURE_fetch")
+	}
+	return _ret, _err
 }
 
 func go_openssl_EVP_SIGNATURE_free(signature _EVP_SIGNATURE_PTR) {
@@ -743,55 +1298,60 @@ func go_openssl_EVP_SIGNATURE_free(signature _EVP_SIGNATURE_PTR) {
 }
 
 func go_openssl_EVP_aes_128_cbc() _EVP_CIPHER_PTR {
-	return _EVP_CIPHER_PTR(C.EVP_aes_128_cbc())
+	return C.EVP_aes_128_cbc()
 }
 
 func go_openssl_EVP_aes_128_ctr() _EVP_CIPHER_PTR {
-	return _EVP_CIPHER_PTR(C.EVP_aes_128_ctr())
+	return C.EVP_aes_128_ctr()
 }
 
 func go_openssl_EVP_aes_128_ecb() _EVP_CIPHER_PTR {
-	return _EVP_CIPHER_PTR(C.EVP_aes_128_ecb())
+	return C.EVP_aes_128_ecb()
 }
 
 func go_openssl_EVP_aes_128_gcm() _EVP_CIPHER_PTR {
-	return _EVP_CIPHER_PTR(C.EVP_aes_128_gcm())
+	return C.EVP_aes_128_gcm()
 }
 
 func go_openssl_EVP_aes_192_cbc() _EVP_CIPHER_PTR {
-	return _EVP_CIPHER_PTR(C.EVP_aes_192_cbc())
+	return C.EVP_aes_192_cbc()
 }
 
 func go_openssl_EVP_aes_192_ctr() _EVP_CIPHER_PTR {
-	return _EVP_CIPHER_PTR(C.EVP_aes_192_ctr())
+	return C.EVP_aes_192_ctr()
 }
 
 func go_openssl_EVP_aes_192_ecb() _EVP_CIPHER_PTR {
-	return _EVP_CIPHER_PTR(C.EVP_aes_192_ecb())
+	return C.EVP_aes_192_ecb()
 }
 
 func go_openssl_EVP_aes_192_gcm() _EVP_CIPHER_PTR {
-	return _EVP_CIPHER_PTR(C.EVP_aes_192_gcm())
+	return C.EVP_aes_192_gcm()
 }
 
 func go_openssl_EVP_aes_256_cbc() _EVP_CIPHER_PTR {
-	return _EVP_CIPHER_PTR(C.EVP_aes_256_cbc())
+	return C.EVP_aes_256_cbc()
 }
 
 func go_openssl_EVP_aes_256_ctr() _EVP_CIPHER_PTR {
-	return _EVP_CIPHER_PTR(C.EVP_aes_256_ctr())
+	return C.EVP_aes_256_ctr()
 }
 
 func go_openssl_EVP_aes_256_ecb() _EVP_CIPHER_PTR {
-	return _EVP_CIPHER_PTR(C.EVP_aes_256_ecb())
+	return C.EVP_aes_256_ecb()
 }
 
 func go_openssl_EVP_aes_256_gcm() _EVP_CIPHER_PTR {
-	return _EVP_CIPHER_PTR(C.EVP_aes_256_gcm())
+	return C.EVP_aes_256_gcm()
 }
 
-func go_openssl_EVP_default_properties_enable_fips(libctx _OSSL_LIB_CTX_PTR, enable int32) int32 {
-	return int32(C.EVP_default_properties_enable_fips(libctx, C.int(enable)))
+func go_openssl_EVP_default_properties_enable_fips(libctx _OSSL_LIB_CTX_PTR, enable int32) (int32, error) {
+	_ret := C.EVP_default_properties_enable_fips(libctx, C.int(enable))
+	var _err error
+	if _ret <= 0 {
+		_err = newOpenSSLError("EVP_default_properties_enable_fips")
+	}
+	return int32(_ret), _err
 }
 
 func go_openssl_EVP_default_properties_is_fips_enabled(libctx _OSSL_LIB_CTX_PTR) int32 {
@@ -799,115 +1359,145 @@ func go_openssl_EVP_default_properties_is_fips_enabled(libctx _OSSL_LIB_CTX_PTR)
 }
 
 func go_openssl_EVP_des_cbc() _EVP_CIPHER_PTR {
-	return _EVP_CIPHER_PTR(C.EVP_des_cbc())
+	return C.EVP_des_cbc()
 }
 
 func go_openssl_EVP_des_ecb() _EVP_CIPHER_PTR {
-	return _EVP_CIPHER_PTR(C.EVP_des_ecb())
+	return C.EVP_des_ecb()
 }
 
 func go_openssl_EVP_des_ede3_cbc() _EVP_CIPHER_PTR {
-	return _EVP_CIPHER_PTR(C.EVP_des_ede3_cbc())
+	return C.EVP_des_ede3_cbc()
 }
 
 func go_openssl_EVP_des_ede3_ecb() _EVP_CIPHER_PTR {
-	return _EVP_CIPHER_PTR(C.EVP_des_ede3_ecb())
+	return C.EVP_des_ede3_ecb()
 }
 
 func go_openssl_EVP_md4() _EVP_MD_PTR {
-	return _EVP_MD_PTR(C.EVP_md4())
+	return C.EVP_md4()
 }
 
 func go_openssl_EVP_md5() _EVP_MD_PTR {
-	return _EVP_MD_PTR(C.EVP_md5())
+	return C.EVP_md5()
 }
 
 func go_openssl_EVP_md5_sha1() _EVP_MD_PTR {
-	return _EVP_MD_PTR(C.EVP_md5_sha1())
+	return C.EVP_md5_sha1()
 }
 
 func go_openssl_EVP_rc4() _EVP_CIPHER_PTR {
-	return _EVP_CIPHER_PTR(C.EVP_rc4())
+	return C.EVP_rc4()
 }
 
 func go_openssl_EVP_ripemd160() _EVP_MD_PTR {
-	return _EVP_MD_PTR(C.EVP_ripemd160())
+	return C.EVP_ripemd160()
 }
 
 func go_openssl_EVP_sha1() _EVP_MD_PTR {
-	return _EVP_MD_PTR(C.EVP_sha1())
+	return C.EVP_sha1()
 }
 
 func go_openssl_EVP_sha224() _EVP_MD_PTR {
-	return _EVP_MD_PTR(C.EVP_sha224())
+	return C.EVP_sha224()
 }
 
 func go_openssl_EVP_sha256() _EVP_MD_PTR {
-	return _EVP_MD_PTR(C.EVP_sha256())
+	return C.EVP_sha256()
 }
 
 func go_openssl_EVP_sha384() _EVP_MD_PTR {
-	return _EVP_MD_PTR(C.EVP_sha384())
+	return C.EVP_sha384()
 }
 
 func go_openssl_EVP_sha3_224() _EVP_MD_PTR {
-	return _EVP_MD_PTR(C.EVP_sha3_224())
+	return C.EVP_sha3_224()
 }
 
 func go_openssl_EVP_sha3_256() _EVP_MD_PTR {
-	return _EVP_MD_PTR(C.EVP_sha3_256())
+	return C.EVP_sha3_256()
 }
 
 func go_openssl_EVP_sha3_384() _EVP_MD_PTR {
-	return _EVP_MD_PTR(C.EVP_sha3_384())
+	return C.EVP_sha3_384()
 }
 
 func go_openssl_EVP_sha3_512() _EVP_MD_PTR {
-	return _EVP_MD_PTR(C.EVP_sha3_512())
+	return C.EVP_sha3_512()
 }
 
 func go_openssl_EVP_sha512() _EVP_MD_PTR {
-	return _EVP_MD_PTR(C.EVP_sha512())
+	return C.EVP_sha512()
 }
 
 func go_openssl_EVP_sha512_224() _EVP_MD_PTR {
-	return _EVP_MD_PTR(C.EVP_sha512_224())
+	return C.EVP_sha512_224()
 }
 
 func go_openssl_EVP_sha512_256() _EVP_MD_PTR {
-	return _EVP_MD_PTR(C.EVP_sha512_256())
+	return C.EVP_sha512_256()
 }
 
 func go_openssl_FIPS_mode() int32 {
 	return int32(C.FIPS_mode())
 }
 
-func go_openssl_FIPS_mode_set(r int32) int32 {
-	return int32(C.FIPS_mode_set(C.int(r)))
+func go_openssl_FIPS_mode_set(r int32) (int32, error) {
+	_ret := C.FIPS_mode_set(C.int(r))
+	var _err error
+	if _ret <= 0 {
+		_err = newOpenSSLError("FIPS_mode_set")
+	}
+	return int32(_ret), _err
 }
 
-func go_openssl_HMAC_CTX_copy(dest _HMAC_CTX_PTR, src _HMAC_CTX_PTR) int32 {
-	return int32(C.HMAC_CTX_copy(dest, src))
+func go_openssl_HMAC_CTX_copy(dest _HMAC_CTX_PTR, src _HMAC_CTX_PTR) (int32, error) {
+	_ret := C.HMAC_CTX_copy(dest, src)
+	var _err error
+	if _ret <= 0 {
+		_err = newOpenSSLError("HMAC_CTX_copy")
+	}
+	return int32(_ret), _err
 }
 
 func go_openssl_HMAC_CTX_free(arg0 _HMAC_CTX_PTR) {
 	C.HMAC_CTX_free(arg0)
 }
 
-func go_openssl_HMAC_CTX_new() _HMAC_CTX_PTR {
-	return C.HMAC_CTX_new()
+func go_openssl_HMAC_CTX_new() (_HMAC_CTX_PTR, error) {
+	_ret := C.HMAC_CTX_new()
+	var _err error
+	if _ret == nil {
+		_err = newOpenSSLError("HMAC_CTX_new")
+	}
+	return _ret, _err
 }
 
-func go_openssl_HMAC_Final(arg0 _HMAC_CTX_PTR, arg1 *byte, arg2 *uint32) int32 {
-	return int32(C.HMAC_Final(arg0, (*C.uchar)(unsafe.Pointer(arg1)), (*C.uint)(unsafe.Pointer(arg2))))
+func go_openssl_HMAC_Final(arg0 _HMAC_CTX_PTR, arg1 *byte, arg2 *uint32) (int32, error) {
+	_ret := C.HMAC_Final(arg0, (*C.uchar)(unsafe.Pointer(arg1)), (*C.uint)(unsafe.Pointer(arg2)))
+	var _err error
+	if _ret <= 0 {
+		_err = newOpenSSLError("HMAC_Final")
+	}
+	return int32(_ret), _err
 }
 
-func go_openssl_HMAC_Init_ex(arg0 _HMAC_CTX_PTR, arg1 unsafe.Pointer, arg2 int32, arg3 _EVP_MD_PTR, arg4 _ENGINE_PTR) int32 {
-	return int32(C.HMAC_Init_ex(arg0, arg1, C.int(arg2), arg3, arg4))
+func go_openssl_HMAC_Init_ex(arg0 _HMAC_CTX_PTR, arg1 unsafe.Pointer, arg2 int32, arg3 _EVP_MD_PTR, arg4 _ENGINE_PTR) (int32, error) {
+	_ret := C.HMAC_Init_ex(arg0, arg1, C.int(arg2), arg3, arg4)
+	var _err error
+	if _ret <= 0 {
+		_err = newOpenSSLError("HMAC_Init_ex")
+	}
+	return int32(_ret), _err
 }
 
-func go_openssl_HMAC_Update(arg0 _HMAC_CTX_PTR, arg1 *byte, arg2 int) int32 {
-	return int32(C.HMAC_Update(arg0, (*C.uchar)(unsafe.Pointer(arg1)), C.size_t(arg2)))
+func go_openssl_HMAC_Update(arg0 _HMAC_CTX_PTR, arg1 *byte, arg2 int) (int32, error) {
+	_ret := C.HMAC_Update(arg0, (*C.uchar)(unsafe.Pointer(arg1)), C.size_t(arg2))
+	var _err error
+	if _ret <= 0 {
+		_err = newOpenSSLError("HMAC_Update")
+	}
+	return int32(_ret), _err
 }
 
 func go_openssl_OBJ_nid2sn(n int32) *byte {
@@ -918,8 +1508,13 @@ func go_openssl_OPENSSL_init() {
 	C.OPENSSL_init()
 }
 
-func go_openssl_OPENSSL_init_crypto(ops uint64, settings _OPENSSL_INIT_SETTINGS_PTR) int32 {
-	return int32(C.OPENSSL_init_crypto(C.uint64_t(ops), settings))
+func go_openssl_OPENSSL_init_crypto(ops uint64, settings _OPENSSL_INIT_SETTINGS_PTR) (int32, error) {
+	_ret := C.OPENSSL_init_crypto(C.uint64_t(ops), settings)
+	var _err error
+	if _ret <= 0 {
+		_err = newOpenSSLError("OPENSSL_init_crypto")
+	}
+	return int32(_ret), _err
 }
 
 func go_openssl_OPENSSL_version_major_Available() bool {
@@ -950,28 +1545,58 @@ func go_openssl_OSSL_PARAM_BLD_free(bld _OSSL_PARAM_BLD_PTR) {
 	C.OSSL_PARAM_BLD_free(bld)
 }
 
-func go_openssl_OSSL_PARAM_BLD_new() _OSSL_PARAM_BLD_PTR {
-	return C.OSSL_PARAM_BLD_new()
+func go_openssl_OSSL_PARAM_BLD_new() (_OSSL_PARAM_BLD_PTR, error) {
+	_ret := C.OSSL_PARAM_BLD_new()
+	var _err error
+	if _ret == nil {
+		_err = newOpenSSLError("OSSL_PARAM_BLD_new")
+	}
+	return _ret, _err
 }
 
-func go_openssl_OSSL_PARAM_BLD_push_BN(bld _OSSL_PARAM_BLD_PTR, key *byte, bn _BIGNUM_PTR) int32 {
-	return int32(C.OSSL_PARAM_BLD_push_BN(bld, (*C.char)(unsafe.Pointer(key)), bn))
+func go_openssl_OSSL_PARAM_BLD_push_BN(bld _OSSL_PARAM_BLD_PTR, key *byte, bn _BIGNUM_PTR) (int32, error) {
+	_ret := C.OSSL_PARAM_BLD_push_BN(bld, (*C.char)(unsafe.Pointer(key)), bn)
+	var _err error
+	if _ret <= 0 {
+		_err = newOpenSSLError("OSSL_PARAM_BLD_push_BN")
+	}
+	return int32(_ret), _err
 }
 
-func go_openssl_OSSL_PARAM_BLD_push_int32(bld _OSSL_PARAM_BLD_PTR, key *byte, num int32) int32 {
-	return int32(C.OSSL_PARAM_BLD_push_int32(bld, (*C.char)(unsafe.Pointer(key)), C.int32_t(num)))
+func go_openssl_OSSL_PARAM_BLD_push_int32(bld _OSSL_PARAM_BLD_PTR, key *byte, num int32) (int32, error) {
+	_ret := C.OSSL_PARAM_BLD_push_int32(bld, (*C.char)(unsafe.Pointer(key)), C.int32_t(num))
+	var _err error
+	if _ret <= 0 {
+		_err = newOpenSSLError("OSSL_PARAM_BLD_push_int32")
+	}
+	return int32(_ret), _err
 }
 
-func go_openssl_OSSL_PARAM_BLD_push_octet_string(bld _OSSL_PARAM_BLD_PTR, key *byte, buf unsafe.Pointer, bsize int) int32 {
-	return int32(C.OSSL_PARAM_BLD_push_octet_string(bld, (*C.char)(unsafe.Pointer(key)), buf, C.size_t(bsize)))
+func go_openssl_OSSL_PARAM_BLD_push_octet_string(bld _OSSL_PARAM_BLD_PTR, key *byte, buf unsafe.Pointer, bsize int) (int32, error) {
+	_ret := C.OSSL_PARAM_BLD_push_octet_string(bld, (*C.char)(unsafe.Pointer(key)), buf, C.size_t(bsize))
+	var _err error
+	if _ret <= 0 {
+		_err = newOpenSSLError("OSSL_PARAM_BLD_push_octet_string")
+	}
+	return int32(_ret), _err
 }
 
-func go_openssl_OSSL_PARAM_BLD_push_utf8_string(bld _OSSL_PARAM_BLD_PTR, key *byte, buf *byte, bsize int) int32 {
-	return int32(C.OSSL_PARAM_BLD_push_utf8_string(bld, (*C.char)(unsafe.Pointer(key)), (*C.char)(unsafe.Pointer(buf)), C.size_t(bsize)))
+func go_openssl_OSSL_PARAM_BLD_push_utf8_string(bld _OSSL_PARAM_BLD_PTR, key *byte, buf *byte, bsize int) (int32, error) {
+	_ret := C.OSSL_PARAM_BLD_push_utf8_string(bld, (*C.char)(unsafe.Pointer(key)), (*C.char)(unsafe.Pointer(buf)), C.size_t(bsize))
+	var _err error
+	if _ret <= 0 {
+		_err = newOpenSSLError("OSSL_PARAM_BLD_push_utf8_string")
+	}
+	return int32(_ret), _err
 }
 
-func go_openssl_OSSL_PARAM_BLD_to_param(bld _OSSL_PARAM_BLD_PTR) _OSSL_PARAM_PTR {
-	return C.OSSL_PARAM_BLD_to_param(bld)
+func go_openssl_OSSL_PARAM_BLD_to_param(bld _OSSL_PARAM_BLD_PTR) (_OSSL_PARAM_PTR, error) {
+	_ret := C.OSSL_PARAM_BLD_to_param(bld)
+	var _err error
+	if _ret == nil {
+		_err = newOpenSSLError("OSSL_PARAM_BLD_to_param")
+	}
+	return _ret, _err
 }
 
 func go_openssl_OSSL_PARAM_free(p _OSSL_PARAM_PTR) {
@@ -986,8 +1611,13 @@ func go_openssl_OSSL_PROVIDER_get0_name(prov _OSSL_PROVIDER_PTR) *byte {
 	return (*byte)(unsafe.Pointer(C.OSSL_PROVIDER_get0_name(prov)))
 }
 
-func go_openssl_OSSL_PROVIDER_try_load(libctx _OSSL_LIB_CTX_PTR, name *byte, retain_fallbacks int32) _OSSL_PROVIDER_PTR {
-	return C.OSSL_PROVIDER_try_load(libctx, (*C.char)(unsafe.Pointer(name)), C.int(retain_fallbacks))
+func go_openssl_OSSL_PROVIDER_try_load(libctx _OSSL_LIB_CTX_PTR, name *byte, retain_fallbacks int32) (_OSSL_PROVIDER_PTR, error) {
+	_ret := C.OSSL_PROVIDER_try_load(libctx, (*C.char)(unsafe.Pointer(name)), C.int(retain_fallbacks))
+	var _err error
+	if _ret == nil {
+		_err = newOpenSSLError("OSSL_PROVIDER_try_load")
+	}
+	return _ret, _err
 }
 
 func go_openssl_OpenSSL_version(__type int32) *byte {
@@ -1002,12 +1632,22 @@ func go_openssl_OpenSSL_version_num() uint32 {
 	return uint32(C.OpenSSL_version_num())
 }
 
-func go_openssl_PKCS5_PBKDF2_HMAC(pass *byte, passlen int32, salt *byte, saltlen int32, iter int32, digest _EVP_MD_PTR, keylen int32, out *byte) int32 {
-	return int32(C.PKCS5_PBKDF2_HMAC((*C.char)(unsafe.Pointer(pass)), C.int(passlen), (*C.uchar)(unsafe.Pointer(salt)), C.int(saltlen), C.int(iter), digest, C.int(keylen), (*C.uchar)(unsafe.Pointer(out))))
+func go_openssl_PKCS5_PBKDF2_HMAC(pass *byte, passlen int32, salt *byte, saltlen int32, iter int32, digest _EVP_MD_PTR, keylen int32, out *byte) (int32, error) {
+	_ret := C.PKCS5_PBKDF2_HMAC((*C.char)(unsafe.Pointer(pass)), C.int(passlen), (*C.uchar)(unsafe.Pointer(salt)), C.int(saltlen), C.int(iter), digest, C.int(keylen), (*C.uchar)(unsafe.Pointer(out)))
+	var _err error
+	if _ret <= 0 {
+		_err = newOpenSSLError("PKCS5_PBKDF2_HMAC")
+	}
+	return int32(_ret), _err
 }
 
-func go_openssl_RAND_bytes(arg0 *byte, arg1 int32) int32 {
-	return int32(C.RAND_bytes((*C.uchar)(unsafe.Pointer(arg0)), C.int(arg1)))
+func go_openssl_RAND_bytes(arg0 *byte, arg1 int32) (int32, error) {
+	_ret := C.RAND_bytes((*C.uchar)(unsafe.Pointer(arg0)), C.int(arg1))
+	var _err error
+	if _ret <= 0 {
+		_err = newOpenSSLError("RAND_bytes")
+	}
+	return int32(_ret), _err
 }
 
 func go_openssl_RSA_free(arg0 _RSA_PTR) {
@@ -1026,18 +1666,38 @@ func go_openssl_RSA_get0_key(rsa _RSA_PTR, n *_BIGNUM_PTR, e *_BIGNUM_PTR, d *_B
 	C.RSA_get0_key(rsa, n, e, d)
 }
 
-func go_openssl_RSA_new() _RSA_PTR {
-	return C.RSA_new()
+func go_openssl_RSA_new() (_RSA_PTR, error) {
+	_ret := C.RSA_new()
+	var _err error
+	if _ret == nil {
+		_err = newOpenSSLError("RSA_new")
+	}
+	return _ret, _err
 }
 
-func go_openssl_RSA_set0_crt_params(rsa _RSA_PTR, dmp1 _BIGNUM_PTR, dmp2 _BIGNUM_PTR, iqmp _BIGNUM_PTR) int32 {
-	return int32(C.RSA_set0_crt_params(rsa, dmp1, dmp2, iqmp))
+func go_openssl_RSA_set0_crt_params(rsa _RSA_PTR, dmp1 _BIGNUM_PTR, dmp2 _BIGNUM_PTR, iqmp _BIGNUM_PTR) (int32, error) {
+	_ret := C.RSA_set0_crt_params(rsa, dmp1, dmp2, iqmp)
+	var _err error
+	if _ret <= 0 {
+		_err = newOpenSSLError("RSA_set0_crt_params")
+	}
+	return int32(_ret), _err
 }
 
-func go_openssl_RSA_set0_factors(rsa _RSA_PTR, p _BIGNUM_PTR, q _BIGNUM_PTR) int32 {
-	return int32(C.RSA_set0_factors(rsa, p, q))
+func go_openssl_RSA_set0_factors(rsa _RSA_PTR, p _BIGNUM_PTR, q _BIGNUM_PTR) (int32, error) {
+	_ret := C.RSA_set0_factors(rsa, p, q)
+	var _err error
+	if _ret <= 0 {
+		_err = newOpenSSLError("RSA_set0_factors")
+	}
+	return int32(_ret), _err
 }
 
-func go_openssl_RSA_set0_key(r _RSA_PTR, n _BIGNUM_PTR, e _BIGNUM_PTR, d _BIGNUM_PTR) int32 {
-	return int32(C.RSA_set0_key(r, n, e, d))
+func go_openssl_RSA_set0_key(r _RSA_PTR, n _BIGNUM_PTR, e _BIGNUM_PTR, d _BIGNUM_PTR) (int32, error) {
+	_ret := C.RSA_set0_key(r, n, e, d)
+	var _err error
+	if _ret <= 0 {
+		_err = newOpenSSLError("RSA_set0_key")
+	}
+	return int32(_ret), _err
 }

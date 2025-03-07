@@ -55,8 +55,8 @@ func (c *RC4Cipher) XORKeyStream(dst, src []byte) {
 	// which is what crypto/rc4 does.
 	_ = dst[len(src)-1]
 	var outLen int32
-	if go_openssl_EVP_EncryptUpdate(c.ctx, base(dst), &outLen, base(src), int32(len(src))) != 1 {
-		panic("crypto/cipher: EncryptUpdate failed")
+	if _, err := go_openssl_EVP_EncryptUpdate(c.ctx, base(dst), &outLen, base(src), int32(len(src))); err != nil {
+		panic("crypto/rc4: " + err.Error())
 	}
 	if int(outLen) != len(src) {
 		panic("crypto/rc4: src not fully XORed")

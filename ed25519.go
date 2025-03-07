@@ -28,14 +28,14 @@ var supportsEd25519 = sync.OnceValue(func() bool {
 	switch vMajor {
 	case 1:
 		if versionAtOrAbove(1, 1, 1) {
-			ctx := go_openssl_EVP_PKEY_CTX_new_id(_EVP_PKEY_ED25519, nil)
+			ctx, _ := go_openssl_EVP_PKEY_CTX_new_id(_EVP_PKEY_ED25519, nil)
 			if ctx != nil {
 				go_openssl_EVP_PKEY_CTX_free(ctx)
 				return true
 			}
 		}
 	case 3:
-		sig := go_openssl_EVP_SIGNATURE_fetch(nil, _KeyTypeED25519.ptr(), nil)
+		sig, _ := go_openssl_EVP_SIGNATURE_fetch(nil, _KeyTypeED25519.ptr(), nil)
 		if sig != nil {
 			go_openssl_EVP_SIGNATURE_free(sig)
 			return true
@@ -128,9 +128,9 @@ func NewPublicKeyEd25519(pub []byte) (*PublicKeyEd25519, error) {
 	if len(pub) != publicKeySizeEd25519 {
 		panic("ed25519: bad public key length: " + strconv.Itoa(len(pub)))
 	}
-	pkey := go_openssl_EVP_PKEY_new_raw_public_key(_EVP_PKEY_ED25519, nil, base(pub), len(pub))
-	if pkey == nil {
-		return nil, newOpenSSLError("EVP_PKEY_new_raw_public_key")
+	pkey, err := go_openssl_EVP_PKEY_new_raw_public_key(_EVP_PKEY_ED25519, nil, base(pub), len(pub))
+	if err != nil {
+		return nil, err
 	}
 	pubk := &PublicKeyEd25519{_pkey: pkey}
 	runtime.SetFinalizer(pubk, (*PublicKeyEd25519).finalize)
@@ -144,9 +144,9 @@ func NewPrivateKeyEd25519FromSeed(seed []byte) (*PrivateKeyEd25519, error) {
 	if len(seed) != seedSizeEd25519 {
 		panic("ed25519: bad seed length: " + strconv.Itoa(len(seed)))
 	}
-	pkey := go_openssl_EVP_PKEY_new_raw_private_key(_EVP_PKEY_ED25519, nil, base(seed), len(seed))
-	if pkey == nil {
-		return nil, newOpenSSLError("EVP_PKEY_new_raw_private_key")
+	pkey, err := go_openssl_EVP_PKEY_new_raw_private_key(_EVP_PKEY_ED25519, nil, base(seed), len(seed))
+	if err != nil {
+		return nil, err
 	}
 	priv := &PrivateKeyEd25519{_pkey: pkey}
 	runtime.SetFinalizer(priv, (*PrivateKeyEd25519).finalize)
@@ -155,8 +155,8 @@ func NewPrivateKeyEd25519FromSeed(seed []byte) (*PrivateKeyEd25519, error) {
 
 func extractPKEYPubEd25519(pkey _EVP_PKEY_PTR, pub []byte) error {
 	keylen := publicKeySizeEd25519
-	if go_openssl_EVP_PKEY_get_raw_public_key(pkey, base(pub), &keylen) != 1 {
-		return newOpenSSLError("EVP_PKEY_get_raw_public_key")
+	if _, err := go_openssl_EVP_PKEY_get_raw_public_key(pkey, base(pub), &keylen); err != nil {
+		return err
 	}
 	if keylen != publicKeySizeEd25519 {
 		return errors.New("ed25519: bad public key length: " + strconv.Itoa(keylen))
@@ -169,8 +169,8 @@ func extractPKEYPrivEd25519(pkey _EVP_PKEY_PTR, priv []byte) error {
 		return err
 	}
 	keylen := seedSizeEd25519
-	if go_openssl_EVP_PKEY_get_raw_private_key(pkey, base(priv), &keylen) != 1 {
-		return newOpenSSLError("EVP_PKEY_get_raw_private_key")
+	if _, err := go_openssl_EVP_PKEY_get_raw_private_key(pkey, base(priv), &keylen); err != nil {
+		return err
 	}
 	if keylen != seedSizeEd25519 {
 		return errors.New("ed25519: bad private key length: " + strconv.Itoa(keylen))
@@ -191,17 +191,17 @@ func SignEd25519(priv *PrivateKeyEd25519, message []byte) (sig []byte, err error
 
 func signEd25519(priv *PrivateKeyEd25519, sig, message []byte) error {
 	defer runtime.KeepAlive(priv)
-	ctx := go_openssl_EVP_MD_CTX_new()
-	if ctx == nil {
-		return newOpenSSLError("EVP_MD_CTX_new")
+	ctx, err := go_openssl_EVP_MD_CTX_new()
+	if err != nil {
+		return err
 	}
 	defer go_openssl_EVP_MD_CTX_free(ctx)
-	if go_openssl_EVP_DigestSignInit(ctx, nil, nil, nil, priv._pkey) != 1 {
-		return newOpenSSLError("EVP_DigestSignInit")
+	if _, err := go_openssl_EVP_DigestSignInit(ctx, nil, nil, nil, priv._pkey); err != nil {
+		return err
 	}
 	siglen := signatureSizeEd25519
-	if go_openssl_EVP_DigestSign(ctx, base(sig), &siglen, base(message), len(message)) != 1 {
-		return newOpenSSLError("EVP_DigestSign")
+	if _, err := go_openssl_EVP_DigestSign(ctx, base(sig), &siglen, base(message), len(message)); err != nil {
+		return err
 	}
 	if siglen != signatureSizeEd25519 {
 		return errors.New("ed25519: bad signature length: " + strconv.Itoa(siglen))
@@ -212,15 +212,15 @@ func signEd25519(priv *PrivateKeyEd25519, sig, message []byte) error {
 // VerifyEd25519 reports whether sig is a valid signature of message by pub.
 func VerifyEd25519(pub *PublicKeyEd25519, message, sig []byte) error {
 	defer runtime.KeepAlive(pub)
-	ctx := go_openssl_EVP_MD_CTX_new()
-	if ctx == nil {
-		return newOpenSSLError("EVP_MD_CTX_new")
+	ctx, err := go_openssl_EVP_MD_CTX_new()
+	if err != nil {
+		return err
 	}
 	defer go_openssl_EVP_MD_CTX_free(ctx)
-	if go_openssl_EVP_DigestVerifyInit(ctx, nil, nil, nil, pub._pkey) != 1 {
-		return newOpenSSLError("EVP_DigestVerifyInit")
+	if _, err := go_openssl_EVP_DigestVerifyInit(ctx, nil, nil, nil, pub._pkey); err != nil {
+		return err
 	}
-	if go_openssl_EVP_DigestVerify(ctx, base(sig), len(sig), base(message), len(message)) != 1 {
+	if _, err := go_openssl_EVP_DigestVerify(ctx, base(sig), len(sig), base(message), len(message)); err != nil {
 		return errors.New("ed25519: invalid signature")
 	}
 	return nil

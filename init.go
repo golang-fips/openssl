@@ -27,14 +27,14 @@ func opensslInit(file string) error {
 
 	// Initialize OpenSSL.
 	go_openssl_OPENSSL_init()
-	if go_openssl_OPENSSL_init_crypto(
+	if _, err = go_openssl_OPENSSL_init_crypto(
 		_OPENSSL_INIT_ADD_ALL_CIPHERS|
 			_OPENSSL_INIT_ADD_ALL_DIGESTS|
 			_OPENSSL_INIT_LOAD_CONFIG|
 			_OPENSSL_INIT_LOAD_CRYPTO_STRINGS,
-		nil) != 1 {
+		nil); err != nil {
 		dlclose(handle)
-		return fail("init crypto")
+		return err
 	}
 	osslHandle = handle
 	return nil
@@ -83,14 +83,8 @@ func initForCheckVersion(file string) (func(), error) {
 		dlclose(handle)
 		// Undo all the changes made in this function.
 		mkcgoUnload_version()
-		switch vMajor {
-		case 1:
-			mkcgoUnload_init_1()
-		case 3:
-			mkcgoUnload_init_3()
-		default:
-			panic(errUnsupportedVersion())
-		}
+		mkcgoUnload_init_1()
+		mkcgoUnload_init_3()
 		vMajor, vMinor, vPatch = prevMajor, prevMinor, prevPatch
 		if osslHandle != nil {
 			loadOpenSSLFuncs(osslHandle)
