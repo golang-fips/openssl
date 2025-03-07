@@ -6,12 +6,19 @@ package openssl
 #cgo CFLAGS: -Wno-attributes
 #include "shims.h"
 void __mkcgoLoad_(void* handle);
+void __mkcgoUnload_();
 void __mkcgoLoad_111(void* handle);
+void __mkcgoUnload_111();
 void __mkcgoLoad_3(void* handle);
+void __mkcgoUnload_3();
 void __mkcgoLoad_init_1(void* handle);
+void __mkcgoUnload_init_1();
 void __mkcgoLoad_init_3(void* handle);
+void __mkcgoUnload_init_3();
 void __mkcgoLoad_legacy_1(void* handle);
+void __mkcgoUnload_legacy_1();
 void __mkcgoLoad_version(void* handle);
+void __mkcgoUnload_version();
 int OPENSSL_version_major_Available();
 int OPENSSL_version_minor_Available();
 int OPENSSL_version_patch_Available();
@@ -103,28 +110,56 @@ func mkcgoLoad_(handle unsafe.Pointer) {
 	C.__mkcgoLoad_(handle)
 }
 
+func mkcgoUnload_() {
+	C.__mkcgoUnload_()
+}
+
 func mkcgoLoad_111(handle unsafe.Pointer) {
 	C.__mkcgoLoad_111(handle)
+}
+
+func mkcgoUnload_111() {
+	C.__mkcgoUnload_111()
 }
 
 func mkcgoLoad_3(handle unsafe.Pointer) {
 	C.__mkcgoLoad_3(handle)
 }
 
+func mkcgoUnload_3() {
+	C.__mkcgoUnload_3()
+}
+
 func mkcgoLoad_init_1(handle unsafe.Pointer) {
 	C.__mkcgoLoad_init_1(handle)
+}
+
+func mkcgoUnload_init_1() {
+	C.__mkcgoUnload_init_1()
 }
 
 func mkcgoLoad_init_3(handle unsafe.Pointer) {
 	C.__mkcgoLoad_init_3(handle)
 }
 
+func mkcgoUnload_init_3() {
+	C.__mkcgoUnload_init_3()
+}
+
 func mkcgoLoad_legacy_1(handle unsafe.Pointer) {
 	C.__mkcgoLoad_legacy_1(handle)
 }
 
+func mkcgoUnload_legacy_1() {
+	C.__mkcgoUnload_legacy_1()
+}
+
 func mkcgoLoad_version(handle unsafe.Pointer) {
 	C.__mkcgoLoad_version(handle)
+}
+
+func mkcgoUnload_version() {
+	C.__mkcgoUnload_version()
 }
 
 func go_openssl_BN_bin2bn(arg0 *byte, arg1 int32, arg2 _BIGNUM_PTR) _BIGNUM_PTR {

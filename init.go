@@ -65,7 +65,17 @@ func initForCheckVersion(file string) (func(), error) {
 		panic(errUnsupportedVersion())
 	}
 	return func() {
+		mkcgoUnload_version()
+		switch vMajor {
+		case 1:
+			mkcgoUnload_init_1()
+		case 3:
+			mkcgoUnload_init_3()
+		default:
+			panic(errUnsupportedVersion())
+		}
 		dlclose(handle)
+		vMajor, vMinor, vPatch = 0, 0, 0
 	}, nil
 }
 

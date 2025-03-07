@@ -343,6 +343,108 @@ void __mkcgoLoad_(void* handle) {
 	__mkcgo__dlsym(RAND_bytes)
 }
 
+void __mkcgoUnload_() {
+	_g_BN_bin2bn = NULL;
+	_g_BN_bn2binpad = NULL;
+	_g_BN_bn2lebinpad = NULL;
+	_g_BN_clear = NULL;
+	_g_BN_clear_free = NULL;
+	_g_BN_free = NULL;
+	_g_BN_lebin2bn = NULL;
+	_g_BN_new = NULL;
+	_g_BN_num_bits = NULL;
+	_g_CRYPTO_free = NULL;
+	_g_CRYPTO_malloc = NULL;
+	_g_EC_GROUP_free = NULL;
+	_g_EC_GROUP_new_by_curve_name = NULL;
+	_g_EC_POINT_free = NULL;
+	_g_EC_POINT_mul = NULL;
+	_g_EC_POINT_new = NULL;
+	_g_EC_POINT_oct2point = NULL;
+	_g_EC_POINT_point2oct = NULL;
+	_g_ERR_clear_error = NULL;
+	_g_ERR_error_string_n = NULL;
+	_g_EVP_CIPHER_CTX_ctrl = NULL;
+	_g_EVP_CIPHER_CTX_free = NULL;
+	_g_EVP_CIPHER_CTX_new = NULL;
+	_g_EVP_CIPHER_CTX_set_key_length = NULL;
+	_g_EVP_CIPHER_CTX_set_padding = NULL;
+	_g_EVP_CipherInit_ex = NULL;
+	_g_EVP_CipherUpdate = NULL;
+	_g_EVP_DecryptFinal_ex = NULL;
+	_g_EVP_DecryptInit_ex = NULL;
+	_g_EVP_DecryptUpdate = NULL;
+	_g_EVP_Digest = NULL;
+	_g_EVP_DigestFinal_ex = NULL;
+	_g_EVP_DigestInit = NULL;
+	_g_EVP_DigestInit_ex = NULL;
+	_g_EVP_DigestSignFinal = NULL;
+	_g_EVP_DigestSignInit = NULL;
+	_g_EVP_DigestUpdate = NULL;
+	_g_EVP_DigestVerifyFinal = NULL;
+	_g_EVP_DigestVerifyInit = NULL;
+	_g_EVP_EncryptFinal_ex = NULL;
+	_g_EVP_EncryptInit_ex = NULL;
+	_g_EVP_EncryptUpdate = NULL;
+	_g_EVP_MD_CTX_copy = NULL;
+	_g_EVP_MD_CTX_copy_ex = NULL;
+	_g_EVP_MD_CTX_free = NULL;
+	_g_EVP_MD_CTX_new = NULL;
+	_g_EVP_PKEY_CTX_ctrl = NULL;
+	_g_EVP_PKEY_CTX_free = NULL;
+	_g_EVP_PKEY_CTX_new = NULL;
+	_g_EVP_PKEY_CTX_new_id = NULL;
+	_g_EVP_PKEY_decrypt = NULL;
+	_g_EVP_PKEY_decrypt_init = NULL;
+	_g_EVP_PKEY_derive = NULL;
+	_g_EVP_PKEY_derive_init = NULL;
+	_g_EVP_PKEY_derive_set_peer = NULL;
+	_g_EVP_PKEY_encrypt = NULL;
+	_g_EVP_PKEY_encrypt_init = NULL;
+	_g_EVP_PKEY_free = NULL;
+	_g_EVP_PKEY_keygen = NULL;
+	_g_EVP_PKEY_keygen_init = NULL;
+	_g_EVP_PKEY_new = NULL;
+	_g_EVP_PKEY_paramgen = NULL;
+	_g_EVP_PKEY_paramgen_init = NULL;
+	_g_EVP_PKEY_sign = NULL;
+	_g_EVP_PKEY_sign_init = NULL;
+	_g_EVP_PKEY_verify = NULL;
+	_g_EVP_PKEY_verify_init = NULL;
+	_g_EVP_aes_128_cbc = NULL;
+	_g_EVP_aes_128_ctr = NULL;
+	_g_EVP_aes_128_ecb = NULL;
+	_g_EVP_aes_128_gcm = NULL;
+	_g_EVP_aes_192_cbc = NULL;
+	_g_EVP_aes_192_ctr = NULL;
+	_g_EVP_aes_192_ecb = NULL;
+	_g_EVP_aes_192_gcm = NULL;
+	_g_EVP_aes_256_cbc = NULL;
+	_g_EVP_aes_256_ctr = NULL;
+	_g_EVP_aes_256_ecb = NULL;
+	_g_EVP_aes_256_gcm = NULL;
+	_g_EVP_des_cbc = NULL;
+	_g_EVP_des_ecb = NULL;
+	_g_EVP_des_ede3_cbc = NULL;
+	_g_EVP_des_ede3_ecb = NULL;
+	_g_EVP_md4 = NULL;
+	_g_EVP_md5 = NULL;
+	_g_EVP_md5_sha1 = NULL;
+	_g_EVP_rc4 = NULL;
+	_g_EVP_ripemd160 = NULL;
+	_g_EVP_sha1 = NULL;
+	_g_EVP_sha224 = NULL;
+	_g_EVP_sha256 = NULL;
+	_g_EVP_sha384 = NULL;
+	_g_EVP_sha512 = NULL;
+	_g_OBJ_nid2sn = NULL;
+	_g_OPENSSL_init = NULL;
+	_g_OPENSSL_init_crypto = NULL;
+	_g_OpenSSL_version = NULL;
+	_g_PKCS5_PBKDF2_HMAC = NULL;
+	_g_RAND_bytes = NULL;
+}
+
 void __mkcgoLoad_111(void* handle) {
 	__mkcgo__dlsym(EVP_DigestSign)
 	__mkcgo__dlsym(EVP_DigestVerify)
@@ -356,6 +458,21 @@ void __mkcgoLoad_111(void* handle) {
 	__mkcgo__dlsym(EVP_sha3_512)
 	__mkcgo__dlsym(EVP_sha512_224)
 	__mkcgo__dlsym(EVP_sha512_256)
+}
+
+void __mkcgoUnload_111() {
+	_g_EVP_DigestSign = NULL;
+	_g_EVP_DigestVerify = NULL;
+	_g_EVP_PKEY_get_raw_private_key = NULL;
+	_g_EVP_PKEY_get_raw_public_key = NULL;
+	_g_EVP_PKEY_new_raw_private_key = NULL;
+	_g_EVP_PKEY_new_raw_public_key = NULL;
+	_g_EVP_sha3_224 = NULL;
+	_g_EVP_sha3_256 = NULL;
+	_g_EVP_sha3_384 = NULL;
+	_g_EVP_sha3_512 = NULL;
+	_g_EVP_sha512_224 = NULL;
+	_g_EVP_sha512_256 = NULL;
 }
 
 void __mkcgoLoad_3(void* handle) {
@@ -421,9 +538,77 @@ void __mkcgoLoad_3(void* handle) {
 	__mkcgo__dlsym(OSSL_PROVIDER_try_load)
 }
 
+void __mkcgoUnload_3() {
+	_g_EC_POINT_set_affine_coordinates = NULL;
+	_g_ERR_get_error_all = NULL;
+	_g_EVP_CIPHER_fetch = NULL;
+	_g_EVP_CIPHER_get0_name = NULL;
+	_g_EVP_CIPHER_get_block_size = NULL;
+	_g_EVP_KDF_CTX_free = NULL;
+	_g_EVP_KDF_CTX_get_kdf_size = NULL;
+	_g_EVP_KDF_CTX_new = NULL;
+	_g_EVP_KDF_CTX_set_params = NULL;
+	_g_EVP_KDF_derive = NULL;
+	_g_EVP_KDF_fetch = NULL;
+	_g_EVP_KDF_free = NULL;
+	_g_EVP_MAC_CTX_dup = NULL;
+	_g_EVP_MAC_CTX_free = NULL;
+	_g_EVP_MAC_CTX_new = NULL;
+	_g_EVP_MAC_CTX_set_params = NULL;
+	_g_EVP_MAC_fetch = NULL;
+	_g_EVP_MAC_final = NULL;
+	_g_EVP_MAC_init = NULL;
+	_g_EVP_MAC_update = NULL;
+	_g_EVP_MD_fetch = NULL;
+	_g_EVP_MD_free = NULL;
+	_g_EVP_MD_get0_name = NULL;
+	_g_EVP_MD_get0_provider = NULL;
+	_g_EVP_MD_get_block_size = NULL;
+	_g_EVP_MD_get_size = NULL;
+	_g_EVP_MD_get_type = NULL;
+	_g_EVP_PKEY_CTX_add1_hkdf_info = NULL;
+	_g_EVP_PKEY_CTX_new_from_pkey = NULL;
+	_g_EVP_PKEY_CTX_set0_rsa_oaep_label = NULL;
+	_g_EVP_PKEY_CTX_set1_hkdf_key = NULL;
+	_g_EVP_PKEY_CTX_set1_hkdf_salt = NULL;
+	_g_EVP_PKEY_CTX_set_hkdf_md = NULL;
+	_g_EVP_PKEY_CTX_set_hkdf_mode = NULL;
+	_g_EVP_PKEY_Q_keygen = NULL;
+	_g_EVP_PKEY_fromdata = NULL;
+	_g_EVP_PKEY_fromdata_init = NULL;
+	_g_EVP_PKEY_get1_encoded_public_key = NULL;
+	_g_EVP_PKEY_get_bits = NULL;
+	_g_EVP_PKEY_get_bn_param = NULL;
+	_g_EVP_PKEY_get_size = NULL;
+	_g_EVP_PKEY_private_check = NULL;
+	_g_EVP_PKEY_public_check_quick = NULL;
+	_g_EVP_PKEY_set1_encoded_public_key = NULL;
+	_g_EVP_PKEY_up_ref = NULL;
+	_g_EVP_SIGNATURE_fetch = NULL;
+	_g_EVP_SIGNATURE_free = NULL;
+	_g_EVP_default_properties_enable_fips = NULL;
+	_g_EVP_default_properties_is_fips_enabled = NULL;
+	_g_OSSL_PARAM_BLD_free = NULL;
+	_g_OSSL_PARAM_BLD_new = NULL;
+	_g_OSSL_PARAM_BLD_push_BN = NULL;
+	_g_OSSL_PARAM_BLD_push_int32 = NULL;
+	_g_OSSL_PARAM_BLD_push_octet_string = NULL;
+	_g_OSSL_PARAM_BLD_push_utf8_string = NULL;
+	_g_OSSL_PARAM_BLD_to_param = NULL;
+	_g_OSSL_PARAM_free = NULL;
+	_g_OSSL_PROVIDER_available = NULL;
+	_g_OSSL_PROVIDER_get0_name = NULL;
+	_g_OSSL_PROVIDER_try_load = NULL;
+}
+
 void __mkcgoLoad_init_1(void* handle) {
 	__mkcgo__dlsym(FIPS_mode)
 	__mkcgo__dlsym(FIPS_mode_set)
+}
+
+void __mkcgoUnload_init_1() {
+	_g_FIPS_mode = NULL;
+	_g_FIPS_mode_set = NULL;
 }
 
 void __mkcgoLoad_init_3(void* handle) {
@@ -432,6 +617,14 @@ void __mkcgoLoad_init_3(void* handle) {
 	__mkcgo__dlsym(EVP_MD_free)
 	__mkcgo__dlsym(EVP_MD_get0_provider)
 	__mkcgo__dlsym(EVP_default_properties_is_fips_enabled)
+}
+
+void __mkcgoUnload_init_3() {
+	_g_ERR_clear_error = NULL;
+	_g_EVP_MD_fetch = NULL;
+	_g_EVP_MD_free = NULL;
+	_g_EVP_MD_get0_provider = NULL;
+	_g_EVP_default_properties_is_fips_enabled = NULL;
 }
 
 void __mkcgoLoad_legacy_1(void* handle) {
@@ -481,11 +674,65 @@ void __mkcgoLoad_legacy_1(void* handle) {
 	__mkcgo__dlsym(RSA_set0_key)
 }
 
+void __mkcgoUnload_legacy_1() {
+	_g_DSA_free = NULL;
+	_g_DSA_generate_key = NULL;
+	_g_DSA_get0_key = NULL;
+	_g_DSA_get0_pqg = NULL;
+	_g_DSA_new = NULL;
+	_g_DSA_set0_key = NULL;
+	_g_DSA_set0_pqg = NULL;
+	_g_EC_KEY_check_key = NULL;
+	_g_EC_KEY_free = NULL;
+	_g_EC_KEY_get0_group = NULL;
+	_g_EC_KEY_get0_private_key = NULL;
+	_g_EC_KEY_get0_public_key = NULL;
+	_g_EC_KEY_new_by_curve_name = NULL;
+	_g_EC_KEY_set_private_key = NULL;
+	_g_EC_KEY_set_public_key = NULL;
+	_g_EC_KEY_set_public_key_affine_coordinates = NULL;
+	_g_EC_POINT_get_affine_coordinates_GFp = NULL;
+	_g_ERR_get_error_line = NULL;
+	_g_EVP_CIPHER_get_block_size = NULL;
+	_g_EVP_MD_get_block_size = NULL;
+	_g_EVP_MD_get_size = NULL;
+	_g_EVP_PKEY_assign = NULL;
+	_g_EVP_PKEY_get0_DSA = NULL;
+	_g_EVP_PKEY_get0_EC_KEY = NULL;
+	_g_EVP_PKEY_get1_RSA = NULL;
+	_g_EVP_PKEY_get_bits = NULL;
+	_g_EVP_PKEY_get_size = NULL;
+	_g_EVP_PKEY_set1_EC_KEY = NULL;
+	_g_FIPS_mode = NULL;
+	_g_FIPS_mode_set = NULL;
+	_g_HMAC_CTX_copy = NULL;
+	_g_HMAC_CTX_free = NULL;
+	_g_HMAC_CTX_new = NULL;
+	_g_HMAC_Final = NULL;
+	_g_HMAC_Init_ex = NULL;
+	_g_HMAC_Update = NULL;
+	_g_RSA_free = NULL;
+	_g_RSA_get0_crt_params = NULL;
+	_g_RSA_get0_factors = NULL;
+	_g_RSA_get0_key = NULL;
+	_g_RSA_new = NULL;
+	_g_RSA_set0_crt_params = NULL;
+	_g_RSA_set0_factors = NULL;
+	_g_RSA_set0_key = NULL;
+}
+
 void __mkcgoLoad_version(void* handle) {
 	__mkcgo__dlsym_nocheck(OPENSSL_version_major, OPENSSL_version_major)
 	__mkcgo__dlsym_nocheck(OPENSSL_version_minor, OPENSSL_version_minor)
 	__mkcgo__dlsym_nocheck(OPENSSL_version_patch, OPENSSL_version_patch)
 	__mkcgo__dlsym_nocheck(OpenSSL_version_num, OpenSSL_version_num)
+}
+
+void __mkcgoUnload_version() {
+	_g_OPENSSL_version_major = NULL;
+	_g_OPENSSL_version_minor = NULL;
+	_g_OPENSSL_version_patch = NULL;
+	_g_OpenSSL_version_num = NULL;
 }
 
 _BIGNUM_PTR BN_bin2bn(const unsigned char* _arg0, int _arg1, _BIGNUM_PTR _arg2) {

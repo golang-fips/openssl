@@ -27,6 +27,7 @@ func generateGo(src *mkcgo.Source, w io.Writer) {
 	}
 	for _, tag := range src.Tags() {
 		fmt.Fprintf(w, "void __mkcgoLoad_%s(void* handle);\n", tag)
+		fmt.Fprintf(w, "void __mkcgoUnload_%s();\n", tag)
 	}
 	for _, fn := range src.Funcs {
 		if fn.Optional {
@@ -43,10 +44,13 @@ func generateGo(src *mkcgo.Source, w io.Writer) {
 	// Generate type aliases for all
 	generateGoAliases(src.Funcs, w)
 
-	// Generate Go wrapper functions that load the C symbols.
+	// Generate Go wrapper functions that load and unload the C symbols.
 	for _, tag := range src.Tags() {
 		fmt.Fprintf(w, "func mkcgoLoad_%s(handle unsafe.Pointer) {\n", tag)
 		fmt.Fprintf(w, "\tC.__mkcgoLoad_%s(handle)\n", tag)
+		fmt.Fprintf(w, "}\n\n")
+		fmt.Fprintf(w, "func mkcgoUnload_%s() {\n", tag)
+		fmt.Fprintf(w, "\tC.__mkcgoUnload_%s()\n", tag)
 		fmt.Fprintf(w, "}\n\n")
 	}
 
@@ -159,33 +163,46 @@ func generateC(src *mkcgo.Source, w io.Writer) {
 	fmt.Fprintf(w, "\t\tabort(); \\\n")
 	fmt.Fprintf(w, "\t}\n\n")
 
-	// Loader functions for each tag.
+	// Loader and unloader functions for each tag.
 	for _, tag := range src.Tags() {
 		fmt.Fprintf(w, "void __mkcgoLoad_%s(void* handle) {\n", tag)
 		for _, fn := range src.Funcs {
 			if fn.VariadicInst {
 				continue
 			}
-			if len(fn.Tags) == 0 && tag == "" {
-				// Default tag.
-				if fn.Optional {
-					fmt.Fprintf(w, "\t__mkcgo__dlsym_nocheck(%s, %s)\n", fn.ImportName, fn.ImportName)
-				} else {
-					fmt.Fprintf(w, "\t__mkcgo__dlsym(%s)\n", fn.ImportName)
-				}
-			} else {
-				for _, tagAttr := range fn.Tags {
-					if tagAttr.Tag == tag {
-						if tagAttr.Name != "" {
-							// TODO: if necessary, support optional functions in here too.
-							fmt.Fprintf(w, "\t__mkcgo__dlsym2(%s, %s)\n", fn.ImportName, tagAttr.Name)
-						} else if fn.Optional {
-							fmt.Fprintf(w, "\t__mkcgo__dlsym_nocheck(%s, %s)\n", fn.ImportName, fn.ImportName)
-						} else {
-							fmt.Fprintf(w, "\t__mkcgo__dlsym(%s)\n", fn.ImportName)
-						}
-						break
+			tags := fn.Tags
+			if len(tags) == 0 {
+				tags = []mkcgo.TagAttr{{}}
+			}
+			for _, tagAttr := range tags {
+				if tagAttr.Tag == tag {
+					if tagAttr.Name != "" {
+						// TODO: if necessary, support optional functions in here too.
+						fmt.Fprintf(w, "\t__mkcgo__dlsym2(%s, %s)\n", fn.ImportName, tagAttr.Name)
+					} else if fn.Optional {
+						fmt.Fprintf(w, "\t__mkcgo__dlsym_nocheck(%s, %s)\n", fn.ImportName, fn.ImportName)
+					} else {
+						fmt.Fprintf(w, "\t__mkcgo__dlsym(%s)\n", fn.ImportName)
 					}
+					break
+				}
+			}
+		}
+		fmt.Fprintf(w, "}\n\n")
+
+		fmt.Fprintf(w, "void __mkcgoUnload_%s() {\n", tag)
+		for _, fn := range src.Funcs {
+			if fn.VariadicInst {
+				continue
+			}
+			tags := fn.Tags
+			if len(tags) == 0 {
+				tags = []mkcgo.TagAttr{{}}
+			}
+			for _, tagAttr := range tags {
+				if tagAttr.Tag == tag {
+					fmt.Fprintf(w, "\t_g_%s = NULL;\n", fn.ImportName)
+					break
 				}
 			}
 		}
