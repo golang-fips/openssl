@@ -213,7 +213,7 @@ func generateEVPPKey(id, bits int32, curve string) (_EVP_PKEY_PTR, error) {
 	return pkey, nil
 }
 
-type withKeyFunc func(func(_EVP_PKEY_PTR) (int32, error)) (int32, error)
+type withKeyFunc func(func(_EVP_PKEY_PTR) error) error
 type initFunc func(_EVP_PKEY_CTX_PTR) error
 type cryptFunc func(_EVP_PKEY_CTX_PTR, *byte, *int, *byte, int) error
 type verifyFunc func(_EVP_PKEY_CTX_PTR, *byte, int, *byte, int) error
@@ -222,9 +222,9 @@ func setupEVP(withKey withKeyFunc, padding int32,
 	h, mgfHash hash.Hash, label []byte, saltLen int32, ch crypto.Hash,
 	init initFunc) (_ _EVP_PKEY_CTX_PTR, err error) {
 	var ctx _EVP_PKEY_CTX_PTR
-	if _, err := withKey(func(pkey _EVP_PKEY_PTR) (int32, error) {
+	if err := withKey(func(pkey _EVP_PKEY_PTR) error {
 		ctx, err = go_openssl_EVP_PKEY_CTX_new(pkey, nil)
-		return 0, err
+		return err
 	}); err != nil {
 		return nil, err
 	}
@@ -341,10 +341,11 @@ func cryptEVP(withKey withKeyFunc, padding int32,
 		return nil, err
 	}
 	defer go_openssl_EVP_PKEY_CTX_free(ctx)
-	pkeySize, err := withKey(func(pkey _EVP_PKEY_PTR) (int32, error) {
-		return go_openssl_EVP_PKEY_get_size(pkey)
-	})
-	if err != nil {
+	var pkeySize int32
+	if err := withKey(func(pkey _EVP_PKEY_PTR) (err error) {
+		pkeySize, err = go_openssl_EVP_PKEY_get_size(pkey)
+		return err
+	}); err != nil {
 		return nil, err
 	}
 	outLen := int(pkeySize)
@@ -432,8 +433,9 @@ func evpHashSign(withKey withKeyFunc, h crypto.Hash, msg []byte) ([]byte, error)
 		return nil, err
 	}
 	defer go_openssl_EVP_MD_CTX_free(ctx)
-	if _, err := withKey(func(key _EVP_PKEY_PTR) (int32, error) {
-		return go_openssl_EVP_DigestSignInit(ctx, nil, alg.md, nil, key)
+	if err := withKey(func(key _EVP_PKEY_PTR) error {
+		_, err := go_openssl_EVP_DigestSignInit(ctx, nil, alg.md, nil, key)
+		return err
 	}); err != nil {
 		return nil, err
 	}
@@ -462,8 +464,9 @@ func evpHashVerify(withKey withKeyFunc, h crypto.Hash, msg, sig []byte) error {
 		return err
 	}
 	defer go_openssl_EVP_MD_CTX_free(ctx)
-	if _, err := withKey(func(key _EVP_PKEY_PTR) (int32, error) {
-		return go_openssl_EVP_DigestVerifyInit(ctx, nil, alg.md, nil, key)
+	if err := withKey(func(key _EVP_PKEY_PTR) error {
+		_, err := go_openssl_EVP_DigestVerifyInit(ctx, nil, alg.md, nil, key)
+		return err
 	}); err != nil {
 		return err
 	}

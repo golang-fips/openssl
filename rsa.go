@@ -120,7 +120,7 @@ func (k *PublicKeyRSA) finalize() {
 	go_openssl_EVP_PKEY_free(k._pkey)
 }
 
-func (k *PublicKeyRSA) withKey(f func(_EVP_PKEY_PTR) (int32, error)) (int32, error) {
+func (k *PublicKeyRSA) withKey(f func(_EVP_PKEY_PTR) error) error {
 	// Because of the finalizer, any time _pkey is passed to cgo, that call must
 	// be followed by a call to runtime.KeepAlive, to make sure k is not
 	// collected (and finalized) before the cgo call returns.
@@ -199,7 +199,7 @@ func (k *PrivateKeyRSA) finalize() {
 	go_openssl_EVP_PKEY_free(k._pkey)
 }
 
-func (k *PrivateKeyRSA) withKey(f func(_EVP_PKEY_PTR) (int32, error)) (int32, error) {
+func (k *PrivateKeyRSA) withKey(f func(_EVP_PKEY_PTR) error) error {
 	// Because of the finalizer, any time _pkey is passed to cgo, that call must
 	// be followed by a call to runtime.KeepAlive, to make sure k is not
 	// collected (and finalized) before the cgo call returns.
@@ -301,15 +301,16 @@ func HashSignRSAPKCS1v15(priv *PrivateKeyRSA, h crypto.Hash, msg []byte) ([]byte
 
 func VerifyRSAPKCS1v15(pub *PublicKeyRSA, h crypto.Hash, hashed, sig []byte) error {
 	defer runtime.KeepAlive(pub)
-	if _, err := pub.withKey(func(pkey _EVP_PKEY_PTR) (int32, error) {
-		size, err := go_openssl_EVP_PKEY_get_size(pkey)
+	var size int32
+	if err := pub.withKey(func(pkey _EVP_PKEY_PTR) (err error) {
+		size, err = go_openssl_EVP_PKEY_get_size(pkey)
 		if err != nil {
-			return 0, err
+			return err
 		}
 		if len(sig) < int(size) {
-			return 0, errors.New("crypto/rsa: verification error")
+			return errors.New("crypto/rsa: verification error")
 		}
-		return 0, nil
+		return nil
 	}); err != nil {
 		return err
 	}

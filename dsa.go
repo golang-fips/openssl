@@ -36,7 +36,7 @@ func (k *PrivateKeyDSA) finalize() {
 	go_openssl_EVP_PKEY_free(k._pkey)
 }
 
-func (k *PrivateKeyDSA) withKey(f func(_EVP_PKEY_PTR) (int32, error)) (int32, error) {
+func (k *PrivateKeyDSA) withKey(f func(_EVP_PKEY_PTR) error) error {
 	defer runtime.KeepAlive(k)
 	return f(k._pkey)
 }
@@ -54,7 +54,7 @@ func (k *PublicKeyDSA) finalize() {
 	go_openssl_EVP_PKEY_free(k._pkey)
 }
 
-func (k *PublicKeyDSA) withKey(f func(_EVP_PKEY_PTR) (int32, error)) (int32, error) {
+func (k *PublicKeyDSA) withKey(f func(_EVP_PKEY_PTR) error) error {
 	defer runtime.KeepAlive(k)
 	return f(k._pkey)
 }
