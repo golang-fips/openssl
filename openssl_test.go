@@ -6,6 +6,7 @@ import (
 	"os"
 	"runtime"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -145,6 +146,31 @@ func TestFIPSCapable(t *testing.T) {
 	if got != want {
 		t.Fatalf("FIPSCapable mismatch: want %v, got %v", want, got)
 	}
+}
+
+func TestErrorMultithread(t *testing.T) {
+	// Test that we get the expected error when generating a key
+	// with an invalid size in a multithreaded environment
+	// while running other OpenSSL operations.
+	var wg sync.WaitGroup
+	for range 10 {
+		wg.Add(2)
+		go func() {
+			defer wg.Done()
+			_, _, _, _, _, _, _, _, err := openssl.GenerateKeyRSA(1)
+			if err == nil {
+				t.Error("expected error, got nil")
+			} else if !strings.Contains(err.Error(), "rsa routines") {
+				t.Errorf("expected error to contain 'rsa routines', got %q", err)
+			}
+		}()
+		go func() {
+			defer wg.Done()
+			// This should never fail.
+			openssl.SHA256([]byte("test"))
+		}()
+	}
+	wg.Wait()
 }
 
 func TestErrorAllocs(t *testing.T) {
