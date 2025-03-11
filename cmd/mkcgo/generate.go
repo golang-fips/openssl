@@ -26,16 +26,29 @@ func generateGo(src *mkcgo.Source, w io.Writer) {
 		fmt.Fprintf(w, "#include %q\n", file)
 	}
 	fmt.Fprintf(w, "\n")
+
+	// Add forward declarations for loader functions.
 	for _, tag := range src.Tags() {
 		fmt.Fprintf(w, "void __mkcgoLoad_%s(void* handle);\n", tag)
 		fmt.Fprintf(w, "void __mkcgoUnload_%s();\n", tag)
 	}
 	fmt.Fprintf(w, "\n")
+
+	// Add forward declarations for optional functions.
 	for _, fn := range src.Funcs {
 		if fn.Optional {
 			fmt.Fprintf(w, "int %s_Available();\n", fn.ImportName)
 		}
 	}
+	// Add forward declarations for function wrappers returning errors.
+	for _, fn := range src.Funcs {
+		if !fnNeedErrWrapper(fn) {
+			continue
+		}
+
+		fmt.Fprintf(w, "%s %s(%s);\n", fn.Ret.Type, fnCErrWrapperName(fn), fnCErrWrapperParams(fn, false))
+	}
+
 	fmt.Fprintf(w, "*/\n")
 	fmt.Fprintf(w, "import \"C\"\n")
 	fmt.Fprintf(w, "import \"unsafe\"\n\n")
@@ -56,11 +69,6 @@ func generateGo(src *mkcgo.Source, w io.Writer) {
 		fmt.Fprintf(w, "}\n\n")
 	}
 
-	typedefs := make(map[string]string, len(src.TypeDefs))
-	for _, def := range src.TypeDefs {
-		typedefs[def.Name] = def.Type
-	}
-
 	// Generate function wrappers.
 	for _, fn := range src.Funcs {
 		if fn.Variadic() {
@@ -73,7 +81,7 @@ func generateGo(src *mkcgo.Source, w io.Writer) {
 			fmt.Fprintf(w, "\treturn C.%s_Available() != 0\n", fn.ImportName)
 			fmt.Fprintf(w, "}\n\n")
 		}
-		generateGoFn(typedefs, fn, w)
+		generateGoFn(fn, w)
 	}
 }
 
@@ -87,11 +95,15 @@ func generateGo124(src *mkcgo.Source, w io.Writer) {
 	// This block outputs C header includes and forward declarations for loader functions.
 	fmt.Fprintf(w, "/*\n")
 	for _, fn := range src.Funcs {
+		name := fn.CName
+		if fnNeedErrWrapper(fn) {
+			name = fnCErrWrapperName(fn)
+		}
 		if fn.NoEscape {
-			fmt.Fprintf(w, "#cgo noescape %s\n", fn.CName)
+			fmt.Fprintf(w, "#cgo noescape %s\n", name)
 		}
 		if fn.NoCallback {
-			fmt.Fprintf(w, "#cgo nocallback %s\n", fn.CName)
+			fmt.Fprintf(w, "#cgo nocallback %s\n", name)
 		}
 	}
 	fmt.Fprintf(w, "*/\n")
@@ -238,6 +250,10 @@ func generateC(src *mkcgo.Source, w io.Writer) {
 	}
 
 	// Generate C function wrappers.
+	typedefs := make(map[string]string, len(src.TypeDefs))
+	for _, def := range src.TypeDefs {
+		typedefs[def.Name] = def.Type
+	}
 	for _, fn := range src.Funcs {
 		if fn.Variadic() {
 			// cgo doesn't support variadic functions
@@ -250,11 +266,12 @@ func generateC(src *mkcgo.Source, w io.Writer) {
 			fmt.Fprintf(w, "}\n\n")
 		}
 		generateCFn(fn, w)
+		generateCFnErrorWrapper(typedefs, fn, w)
 	}
 }
 
 // generateGoFn generates Go function f.
-func generateGoFn(typedefs map[string]string, fn *mkcgo.Func, w io.Writer) {
+func generateGoFn(fn *mkcgo.Func, w io.Writer) {
 	fnCall := fmt.Sprintf("C.%s(%s)", fn.CName, fnToGoArgs(fn))
 	// Function definition
 	fmt.Fprintf(w, "func %s(%s)", fn.GoName, fnToGoParams(fn))
@@ -296,21 +313,13 @@ func generateGoFn(typedefs map[string]string, fn *mkcgo.Func, w io.Writer) {
 		fmt.Fprintf(w, "}\n\n")
 		return
 	}
-	fmt.Fprintf(w, "\t_ret := C.%s(%s)\n", fn.CName, fnToGoArgs(fn))
-
-	// Error handling
-	errCond := "<= 0"
-	if fn.ErrCond != "" {
-		errCond = fn.ErrCond
-	} else if strings.Contains(goType, "unsafe.Pointer") {
-		errCond = "== nil"
-	} else if typ, ok := typedefs[goType]; ok && typ == "void*" {
-		errCond = "== nil"
+	fmt.Fprintf(w, "\tvar _err *C.%s\n", errStateStructName)
+	fmt.Fprintf(w, "\t_ret := C.%s(", fnCErrWrapperName(fn))
+	args := fnToGoArgs(fn)
+	if len(args) > 0 {
+		args += ", "
 	}
-	fmt.Fprintf(w, "\tvar _err error\n")
-	fmt.Fprintf(w, "\tif _ret %s {\n", errCond)
-	fmt.Fprintf(w, "\t\t_err = newOpenSSLError(\"%s\")\n", fn.CName)
-	fmt.Fprintf(w, "\t}\n")
+	fmt.Fprintf(w, "%snoescapeMkcgoErrState(&_err))\n", args)
 
 	// Return the value
 	fmt.Fprintf(w, "\treturn ")
@@ -322,16 +331,38 @@ func generateGoFn(typedefs map[string]string, fn *mkcgo.Func, w io.Writer) {
 	} else {
 		fmt.Fprintf(w, "_ret")
 	}
-	fmt.Fprintf(w, ", _err\n")
+	fmt.Fprintf(w, ", newMkcgoErr(%q, _err)\n", fn.CName)
 	fmt.Fprintf(w, "}\n\n")
 }
 
 func generateCFn(fn *mkcgo.Func, w io.Writer) {
-	fmt.Fprintf(w, "%s %s(%s) {\n\t", fn.Ret.Type, fn.CName, fnToCArgs(fn, true))
+	fmt.Fprintf(w, "%s %s(%s) {\n\t", fn.Ret.Type, fn.CName, fnToCArgs(fn, true, true))
 	if !retIsVoid(fn.Ret) {
 		fmt.Fprintf(w, "return ")
 	}
-	fmt.Fprintf(w, "_g_%s(%s);\n", fn.ImportName, fnToCArgs(fn, false))
+	fmt.Fprintf(w, "_g_%s(%s);\n", fn.ImportName, fnToCArgs(fn, false, true))
+	fmt.Fprintf(w, "}\n\n")
+}
+
+// generateCFnErrorWrapper generates C function wrapper for function f
+// that returns an error state.
+func generateCFnErrorWrapper(typedefs map[string]string, fn *mkcgo.Func, w io.Writer) {
+	if !fnNeedErrWrapper(fn) {
+		return
+	}
+	fmt.Fprintf(w, "%s %s(%s) {\n", fn.Ret.Type, fnCErrWrapperName(fn), fnCErrWrapperParams(fn, true))
+	fmt.Fprintf(w, "\tmkcgo_err_clear();\n") // clear any previous error
+	fmt.Fprintf(w, "\t%s _ret = _g_%s(%s);\n", fn.Ret.Type, fn.ImportName, fnToCArgs(fn, false, true))
+	errCond := "<= 0"
+	if fn.ErrCond != "" {
+		errCond = fn.ErrCond
+	} else if strings.Contains(fn.Ret.Type, "*") {
+		errCond = "== NULL"
+	} else if typ, ok := typedefs[fn.Ret.Type]; ok && typ == "void*" {
+		errCond = "== NULL"
+	}
+	fmt.Fprintf(w, "\tif (_ret %s) *_err_state = mkcgo_err_retrieve();\n", errCond)
+	fmt.Fprintf(w, "\treturn _ret;\n")
 	fmt.Fprintf(w, "}\n\n")
 }
 
@@ -436,12 +467,15 @@ func cTypeToGo(t string, cgo bool) (string, bool) {
 }
 
 // paramToC returns C source code of parameter p.
-func paramToC(i int, p *mkcgo.Param, addType bool) string {
+func paramToC(i int, p *mkcgo.Param, addType, addName bool) string {
+	if p.Type == "..." {
+		return ""
+	}
 	var s string
 	if addType {
 		s += p.Type
 	}
-	if p.Type != "void" && p.Type != "..." {
+	if addName && p.Type != "void" {
 		if len(s) > 0 {
 			s += " "
 		}
@@ -470,9 +504,9 @@ func fnToGoArgs(fn *mkcgo.Func) string {
 }
 
 // fnToCArgs returns source code for C parameters for function f.
-func fnToCArgs(fn *mkcgo.Func, addType bool) string {
+func fnToCArgs(fn *mkcgo.Func, addType, addName bool) string {
 	return join(fn.Params, func(i int, p *mkcgo.Param) string {
-		return paramToC(i, p, addType)
+		return paramToC(i, p, addType, addName)
 	}, ", ")
 }
 
@@ -491,4 +525,34 @@ func join(ps []*mkcgo.Param, fn func(int, *mkcgo.Param) string, sep string) stri
 		}
 	}
 	return strings.Join(params, sep)
+}
+
+const errStateStructName = "mkcgo_err_state"
+
+// fnCErrWrapperParams returns source code for C parameters for function f
+// with the error state added as the last parameter.
+func fnCErrWrapperParams(fn *mkcgo.Func, addName bool) string {
+	errArg := errStateStructName + " **"
+	if addName {
+		errArg += "_err_state"
+	}
+	args := fnToCArgs(fn, true, addName)
+	if len(args) == 0 {
+		args = errArg
+	} else if args == "void" {
+		args = errArg
+	} else {
+		args += ", " + errArg
+	}
+	return args
+}
+
+// fnCErrWrapperName returns the name of the error wrapper function for function f.
+func fnCErrWrapperName(fn *mkcgo.Func) string {
+	return "_mkcgo_err_" + fn.CName
+}
+
+// fnNeedErrWrapper reports whether function fn needs an error wrapper.
+func fnNeedErrWrapper(fn *mkcgo.Func) bool {
+	return !fn.NoError && !retIsVoid(fn.Ret)
 }

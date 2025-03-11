@@ -3,10 +3,11 @@
 // Package openssl provides access to OpenSSL cryptographic functions.
 package openssl
 
-//go:generate go run ./cmd/mkcgo -out zossl.go -package openssl shims.h
+//go:generate go run ./cmd/mkcgo -out zossl.go -package openssl -include go_ossl_error.h shims.h
 
 /*
 #include <stdlib.h> // for free()
+#include "go_ossl_error.h"
 
 static inline void
 go_openssl_do_leak_check(void)
@@ -268,33 +269,61 @@ func base(b []byte) *byte {
 	return unsafe.SliceData(b)
 }
 
-func newOpenSSLError(msg string) error {
+// noescapeMkcgoErrState hides a pointer from escape analysis.
+// noescapeMkcgoErrState is the identity function but escape
+// analysis doesn't think the output depends on the input.
+// noescapeMkcgoErrState is inlined and currently compiles
+// down to zero instructions.
+// USE CAREFULLY!
+//
+//go:nosplit
+func noescapeMkcgoErrState(p **C.mkcgo_err_state) **C.mkcgo_err_state {
+	x := uintptr(unsafe.Pointer(p))
+	return (**C.mkcgo_err_state)(unsafe.Pointer(x ^ 0))
+}
+
+// newMkcgoErr creates a new error from the given mkcgo_err_state
+// and frees the state. If errst is nil, it returns nil.
+func newMkcgoErr(msg string, errst *C.mkcgo_err_state) error {
+	if errst == nil {
+		return nil
+	}
+	defer C.mkcgo_err_free(errst)
 	var b strings.Builder
 	b.WriteString(msg)
 	b.WriteString("\nopenssl error(s):")
-	for {
-		var (
-			e    uint32
-			file *byte
-			line int32
-		)
-		switch vMajor {
-		case 1:
-			e = go_openssl_ERR_get_error_line(&file, &line)
-		case 3:
-			e = go_openssl_ERR_get_error_all(&file, &line, nil, nil, nil)
-		default:
-			panic(errUnsupportedVersion())
-		}
+	for i := range 16 {
+		e := uint32(errst.code[i])
 		if e == 0 {
 			break
 		}
 		b.WriteByte('\n')
 		var buf [256]byte
 		go_openssl_ERR_error_string_n(e, base(buf[:]), len(buf))
-		b.WriteString(string(buf[:]) + "\n\t" + C.GoString((*C.char)(unsafe.Pointer(file))) + ":" + strconv.Itoa(int(line)))
+		b.Write(buf[:])
+		if errst.file[i] == nil {
+			// info not available
+			continue
+		}
+		b.WriteString("\n\t")
+		b.Write(cstrBytes(errst.file[i]))
+		b.WriteByte(':')
+		b.WriteString(strconv.Itoa(int(errst.line[i])))
 	}
 	return errors.New(b.String())
+}
+
+// cstrBytes returns a byte slice containing the contents of the C string
+// pointed to by p. The slice does not include the terminating null byte.
+func cstrBytes(p *C.char) []byte {
+	if p == nil {
+		return nil
+	}
+	end := unsafe.Pointer(p)
+	for *(*byte)(end) != 0 {
+		end = unsafe.Add(end, 1)
+	}
+	return unsafe.Slice((*byte)(unsafe.Pointer(p)), uintptr(end)-uintptr(unsafe.Pointer(p)))
 }
 
 // cryptoMalloc allocates n bytes of memory on the OpenSSL heap, which may be

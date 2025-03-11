@@ -146,3 +146,19 @@ func TestFIPSCapable(t *testing.T) {
 		t.Fatalf("FIPSCapable mismatch: want %v, got %v", want, got)
 	}
 }
+
+func TestErrorAllocs(t *testing.T) {
+	n := testing.AllocsPerRun(10, func() {
+		openssl.GenerateKeyRSA(1)
+	})
+	if n > 10 {
+		t.Fatalf("Expected less than 10 allocations, got %d", int(n))
+	}
+}
+
+func BenchmarkError(b *testing.B) {
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+		openssl.GenerateKeyRSA(1)
+	}
+}

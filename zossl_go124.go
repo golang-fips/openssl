@@ -5,29 +5,29 @@
 package openssl
 
 /*
-#cgo noescape EVP_CipherUpdate
-#cgo nocallback EVP_CipherUpdate
-#cgo noescape EVP_DecryptFinal_ex
-#cgo nocallback EVP_DecryptFinal_ex
-#cgo noescape EVP_DecryptUpdate
-#cgo nocallback EVP_DecryptUpdate
-#cgo noescape EVP_Digest
-#cgo nocallback EVP_Digest
-#cgo noescape EVP_DigestSign
-#cgo nocallback EVP_DigestSign
-#cgo noescape EVP_DigestUpdate
-#cgo nocallback EVP_DigestUpdate
-#cgo noescape EVP_EncryptFinal_ex
-#cgo nocallback EVP_EncryptFinal_ex
-#cgo noescape EVP_EncryptUpdate
-#cgo nocallback EVP_EncryptUpdate
-#cgo noescape EVP_PKEY_derive
-#cgo nocallback EVP_PKEY_derive
-#cgo noescape EVP_PKEY_get_raw_private_key
-#cgo nocallback EVP_PKEY_get_raw_private_key
-#cgo noescape EVP_PKEY_get_raw_public_key
-#cgo nocallback EVP_PKEY_get_raw_public_key
-#cgo noescape RAND_bytes
-#cgo nocallback RAND_bytes
+#cgo noescape _mkcgo_err_EVP_CipherUpdate
+#cgo nocallback _mkcgo_err_EVP_CipherUpdate
+#cgo noescape _mkcgo_err_EVP_DecryptFinal_ex
+#cgo nocallback _mkcgo_err_EVP_DecryptFinal_ex
+#cgo noescape _mkcgo_err_EVP_DecryptUpdate
+#cgo nocallback _mkcgo_err_EVP_DecryptUpdate
+#cgo noescape _mkcgo_err_EVP_Digest
+#cgo nocallback _mkcgo_err_EVP_Digest
+#cgo noescape _mkcgo_err_EVP_DigestSign
+#cgo nocallback _mkcgo_err_EVP_DigestSign
+#cgo noescape _mkcgo_err_EVP_DigestUpdate
+#cgo nocallback _mkcgo_err_EVP_DigestUpdate
+#cgo noescape _mkcgo_err_EVP_EncryptFinal_ex
+#cgo nocallback _mkcgo_err_EVP_EncryptFinal_ex
+#cgo noescape _mkcgo_err_EVP_EncryptUpdate
+#cgo nocallback _mkcgo_err_EVP_EncryptUpdate
+#cgo noescape _mkcgo_err_EVP_PKEY_derive
+#cgo nocallback _mkcgo_err_EVP_PKEY_derive
+#cgo noescape _mkcgo_err_EVP_PKEY_get_raw_private_key
+#cgo nocallback _mkcgo_err_EVP_PKEY_get_raw_private_key
+#cgo noescape _mkcgo_err_EVP_PKEY_get_raw_public_key
+#cgo nocallback _mkcgo_err_EVP_PKEY_get_raw_public_key
+#cgo noescape _mkcgo_err_RAND_bytes
+#cgo nocallback _mkcgo_err_RAND_bytes
 */
 import "C"
