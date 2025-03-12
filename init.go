@@ -113,7 +113,11 @@ func openLibrary(file string) (handle unsafe.Pointer, close func(), err error) {
 	mkcgoLoad_version(handle)
 	close = func() {
 		dlclose(handle)
-		mkcgoUnload_version()
+		if osslHandle == nil {
+			mkcgoUnload_version()
+		} else {
+			mkcgoLoad_version(osslHandle)
+		}
 	}
 	defer func() {
 		if err != nil {
