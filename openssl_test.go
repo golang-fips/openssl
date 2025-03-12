@@ -160,7 +160,7 @@ func TestErrorMultithread(t *testing.T) {
 			_, _, _, _, _, _, _, _, err := openssl.GenerateKeyRSA(1)
 			if err == nil {
 				t.Error("expected error, got nil")
-			} else if !strings.Contains(err.Error(), "rsa routines") {
+			} else if !strings.Contains(err.Error(), "key size too small") {
 				t.Errorf("expected error to contain 'rsa routines', got %q", err)
 			}
 		}()
