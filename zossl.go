@@ -299,6 +299,7 @@ func mkcgoUnload_version() {
 	C.__mkcgoUnload_version()
 }
 
+//go:nosplit
 func mkcgoNoEscape(p **C.mkcgo_err_state) **C.mkcgo_err_state {
 	x := uintptr(unsafe.Pointer(p))
 	return (**C.mkcgo_err_state)(unsafe.Pointer(x ^ 0))
