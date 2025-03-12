@@ -62,6 +62,7 @@ static mkcgo_err_state *mkcgo_err_retrieve() {
 	return errs;
 }
 
+// mkcgo_err_free frees the memory allocated for the mkcgo_err_state structure.
 static void mkcgo_err_free(mkcgo_err_state *errs) {
 	if (errs == NULL) {
 		return;

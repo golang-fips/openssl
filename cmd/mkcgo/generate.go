@@ -69,6 +69,12 @@ func generateGo(src *mkcgo.Source, w io.Writer) {
 		fmt.Fprintf(w, "}\n\n")
 	}
 
+	// Generate error wrapper noescape function.
+	fmt.Fprintf(w, "func %s(p **C.%s) **C.%s {\n", errStateNoEscapeName, errStateStructName, errStateStructName)
+	fmt.Fprintf(w, "\tx := uintptr(unsafe.Pointer(p))\n")
+	fmt.Fprintf(w, "\treturn (**C.%s)(unsafe.Pointer(x ^ 0))\n", errStateStructName)
+	fmt.Fprintf(w, "}\n\n")
+
 	// Generate function wrappers.
 	for _, fn := range src.Funcs {
 		if fn.Variadic() {
@@ -319,7 +325,7 @@ func generateGoFn(fn *mkcgo.Func, w io.Writer) {
 	if len(args) > 0 {
 		args += ", "
 	}
-	fmt.Fprintf(w, "%snoescapeMkcgoErrState(&_err))\n", args)
+	fmt.Fprintf(w, "%s%s(&_err))\n", args, errStateNoEscapeName)
 
 	// Return the value
 	fmt.Fprintf(w, "\treturn ")
@@ -527,6 +533,7 @@ func join(ps []*mkcgo.Param, fn func(int, *mkcgo.Param) string, sep string) stri
 	return strings.Join(params, sep)
 }
 
+const errStateNoEscapeName = "mkcgoNoEscape"
 const errStateStructName = "mkcgo_err_state"
 
 // fnCErrWrapperParams returns source code for C parameters for function f
