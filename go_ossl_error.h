@@ -54,7 +54,7 @@ static mkcgo_err_state *mkcgo_err_retrieve() {
 			break;
 		}
 		if (file != NULL) {
-			// Copy the file name as the pointer we just retrieved will by OpenSSL
+			// Copy the file name as the pointer we just retrieved will be freed by OpenSSL
 			// when the error queue is cleared.
 			errs->file[i] = strdup(file);
 		}

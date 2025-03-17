@@ -71,6 +71,7 @@ func generateGo(src *mkcgo.Source, w io.Writer) {
 
 	// Generate error wrapper noescape function, which hides the
 	// error state pointer from the Go garbage collector.
+	// An instance of https://github.com/golang/go/blob/d704ef76068eb7da15520b08dc7df98f45f85ffa/src/runtime/stubs.go#L194-L201
 	fmt.Fprintf(w, "//go:nosplit\n")
 	fmt.Fprintf(w, "func %s(p **C.%s) **C.%s {\n", errStateNoEscapeName, errStateStructName, errStateStructName)
 	fmt.Fprintf(w, "\tx := uintptr(unsafe.Pointer(p))\n")

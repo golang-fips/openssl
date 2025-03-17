@@ -381,9 +381,9 @@ func (h *evpHash) BlockSize() int {
 func (h *evpHash) Sum(in []byte) []byte {
 	h.init()
 	out := make([]byte, h.Size(), maxHashSize) // explicit cap to allow stack allocation
-	var _err *C.mkcgo_err_state
-	if C.go_hash_sum(h.ctx, h.ctx2, (*C.uchar)(unsafe.SliceData(out)), &_err) != 1 {
-		panic(newMkcgoErr("EVP_DigestFinal_ex", _err))
+	var errst *C.mkcgo_err_state
+	if C.go_hash_sum(h.ctx, h.ctx2, (*C.uchar)(unsafe.SliceData(out)), &errst) != 1 {
+		panic(newMkcgoErr("EVP_DigestFinal_ex", errst))
 	}
 	runtime.KeepAlive(h)
 	return append(in, out...)

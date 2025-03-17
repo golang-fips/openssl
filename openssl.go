@@ -287,7 +287,11 @@ func newMkcgoErr(msg string, errst *C.mkcgo_err_state) error {
 		b.WriteByte('\n')
 		var buf [256]byte
 		go_openssl_ERR_error_string_n(e, base(buf[:]), len(buf))
-		b.Write(buf[:])
+		if termIdx := bytes.IndexByte(buf[:], 0); termIdx != -1 {
+			b.Write(buf[:termIdx])
+		} else {
+			b.Write(buf[:])
+		}
 		if errst.file[i] == nil {
 			// info not available
 			continue
