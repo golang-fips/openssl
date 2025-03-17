@@ -15,9 +15,9 @@ static inline int
 go_hash_sum(const _EVP_MD_CTX_PTR ctx, _EVP_MD_CTX_PTR ctx2, unsigned char *out, mkcgo_err_state *_err_state)
 {
 	if (_mkcgo_err_EVP_MD_CTX_copy(ctx2, ctx, _err_state) != 1)
-		return 0;
+		return -1;
 	if (_mkcgo_err_EVP_DigestFinal_ex(ctx2, out, NULL, _err_state) <= 0)
-		return 0;
+		return -2;
 	return 1;
 }
 */
@@ -378,8 +378,15 @@ func (h *evpHash) Sum(in []byte) []byte {
 	h.init()
 	out := make([]byte, h.Size(), maxHashSize) // explicit cap to allow stack allocation
 	var errst C.mkcgo_err_state
-	if C.go_hash_sum(h.ctx, h.ctx2, (*C.uchar)(unsafe.SliceData(out)), mkcgoNoEscape(&errst)) != 1 {
-		panic(newMkcgoErr("EVP_DigestFinal_ex", errst))
+	if code := C.go_hash_sum(h.ctx, h.ctx2, (*C.uchar)(unsafe.SliceData(out)), mkcgoNoEscape(&errst)); code != 1 {
+		msg := "go_hash_sum"
+		switch code {
+		case -1:
+			msg = "EVP_MD_CTX_copy"
+		case -2:
+			msg = "EVP_DigestFinal_ex"
+		}
+		panic(newMkcgoErr(msg, errst))
 	}
 	runtime.KeepAlive(h)
 	return append(in, out...)
