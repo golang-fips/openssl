@@ -4,7 +4,7 @@ package openssl
 
 /*
 #include "shims.h"
-#include "go_ossl_error.h"
+#include "zossl.h"
 // go_hash_sum copies ctx into ctx2 and calls EVP_DigestFinal_ex using ctx2.
 // This is necessary because Go hash.Hash mandates that Sum has no effect
 // on the underlying stream. In particular it is OK to Sum, then Write more,
@@ -12,16 +12,12 @@ package openssl
 // It is written in C because Sum() tend to be in the hot path,
 // and doing one cgo call instead of two is a significant performance win.
 static inline int
-go_hash_sum(const _EVP_MD_CTX_PTR ctx, _EVP_MD_CTX_PTR ctx2, unsigned char *out, mkcgo_err_state **_err_state)
+go_hash_sum(const _EVP_MD_CTX_PTR ctx, _EVP_MD_CTX_PTR ctx2, unsigned char *out, mkcgo_err_state *_err_state)
 {
-	if (EVP_MD_CTX_copy(ctx2, ctx) != 1) {
-		*_err_state = mkcgo_err_retrieve();
+	if (_mkcgo_err_EVP_MD_CTX_copy(ctx2, ctx, _err_state) != 1)
 		return 0;
-	}
-	if (EVP_DigestFinal_ex(ctx2, out, NULL) <= 0) {
-		*_err_state = mkcgo_err_retrieve();
+	if (_mkcgo_err_EVP_DigestFinal_ex(ctx2, out, NULL, _err_state) <= 0)
 		return 0;
-	}
 	return 1;
 }
 */
@@ -381,8 +377,8 @@ func (h *evpHash) BlockSize() int {
 func (h *evpHash) Sum(in []byte) []byte {
 	h.init()
 	out := make([]byte, h.Size(), maxHashSize) // explicit cap to allow stack allocation
-	var errst *C.mkcgo_err_state
-	if C.go_hash_sum(h.ctx, h.ctx2, (*C.uchar)(unsafe.SliceData(out)), &errst) != 1 {
+	var errst C.mkcgo_err_state
+	if C.go_hash_sum(h.ctx, h.ctx2, (*C.uchar)(unsafe.SliceData(out)), mkcgoNoEscape(&errst)) != 1 {
 		panic(newMkcgoErr("EVP_DigestFinal_ex", errst))
 	}
 	runtime.KeepAlive(h)
