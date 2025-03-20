@@ -8,6 +8,8 @@ import (
 	"runtime"
 	"sync"
 	"unsafe"
+
+	"github.com/golang-fips/openssl/v2/internal/ossl"
 )
 
 // NewHMAC returns a new HMAC using OpenSSL.
@@ -27,7 +29,7 @@ func NewHMAC(fh func() hash.Hash, key []byte) hash.Hash {
 		// HMAC_Init will try and reuse the key from the ctx. This is
 		// not the behavior previously implemented, so as a workaround
 		// we pass an "empty" key.
-		key = make([]byte, _EVP_MAX_MD_SIZE)
+		key = make([]byte, ossl.EVP_MAX_MD_SIZE)
 	}
 
 	hmac := &opensslHMAC{
@@ -57,12 +59,12 @@ func NewHMAC(fh func() hash.Hash, key []byte) hash.Hash {
 
 // hmacCtx3 is used for OpenSSL 1.
 type hmacCtx1 struct {
-	ctx _HMAC_CTX_PTR
+	ctx ossl.HMAC_CTX_PTR
 }
 
 // hmacCtx3 is used for OpenSSL 3.
 type hmacCtx3 struct {
-	ctx _EVP_MAC_CTX_PTR
+	ctx ossl.EVP_MAC_CTX_PTR
 	key []byte // only set for OpenSSL 3.0.0, 3.0.1, and 3.0.2.
 }
 
@@ -74,60 +76,60 @@ type opensslHMAC struct {
 	sum       []byte
 }
 
-func newHMAC1(key []byte, md _EVP_MD_PTR) hmacCtx1 {
-	ctx, err := go_openssl_HMAC_CTX_new()
+func newHMAC1(key []byte, md ossl.EVP_MD_PTR) hmacCtx1 {
+	ctx, err := ossl.HMAC_CTX_new()
 	if err != nil {
 		panic(err)
 	}
-	if _, err := go_openssl_HMAC_Init_ex(ctx, unsafe.Pointer(&key[0]), int32(len(key)), md, nil); err != nil {
+	if _, err := ossl.HMAC_Init_ex(ctx, unsafe.Pointer(&key[0]), int32(len(key)), md, nil); err != nil {
 		panic(err)
 	}
 	return hmacCtx1{ctx}
 }
 
 var hmacDigestsSupported sync.Map
-var fetchHMAC3 = sync.OnceValue(func() _EVP_MAC_PTR {
-	mac, err := go_openssl_EVP_MAC_fetch(nil, _OSSL_MAC_NAME_HMAC.ptr(), nil)
+var fetchHMAC3 = sync.OnceValue(func() ossl.EVP_MAC_PTR {
+	mac, err := ossl.EVP_MAC_fetch(nil, _OSSL_MAC_NAME_HMAC.ptr(), nil)
 	if err != nil {
 		panic(err)
 	}
 	return mac
 })
 
-func buildHMAC3Params(md _EVP_MD_PTR) (_OSSL_PARAM_PTR, error) {
+func buildHMAC3Params(md ossl.EVP_MD_PTR) (ossl.OSSL_PARAM_PTR, error) {
 	bld, err := newParamBuilder()
 	if err != nil {
 		return nil, err
 	}
 	defer bld.finalize()
-	bld.addUTF8String(_OSSL_MAC_PARAM_DIGEST, go_openssl_EVP_MD_get0_name(md), 0)
+	bld.addUTF8String(_OSSL_MAC_PARAM_DIGEST, ossl.EVP_MD_get0_name(md), 0)
 	return bld.build()
 }
 
-func isHMAC3DigestSupported(md _EVP_MD_PTR) bool {
-	nid := go_openssl_EVP_MD_get_type(md)
+func isHMAC3DigestSupported(md ossl.EVP_MD_PTR) bool {
+	nid := ossl.EVP_MD_get_type(md)
 	if v, ok := hmacDigestsSupported.Load(nid); ok {
 		return v.(bool)
 	}
-	ctx, err := go_openssl_EVP_MAC_CTX_new(fetchHMAC3())
+	ctx, err := ossl.EVP_MAC_CTX_new(fetchHMAC3())
 	if err != nil {
 		panic(err)
 	}
-	defer go_openssl_EVP_MAC_CTX_free(ctx)
+	defer ossl.EVP_MAC_CTX_free(ctx)
 
 	params, err := buildHMAC3Params(md)
 	if err != nil {
 		panic(err)
 	}
-	defer go_openssl_OSSL_PARAM_free(params)
+	defer ossl.OSSL_PARAM_free(params)
 
-	_, err = go_openssl_EVP_MAC_CTX_set_params(ctx, params)
+	_, err = ossl.EVP_MAC_CTX_set_params(ctx, params)
 	supported := err == nil
 	hmacDigestsSupported.Store(nid, supported)
 	return supported
 }
 
-func newHMAC3(key []byte, md _EVP_MD_PTR) hmacCtx3 {
+func newHMAC3(key []byte, md ossl.EVP_MD_PTR) hmacCtx3 {
 	if !isHMAC3DigestSupported(md) {
 		// The digest is not supported by the HMAC provider.
 		// Don't panic here so the Go standard library to
@@ -139,15 +141,15 @@ func newHMAC3(key []byte, md _EVP_MD_PTR) hmacCtx3 {
 	if err != nil {
 		panic(err)
 	}
-	defer go_openssl_OSSL_PARAM_free(params)
+	defer ossl.OSSL_PARAM_free(params)
 
-	ctx, err := go_openssl_EVP_MAC_CTX_new(fetchHMAC3())
+	ctx, err := ossl.EVP_MAC_CTX_new(fetchHMAC3())
 	if err != nil {
 		panic(err)
 	}
 
-	if _, err := go_openssl_EVP_MAC_init(ctx, base(key), len(key), params); err != nil {
-		go_openssl_EVP_MAC_CTX_free(ctx)
+	if _, err := ossl.EVP_MAC_init(ctx, base(key), len(key), params); err != nil {
+		ossl.EVP_MAC_CTX_free(ctx)
 		panic(err)
 	}
 	var hkey []byte
@@ -166,11 +168,11 @@ func newHMAC3(key []byte, md _EVP_MD_PTR) hmacCtx3 {
 func (h *opensslHMAC) Reset() {
 	switch vMajor {
 	case 1:
-		if _, err := go_openssl_HMAC_Init_ex(h.ctx1.ctx, nil, 0, nil, nil); err != nil {
+		if _, err := ossl.HMAC_Init_ex(h.ctx1.ctx, nil, 0, nil, nil); err != nil {
 			panic(err)
 		}
 	case 3:
-		if _, err := go_openssl_EVP_MAC_init(h.ctx3.ctx, base(h.ctx3.key), len(h.ctx3.key), nil); err != nil {
+		if _, err := ossl.EVP_MAC_init(h.ctx3.ctx, base(h.ctx3.key), len(h.ctx3.key), nil); err != nil {
 			panic(err)
 		}
 	default:
@@ -183,10 +185,10 @@ func (h *opensslHMAC) Reset() {
 
 func (h *opensslHMAC) finalize() {
 	if h.ctx1.ctx != nil {
-		go_openssl_HMAC_CTX_free(h.ctx1.ctx)
+		ossl.HMAC_CTX_free(h.ctx1.ctx)
 	}
 	if h.ctx3.ctx != nil {
-		go_openssl_EVP_MAC_CTX_free(h.ctx3.ctx)
+		ossl.EVP_MAC_CTX_free(h.ctx3.ctx)
 	}
 }
 
@@ -194,9 +196,9 @@ func (h *opensslHMAC) Write(p []byte) (int, error) {
 	if len(p) > 0 {
 		switch vMajor {
 		case 1:
-			go_openssl_HMAC_Update(h.ctx1.ctx, base(p), len(p))
+			ossl.HMAC_Update(h.ctx1.ctx, base(p), len(p))
 		case 3:
-			go_openssl_EVP_MAC_update(h.ctx3.ctx, base(p), len(p))
+			ossl.EVP_MAC_update(h.ctx3.ctx, base(p), len(p))
 		default:
 			panic(errUnsupportedVersion())
 		}
@@ -224,22 +226,22 @@ func (h *opensslHMAC) Sum(in []byte) []byte {
 	// and the second Sum acts as if the first didn't happen.
 	switch vMajor {
 	case 1:
-		ctx2, err := go_openssl_HMAC_CTX_new()
+		ctx2, err := ossl.HMAC_CTX_new()
 		if err != nil {
 			panic(err)
 		}
-		defer go_openssl_HMAC_CTX_free(ctx2)
-		if _, err := go_openssl_HMAC_CTX_copy(ctx2, h.ctx1.ctx); err != nil {
+		defer ossl.HMAC_CTX_free(ctx2)
+		if _, err := ossl.HMAC_CTX_copy(ctx2, h.ctx1.ctx); err != nil {
 			panic(err)
 		}
-		go_openssl_HMAC_Final(ctx2, base(h.sum), nil)
+		ossl.HMAC_Final(ctx2, base(h.sum), nil)
 	case 3:
-		ctx2, err := go_openssl_EVP_MAC_CTX_dup(h.ctx3.ctx)
+		ctx2, err := ossl.EVP_MAC_CTX_dup(h.ctx3.ctx)
 		if err != nil {
 			panic(err)
 		}
-		defer go_openssl_EVP_MAC_CTX_free(ctx2)
-		go_openssl_EVP_MAC_final(ctx2, base(h.sum), nil, len(h.sum))
+		defer ossl.EVP_MAC_CTX_free(ctx2)
+		ossl.EVP_MAC_final(ctx2, base(h.sum), nil, len(h.sum))
 	default:
 		panic(errUnsupportedVersion())
 	}

@@ -35,10 +35,10 @@ func generateGo(src *mkcgo.Source, w io.Writer) {
 
 	// Generate Go wrapper functions that load and unload the C symbols.
 	for _, tag := range src.Tags() {
-		fmt.Fprintf(w, "func mkcgoLoad_%s(handle unsafe.Pointer) {\n", tag)
+		fmt.Fprintf(w, "func %s_%s(handle unsafe.Pointer) {\n", goSymName("mkcgoLoad"), tag)
 		fmt.Fprintf(w, "\tC.__mkcgo_load_%s(handle)\n", tag)
 		fmt.Fprintf(w, "}\n\n")
-		fmt.Fprintf(w, "func mkcgoUnload_%s() {\n", tag)
+		fmt.Fprintf(w, "func %s_%s() {\n", goSymName("mkcgoUnload"), tag)
 		fmt.Fprintf(w, "\tC.__mkcgo_unload_%s()\n", tag)
 		fmt.Fprintf(w, "}\n\n")
 	}
@@ -96,7 +96,7 @@ func generateGoEnums(enums []*mkcgo.Enum, w io.Writer) {
 	}
 	fmt.Fprintf(w, "const (\n")
 	for _, enum := range enums {
-		fmt.Fprintf(w, "\t%s = %s\n", enum.Name, enum.Value)
+		fmt.Fprintf(w, "\t%s = %s\n", goSymName(enum.Name), enum.Value)
 	}
 	fmt.Fprintf(w, ")\n\n")
 }
@@ -135,7 +135,7 @@ func generateGoAliases(funcs []*mkcgo.Func, w io.Writer) {
 			// Skip standard types.
 			continue
 		}
-		fmt.Fprintf(w, "type %s = C.%s\n", typ, typ)
+		fmt.Fprintf(w, "type %s = C.%s\n", goSymName(typ), typ)
 	}
 }
 
@@ -317,7 +317,7 @@ func generateC(src *mkcgo.Source, w io.Writer) {
 func generateGoFn(fn *mkcgo.Func, w io.Writer) {
 	fnCall := fmt.Sprintf("C.%s(%s)", fnCName(fn), fnToGoArgs(fn))
 	// Function definition
-	fmt.Fprintf(w, "func %s(%s)", fnGoName(fn), fnToGoParams(fn))
+	fmt.Fprintf(w, "func %s(%s)", goSymName(fn.Name), fnToGoParams(fn))
 	if retIsVoid(fn.Ret) {
 		// Easy path, just call the C function. No need to write the return types,
 		// nor do error handling, nor cast the return value.
@@ -490,7 +490,7 @@ func cTypeToGo(t string, cgo bool) (string, bool) {
 		return s, std
 	}
 	if !isStdType(t) {
-		return t, false
+		return goSymName(t), false
 	}
 	if cgo {
 		if s, ok := cstdTypesToCgo[t]; ok {
@@ -586,14 +586,8 @@ func fnCErrWrapperParams(fn *mkcgo.Func, addName bool) string {
 	return args
 }
 
-// fnGoName returns the Go function name for function f.
-func fnGoName(fn *mkcgo.Func) string {
-	// TODO: use a prefix that is not OpenSSL specific.
-	return "go_openssl_" + fn.Name
-}
-
 func fnGoNameAvailable(fn *mkcgo.Func) string {
-	return fnGoName(fn) + "_Available"
+	return goSymName(fn.Name) + "_Available"
 }
 
 // fnCName returns the C function name for function f.
@@ -615,4 +609,21 @@ func fnNeedErrWrapper(fn *mkcgo.Func) bool {
 // fnCalledFromGo reports whether function fn is called from Go code.
 func fnCalledFromGo(fn *mkcgo.Func) bool {
 	return !fn.Variadic() // cgo doesn't support variadic functions
+}
+
+// goSymName returns the Go symbol name for a C symbol name.
+func goSymName(name string) string {
+	if !*export {
+		return name
+	}
+	if name == "" {
+		return ""
+	}
+	if name[0] == '_' {
+		name = name[1:]
+	}
+	if name == "" {
+		return ""
+	}
+	return strings.ToUpper(name[0:1]) + name[1:]
 }

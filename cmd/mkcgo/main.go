@@ -16,6 +16,7 @@ var (
 	fileName      = flag.String("out", "", "output file name (standard output if omitted)")
 	includeHeader = flag.String("include", "", "include header file")
 	packageName   = flag.String("package", "", "package name")
+	export        = flag.Bool("export", true, "all Go generated symbols are exported")
 )
 
 func usage() {

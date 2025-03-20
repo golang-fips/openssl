@@ -1,6 +1,4 @@
-//go:build !cmd_go_bootstrap
-
-package openssl
+package ossl
 
 /*
 #include <stdlib.h> // for calloc and free
@@ -95,7 +93,7 @@ func newMkcgoErr(msg string, errst C.mkcgo_err_state) error {
 		}
 		b.WriteByte('\n')
 		var buf [256]byte
-		go_openssl_ERR_error_string_n(e, base(buf[:]), len(buf))
+		ERR_error_string_n(e, unsafe.SliceData(buf[:]), len(buf))
 		if termIdx := bytes.IndexByte(buf[:], 0); termIdx != -1 {
 			b.Write(buf[:termIdx])
 		} else {

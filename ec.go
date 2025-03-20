@@ -3,17 +3,18 @@
 package openssl
 
 import "C"
+import "github.com/golang-fips/openssl/v2/internal/ossl"
 
 func curveNID(curve string) int32 {
 	switch curve {
 	case "P-224":
-		return _NID_secp224r1
+		return ossl.NID_secp224r1
 	case "P-256":
-		return _NID_X9_62_prime256v1
+		return ossl.NID_X9_62_prime256v1
 	case "P-384":
-		return _NID_secp384r1
+		return ossl.NID_secp384r1
 	case "P-521":
-		return _NID_secp521r1
+		return ossl.NID_secp521r1
 	default:
 		panic("openssl: unknown curve " + curve)
 	}
@@ -36,31 +37,31 @@ func curveSize(curve string) int {
 }
 
 // encodeEcPoint encodes pt.
-func encodeEcPoint(group _EC_GROUP_PTR, pt _EC_POINT_PTR) ([]byte, error) {
+func encodeEcPoint(group ossl.EC_GROUP_PTR, pt ossl.EC_POINT_PTR) ([]byte, error) {
 	// Get encoded point size.
-	n, err := go_openssl_EC_POINT_point2oct(group, pt, _POINT_CONVERSION_UNCOMPRESSED, nil, 0, nil)
+	n, err := ossl.EC_POINT_point2oct(group, pt, ossl.POINT_CONVERSION_UNCOMPRESSED, nil, 0, nil)
 	if err != nil {
 		return nil, err
 	}
 	// Encode point into bytes.
 	bytes := make([]byte, n)
-	if _, err = go_openssl_EC_POINT_point2oct(group, pt, _POINT_CONVERSION_UNCOMPRESSED, base(bytes), n, nil); err != nil {
+	if _, err = ossl.EC_POINT_point2oct(group, pt, ossl.POINT_CONVERSION_UNCOMPRESSED, base(bytes), n, nil); err != nil {
 		return nil, err
 	}
 	return bytes, nil
 }
 
 // generateAndEncodeEcPublicKey calls newPubKeyPointFn to generate a public key point and then encodes it.
-func generateAndEncodeEcPublicKey(nid int32, newPubKeyPointFn func(group _EC_GROUP_PTR) (_EC_POINT_PTR, error)) ([]byte, error) {
-	group, err := go_openssl_EC_GROUP_new_by_curve_name(nid)
+func generateAndEncodeEcPublicKey(nid int32, newPubKeyPointFn func(group ossl.EC_GROUP_PTR) (ossl.EC_POINT_PTR, error)) ([]byte, error) {
+	group, err := ossl.EC_GROUP_new_by_curve_name(nid)
 	if err != nil {
 		return nil, err
 	}
-	defer go_openssl_EC_GROUP_free(group)
+	defer ossl.EC_GROUP_free(group)
 	pt, err := newPubKeyPointFn(group)
 	if err != nil {
 		return nil, err
 	}
-	defer go_openssl_EC_POINT_free(pt)
+	defer ossl.EC_POINT_free(pt)
 	return encodeEcPoint(group, pt)
 }

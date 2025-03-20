@@ -6,6 +6,8 @@ import "C"
 import (
 	"errors"
 	"unsafe"
+
+	"github.com/golang-fips/openssl/v2/internal/ossl"
 )
 
 // osslHandle is the handle to the OpenSSL shared library loaded in the [Init] function.
@@ -21,24 +23,24 @@ func opensslInit(file string) error {
 		return err
 	}
 
-	mkcgoLoad_(handle)
+	ossl.MkcgoLoad_(handle)
 	if vMajor == 1 {
-		mkcgoLoad_legacy_1(handle)
+		ossl.MkcgoLoad_legacy_1(handle)
 		if vPatch == 1 {
-			mkcgoLoad_111(handle)
+			ossl.MkcgoLoad_111(handle)
 		}
 	} else {
-		mkcgoLoad_111(handle)
-		mkcgoLoad_3(handle)
+		ossl.MkcgoLoad_111(handle)
+		ossl.MkcgoLoad_3(handle)
 	}
 
 	// Initialize OpenSSL.
-	go_openssl_OPENSSL_init()
-	if _, err = go_openssl_OPENSSL_init_crypto(
-		_OPENSSL_INIT_ADD_ALL_CIPHERS|
-			_OPENSSL_INIT_ADD_ALL_DIGESTS|
-			_OPENSSL_INIT_LOAD_CONFIG|
-			_OPENSSL_INIT_LOAD_CRYPTO_STRINGS,
+	ossl.OPENSSL_init()
+	if _, err = ossl.OPENSSL_init_crypto(
+		ossl.OPENSSL_INIT_ADD_ALL_CIPHERS|
+			ossl.OPENSSL_INIT_ADD_ALL_DIGESTS|
+			ossl.OPENSSL_INIT_LOAD_CONFIG|
+			ossl.OPENSSL_INIT_LOAD_CRYPTO_STRINGS,
 		nil); err != nil {
 		close()
 		return err
@@ -70,11 +72,11 @@ func initForCheckVersion(file string) (func(), error) {
 	initFuncs := func() (loadX func(unsafe.Pointer), unloadX func()) {
 		switch vMajor {
 		case 1:
-			loadX = mkcgoLoad_init_1
-			unloadX = mkcgoUnload_init_1
+			loadX = ossl.MkcgoLoad_init_1
+			unloadX = ossl.MkcgoUnload_init_1
 		case 3:
-			loadX = mkcgoLoad_init_3
-			unloadX = mkcgoUnload_init_3
+			loadX = ossl.MkcgoLoad_init_3
+			unloadX = ossl.MkcgoUnload_init_3
 		default:
 			// We shouldn't get here: openLibrary should have already returned an error.
 			panic(errUnsupportedVersion())
@@ -110,13 +112,13 @@ func openLibrary(file string) (handle unsafe.Pointer, close func(), err error) {
 	// Notice that major and minor could not match with the version parameter
 	// in case the name of the shared library file differs from the OpenSSL
 	// version it contains.
-	mkcgoLoad_version(handle)
+	ossl.MkcgoLoad_version(handle)
 	close = func() {
 		dlclose(handle)
 		if osslHandle == nil {
-			mkcgoUnload_version()
+			ossl.MkcgoUnload_version()
 		} else {
-			mkcgoLoad_version(osslHandle)
+			ossl.MkcgoLoad_version(osslHandle)
 		}
 	}
 	defer func() {
@@ -125,16 +127,16 @@ func openLibrary(file string) (handle unsafe.Pointer, close func(), err error) {
 		}
 	}()
 
-	if go_openssl_OPENSSL_version_major_Available() &&
-		go_openssl_OPENSSL_version_minor_Available() &&
-		go_openssl_OPENSSL_version_patch_Available() {
+	if ossl.OPENSSL_version_major_Available() &&
+		ossl.OPENSSL_version_minor_Available() &&
+		ossl.OPENSSL_version_patch_Available() {
 		// Likely OpenSSL 3 or later.
-		vMajor = uint(go_openssl_OPENSSL_version_major())
-		vMinor = uint(go_openssl_OPENSSL_version_minor())
-		vPatch = uint(go_openssl_OPENSSL_version_patch())
-	} else if go_openssl_OpenSSL_version_num_Available() {
+		vMajor = uint(ossl.OPENSSL_version_major())
+		vMinor = uint(ossl.OPENSSL_version_minor())
+		vPatch = uint(ossl.OPENSSL_version_patch())
+	} else if ossl.OpenSSL_version_num_Available() {
 		// Likely OpenSSL 1.
-		ver := go_openssl_OpenSSL_version_num()
+		ver := ossl.OpenSSL_version_num()
 		vMajor = uint(ver >> 28)
 		vMinor = uint(ver >> 20 & 0xFF)
 		vPatch = uint(ver >> 12 & 0xFF)

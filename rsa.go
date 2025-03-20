@@ -10,48 +10,50 @@ import (
 	"hash"
 	"runtime"
 	"unsafe"
+
+	"github.com/golang-fips/openssl/v2/internal/ossl"
 )
 
 func GenerateKeyRSA(bits int) (N, E, D, P, Q, Dp, Dq, Qinv BigInt, err error) {
 	bad := func(e error) (N, E, D, P, Q, Dp, Dq, Qinv BigInt, err error) {
 		return nil, nil, nil, nil, nil, nil, nil, nil, e
 	}
-	pkey, err := generateEVPPKey(_EVP_PKEY_RSA, int32(bits), "")
+	pkey, err := generateEVPPKey(ossl.EVP_PKEY_RSA, int32(bits), "")
 	if err != nil {
 		return bad(err)
 	}
-	defer go_openssl_EVP_PKEY_free(pkey)
+	defer ossl.EVP_PKEY_free(pkey)
 	switch vMajor {
 	case 1:
-		key, err := go_openssl_EVP_PKEY_get1_RSA(pkey)
+		key, err := ossl.EVP_PKEY_get1_RSA(pkey)
 		if err != nil {
 			return bad(err)
 		}
-		defer go_openssl_RSA_free(key)
-		var n, e, d, p, q, dmp1, dmq1, iqmp _BIGNUM_PTR
-		go_openssl_RSA_get0_key(key, &n, &e, &d)
-		go_openssl_RSA_get0_factors(key, &p, &q)
-		go_openssl_RSA_get0_crt_params(key, &dmp1, &dmq1, &iqmp)
+		defer ossl.RSA_free(key)
+		var n, e, d, p, q, dmp1, dmq1, iqmp ossl.BIGNUM_PTR
+		ossl.RSA_get0_key(key, &n, &e, &d)
+		ossl.RSA_get0_factors(key, &p, &q)
+		ossl.RSA_get0_crt_params(key, &dmp1, &dmq1, &iqmp)
 		N, E, D = bnToBig(n), bnToBig(e), bnToBig(d)
 		P, Q = bnToBig(p), bnToBig(q)
 		Dp, Dq, Qinv = bnToBig(dmp1), bnToBig(dmq1), bnToBig(iqmp)
 	case 3:
-		tmp, err := go_openssl_BN_new()
+		tmp, err := ossl.BN_new()
 		if err != nil {
 			return bad(err)
 		}
 		defer func() {
-			go_openssl_BN_clear_free(tmp)
+			ossl.BN_clear_free(tmp)
 		}()
 		setBigInt := func(bi *BigInt, param cString) bool {
 			if err != nil {
 				return false
 			}
-			if _, err = go_openssl_EVP_PKEY_get_bn_param(pkey, param.ptr(), &tmp); err != nil {
+			if _, err = ossl.EVP_PKEY_get_bn_param(pkey, param.ptr(), &tmp); err != nil {
 				return false
 			}
 			*bi = bnToBig(tmp)
-			go_openssl_BN_clear(tmp)
+			ossl.BN_clear(tmp)
 			return true
 		}
 		if !(setBigInt(&N, _OSSL_PKEY_PARAM_RSA_N) &&
@@ -72,14 +74,14 @@ func GenerateKeyRSA(bits int) (N, E, D, P, Q, Dp, Dq, Qinv BigInt, err error) {
 
 type PublicKeyRSA struct {
 	// _pkey MUST NOT be accessed directly. Instead, use the withKey method.
-	_pkey _EVP_PKEY_PTR
+	_pkey ossl.EVP_PKEY_PTR
 }
 
 func NewPublicKeyRSA(n, e BigInt) (*PublicKeyRSA, error) {
-	var pkey _EVP_PKEY_PTR
+	var pkey ossl.EVP_PKEY_PTR
 	switch vMajor {
 	case 1:
-		key, err := go_openssl_RSA_new()
+		key, err := ossl.RSA_new()
 		if err != nil {
 			return nil, err
 		}
@@ -87,20 +89,20 @@ func NewPublicKeyRSA(n, e BigInt) (*PublicKeyRSA, error) {
 		// if the BNs are NULL and we will free non-NULL BNs in the error handling.
 		bn, _ := bigToBN(n)
 		be, _ := bigToBN(e)
-		if _, err := go_openssl_RSA_set0_key(key, bn, be, nil); err != nil {
-			go_openssl_BN_free(bn)
-			go_openssl_BN_free(be)
-			go_openssl_RSA_free(key)
+		if _, err := ossl.RSA_set0_key(key, bn, be, nil); err != nil {
+			ossl.BN_free(bn)
+			ossl.BN_free(be)
+			ossl.RSA_free(key)
 			return nil, err
 		}
-		pkey, err = go_openssl_EVP_PKEY_new()
+		pkey, err = ossl.EVP_PKEY_new()
 		if err != nil {
-			go_openssl_RSA_free(key)
+			ossl.RSA_free(key)
 			return nil, err
 		}
-		if _, err := go_openssl_EVP_PKEY_assign(pkey, _EVP_PKEY_RSA, (unsafe.Pointer)(key)); err != nil {
-			go_openssl_RSA_free(key)
-			go_openssl_EVP_PKEY_free(pkey)
+		if _, err := ossl.EVP_PKEY_assign(pkey, ossl.EVP_PKEY_RSA, (unsafe.Pointer)(key)); err != nil {
+			ossl.RSA_free(key)
+			ossl.EVP_PKEY_free(pkey)
 			return nil, err
 		}
 	case 3:
@@ -117,10 +119,10 @@ func NewPublicKeyRSA(n, e BigInt) (*PublicKeyRSA, error) {
 }
 
 func (k *PublicKeyRSA) finalize() {
-	go_openssl_EVP_PKEY_free(k._pkey)
+	ossl.EVP_PKEY_free(k._pkey)
 }
 
-func (k *PublicKeyRSA) withKey(f func(_EVP_PKEY_PTR) error) error {
+func (k *PublicKeyRSA) withKey(f func(ossl.EVP_PKEY_PTR) error) error {
 	// Because of the finalizer, any time _pkey is passed to cgo, that call must
 	// be followed by a call to runtime.KeepAlive, to make sure k is not
 	// collected (and finalized) before the cgo call returns.
@@ -130,14 +132,14 @@ func (k *PublicKeyRSA) withKey(f func(_EVP_PKEY_PTR) error) error {
 
 type PrivateKeyRSA struct {
 	// _pkey MUST NOT be accessed directly. Instead, use the withKey method.
-	_pkey _EVP_PKEY_PTR
+	_pkey ossl.EVP_PKEY_PTR
 }
 
 func NewPrivateKeyRSA(n, e, d, p, q, dp, dq, qinv BigInt) (*PrivateKeyRSA, error) {
-	var pkey _EVP_PKEY_PTR
+	var pkey ossl.EVP_PKEY_PTR
 	switch vMajor {
 	case 1:
-		key, err := go_openssl_RSA_new()
+		key, err := ossl.RSA_new()
 		if err != nil {
 			return nil, err
 		}
@@ -146,18 +148,18 @@ func NewPrivateKeyRSA(n, e, d, p, q, dp, dq, qinv BigInt) (*PrivateKeyRSA, error
 		bn, _ := bigToBN(n)
 		be, _ := bigToBN(e)
 		bd, _ := bigToBN(d)
-		if _, err := go_openssl_RSA_set0_key(key, bn, be, bd); err != nil {
-			go_openssl_BN_free(bn)
-			go_openssl_BN_free(be)
-			go_openssl_BN_clear_free(bd)
+		if _, err := ossl.RSA_set0_key(key, bn, be, bd); err != nil {
+			ossl.BN_free(bn)
+			ossl.BN_free(be)
+			ossl.BN_clear_free(bd)
 			return nil, err
 		}
 		if p != nil && q != nil {
 			bp, _ := bigToBN(p)
 			bq, _ := bigToBN(q)
-			if _, err := go_openssl_RSA_set0_factors(key, bp, bq); err != nil {
-				go_openssl_BN_clear_free(bp)
-				go_openssl_BN_clear_free(bq)
+			if _, err := ossl.RSA_set0_factors(key, bp, bq); err != nil {
+				ossl.BN_clear_free(bp)
+				ossl.BN_clear_free(bq)
 				return nil, err
 			}
 		}
@@ -165,21 +167,21 @@ func NewPrivateKeyRSA(n, e, d, p, q, dp, dq, qinv BigInt) (*PrivateKeyRSA, error
 			bdp, _ := bigToBN(dp)
 			bdq, _ := bigToBN(dq)
 			bqinv, _ := bigToBN(qinv)
-			if _, err := go_openssl_RSA_set0_crt_params(key, bdp, bdq, bqinv); err != nil {
-				go_openssl_BN_free(bdp)
-				go_openssl_BN_free(bdq)
-				go_openssl_BN_free(bqinv)
+			if _, err := ossl.RSA_set0_crt_params(key, bdp, bdq, bqinv); err != nil {
+				ossl.BN_free(bdp)
+				ossl.BN_free(bdq)
+				ossl.BN_free(bqinv)
 				return nil, err
 			}
 		}
-		pkey, err = go_openssl_EVP_PKEY_new()
+		pkey, err = ossl.EVP_PKEY_new()
 		if err != nil {
-			go_openssl_RSA_free(key)
+			ossl.RSA_free(key)
 			return nil, err
 		}
-		if _, err := go_openssl_EVP_PKEY_assign(pkey, _EVP_PKEY_RSA, (unsafe.Pointer)(key)); err != nil {
-			go_openssl_RSA_free(key)
-			go_openssl_EVP_PKEY_free(pkey)
+		if _, err := ossl.EVP_PKEY_assign(pkey, ossl.EVP_PKEY_RSA, (unsafe.Pointer)(key)); err != nil {
+			ossl.RSA_free(key)
+			ossl.EVP_PKEY_free(pkey)
 			return nil, err
 		}
 	case 3:
@@ -196,10 +198,10 @@ func NewPrivateKeyRSA(n, e, d, p, q, dp, dq, qinv BigInt) (*PrivateKeyRSA, error
 }
 
 func (k *PrivateKeyRSA) finalize() {
-	go_openssl_EVP_PKEY_free(k._pkey)
+	ossl.EVP_PKEY_free(k._pkey)
 }
 
-func (k *PrivateKeyRSA) withKey(f func(_EVP_PKEY_PTR) error) error {
+func (k *PrivateKeyRSA) withKey(f func(ossl.EVP_PKEY_PTR) error) error {
 	// Because of the finalizer, any time _pkey is passed to cgo, that call must
 	// be followed by a call to runtime.KeepAlive, to make sure k is not
 	// collected (and finalized) before the cgo call returns.
@@ -208,23 +210,23 @@ func (k *PrivateKeyRSA) withKey(f func(_EVP_PKEY_PTR) error) error {
 }
 
 func DecryptRSAOAEP(h, mgfHash hash.Hash, priv *PrivateKeyRSA, ciphertext, label []byte) ([]byte, error) {
-	return evpDecrypt(priv.withKey, _RSA_PKCS1_OAEP_PADDING, h, mgfHash, label, ciphertext)
+	return evpDecrypt(priv.withKey, ossl.RSA_PKCS1_OAEP_PADDING, h, mgfHash, label, ciphertext)
 }
 
 func EncryptRSAOAEP(h, mgfHash hash.Hash, pub *PublicKeyRSA, msg, label []byte) ([]byte, error) {
-	return evpEncrypt(pub.withKey, _RSA_PKCS1_OAEP_PADDING, h, mgfHash, label, msg)
+	return evpEncrypt(pub.withKey, ossl.RSA_PKCS1_OAEP_PADDING, h, mgfHash, label, msg)
 }
 
 func DecryptRSAPKCS1(priv *PrivateKeyRSA, ciphertext []byte) ([]byte, error) {
-	return evpDecrypt(priv.withKey, _RSA_PKCS1_PADDING, nil, nil, nil, ciphertext)
+	return evpDecrypt(priv.withKey, ossl.RSA_PKCS1_PADDING, nil, nil, nil, ciphertext)
 }
 
 func EncryptRSAPKCS1(pub *PublicKeyRSA, msg []byte) ([]byte, error) {
-	return evpEncrypt(pub.withKey, _RSA_PKCS1_PADDING, nil, nil, nil, msg)
+	return evpEncrypt(pub.withKey, ossl.RSA_PKCS1_PADDING, nil, nil, nil, msg)
 }
 
 func DecryptRSANoPadding(priv *PrivateKeyRSA, ciphertext []byte) ([]byte, error) {
-	ret, err := evpDecrypt(priv.withKey, _RSA_NO_PADDING, nil, nil, nil, ciphertext)
+	ret, err := evpDecrypt(priv.withKey, ossl.RSA_NO_PADDING, nil, nil, nil, ciphertext)
 	if err != nil {
 		return nil, err
 	}
@@ -248,7 +250,7 @@ func DecryptRSANoPadding(priv *PrivateKeyRSA, ciphertext []byte) ([]byte, error)
 }
 
 func EncryptRSANoPadding(pub *PublicKeyRSA, msg []byte) ([]byte, error) {
-	return evpEncrypt(pub.withKey, _RSA_NO_PADDING, nil, nil, nil, msg)
+	return evpEncrypt(pub.withKey, ossl.RSA_NO_PADDING, nil, nil, nil, msg)
 }
 
 func saltLength(saltLen int, sign bool) (int32, error) {
@@ -263,14 +265,14 @@ func saltLength(saltLen int, sign bool) (int32, error) {
 		if sign {
 			if vMajor == 1 {
 				// OpenSSL 1.x uses -2 to mean maximal size when signing where Go crypto uses 0.
-				return _RSA_PSS_SALTLEN_MAX_SIGN, nil
+				return ossl.RSA_PSS_SALTLEN_MAX_SIGN, nil
 			}
 			// OpenSSL 3.x deprecated RSA_PSS_SALTLEN_MAX_SIGN
 			// and uses -3 to mean maximal size when signing where Go crypto uses 0.
-			return _RSA_PSS_SALTLEN_MAX, nil
+			return ossl.RSA_PSS_SALTLEN_MAX, nil
 		}
 		// OpenSSL uses -2 to mean auto-detect size when verifying where Go crypto uses 0.
-		return _RSA_PSS_SALTLEN_AUTO, nil
+		return ossl.RSA_PSS_SALTLEN_AUTO, nil
 	}
 	return int32(saltLen), nil
 }
@@ -280,7 +282,7 @@ func SignRSAPSS(priv *PrivateKeyRSA, h crypto.Hash, hashed []byte, saltLen int) 
 	if err != nil {
 		return nil, err
 	}
-	return evpSign(priv.withKey, _RSA_PKCS1_PSS_PADDING, cSaltLen, h, hashed)
+	return evpSign(priv.withKey, ossl.RSA_PKCS1_PSS_PADDING, cSaltLen, h, hashed)
 }
 
 func VerifyRSAPSS(pub *PublicKeyRSA, h crypto.Hash, hashed, sig []byte, saltLen int) error {
@@ -288,11 +290,11 @@ func VerifyRSAPSS(pub *PublicKeyRSA, h crypto.Hash, hashed, sig []byte, saltLen 
 	if err != nil {
 		return err
 	}
-	return evpVerify(pub.withKey, _RSA_PKCS1_PSS_PADDING, cSaltLen, h, sig, hashed)
+	return evpVerify(pub.withKey, ossl.RSA_PKCS1_PSS_PADDING, cSaltLen, h, sig, hashed)
 }
 
 func SignRSAPKCS1v15(priv *PrivateKeyRSA, h crypto.Hash, hashed []byte) ([]byte, error) {
-	return evpSign(priv.withKey, _RSA_PKCS1_PADDING, 0, h, hashed)
+	return evpSign(priv.withKey, ossl.RSA_PKCS1_PADDING, 0, h, hashed)
 }
 
 func HashSignRSAPKCS1v15(priv *PrivateKeyRSA, h crypto.Hash, msg []byte) ([]byte, error) {
@@ -302,8 +304,8 @@ func HashSignRSAPKCS1v15(priv *PrivateKeyRSA, h crypto.Hash, msg []byte) ([]byte
 func VerifyRSAPKCS1v15(pub *PublicKeyRSA, h crypto.Hash, hashed, sig []byte) error {
 	defer runtime.KeepAlive(pub)
 	var size int32
-	if err := pub.withKey(func(pkey _EVP_PKEY_PTR) (err error) {
-		size, err = go_openssl_EVP_PKEY_get_size(pkey)
+	if err := pub.withKey(func(pkey ossl.EVP_PKEY_PTR) (err error) {
+		size, err = ossl.EVP_PKEY_get_size(pkey)
 		if err != nil {
 			return err
 		}
@@ -314,14 +316,14 @@ func VerifyRSAPKCS1v15(pub *PublicKeyRSA, h crypto.Hash, hashed, sig []byte) err
 	}); err != nil {
 		return err
 	}
-	return evpVerify(pub.withKey, _RSA_PKCS1_PADDING, 0, h, sig, hashed)
+	return evpVerify(pub.withKey, ossl.RSA_PKCS1_PADDING, 0, h, sig, hashed)
 }
 
 func HashVerifyRSAPKCS1v15(pub *PublicKeyRSA, h crypto.Hash, msg, sig []byte) error {
 	return evpHashVerify(pub.withKey, h, msg, sig)
 }
 
-func newRSAKey3(isPriv bool, n, e, d, p, q, dp, dq, qinv BigInt) (_EVP_PKEY_PTR, error) {
+func newRSAKey3(isPriv bool, n, e, d, p, q, dp, dq, qinv BigInt) (ossl.EVP_PKEY_PTR, error) {
 	bld, err := newParamBuilder()
 	if err != nil {
 		return nil, err
@@ -355,10 +357,10 @@ func newRSAKey3(isPriv bool, n, e, d, p, q, dp, dq, qinv BigInt) (_EVP_PKEY_PTR,
 	if err != nil {
 		return nil, err
 	}
-	defer go_openssl_OSSL_PARAM_free(params)
-	selection := _EVP_PKEY_PUBLIC_KEY
+	defer ossl.OSSL_PARAM_free(params)
+	selection := ossl.EVP_PKEY_PUBLIC_KEY
 	if isPriv {
-		selection = _EVP_PKEY_KEYPAIR
+		selection = ossl.EVP_PKEY_KEYPAIR
 	}
-	return newEvpFromParams(_EVP_PKEY_RSA, int32(selection), params)
+	return newEvpFromParams(ossl.EVP_PKEY_RSA, int32(selection), params)
 }

@@ -9,6 +9,8 @@ import (
 	"hash"
 	"sync"
 	"unsafe"
+
+	"github.com/golang-fips/openssl/v2/internal/ossl"
 )
 
 func SupportsTLS1PRF() bool {
@@ -27,7 +29,7 @@ func SupportsTLS1PRF() bool {
 // else it implements the TLS 1.2 pseudo-random function.
 // The pseudo-random number will be written to result and will be of length len(result).
 func TLS1PRF(result, secret, label, seed []byte, fh func() hash.Hash) error {
-	var md _EVP_MD_PTR
+	var md ossl.EVP_MD_PTR
 	if fh == nil {
 		// TLS 1.0/1.1 PRF doesn't allow to specify the hash function,
 		// it always uses MD5SHA1. If h is nil, then assume
@@ -57,46 +59,46 @@ func TLS1PRF(result, secret, label, seed []byte, fh func() hash.Hash) error {
 }
 
 // tls1PRF1 implements TLS1PRF for OpenSSL 1 using the EVP_PKEY API.
-func tls1PRF1(result, secret, label, seed []byte, md _EVP_MD_PTR) error {
+func tls1PRF1(result, secret, label, seed []byte, md ossl.EVP_MD_PTR) error {
 	checkMajorVersion(1)
 
-	ctx, err := go_openssl_EVP_PKEY_CTX_new_id(_EVP_PKEY_TLS1_PRF, nil)
+	ctx, err := ossl.EVP_PKEY_CTX_new_id(ossl.EVP_PKEY_TLS1_PRF, nil)
 	if err != nil {
 		return err
 	}
 	defer func() {
-		go_openssl_EVP_PKEY_CTX_free(ctx)
+		ossl.EVP_PKEY_CTX_free(ctx)
 	}()
 
-	if _, err := go_openssl_EVP_PKEY_derive_init(ctx); err != nil {
+	if _, err := ossl.EVP_PKEY_derive_init(ctx); err != nil {
 		return err
 	}
-	if _, err := go_openssl_EVP_PKEY_CTX_ctrl(ctx, -1,
-		_EVP_PKEY_OP_DERIVE,
-		_EVP_PKEY_CTRL_TLS_MD,
+	if _, err := ossl.EVP_PKEY_CTX_ctrl(ctx, -1,
+		ossl.EVP_PKEY_OP_DERIVE,
+		ossl.EVP_PKEY_CTRL_TLS_MD,
 		0, unsafe.Pointer(md)); err != nil {
 		return err
 	}
-	if _, err := go_openssl_EVP_PKEY_CTX_ctrl(ctx, -1,
-		_EVP_PKEY_OP_DERIVE,
-		_EVP_PKEY_CTRL_TLS_SECRET,
+	if _, err := ossl.EVP_PKEY_CTX_ctrl(ctx, -1,
+		ossl.EVP_PKEY_OP_DERIVE,
+		ossl.EVP_PKEY_CTRL_TLS_SECRET,
 		int32(len(secret)), unsafe.Pointer(base(secret))); err != nil {
 		return err
 	}
-	if _, err := go_openssl_EVP_PKEY_CTX_ctrl(ctx, -1,
-		_EVP_PKEY_OP_DERIVE,
-		_EVP_PKEY_CTRL_TLS_SEED,
+	if _, err := ossl.EVP_PKEY_CTX_ctrl(ctx, -1,
+		ossl.EVP_PKEY_OP_DERIVE,
+		ossl.EVP_PKEY_CTRL_TLS_SEED,
 		int32(len(label)), unsafe.Pointer(base(label))); err != nil {
 		return err
 	}
-	if _, err := go_openssl_EVP_PKEY_CTX_ctrl(ctx, -1,
-		_EVP_PKEY_OP_DERIVE,
-		_EVP_PKEY_CTRL_TLS_SEED,
+	if _, err := ossl.EVP_PKEY_CTX_ctrl(ctx, -1,
+		ossl.EVP_PKEY_OP_DERIVE,
+		ossl.EVP_PKEY_CTRL_TLS_SEED,
 		int32(len(seed)), unsafe.Pointer(base(seed))); err != nil {
 		return err
 	}
 	outLen := len(result)
-	if _, err := go_openssl_EVP_PKEY_derive(ctx, base(result), &outLen); err != nil {
+	if _, err := ossl.EVP_PKEY_derive(ctx, base(result), &outLen); err != nil {
 		return err
 	}
 	// The Go standard library expects TLS1PRF to return the requested number of bytes,
@@ -112,10 +114,10 @@ func tls1PRF1(result, secret, label, seed []byte, md _EVP_MD_PTR) error {
 // fetchTLS1PRF3 fetches the TLS1-PRF KDF algorithm.
 // It is safe to call this function concurrently.
 // The returned EVP_KDF_PTR shouldn't be freed.
-var fetchTLS1PRF3 = sync.OnceValues(func() (_EVP_KDF_PTR, error) {
+var fetchTLS1PRF3 = sync.OnceValues(func() (ossl.EVP_KDF_PTR, error) {
 	checkMajorVersion(3)
 
-	kdf, err := go_openssl_EVP_KDF_fetch(nil, _OSSL_KDF_NAME_TLS1_PRF.ptr(), nil)
+	kdf, err := ossl.EVP_KDF_fetch(nil, _OSSL_KDF_NAME_TLS1_PRF.ptr(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -123,24 +125,24 @@ var fetchTLS1PRF3 = sync.OnceValues(func() (_EVP_KDF_PTR, error) {
 })
 
 // tls1PRF3 implements TLS1PRF for OpenSSL 3 using the EVP_KDF API.
-func tls1PRF3(result, secret, label, seed []byte, md _EVP_MD_PTR) error {
+func tls1PRF3(result, secret, label, seed []byte, md ossl.EVP_MD_PTR) error {
 	checkMajorVersion(3)
 
 	kdf, err := fetchTLS1PRF3()
 	if err != nil {
 		return err
 	}
-	ctx, err := go_openssl_EVP_KDF_CTX_new(kdf)
+	ctx, err := ossl.EVP_KDF_CTX_new(kdf)
 	if err != nil {
 		return err
 	}
-	defer go_openssl_EVP_KDF_CTX_free(ctx)
+	defer ossl.EVP_KDF_CTX_free(ctx)
 
 	bld, err := newParamBuilder()
 	if err != nil {
 		return err
 	}
-	bld.addUTF8String(_OSSL_KDF_PARAM_DIGEST, go_openssl_EVP_MD_get0_name(md), 0)
+	bld.addUTF8String(_OSSL_KDF_PARAM_DIGEST, ossl.EVP_MD_get0_name(md), 0)
 	bld.addOctetString(_OSSL_KDF_PARAM_SECRET, secret)
 	bld.addOctetString(_OSSL_KDF_PARAM_SEED, label)
 	bld.addOctetString(_OSSL_KDF_PARAM_SEED, seed)
@@ -148,9 +150,9 @@ func tls1PRF3(result, secret, label, seed []byte, md _EVP_MD_PTR) error {
 	if err != nil {
 		return err
 	}
-	defer go_openssl_OSSL_PARAM_free(params)
+	defer ossl.OSSL_PARAM_free(params)
 
-	if _, err := go_openssl_EVP_KDF_derive(ctx, base(result), len(result), params); err != nil {
+	if _, err := ossl.EVP_KDF_derive(ctx, base(result), len(result), params); err != nil {
 		return err
 	}
 	return nil

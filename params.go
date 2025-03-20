@@ -5,6 +5,8 @@ package openssl
 import "C"
 import (
 	"runtime"
+
+	"github.com/golang-fips/openssl/v2/internal/ossl"
 )
 
 type addParamError struct {
@@ -17,7 +19,7 @@ func (e addParamError) Error() string {
 }
 
 type bnParam struct {
-	value   _BIGNUM_PTR
+	value   ossl.BIGNUM_PTR
 	private bool
 }
 
@@ -26,7 +28,7 @@ type bnParam struct {
 // subsequent calls to add parameters are ignored
 // and build() will return the error.
 type paramBuilder struct {
-	bld      _OSSL_PARAM_BLD_PTR
+	bld      ossl.OSSL_PARAM_BLD_PTR
 	pinner   runtime.Pinner
 	bnToFree []bnParam
 
@@ -35,7 +37,7 @@ type paramBuilder struct {
 
 // newParamBuilder creates a new paramBuilder.
 func newParamBuilder() (*paramBuilder, error) {
-	bld, err := go_openssl_OSSL_PARAM_BLD_new()
+	bld, err := ossl.OSSL_PARAM_BLD_new()
 	if err != nil {
 		return nil, err
 	}
@@ -53,12 +55,12 @@ func (b *paramBuilder) finalize() {
 		b.pinner.Unpin()
 		for _, bn := range b.bnToFree {
 			if bn.private {
-				go_openssl_BN_clear_free(bn.value)
+				ossl.BN_clear_free(bn.value)
 			} else {
-				go_openssl_BN_free(bn.value)
+				ossl.BN_free(bn.value)
 			}
 		}
-		go_openssl_OSSL_PARAM_BLD_free(b.bld)
+		ossl.OSSL_PARAM_BLD_free(b.bld)
 		b.bld = nil
 	}
 }
@@ -82,12 +84,12 @@ func (b *paramBuilder) check() bool {
 // If an error occurred while adding parameters, the error is returned
 // and the OSSL_PARAM is nil. Once build() is called, the builder is finalized
 // and cannot be reused.
-func (b *paramBuilder) build() (_OSSL_PARAM_PTR, error) {
+func (b *paramBuilder) build() (ossl.OSSL_PARAM_PTR, error) {
 	defer b.finalize()
 	if !b.check() {
 		return nil, b.err
 	}
-	param, err := go_openssl_OSSL_PARAM_BLD_to_param(b.bld)
+	param, err := ossl.OSSL_PARAM_BLD_to_param(b.bld)
 	if err != nil {
 		return nil, err
 	}
@@ -101,7 +103,7 @@ func (b *paramBuilder) addUTF8String(name cString, value *byte, size int) {
 		return
 	}
 	// OSSL_PARAM_BLD_push_utf8_string calculates the size if it is zero.
-	if _, err := go_openssl_OSSL_PARAM_BLD_push_utf8_string(b.bld, name.ptr(), value, size); err != nil {
+	if _, err := ossl.OSSL_PARAM_BLD_push_utf8_string(b.bld, name.ptr(), value, size); err != nil {
 		b.err = addParamError{name.str(), err}
 	}
 }
@@ -115,7 +117,7 @@ func (b *paramBuilder) addOctetString(name cString, value []byte) {
 	if len(value) != 0 {
 		b.pinner.Pin(&value[0])
 	}
-	if _, err := go_openssl_OSSL_PARAM_BLD_push_octet_string(b.bld, name.ptr(), pbase(value), len(value)); err != nil {
+	if _, err := ossl.OSSL_PARAM_BLD_push_octet_string(b.bld, name.ptr(), pbase(value), len(value)); err != nil {
 		b.err = addParamError{name.str(), err}
 	}
 }
@@ -125,17 +127,17 @@ func (b *paramBuilder) addInt32(name cString, value int32) {
 	if !b.check() {
 		return
 	}
-	if _, err := go_openssl_OSSL_PARAM_BLD_push_int32(b.bld, name.ptr(), value); err != nil {
+	if _, err := ossl.OSSL_PARAM_BLD_push_int32(b.bld, name.ptr(), value); err != nil {
 		b.err = addParamError{name.str(), err}
 	}
 }
 
-// addBN adds a GO_BIGNUM_PTR to the builder.
-func (b *paramBuilder) addBN(name cString, value _BIGNUM_PTR) {
+// addBN adds a GOossl.BIGNUM_PTR to the builder.
+func (b *paramBuilder) addBN(name cString, value ossl.BIGNUM_PTR) {
 	if !b.check() {
 		return
 	}
-	if _, err := go_openssl_OSSL_PARAM_BLD_push_BN(b.bld, name.ptr(), value); err != nil {
+	if _, err := ossl.OSSL_PARAM_BLD_push_BN(b.bld, name.ptr(), value); err != nil {
 		b.err = addParamError{name.str(), err}
 	}
 }
@@ -152,7 +154,7 @@ func (b *paramBuilder) addBin(name cString, value []byte, private bool) {
 		// Nothing to do.
 		return
 	}
-	bn, err := go_openssl_BN_bin2bn(base(value), int32(len(value)), nil)
+	bn, err := ossl.BN_bin2bn(base(value), int32(len(value)), nil)
 	if err != nil {
 		b.err = err
 		return

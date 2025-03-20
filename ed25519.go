@@ -8,6 +8,8 @@ import (
 	"runtime"
 	"strconv"
 	"sync"
+
+	"github.com/golang-fips/openssl/v2/internal/ossl"
 )
 
 const (
@@ -28,16 +30,16 @@ var supportsEd25519 = sync.OnceValue(func() bool {
 	switch vMajor {
 	case 1:
 		if versionAtOrAbove(1, 1, 1) {
-			ctx, _ := go_openssl_EVP_PKEY_CTX_new_id(_EVP_PKEY_ED25519, nil)
+			ctx, _ := ossl.EVP_PKEY_CTX_new_id(ossl.EVP_PKEY_ED25519, nil)
 			if ctx != nil {
-				go_openssl_EVP_PKEY_CTX_free(ctx)
+				ossl.EVP_PKEY_CTX_free(ctx)
 				return true
 			}
 		}
 	case 3:
-		sig, _ := go_openssl_EVP_SIGNATURE_fetch(nil, _KeyTypeED25519.ptr(), nil)
+		sig, _ := ossl.EVP_SIGNATURE_fetch(nil, _KeyTypeED25519.ptr(), nil)
 		if sig != nil {
-			go_openssl_EVP_SIGNATURE_free(sig)
+			ossl.EVP_SIGNATURE_free(sig)
 			return true
 		}
 	}
@@ -51,11 +53,11 @@ func SupportsEd25519() bool {
 }
 
 type PublicKeyEd25519 struct {
-	_pkey _EVP_PKEY_PTR
+	_pkey ossl.EVP_PKEY_PTR
 }
 
 func (k *PublicKeyEd25519) finalize() {
-	go_openssl_EVP_PKEY_free(k._pkey)
+	ossl.EVP_PKEY_free(k._pkey)
 }
 
 func (k *PublicKeyEd25519) Bytes() ([]byte, error) {
@@ -68,11 +70,11 @@ func (k *PublicKeyEd25519) Bytes() ([]byte, error) {
 }
 
 type PrivateKeyEd25519 struct {
-	_pkey _EVP_PKEY_PTR
+	_pkey ossl.EVP_PKEY_PTR
 }
 
 func (k *PrivateKeyEd25519) finalize() {
-	go_openssl_EVP_PKEY_free(k._pkey)
+	ossl.EVP_PKEY_free(k._pkey)
 }
 
 func (k *PrivateKeyEd25519) Bytes() ([]byte, error) {
@@ -98,7 +100,7 @@ func (k *PrivateKeyEd25519) Public() (*PublicKeyEd25519, error) {
 
 // GenerateKeyEd25519 generates a private key.
 func GenerateKeyEd25519() (*PrivateKeyEd25519, error) {
-	pkeyPriv, err := generateEVPPKey(_EVP_PKEY_ED25519, 0, "")
+	pkeyPriv, err := generateEVPPKey(ossl.EVP_PKEY_ED25519, 0, "")
 	if err != nil {
 		return nil, err
 	}
@@ -128,7 +130,7 @@ func NewPublicKeyEd25519(pub []byte) (*PublicKeyEd25519, error) {
 	if len(pub) != publicKeySizeEd25519 {
 		panic("ed25519: bad public key length: " + strconv.Itoa(len(pub)))
 	}
-	pkey, err := go_openssl_EVP_PKEY_new_raw_public_key(_EVP_PKEY_ED25519, nil, base(pub), len(pub))
+	pkey, err := ossl.EVP_PKEY_new_raw_public_key(ossl.EVP_PKEY_ED25519, nil, base(pub), len(pub))
 	if err != nil {
 		return nil, err
 	}
@@ -144,7 +146,7 @@ func NewPrivateKeyEd25519FromSeed(seed []byte) (*PrivateKeyEd25519, error) {
 	if len(seed) != seedSizeEd25519 {
 		panic("ed25519: bad seed length: " + strconv.Itoa(len(seed)))
 	}
-	pkey, err := go_openssl_EVP_PKEY_new_raw_private_key(_EVP_PKEY_ED25519, nil, base(seed), len(seed))
+	pkey, err := ossl.EVP_PKEY_new_raw_private_key(ossl.EVP_PKEY_ED25519, nil, base(seed), len(seed))
 	if err != nil {
 		return nil, err
 	}
@@ -153,9 +155,9 @@ func NewPrivateKeyEd25519FromSeed(seed []byte) (*PrivateKeyEd25519, error) {
 	return priv, nil
 }
 
-func extractPKEYPubEd25519(pkey _EVP_PKEY_PTR, pub []byte) error {
+func extractPKEYPubEd25519(pkey ossl.EVP_PKEY_PTR, pub []byte) error {
 	keylen := publicKeySizeEd25519
-	if _, err := go_openssl_EVP_PKEY_get_raw_public_key(pkey, base(pub), &keylen); err != nil {
+	if _, err := ossl.EVP_PKEY_get_raw_public_key(pkey, base(pub), &keylen); err != nil {
 		return err
 	}
 	if keylen != publicKeySizeEd25519 {
@@ -164,12 +166,12 @@ func extractPKEYPubEd25519(pkey _EVP_PKEY_PTR, pub []byte) error {
 	return nil
 }
 
-func extractPKEYPrivEd25519(pkey _EVP_PKEY_PTR, priv []byte) error {
+func extractPKEYPrivEd25519(pkey ossl.EVP_PKEY_PTR, priv []byte) error {
 	if err := extractPKEYPubEd25519(pkey, priv[seedSizeEd25519:]); err != nil {
 		return err
 	}
 	keylen := seedSizeEd25519
-	if _, err := go_openssl_EVP_PKEY_get_raw_private_key(pkey, base(priv), &keylen); err != nil {
+	if _, err := ossl.EVP_PKEY_get_raw_private_key(pkey, base(priv), &keylen); err != nil {
 		return err
 	}
 	if keylen != seedSizeEd25519 {
@@ -191,16 +193,16 @@ func SignEd25519(priv *PrivateKeyEd25519, message []byte) (sig []byte, err error
 
 func signEd25519(priv *PrivateKeyEd25519, sig, message []byte) error {
 	defer runtime.KeepAlive(priv)
-	ctx, err := go_openssl_EVP_MD_CTX_new()
+	ctx, err := ossl.EVP_MD_CTX_new()
 	if err != nil {
 		return err
 	}
-	defer go_openssl_EVP_MD_CTX_free(ctx)
-	if _, err := go_openssl_EVP_DigestSignInit(ctx, nil, nil, nil, priv._pkey); err != nil {
+	defer ossl.EVP_MD_CTX_free(ctx)
+	if _, err := ossl.EVP_DigestSignInit(ctx, nil, nil, nil, priv._pkey); err != nil {
 		return err
 	}
 	siglen := signatureSizeEd25519
-	if _, err := go_openssl_EVP_DigestSign(ctx, base(sig), &siglen, base(message), len(message)); err != nil {
+	if _, err := ossl.EVP_DigestSign(ctx, base(sig), &siglen, base(message), len(message)); err != nil {
 		return err
 	}
 	if siglen != signatureSizeEd25519 {
@@ -212,15 +214,15 @@ func signEd25519(priv *PrivateKeyEd25519, sig, message []byte) error {
 // VerifyEd25519 reports whether sig is a valid signature of message by pub.
 func VerifyEd25519(pub *PublicKeyEd25519, message, sig []byte) error {
 	defer runtime.KeepAlive(pub)
-	ctx, err := go_openssl_EVP_MD_CTX_new()
+	ctx, err := ossl.EVP_MD_CTX_new()
 	if err != nil {
 		return err
 	}
-	defer go_openssl_EVP_MD_CTX_free(ctx)
-	if _, err := go_openssl_EVP_DigestVerifyInit(ctx, nil, nil, nil, pub._pkey); err != nil {
+	defer ossl.EVP_MD_CTX_free(ctx)
+	if _, err := ossl.EVP_DigestVerifyInit(ctx, nil, nil, nil, pub._pkey); err != nil {
 		return err
 	}
-	if _, err := go_openssl_EVP_DigestVerify(ctx, base(sig), len(sig), base(message), len(message)); err != nil {
+	if _, err := ossl.EVP_DigestVerify(ctx, base(sig), len(sig), base(message), len(message)); err != nil {
 		return errors.New("ed25519: invalid signature")
 	}
 	return nil

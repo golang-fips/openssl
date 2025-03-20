@@ -2,7 +2,7 @@
 
 //go:build go1.24 && !cmd_go_bootstrap
 
-package openssl
+package ossl
 
 /*
 #cgo noescape _mkcgo_EVP_CipherUpdate
