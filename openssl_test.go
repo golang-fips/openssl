@@ -18,7 +18,7 @@ var sink uint8
 
 // getVersion returns the OpenSSL version to use for testing.
 func getVersion() string {
-	v := os.Getenv("ossl.VERSION_OVERRIDE")
+	v := os.Getenv("GO_OPENSSL_VERSION_OVERRIDE")
 	if v != "" {
 		if runtime.GOOS == "linux" {
 			return "libcrypto.so." + v
@@ -27,7 +27,7 @@ func getVersion() string {
 	}
 	// Try to find a supported version of OpenSSL on the system.
 	// This is useful for local testing, where the user may not
-	// have ossl.VERSION_OVERRIDE set.
+	// have GO_OPENSSL_VERSION_OVERRIDE set.
 	versions := []string{"3", "1.1.1", "1.1", "11", "111"}
 	if runtime.GOOS == "windows" {
 		if runtime.GOARCH == "amd64" {
