@@ -3,8 +3,6 @@
 // Package openssl provides access to OpenSSL cryptographic functions.
 package openssl
 
-//go:generate go run ./cmd/mkcgo -out zossl.go -package openssl shims.h
-
 /*
 #include <stdlib.h> // for free()
 
