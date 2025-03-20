@@ -5,7 +5,6 @@ package openssl
 /*
 #include <stdlib.h> // for calloc and free
 #include <string.h> // for strdup
-#include "shims.h"
 #include "zossl.h"
 
 // OpenSSL only allows a maximum of 16 errors to be stored in the error queue.
@@ -22,7 +21,7 @@ typedef struct ossl_err_state_st {
 // mkcgo_err_clear clears the error queue in OpenSSL.
 void mkcgo_err_clear() {
 	// Clear the error queue.
-	ERR_clear_error();
+	_mkcgo_ERR_clear_error();
 }
 
 // mkcgo_err_retrieve retrieves the error state from OpenSSL.
@@ -37,12 +36,12 @@ mkcgo_err_state mkcgo_err_retrieve() {
 	// Retrieve the errors from OpenSSL.
 	for (int i = 0; i < ERR_NUM_MAX; i++) {
 		const char *file;
-		if (OPENSSL_version_major_Available() == 1) { // Only available in OpenSSL 3.
+		if (_mkcgo_available_OPENSSL_version_major() == 1) { // Only available in OpenSSL 3.
 			// OpenSSL 3 error handling
-			errs->code[i] = ERR_get_error_all(&file, &errs->line[i], NULL, NULL, NULL);
+			errs->code[i] = _mkcgo_ERR_get_error_all(&file, &errs->line[i], NULL, NULL, NULL);
 		} else {
 			// OpenSSL 1 error handling
-			errs->code[i] = ERR_get_error_line(&file, &errs->line[i]);
+			errs->code[i] = _mkcgo_ERR_get_error_line(&file, &errs->line[i]);
 		}
 		if (errs->code[i] == 0) {
 			break;

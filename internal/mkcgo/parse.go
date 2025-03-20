@@ -110,7 +110,7 @@ func Parse(fs ...string) (*Source, error) {
 		}
 	}
 	slices.SortFunc(src.Funcs, func(fi, fj *Func) int {
-		return cmp.Compare(fi.CName, fj.CName)
+		return cmp.Compare(fi.Name, fj.Name)
 	})
 	return src, nil
 }
@@ -140,11 +140,10 @@ func (src *Source) parseFile(name string) error {
 			}
 		}
 		line = trim(line)
-		if line == "" || line[0] == '#' {
-			// Skip empty lines and preprocessor directives.
+		if line == "" {
+			// Skip empty lines.
 			continue
 		}
-
 		if inEnum {
 			if strings.HasPrefix(line, "};") {
 				inEnum = false
@@ -159,6 +158,15 @@ func (src *Source) parseFile(name string) error {
 		}
 		if strings.HasPrefix(line, "enum {") {
 			inEnum = true
+			continue
+		}
+
+		// Process preprocessor directives.
+		if strings.HasPrefix(line, "#") {
+			if v, ok := strings.CutPrefix(line, "#include "); ok {
+				src.Includes = append(src.Includes, v)
+			}
+			// Skip all other preprocessor directives.
 			continue
 		}
 
@@ -245,15 +253,13 @@ func newFn(s string, attrs FuncAttributes) (*Func, error) {
 	if nameIdx < 0 || nameIdx+1 >= len(prefix) {
 		return nil, errors.New("could not extract function name from \"" + s + "\"")
 	}
-	name, typ := prefix[nameIdx+1:], prefix[:nameIdx]
-	name, typ = normalizeParam(name, typ)
-	fn.CName = trim(name)
+	name, typ := normalizeParam(prefix[nameIdx+1:], prefix[:nameIdx])
+	fn.Name = name
 	if attrs.ImportName != "" {
 		fn.ImportName = attrs.ImportName
 	} else {
-		fn.ImportName = fn.CName
+		fn.ImportName = name
 	}
-	fn.GoName = "go_openssl_" + fn.CName
 	fn.Ret = &Return{
 		Type: trim(typ),
 		Name: "_r0",
@@ -275,7 +281,7 @@ func normalizeParam(name, typ string) (string, string) {
 	}
 	// Remove all spaces between the asterisks and the type.
 	typ = strings.ReplaceAll(typ, " *", "*")
-	return name, typ
+	return trim(name), trim(typ)
 }
 
 // trim returns s with leading and trailing spaces and tabs removed.

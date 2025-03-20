@@ -11,6 +11,7 @@ type Source struct {
 	Funcs    []*Func
 	Files    []string
 	Comments []string // All line comments. Directives in this slice start with "#"
+	Includes []string // All #include directives, without the #include prefix.
 }
 
 // TypeDef describes a type definition.
@@ -28,8 +29,7 @@ type Enum struct {
 // Func describes a function.
 type Func struct {
 	FuncAttributes
-	GoName string
-	CName  string
+	Name   string
 	Params []*Param
 	Ret    *Return
 }
