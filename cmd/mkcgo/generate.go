@@ -613,17 +613,17 @@ func fnCalledFromGo(fn *mkcgo.Func) bool {
 
 // goSymName returns the Go symbol name for a C symbol name.
 func goSymName(name string) string {
-	if !*export {
-		return name
-	}
 	if name == "" {
 		return ""
 	}
-	if name[0] == '_' {
-		name = name[1:]
+	if *export {
+		if name[0] == '_' {
+			name = name[1:]
+		}
+		if name == "" {
+			return ""
+		}
+		return strings.ToUpper(name[0:1]) + name[1:]
 	}
-	if name == "" {
-		return ""
-	}
-	return strings.ToUpper(name[0:1]) + name[1:]
+	return strings.ToLower(name[0:1]) + name[1:]
 }
