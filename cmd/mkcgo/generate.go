@@ -614,6 +614,8 @@ func fnCalledFromGo(fn *mkcgo.Func) bool {
 }
 
 // goSymName returns the Go symbol name for a C symbol name.
+// The returned name can be transformed depending on the
+// value of the private flag.
 func goSymName(name string) string {
 	if name == "" {
 		panic("empty name")
