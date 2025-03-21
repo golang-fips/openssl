@@ -6,6 +6,8 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"unicode"
+	"unicode/utf8"
 
 	"github.com/golang-fips/openssl/v2/internal/mkcgo"
 )
@@ -616,14 +618,23 @@ func goSymName(name string) string {
 	if name == "" {
 		return ""
 	}
-	if *private {
-		return strings.ToLower(name[0:1]) + name[1:]
+	ch, _ := utf8.DecodeRuneInString(name)
+	isPrivate := !unicode.IsUpper(ch)
+	if *private == isPrivate {
+		// Same access level, no need to change.
+		return name
 	}
+	if !isPrivate {
+		// Exported name, make it private by adding an underscore.
+		return "_" + name
+	}
+	// Unexported name, make it exported.
 	if name[0] == '_' {
-		name = name[1:]
+		// If it starts with an underscore, remove it
+		// and try again.
+		name = strings.TrimPrefix(name, "_")
+		return goSymName(name)
 	}
-	if name == "" {
-		return ""
-	}
-	return strings.ToUpper(name[0:1]) + name[1:]
+	// Uppercase the first letter.
+	return strings.ToUpper(name[:1]) + name[1:]
 }

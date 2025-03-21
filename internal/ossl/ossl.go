@@ -1,3 +1,4 @@
+// Package ossl provides a Go interface to OpenSSL.
 package ossl
 
 //go:generate go run ../../cmd/mkcgo -out zossl.go -package ossl shims.h
