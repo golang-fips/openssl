@@ -100,8 +100,14 @@ func gccRun(program string) error {
 }
 
 func generate(header string) (string, error) {
-	src, err := mkcgo.Parse(header)
+	r, err := os.Open(header)
 	if err != nil {
+		return "", err
+	}
+	defer r.Close()
+
+	var src mkcgo.Source
+	if err := src.Parse(r); err != nil {
 		return "", err
 	}
 	w := &strings.Builder{}
@@ -131,7 +137,7 @@ func generate(header string) (string, error) {
 	}
 	var i int
 	for _, fn := range src.Funcs {
-		if fn.VariadicInst {
+		if fn.VariadicTarget != "" {
 			// Variadic instantiations are not real OpenSSL functions,
 			// skip them.
 			continue
@@ -141,7 +147,7 @@ func generate(header string) (string, error) {
 			tags = []mkcgo.TagAttr{{}}
 		}
 		for _, tag := range tags {
-			importName := fn.ImportName
+			importName := fn.ImportName()
 			if tag.Name != "" {
 				importName = tag.Name
 			}
@@ -169,7 +175,7 @@ func generate(header string) (string, error) {
 			for _, p := range fn.Params {
 				sparams = append(sparams, p.Type)
 			}
-			fmt.Fprintf(w, "%s (*__check_%d)(%s) = %s;\n", fn.Ret.Type, i, strings.Join(sparams, ", "), importName)
+			fmt.Fprintf(w, "%s (*__check_%d)(%s) = %s;\n", fn.Ret, i, strings.Join(sparams, ", "), importName)
 			for range conds {
 				fmt.Fprintf(w, "#endif\n")
 			}

@@ -2,11 +2,13 @@ package main
 
 import (
 	"bytes"
+	"cmp"
 	"flag"
 	"fmt"
 	"go/format"
 	"log"
 	"os"
+	"slices"
 	"strings"
 
 	"github.com/golang-fips/openssl/v2/internal/mkcgo"
@@ -35,17 +37,31 @@ func main() {
 		usage()
 	}
 
+	var src mkcgo.Source
 	// Parse source files.
-	src, err := mkcgo.Parse(flag.Args()...)
-	if err != nil {
-		log.Fatal(err)
+	for _, arg := range flag.Args() {
+		file, err := os.Open(arg)
+		if err != nil {
+			log.Fatal(err)
+		}
+		err = src.Parse(file)
+		file.Close()
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 
+	// Sort functions by name to get deterministic output
+	// even when the order of the functions in the source file changes.
+	slices.SortFunc(src.Funcs, func(a, b *mkcgo.Func) int {
+		return cmp.Compare(a.Name, b.Name)
+	})
+
 	var gobuf, go124buf, hbuf, cbuf bytes.Buffer
-	generateGo(src, &gobuf)
-	generateGo124(src, &go124buf)
-	generateCHeader(src, &hbuf)
-	generateC(src, &cbuf)
+	generateGo(&src, &gobuf)
+	generateGo124(&src, &go124buf)
+	generateCHeader(&src, &hbuf)
+	generateC(&src, &cbuf)
 
 	// Format the generated Go source code.
 	godata := goformat(gobuf.Bytes())

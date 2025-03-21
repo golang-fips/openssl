@@ -1,7 +1,12 @@
+// The mkcgo package provides a C header syntax parser.
+// It supports just the necessary features to parse the OpenSSL symbols used in this project.
 package mkcgo
 
 import (
+	"errors"
+	"fmt"
 	"slices"
+	"strings"
 )
 
 // Source is a collection of type definitions and functions.
@@ -9,9 +14,10 @@ type Source struct {
 	TypeDefs []*TypeDef
 	Enums    []*Enum
 	Funcs    []*Func
-	Files    []string
-	Comments []string // All line comments. Directives in this slice start with "#"
+	Comments []string // All line comments. Leading and trailing spaces are trimmed.
 	Includes []string // All #include directives, without the #include prefix.
+
+	symbols map[string]struct{} // All symbols defined in the source.
 }
 
 // TypeDef describes a type definition.
@@ -26,16 +32,61 @@ type Enum struct {
 	Value string
 }
 
-// Func describes a function.
-type Func struct {
-	FuncAttributes
-	Name   string
-	Params []*Param
-	Ret    *Return
+// FuncAttrs contains attributes of a function.
+type FuncAttrs struct {
+	Tags           []TagAttr
+	VariadicTarget string
+	Optional       bool
+	NoError        bool
+	ErrCond        string
+	NoEscape       bool
+	NoCallback     bool
 }
 
+// Func describes a function.
+type Func struct {
+	FuncAttrs
+	Name   string
+	Params []*Param
+	Ret    string
+}
+
+// Variadic returns true if the ends with a variadic parameter.
 func (f *Func) Variadic() bool {
 	return len(f.Params) > 0 && f.Params[len(f.Params)-1].Variadic()
+}
+
+// ImportName returns the import name of the function.
+func (f *Func) ImportName() string {
+	if f.VariadicTarget != "" {
+		return f.VariadicTarget
+	}
+	return f.Name
+}
+
+// String returns a string representation of the function,
+// which is not necessarily valid Go nor C code.
+func (f *Func) String() string {
+	var bld strings.Builder
+	if f.Ret != "" {
+		bld.WriteString(f.Ret)
+		bld.WriteByte(' ')
+	}
+	bld.WriteString(f.Name)
+	bld.WriteByte('(')
+	for i, p := range f.Params {
+		if i > 0 {
+			bld.WriteString(", ")
+		}
+		bld.WriteString(p.Type)
+		if p.Name != "" {
+			bld.WriteByte(' ')
+			bld.WriteString(p.Name)
+		}
+	}
+	bld.WriteString(") ")
+	bld.WriteString(fmt.Sprintf("%v", f.FuncAttrs))
+	return bld.String()
 }
 
 // TagAttr is an attribute of a tag with an optional name.
@@ -46,8 +97,8 @@ type TagAttr struct {
 
 // Param is a function parameter.
 type Param struct {
-	Name string
 	Type string
+	Name string
 }
 
 func (p *Param) Variadic() bool {
@@ -72,4 +123,79 @@ func (src *Source) Tags() []string {
 	}
 	slices.Sort(tags)
 	return tags
+}
+
+type attribute struct {
+	name        string
+	description string
+	handle      func(*FuncAttrs, ...string) error
+}
+
+var attributes = [...]attribute{
+	{
+		name:        "tag",
+		description: "The function will be loaded together with other functions with the same tag. It can contain an optional name, which is the import name for the tag.",
+		handle: func(opts *FuncAttrs, s ...string) error {
+			var name string
+			if len(s) > 1 {
+				name = s[1]
+			}
+			opts.Tags = append(opts.Tags, TagAttr{Tag: s[0], Name: name})
+			return nil
+		},
+	},
+	{
+		name:        "variadic",
+		description: "The function has variadic arguments, and its name is a custom wrapper for the actual C name, defined in this attribute.",
+		handle: func(opts *FuncAttrs, s ...string) error {
+			opts.VariadicTarget = s[0]
+			return nil
+		},
+	},
+	{
+		name:        "optional",
+		description: "The function is optional",
+		handle: func(opts *FuncAttrs, s ...string) error {
+			opts.Optional = true
+			return nil
+		},
+	},
+	{
+		name:        "noerror",
+		description: "The function does not return an error, and the program will panic if the function returns an error.",
+		handle: func(opts *FuncAttrs, s ...string) error {
+			if opts.ErrCond != "" {
+				return errors.New("not allowed with errcond attribute")
+			}
+			opts.NoError = true
+			return nil
+		},
+	},
+	{
+		name:        "errcond",
+		description: "The function returns an error if the C function returns a value that matches the condition in this attribute.",
+		handle: func(opts *FuncAttrs, s ...string) error {
+			if opts.NoError {
+				return errors.New("not allowed with noerror attribute")
+			}
+			opts.ErrCond = s[0]
+			return nil
+		},
+	},
+	{
+		name:        "noescape",
+		description: "The C function does not keep a copy of the Go pointer.",
+		handle: func(opts *FuncAttrs, s ...string) error {
+			opts.NoEscape = true
+			return nil
+		},
+	},
+	{
+		name:        "nocallback",
+		description: "The C function does not call back into Go.",
+		handle: func(opts *FuncAttrs, s ...string) error {
+			opts.NoCallback = true
+			return nil
+		},
+	},
 }

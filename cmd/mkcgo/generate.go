@@ -125,7 +125,7 @@ func generateGoAliases(funcs []*mkcgo.Func, w io.Writer) {
 			}
 			handleType(p.Type)
 		}
-		handleType(fn.Ret.Type)
+		handleType(fn.Ret)
 	}
 	types := make([]string, 0, len(ctypes))
 	for typ := range ctypes {
@@ -199,9 +199,9 @@ func generateCHeader(src *mkcgo.Source, w io.Writer) {
 			continue
 		}
 		if fnNeedErrWrapper(fn) {
-			fmt.Fprintf(w, "%s %s(%s);\n", fn.Ret.Type, fnCName(fn), fnCErrWrapperParams(fn, false))
+			fmt.Fprintf(w, "%s %s(%s);\n", fn.Ret, fnCName(fn), fnCErrWrapperParams(fn, false))
 		} else {
-			fmt.Fprintf(w, "%s %s(%s);\n", fn.Ret.Type, fnCName(fn), fnToCArgs(fn, true, false))
+			fmt.Fprintf(w, "%s %s(%s);\n", fn.Ret, fnCName(fn), fnToCArgs(fn, true, false))
 		}
 	}
 	fmt.Fprintf(w, "\n")
@@ -233,10 +233,10 @@ func generateC(src *mkcgo.Source, w io.Writer) {
 
 	// Function pointer declarations.
 	for _, fn := range src.Funcs {
-		if fn.VariadicInst {
+		if fn.VariadicTarget != "" {
 			continue
 		}
-		fmt.Fprintf(w, "%s (*_g_%s)(%s);\n", fn.Ret.Type, fn.ImportName, fnToCArgs(fn, true, false))
+		fmt.Fprintf(w, "%s (*_g_%s)(%s);\n", fn.Ret, fn.ImportName(), fnToCArgs(fn, true, false))
 	}
 	fmt.Fprintf(w, "\n")
 
@@ -253,7 +253,7 @@ func generateC(src *mkcgo.Source, w io.Writer) {
 	for _, tag := range src.Tags() {
 		fmt.Fprintf(w, "void __mkcgo_load_%s(void* handle) {\n", tag)
 		for _, fn := range src.Funcs {
-			if fn.VariadicInst {
+			if fn.VariadicTarget != "" {
 				continue
 			}
 			tags := fn.Tags
@@ -264,11 +264,11 @@ func generateC(src *mkcgo.Source, w io.Writer) {
 				if tagAttr.Tag == tag {
 					if tagAttr.Name != "" {
 						// TODO: if necessary, support optional functions in here too.
-						fmt.Fprintf(w, "\t__mkcgo__dlsym2(%s, %s)\n", fn.ImportName, tagAttr.Name)
+						fmt.Fprintf(w, "\t__mkcgo__dlsym2(%s, %s)\n", fn.ImportName(), tagAttr.Name)
 					} else if fn.Optional {
-						fmt.Fprintf(w, "\t__mkcgo__dlsym_nocheck(%s, %s)\n", fn.ImportName, fn.ImportName)
+						fmt.Fprintf(w, "\t__mkcgo__dlsym_nocheck(%s, %s)\n", fn.ImportName(), fn.ImportName())
 					} else {
-						fmt.Fprintf(w, "\t__mkcgo__dlsym(%s)\n", fn.ImportName)
+						fmt.Fprintf(w, "\t__mkcgo__dlsym(%s)\n", fn.ImportName())
 					}
 					break
 				}
@@ -278,7 +278,7 @@ func generateC(src *mkcgo.Source, w io.Writer) {
 
 		fmt.Fprintf(w, "void __mkcgo_unload_%s() {\n", tag)
 		for _, fn := range src.Funcs {
-			if fn.VariadicInst {
+			if fn.VariadicTarget != "" {
 				continue
 			}
 			tags := fn.Tags
@@ -287,7 +287,7 @@ func generateC(src *mkcgo.Source, w io.Writer) {
 			}
 			for _, tagAttr := range tags {
 				if tagAttr.Tag == tag {
-					fmt.Fprintf(w, "\t_g_%s = NULL;\n", fn.ImportName)
+					fmt.Fprintf(w, "\t_g_%s = NULL;\n", fn.ImportName())
 					break
 				}
 			}
@@ -308,7 +308,7 @@ func generateC(src *mkcgo.Source, w io.Writer) {
 		if fn.Optional {
 			// Generate a function that returns true if the function is available.
 			fmt.Fprintf(w, "int %s() {\n", fnCNameAvailable(fn))
-			fmt.Fprintf(w, "\treturn _g_%s != NULL;\n", fn.ImportName)
+			fmt.Fprintf(w, "\treturn _g_%s != NULL;\n", fn.ImportName())
 			fmt.Fprintf(w, "}\n\n")
 		}
 		generateCFn(typedefs, fn, w)
@@ -320,7 +320,7 @@ func generateGoFn(fn *mkcgo.Func, w io.Writer) {
 	fnCall := fmt.Sprintf("C.%s(%s)", fnCName(fn), fnToGoArgs(fn))
 	// Function definition
 	fmt.Fprintf(w, "func %s(%s)", goSymName(fn.Name), fnToGoParams(fn))
-	if retIsVoid(fn.Ret) {
+	if isVoid(fn.Ret) {
 		// Easy path, just call the C function. No need to write the return types,
 		// nor do error handling, nor cast the return value.
 		fmt.Fprintf(w, "{\n")
@@ -328,7 +328,7 @@ func generateGoFn(fn *mkcgo.Func, w io.Writer) {
 		fmt.Fprintf(w, "}\n\n")
 		return
 	}
-	goType, needCast := cTypeToGo(fn.Ret.Type, false)
+	goType, needCast := cTypeToGo(fn.Ret, false)
 	if fn.NoError {
 		fmt.Fprintf(w, " %s ", goType)
 	} else {
@@ -381,24 +381,24 @@ func generateGoFn(fn *mkcgo.Func, w io.Writer) {
 
 func generateCFn(typedefs map[string]string, fn *mkcgo.Func, w io.Writer) {
 	if !fnNeedErrWrapper(fn) {
-		fmt.Fprintf(w, "%s %s(%s) {\n\t", fn.Ret.Type, fnCName(fn), fnToCArgs(fn, true, true))
-		if !retIsVoid(fn.Ret) {
+		fmt.Fprintf(w, "%s %s(%s) {\n\t", fn.Ret, fnCName(fn), fnToCArgs(fn, true, true))
+		if !isVoid(fn.Ret) {
 			fmt.Fprintf(w, "return ")
 		}
-		fmt.Fprintf(w, "_g_%s(%s);\n", fn.ImportName, fnToCArgs(fn, false, true))
+		fmt.Fprintf(w, "_g_%s(%s);\n", fn.ImportName(), fnToCArgs(fn, false, true))
 		fmt.Fprintf(w, "}\n\n")
 		return
 	}
 
-	fmt.Fprintf(w, "%s %s(%s) {\n", fn.Ret.Type, fnCName(fn), fnCErrWrapperParams(fn, true))
+	fmt.Fprintf(w, "%s %s(%s) {\n", fn.Ret, fnCName(fn), fnCErrWrapperParams(fn, true))
 	fmt.Fprintf(w, "\tmkcgo_err_clear();\n") // clear any previous error
-	fmt.Fprintf(w, "\t%s _ret = _g_%s(%s);\n", fn.Ret.Type, fn.ImportName, fnToCArgs(fn, false, true))
+	fmt.Fprintf(w, "\t%s _ret = _g_%s(%s);\n", fn.Ret, fn.ImportName(), fnToCArgs(fn, false, true))
 	errCond := "<= 0"
 	if fn.ErrCond != "" {
 		errCond = fn.ErrCond
-	} else if strings.Contains(fn.Ret.Type, "*") {
+	} else if strings.Contains(fn.Ret, "*") {
 		errCond = "== NULL"
-	} else if typ, ok := typedefs[fn.Ret.Type]; ok && typ == "void*" {
+	} else if typ, ok := typedefs[fn.Ret]; ok && typ == "void*" {
 		errCond = "== NULL"
 	}
 	fmt.Fprintf(w, "\tif (_ret %s) *_err_state = mkcgo_err_retrieve();\n", errCond)
@@ -470,7 +470,7 @@ var cstdTypesToCgo = map[string]string{
 // the type needs to be casted to goType or not.
 func cTypeToGo(t string, cgo bool) (string, bool) {
 	t, _ = strings.CutPrefix(t, "const ")
-	if t == "void" {
+	if isVoid(t) {
 		return "", true
 	}
 	if strings.HasPrefix(t, "void*") {
@@ -515,7 +515,7 @@ func paramToC(i int, p *mkcgo.Param, addType, addName bool) string {
 	if addType {
 		s += p.Type
 	}
-	if addName && p.Type != "void" {
+	if addName && !isVoid(p.Type) {
 		if len(s) > 0 {
 			s += " "
 		}
@@ -524,8 +524,9 @@ func paramToC(i int, p *mkcgo.Param, addType, addName bool) string {
 	return s
 }
 
-func retIsVoid(r *mkcgo.Return) bool {
-	return r.Type == "void"
+// isVoid reports whether typ is a void type.
+func isVoid(typ string) bool {
+	return typ == "void"
 }
 
 // fnToGoParams returns source code for function f parameters.
@@ -580,7 +581,7 @@ func fnCErrWrapperParams(fn *mkcgo.Func, addName bool) string {
 	args := fnToCArgs(fn, true, addName)
 	if len(args) == 0 {
 		args = errArg
-	} else if args == "void" {
+	} else if isVoid(args) {
 		args = errArg
 	} else {
 		args += ", " + errArg
@@ -605,7 +606,7 @@ func fnCNameAvailable(fn *mkcgo.Func) string {
 
 // fnNeedErrWrapper reports whether function fn needs an error wrapper.
 func fnNeedErrWrapper(fn *mkcgo.Func) bool {
-	return !fn.NoError && !retIsVoid(fn.Ret)
+	return !fn.NoError && !isVoid(fn.Ret)
 }
 
 // fnCalledFromGo reports whether function fn is called from Go code.

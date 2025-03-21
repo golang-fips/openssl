@@ -2,142 +2,28 @@ package mkcgo
 
 import (
 	"bufio"
-	"cmp"
 	"errors"
 	"fmt"
-	"os"
+	"io"
 	"slices"
 	"strings"
 )
 
-type FuncAttributes struct {
-	Tags         []TagAttr
-	VariadicInst bool
-	ImportName   string
-	Optional     bool
-	NoError      bool
-	ErrCond      string
-	NoEscape     bool
-	NoCallback   bool
-}
-
-type attribute struct {
-	name        string
-	description string
-	handle      func(*FuncAttributes, ...string) error
-}
-
-var attributes = [...]attribute{
-	{
-		name:        "tag",
-		description: "The function will be loaded together with other functions with the same tag. It can contain an optional name, which is the import name for the tag.",
-		handle: func(opts *FuncAttributes, s ...string) error {
-			var name string
-			if len(s) > 1 {
-				name = s[1]
-			}
-			opts.Tags = append(opts.Tags, TagAttr{Tag: s[0], Name: name})
-			return nil
-		},
-	},
-	{
-		name:        "variadic",
-		description: "The function has variadic arguments, and its name is a custom wrapper for the actual C name, defined in this attribute.",
-		handle: func(opts *FuncAttributes, s ...string) error {
-			opts.VariadicInst = true
-			opts.ImportName = s[0]
-			return nil
-		},
-	},
-	{
-		name:        "optional",
-		description: "The function is optional",
-		handle: func(opts *FuncAttributes, s ...string) error {
-			opts.Optional = true
-			return nil
-		},
-	},
-	{
-		name:        "noerror",
-		description: "The function does not return an error, and the program will panic if the function returns an error.",
-		handle: func(opts *FuncAttributes, s ...string) error {
-			if opts.ErrCond != "" {
-				return errors.New("noerror attribute is not allowed with errcond attribute")
-			}
-			opts.NoError = true
-			return nil
-		},
-	},
-	{
-		name:        "errcond",
-		description: "The function returns an error if the C function returns a value that matches the condition in this attribute.",
-		handle: func(opts *FuncAttributes, s ...string) error {
-			if opts.NoError {
-				return errors.New("errcond attribute is not allowed with noerror attribute")
-			}
-			opts.ErrCond = s[0]
-			return nil
-		},
-	},
-	{
-		name:        "noescape",
-		description: "The C function does not keep a copy of the Go pointer.",
-		handle: func(opts *FuncAttributes, s ...string) error {
-			opts.NoEscape = true
-			return nil
-		},
-	},
-	{
-		name:        "nocallback",
-		description: "The C function does not call back into Go.",
-		handle: func(opts *FuncAttributes, s ...string) error {
-			opts.NoCallback = true
-			return nil
-		},
-	},
-}
-
-// Parse parses files listed in fs and extracts all syscall
-// functions listed in sys comments. It returns source files
-// and functions collection *Source if successful.
-func Parse(fs ...string) (*Source, error) {
-	src := &Source{
-		Files: fs,
-	}
-	for _, file := range fs {
-		if err := src.parseFile(file); err != nil {
-			return nil, err
-		}
-	}
-	slices.SortFunc(src.Funcs, func(fi, fj *Func) int {
-		return cmp.Compare(fi.Name, fj.Name)
-	})
-	return src, nil
-}
-
-// parseFile parses file name and extracts all symbols.
-func (src *Source) parseFile(name string) error {
-	file, err := os.Open(name)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	s := bufio.NewScanner(file)
-	var inBlockComment, inEnum bool
+// Parse parses r and adds all symbols to src.
+func (src *Source) Parse(r io.Reader) error {
+	s := bufio.NewScanner(r)
+	var inEnum bool
 	for s.Scan() {
 		line := trim(s.Text())
 		// Process comments.
-		comment, line := processComments(line, &inBlockComment)
+		if strings.Contains(line, "/*") || strings.Contains(line, "*/") {
+			// Block comment.
+			return errors.New("block comments are not supported")
+		}
+		comment, line := processComments(line)
 		comment = trim(comment)
 		if comment != "" {
-			if inBlockComment {
-				// The comment is inside a block comment.
-				// Append it to the previous comment.
-				src.Comments[len(src.Comments)-1] += "\n" + comment
-			} else {
-				src.Comments = append(src.Comments, comment)
-			}
+			src.Comments = append(src.Comments, comment)
 		}
 		line = trim(line)
 		if line == "" {
@@ -149,11 +35,9 @@ func (src *Source) parseFile(name string) error {
 				inEnum = false
 				continue
 			}
-			enum, err := newEnum(line)
-			if err != nil {
-				return err
+			if err := src.addEnum(line); err != nil {
+				return fmt.Errorf("can't parse enum in line %q: %w", line, err)
 			}
-			src.Enums = append(src.Enums, enum)
 			continue
 		}
 		if strings.HasPrefix(line, "enum {") {
@@ -162,8 +46,8 @@ func (src *Source) parseFile(name string) error {
 		}
 
 		// Process preprocessor directives.
-		if strings.HasPrefix(line, "#") {
-			if v, ok := strings.CutPrefix(line, "#include "); ok {
+		if v, found := strings.CutPrefix(line, "#"); found {
+			if v, found = strings.CutPrefix(v, "include "); found {
 				src.Includes = append(src.Includes, v)
 			}
 			// Skip all other preprocessor directives.
@@ -171,100 +55,116 @@ func (src *Source) parseFile(name string) error {
 		}
 
 		// Process typedefs.
-		if strings.Contains(line, "typedef ") {
-			td, err := newTypeDef(line)
-			if err != nil {
-				return err
+		if v, found := strings.CutPrefix(line, "typedef "); found {
+			if err := src.addTypeDef(v); err != nil {
+				return fmt.Errorf("can't parse typedef in line %q: %w", line, err)
 			}
-			src.TypeDefs = append(src.TypeDefs, td)
-			continue
-		}
-
-		// Process attributes.
-		var fnOps FuncAttributes
-		line, err = extractFunctionAttributes(line, &fnOps)
-		if err != nil {
-			return err
-		}
-		if line == "" {
 			continue
 		}
 
 		// Process function.
-		f, err := newFn(line, fnOps)
-		if err != nil {
-			return err
+		if err := src.addFn(line); err != nil {
+			return fmt.Errorf("can't parse function in line %q: %w", line, err)
 		}
-		src.Funcs = append(src.Funcs, f)
 	}
-	if err := s.Err(); err != nil {
-		return err
+	return s.Err()
+}
+
+func (src *Source) addSymbol(name string) error {
+	if src.symbols == nil {
+		src.symbols = make(map[string]struct{})
 	}
+	if _, ok := src.symbols[name]; ok {
+		return fmt.Errorf("duplicate symbol %q", name)
+	}
+	src.symbols[name] = struct{}{}
 	return nil
 }
 
-// newEnum parses string s and returns created enum definition Enum.
-func newEnum(line string) (*Enum, error) {
+// addEnum parses string s and returns created enum definition Enum.
+func (src *Source) addEnum(line string) error {
 	line = strings.TrimSuffix(line, ",")
 	split := strings.SplitN(line, "=", 2)
 	if len(split) != 2 {
-		return nil, errors.New("could not extract enum value from \"" + line + "\"")
+		return errors.New("can't extract enum value")
 	}
-	return &Enum{
-		Name:  trim(split[0]),
-		Value: trim(split[1]),
-	}, nil
+	name, value := trim(split[0]), trim(split[1])
+	if err := src.addSymbol(name); err != nil {
+		return err
+	}
+	src.Enums = append(src.Enums, &Enum{
+		Name:  name,
+		Value: value,
+	})
+	return nil
 }
 
-// newTypeDef parses string s and returns created type definition TypeDef.
-func newTypeDef(line string) (*TypeDef, error) {
-	after, found := strings.CutPrefix(line, "typedef ")
-	if !found {
-		return nil, errors.New("could not extract typedef from \"" + line + "\"")
-	}
-	after = strings.TrimSuffix(after, ";")
+// addTypeDef parses string s and returns created type definition TypeDef.
+// line should have the typedef prefix removed.
+func (src *Source) addTypeDef(line string) error {
+	after := strings.TrimSuffix(line, ";")
 	idx := strings.LastIndex(after, " ")
 	if idx < 0 {
-		return nil, errors.New("could not extract type name from \"" + after + "\"")
+		return errors.New("can't extract type name")
 	}
-	return &TypeDef{
-		Name: trim(after[idx+1:]),
-		Type: trim(after[:idx]),
-	}, nil
+	name, typ := normalizeParam(after[idx+1:], after[:idx])
+	if err := src.addSymbol(name); err != nil {
+		return err
+	}
+	src.TypeDefs = append(src.TypeDefs, &TypeDef{
+		Name: name,
+		Type: typ,
+	})
+	return nil
 }
 
-// newFn parses string s and return created function Fn.
-func newFn(s string, attrs FuncAttributes) (*Func, error) {
+// addFn parses string s and return created function Fn.
+func (src *Source) addFn(s string) error {
+	s = strings.TrimSuffix(s, ";")
+	var attrs FuncAttrs
+	s, err := extractFunctionAttributes(s, &attrs)
+	if err != nil {
+		return fmt.Errorf("can't extract function attributes: %w", err)
+	}
+	if attrs.VariadicTarget != "" {
+		// Validate variadic target.
+		idx := slices.IndexFunc(src.Funcs, func(f *Func) bool {
+			return f.Name == attrs.VariadicTarget
+		})
+		if idx == -1 {
+			return fmt.Errorf("variadic target not added yet")
+		}
+		if !src.Funcs[idx].Variadic() {
+			return fmt.Errorf("variadic target is not variadic")
+		}
+	}
+	if s == "" {
+		return errors.New("empty function signature")
+	}
 	// function name and args
 	prefix, body, _, found := extractSection(s, "(", ")")
 	if !found || prefix == "" {
-		return nil, errors.New("could not extract function name and parameters from \"" + s + "\"")
-	}
-	fn := &Func{
-		FuncAttributes: attrs,
-		Ret:            &Return{},
-	}
-	var err error
-	fn.Params, err = extractParams(body)
-	if err != nil {
-		return nil, err
+		return errors.New("invalid signature")
 	}
 	nameIdx := strings.LastIndexByte(prefix, ' ')
 	if nameIdx < 0 || nameIdx+1 >= len(prefix) {
-		return nil, errors.New("could not extract function name from \"" + s + "\"")
+		return errors.New("missing name")
 	}
-	name, typ := normalizeParam(prefix[nameIdx+1:], prefix[:nameIdx])
-	fn.Name = name
-	if attrs.ImportName != "" {
-		fn.ImportName = attrs.ImportName
-	} else {
-		fn.ImportName = name
+	params, err := extractParams(body)
+	if err != nil {
+		return err
 	}
-	fn.Ret = &Return{
-		Type: trim(typ),
-		Name: "_r0",
+	name, ret := normalizeParam(prefix[nameIdx+1:], prefix[:nameIdx])
+	if err := src.addSymbol(name); err != nil {
+		return err
 	}
-	return fn, nil
+	src.Funcs = append(src.Funcs, &Func{
+		Name:      name,
+		Ret:       ret,
+		FuncAttrs: attrs,
+		Params:    params,
+	})
+	return nil
 }
 
 // normalizeParam normalizes parameter name and type.
@@ -279,6 +179,10 @@ func normalizeParam(name, typ string) (string, string) {
 	case "type", "func":
 		name = "__" + name
 	}
+	// Remove duplicated spaces.
+	for strings.Contains(typ, "  ") {
+		typ = strings.ReplaceAll(typ, "  ", " ")
+	}
 	// Remove all spaces between the asterisks and the type.
 	typ = strings.ReplaceAll(typ, " *", "*")
 	return trim(name), trim(typ)
@@ -290,9 +194,9 @@ func trim(s string) string {
 }
 
 // extractSection extracts text out of string s starting after start
-// and ending just before end. found return value will indicate success,
+// and ending just before end. ok return value will indicate success,
 // and prefix, body and suffix will contain correspondent parts of string s.
-func extractSection(s string, start, end string) (prefix, body, suffix string, found bool) {
+func extractSection(s string, start, end string) (prefix, body, suffix string, ok bool) {
 	s = trim(s)
 	if v, ok := strings.CutPrefix(s, start); ok {
 		// no prefix
@@ -306,14 +210,14 @@ func extractSection(s string, start, end string) (prefix, body, suffix string, f
 		body = a[1]
 	}
 	idxStart := strings.Index(body, start)
-	idxEnd := strings.Index(body, end)
-	needBalancing := idxStart != -1 && idxEnd != -1 && idxStart < idxEnd
+	idxEnd := strings.LastIndex(body, end)
+	if idxEnd == -1 {
+		// no end
+		return "", "", s, false
+	}
+	needBalancing := idxStart != -1 && idxStart < idxEnd
 	if !needBalancing {
-		a := strings.SplitN(body, end, 2)
-		if len(a) != 2 {
-			return "", "", "", false
-		}
-		return prefix, a[0], a[1], true
+		return prefix, trim(body[:idxEnd]), trim(body[idxEnd+len(end):]), true
 	}
 	depth := 1
 	for i := range len(body) {
@@ -322,36 +226,21 @@ func extractSection(s string, start, end string) (prefix, body, suffix string, f
 		} else if strings.HasPrefix(body[i:], end) {
 			depth--
 			if depth == 0 {
-				return prefix, body[:i], body[i+len(end):], true
+				suffix = body[i+len(end):]
+				body = body[:i]
+				ok = true
+				break
 			}
 		}
 	}
-	return "", "", s, false
+	return
 }
 
 // processComments removes comments from line and returns the result.
-// inBlockComment is true if the line is inside a block comment.
-func processComments(line string, inBlockComment *bool) (comment, remmaining string) {
-	if *inBlockComment {
-		// Remove the rest of the block comment.
-		var found bool
-		comment, line, found = strings.Cut(line, "*/")
-		if !found {
-			return comment, ""
-		}
-		*inBlockComment = false
-	}
+func processComments(line string) (comment, remmaining string) {
 	// Remove line comments.
 	if before, comment, found := strings.Cut(line, "//"); found {
 		return comment, before
-	}
-	// Remove block comments.
-	if prefix, _, suffix, found := extractSection(line, "/*", "*/"); found {
-		line = prefix + suffix
-	}
-	// Remove block comments that span multiple lines.
-	if line, comment, *inBlockComment = strings.Cut(line, "/*"); *inBlockComment {
-		return comment, line
 	}
 	return "", line
 }
@@ -359,25 +248,20 @@ func processComments(line string, inBlockComment *bool) (comment, remmaining str
 // extractFunctionAttributes extracts mkcgo attributes from string s.
 // The attributes format follows the GCC __attribute__ syntax as
 // described in https://gcc.gnu.org/onlinedocs/gcc/Attribute-Syntax.html.
-func extractFunctionAttributes(s string, fnAttrs *FuncAttributes) (string, error) {
+func extractFunctionAttributes(s string, fnAttrs *FuncAttrs) (string, error) {
 	// There can be spaces between __attribute__ and the opening parenthesis.
 	prefix, body, found := strings.Cut(s, "__attribute__")
 	if !found {
 		return s, nil
 	}
-	_, body, suffix, found := extractSection(body, "(", ")")
+	_, body, suffix, found := extractSection(body, "((", "))")
 	if !found {
-		return s, nil
+		return "", errors.New("__attribute__ should be followed by double parentheses")
 	}
-	if !strings.HasPrefix(body, "(") || !strings.HasSuffix(body, ")") {
-		// Attributes are enclosed in double parentheses.
-		return s, nil
+	if body == "" {
+		return "", errors.New("empty attribute")
 	}
-	body = trim(body[1 : len(body)-1])
-	for {
-		if body == "" {
-			break
-		}
+	for body != "" {
 		// Attributes are separated by commas. Get the next attribute.
 		// We can't just use strings.Split because the attribute argument
 		// can contain commas.
@@ -393,11 +277,11 @@ func extractFunctionAttributes(s string, fnAttrs *FuncAttributes) (string, error
 			name = body[:idxParen]
 			_, args, body, found = extractSection(body[idxParen:], "(", ")")
 			if !found {
-				return "", errors.New("unbalanced parentheses in line: " + s)
+				return "", errors.New("unbalanced parentheses")
 			}
 			body = trim(body)
 			if len(body) > 0 && body[0] != ',' {
-				return "", errors.New("parameters must be separated by commas in line: " + s)
+				return "", errors.New("parameters must be separated by commas")
 			}
 			body = strings.TrimPrefix(body, ",")
 		} else if idxComma == -1 && idxParen == -1 {
@@ -411,12 +295,15 @@ func extractFunctionAttributes(s string, fnAttrs *FuncAttributes) (string, error
 			if name != attr.name {
 				continue
 			}
-			vargs := strings.Split(args, ",")
-			for i := range vargs {
-				vargs[i] = trim(strings.Trim(vargs[i], `"`))
+			var vargs []string
+			if args != "" {
+				vargs = strings.Split(args, ",")
+				for i := range vargs {
+					vargs[i] = trim(strings.Trim(vargs[i], `"`))
+				}
 			}
 			if err := attr.handle(fnAttrs, vargs...); err != nil {
-				return "", fmt.Errorf("error parsing attribute in line: %v: %w", s, err)
+				return "", fmt.Errorf("error parsing attribute %s: %w", name, err)
 			}
 			handled = true
 			break
@@ -432,12 +319,16 @@ func extractFunctionAttributes(s string, fnAttrs *FuncAttributes) (string, error
 func extractParams(s string) ([]*Param, error) {
 	s = trim(s)
 	if s == "" {
-		return nil, nil
+		// No parameters, normalize to "void".
+		return []*Param{{"void", ""}}, nil
 	}
 	a := strings.Split(s, ",")
 	ps := make([]*Param, 0, len(a))
 	for i := range a {
 		s2 := trim(a[i])
+		if s2 == "" {
+			return nil, errors.New("empty parameter")
+		}
 		b := strings.LastIndexByte(s2, ' ')
 		var name, typ string
 		if b != -1 {
