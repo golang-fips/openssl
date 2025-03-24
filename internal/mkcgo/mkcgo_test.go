@@ -56,6 +56,7 @@ func TestFuncVariadic(t *testing.T) {
 		})
 	}
 }
+
 func TestSourceTags(t *testing.T) {
 	tests := []struct {
 		name  string
@@ -309,7 +310,7 @@ func TestParseError(t *testing.T) {
 			want:    `empty parameter`,
 		}, {
 			content: `void foo2(int a) __attribute__((variadic("foo")));`,
-			want:    "variadic target not added yet",
+			want:    "variadic target not found in preceding code",
 		}, {
 			content: `
 void foo();
