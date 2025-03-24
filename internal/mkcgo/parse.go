@@ -132,7 +132,7 @@ func (src *Source) addFn(s string) error {
 			return f.Name == attrs.VariadicTarget
 		})
 		if idx == -1 {
-			return fmt.Errorf("variadic target not added yet")
+			return fmt.Errorf("variadic target not found in preceding code")
 		}
 		if !src.Funcs[idx].Variadic() {
 			return fmt.Errorf("variadic target is not variadic")
@@ -259,7 +259,7 @@ func extractFunctionAttributes(s string, fnAttrs *FuncAttrs) (string, error) {
 		return "", errors.New("__attribute__ should be followed by double parentheses")
 	}
 	if body == "" {
-		return "", errors.New("empty attribute")
+		return trim(prefix + suffix), nil
 	}
 	for body != "" {
 		// Attributes are separated by commas. Get the next attribute.

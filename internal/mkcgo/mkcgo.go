@@ -43,6 +43,36 @@ type FuncAttrs struct {
 	NoCallback     bool
 }
 
+func (attrs *FuncAttrs) String() string {
+	var bld strings.Builder
+	if len(attrs.Tags) != 0 {
+		bld.Write([]byte(fmt.Sprintf("%s", attrs.Tags)))
+	}
+	if attrs.VariadicTarget != "" {
+		bld.WriteString(", variadic(")
+		bld.WriteString(attrs.VariadicTarget)
+		bld.WriteByte(')')
+	}
+	if attrs.Optional {
+		bld.WriteString(", optional")
+	}
+	if attrs.NoError {
+		bld.WriteString(", noerror")
+	}
+	if attrs.ErrCond != "" {
+		bld.WriteString(", errcond(")
+		bld.WriteString(attrs.ErrCond)
+		bld.WriteByte(')')
+	}
+	if attrs.NoEscape {
+		bld.WriteString(", noescape")
+	}
+	if attrs.NoCallback {
+		bld.WriteString(", nocallback")
+	}
+	return strings.TrimPrefix(bld.String(), ", ")
+}
+
 // Func describes a function.
 type Func struct {
 	FuncAttrs
@@ -84,8 +114,11 @@ func (f *Func) String() string {
 			bld.WriteString(p.Name)
 		}
 	}
-	bld.WriteString(") ")
-	bld.WriteString(fmt.Sprintf("%v", f.FuncAttrs))
+	bld.WriteString(")")
+	if attrs := f.FuncAttrs.String(); attrs != "" {
+		bld.WriteString(" ")
+		bld.WriteString(attrs)
+	}
 	return bld.String()
 }
 

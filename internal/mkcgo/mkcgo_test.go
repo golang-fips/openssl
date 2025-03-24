@@ -156,28 +156,28 @@ func TestFuncString(t *testing.T) {
 		{
 			name:     "Function with no return type and no parameters",
 			function: &mkcgo.Func{Name: "TestFunc"},
-			want:     "TestFunc() {[]  false false  false false}",
+			want:     "TestFunc()",
 		},
 		{
 			name:     "Function with return type and no parameters",
 			function: &mkcgo.Func{Name: "TestFunc", Ret: "int"},
-			want:     "int TestFunc() {[]  false false  false false}",
+			want:     "int TestFunc()",
 		},
 		{
 			name:     "Function with parameters and no return type",
 			function: &mkcgo.Func{Name: "TestFunc", Params: []*mkcgo.Param{{Type: "int", Name: "param1"}, {Type: "string", Name: "param2"}}},
-			want:     "TestFunc(int param1, string param2) {[]  false false  false false}",
+			want:     "TestFunc(int param1, string param2)",
 		},
 		{
 			name:     "Function with return type and parameters",
 			function: &mkcgo.Func{Name: "TestFunc", Ret: "void", Params: []*mkcgo.Param{{Type: "int", Name: "param1"}, {Type: "float", Name: "param2"}}},
-			want:     "void TestFunc(int param1, float param2) {[]  false false  false false}",
+			want:     "void TestFunc(int param1, float param2)",
 		},
 		{
 			name: "Function with attributes",
 			function: &mkcgo.Func{Name: "TestFunc", Ret: "void", Params: []*mkcgo.Param{{Type: "int", Name: "param1"}},
 				FuncAttrs: mkcgo.FuncAttrs{
-					Tags:       []mkcgo.TagAttr{{Tag: "tag1"}, {Tag: "tag2"}},
+					Tags:       []mkcgo.TagAttr{{Tag: "tag1"}, {Tag: "tag2", Name: "name"}},
 					Optional:   true,
 					NoError:    true,
 					ErrCond:    "error_condition",
@@ -185,7 +185,7 @@ func TestFuncString(t *testing.T) {
 					NoCallback: true,
 				},
 			},
-			want: "void TestFunc(int param1) {[{tag1 } {tag2 }]  true true error_condition true true}",
+			want: "void TestFunc(int param1) [{tag1 } {tag2 name}], optional, noerror, errcond(error_condition), noescape, nocallback",
 		},
 	}
 
@@ -252,7 +252,7 @@ int * F2(int **p1, void  * p2);
 int *F3(int p1, void***) __attribute__((optional));
 unsigned   long F4(int func, int type, ...);
 int* F5(float, double) __attribute__((variadic("F4")));
-void F6();`,
+void F6() __attribute__(());`,
 			want: &mkcgo.Source{
 				Funcs: []*mkcgo.Func{
 					{Name: "F0", Ret: "void", Params: []*mkcgo.Param{{"void", ""}}, FuncAttrs: mkcgo.FuncAttrs{Tags: []mkcgo.TagAttr{{Tag: "t0"}, {Tag: "t1", Name: "tn0"}}, NoError: true}},
@@ -328,9 +328,6 @@ void foo2(int a) __attribute__((variadic("foo")));
 		}, {
 			content: `void foo(void) __attribute__((tag("a"());`,
 			want:    `can't extract function attributes: unbalanced parentheses`,
-		}, {
-			content: `void foo(void) __attribute__(());`,
-			want:    `can't extract function attributes: empty attribute`,
 		}, {
 			content: `__attribute__((optional));`,
 			want:    `empty function signature`,
