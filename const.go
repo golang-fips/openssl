@@ -48,10 +48,11 @@ const ( //checkheader:ignore
 	_DigestNameSHA2_256 cString = "SHA2-256\x00"
 
 	// KDF names
-	_OSSL_KDF_NAME_HKDF     cString = "HKDF\x00"
-	_OSSL_KDF_NAME_PBKDF2   cString = "PBKDF2\x00"
-	_OSSL_KDF_NAME_TLS1_PRF cString = "TLS1-PRF\x00"
-	_OSSL_MAC_NAME_HMAC     cString = "HMAC\x00"
+	_OSSL_KDF_NAME_HKDF      cString = "HKDF\x00"
+	_OSSL_KDF_NAME_PBKDF2    cString = "PBKDF2\x00"
+	_OSSL_KDF_NAME_TLS1_PRF	 cString = "TLS1-PRF\x00"
+	_OSSL_KDF_NAME_TLS13_KDF cString = "TLS13-KDF\x00"
+	_OSSL_MAC_NAME_HMAC      cString = "HMAC\x00"
 
 	// KDF parameters
 	_OSSL_KDF_PARAM_DIGEST cString = "digest\x00"
@@ -61,6 +62,11 @@ const ( //checkheader:ignore
 	_OSSL_KDF_PARAM_INFO   cString = "info\x00"
 	_OSSL_KDF_PARAM_SALT   cString = "salt\x00"
 	_OSSL_KDF_PARAM_MODE   cString = "mode\x00"
+
+	// TLS3-KDF parameters
+	_OSSL_KDF_PARAM_PREFIX cString = "prefix\x00"
+	_OSSL_KDF_PARAM_LABEL  cString = "label\x00"
+	_OSSL_KDF_PARAM_DATA   cString = "data\x00"
 
 	// PKEY parameters
 	_OSSL_PKEY_PARAM_PUB_KEY          cString = "pub\x00"

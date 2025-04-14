@@ -4,6 +4,7 @@ package openssl
 
 import "C"
 import (
+	"bytes"
 	"errors"
 	"hash"
 	"io"
@@ -261,6 +262,80 @@ func (c *hkdf3) finalize() {
 	}
 }
 
+// fetchTLS13_KDF fetches the TLS13-KDF algorithm.
+// It is safe to call this function concurrently.
+// The returned EVP_KDF_PTR shouldn't be freed.
+var fetchTLS13_KDF = sync.OnceValues(func() (ossl.EVP_KDF_PTR, error) {
+	checkMajorVersion(3)
+
+	kdf, err := ossl.EVP_KDF_fetch(nil, _OSSL_KDF_NAME_TLS13_KDF.ptr(), nil)
+	if err != nil {
+		return nil, err
+	}
+	return kdf, nil
+})
+
+//
+// https://docs.openssl.org/3.4/man7/EVP_KDF-TLS13_KDF/
+// https://datatracker.ietf.org/doc/html/rfc8446#section-7.1
+//
+// This function parses the info parameter for TLS 1.3 KDF.
+// The info parameter is expected to be in the format:
+//
+//    +--------------+-----------+-------------------+------------+------------------+
+//    | total length | labelLen  | label bytes...    | contextLen | context bytes... |
+//    | 2 bytes      | 1 byte    | labelLen bytes    | 1 byte     | contextLen bytes |
+//    +--------------+-----------+-------------------+------------+------------------+
+//
+// The label bytes are expected to be begin with "tls13 ".
+//
+func ParseForTLS13(info []byte) (isTLS13 bool, label, context []byte) {
+	isTLS13 = false
+	label = nil
+	context = nil
+
+	if len(info) <= 2 {
+		return
+	}
+
+	cursor := 2
+	labelLen := int(info[cursor])
+
+	if labelLen < 7 {
+		return
+	}
+
+	cursor++
+	if cursor+labelLen > len(info) {
+		return
+	}
+
+
+	labelBytes := info[cursor : cursor+labelLen]
+	cursor += labelLen
+
+	if !bytes.HasPrefix(labelBytes, []byte("tls13 ")) {
+		return
+	}
+
+	if cursor >= len(info) {
+		return
+	}
+
+	contextLen := int(info[cursor])
+	cursor++
+	if cursor+contextLen > len(info) {
+		return
+	}
+
+	// Success, set the out parameters
+	label = labelBytes[len("tls13 "):]
+	context = info[cursor : cursor+contextLen]
+	isTLS13 = true
+
+	return
+}
+
 // fetchHKDF3 fetches the HKDF algorithm.
 // It is safe to call this function concurrently.
 // The returned EVP_KDF_PTR shouldn't be freed.
@@ -278,7 +353,14 @@ var fetchHKDF3 = sync.OnceValues(func() (ossl.EVP_KDF_PTR, error) {
 func newHKDFCtx3(md ossl.EVP_MD_PTR, mode int32, secret, salt, pseudorandomKey, info []byte) (_ ossl.EVP_KDF_CTX_PTR, err error) {
 	checkMajorVersion(3)
 
-	kdf, err := fetchHKDF3()
+	useTLS13KDF, label, context := ParseForTLS13(info)
+
+	var kdf ossl.EVP_KDF_PTR
+	if useTLS13KDF {
+		kdf, err = fetchTLS13_KDF()
+	} else {
+		kdf, err = fetchHKDF3()
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -298,17 +380,37 @@ func newHKDFCtx3(md ossl.EVP_MD_PTR, mode int32, secret, salt, pseudorandomKey, 
 	}
 	bld.addUTF8String(_OSSL_KDF_PARAM_DIGEST, ossl.EVP_MD_get0_name(md), 0)
 	bld.addInt32(_OSSL_KDF_PARAM_MODE, int32(mode))
-	if len(secret) > 0 {
-		bld.addOctetString(_OSSL_KDF_PARAM_KEY, secret)
-	}
-	if len(salt) > 0 {
-		bld.addOctetString(_OSSL_KDF_PARAM_SALT, salt)
-	}
-	if len(pseudorandomKey) > 0 {
-		bld.addOctetString(_OSSL_KDF_PARAM_KEY, pseudorandomKey)
-	}
-	if len(info) > 0 {
-		bld.addOctetString(_OSSL_KDF_PARAM_INFO, info)
+
+	if useTLS13KDF {
+		if (mode == ossl.EVP_KDF_HKDF_MODE_EXTRACT_ONLY) {
+			if len(salt) > 0 {
+				bld.addOctetString(_OSSL_KDF_PARAM_SALT, salt)
+			}
+			if len(pseudorandomKey) > 0 {
+				bld.addOctetString(_OSSL_KDF_PARAM_KEY, secret)
+			}
+		} else {
+			bld.addOctetString(_OSSL_KDF_PARAM_PREFIX, []byte("tls13 "))
+			bld.addOctetString(_OSSL_KDF_PARAM_LABEL, label)
+			bld.addOctetString(_OSSL_KDF_PARAM_DATA, context)
+			if len(pseudorandomKey) > 0 {
+				bld.addOctetString(_OSSL_KDF_PARAM_KEY, pseudorandomKey)
+			}
+		}
+
+	} else {
+		if len(secret) > 0 {
+			bld.addOctetString(_OSSL_KDF_PARAM_KEY, secret)
+		}
+		if len(salt) > 0 {
+			bld.addOctetString(_OSSL_KDF_PARAM_SALT, salt)
+		}
+		if len(pseudorandomKey) > 0 {
+			bld.addOctetString(_OSSL_KDF_PARAM_KEY, pseudorandomKey)
+		}
+		if len(info) > 0 {
+			bld.addOctetString(_OSSL_KDF_PARAM_INFO, info)
+		}
 	}
 	params, err := bld.build()
 	if err != nil {
