@@ -410,7 +410,7 @@ func TestHashStructAllocations(t *testing.T) {
 		sha256Hash.Reset()
 		sha512Hash.Reset()
 	}))
-	want := 6
+	want := 4
 	if compareCurrentVersion("go1.24") >= 0 {
 		// The go1.24 compiler is able to optimize the allocation away.
 		// See cgo_go124.go for more information.
