@@ -73,7 +73,7 @@ type opensslHMAC struct {
 	ctx3      hmacCtx3
 	size      int
 	blockSize int
-	sum       []byte
+	sum       [maxHashSize]byte
 }
 
 func newHMAC1(key []byte, md ossl.EVP_MD_PTR) hmacCtx1 {
@@ -180,7 +180,7 @@ func (h *opensslHMAC) Reset() {
 	}
 
 	runtime.KeepAlive(h) // Next line will keep h alive too; just making doubly sure.
-	h.sum = nil
+	h.sum = [maxHashSize]byte{}
 }
 
 func (h *opensslHMAC) finalize() {
@@ -216,10 +216,6 @@ func (h *opensslHMAC) BlockSize() int {
 }
 
 func (h *opensslHMAC) Sum(in []byte) []byte {
-	if h.sum == nil {
-		size := h.Size()
-		h.sum = make([]byte, size)
-	}
 	// Make copy of context because Go hash.Hash mandates
 	// that Sum has no effect on the underlying stream.
 	// In particular it is OK to Sum, then Write more, then Sum again,
@@ -234,16 +230,16 @@ func (h *opensslHMAC) Sum(in []byte) []byte {
 		if _, err := ossl.HMAC_CTX_copy(ctx2, h.ctx1.ctx); err != nil {
 			panic(err)
 		}
-		ossl.HMAC_Final(ctx2, base(h.sum), nil)
+		ossl.HMAC_Final(ctx2, base(h.sum[:h.size]), nil)
 	case 3:
 		ctx2, err := ossl.EVP_MAC_CTX_dup(h.ctx3.ctx)
 		if err != nil {
 			panic(err)
 		}
 		defer ossl.EVP_MAC_CTX_free(ctx2)
-		ossl.EVP_MAC_final(ctx2, base(h.sum), nil, len(h.sum))
+		ossl.EVP_MAC_final(ctx2, base(h.sum[:h.size]), nil, len(h.sum))
 	default:
 		panic(errUnsupportedVersion())
 	}
-	return append(in, h.sum...)
+	return append(in, h.sum[:h.size]...)
 }
