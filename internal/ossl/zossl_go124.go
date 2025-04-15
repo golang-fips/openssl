@@ -5,6 +5,8 @@
 package ossl
 
 /*
+#cgo noescape go_hash_sum
+#cgo nocallback go_hash_sum
 #cgo noescape _mkcgo_EVP_CipherUpdate
 #cgo nocallback _mkcgo_EVP_CipherUpdate
 #cgo noescape _mkcgo_EVP_DecryptFinal_ex

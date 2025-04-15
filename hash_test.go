@@ -393,17 +393,17 @@ func TestHashStructAllocations(t *testing.T) {
 	sha256Hash := openssl.NewSHA256()
 	sha512Hash := openssl.NewSHA512()
 
-	// sum := make([]byte, sha512Hash.Size())
+	sum := make([]byte, sha512Hash.Size())
 	n := int(testing.AllocsPerRun(10, func() {
 		md5Hash.Write(msg)
 		sha1Hash.Write(msg)
 		sha256Hash.Write(msg)
 		sha512Hash.Write(msg)
 
-		//		md5Hash.Sum(sum[:0])
-		//		sha1Hash.Sum(sum[:0])
-		//		sha256Hash.Sum(sum[:0])
-		//		sha512Hash.Sum(sum[:0])
+		md5Hash.Sum(sum[:0])
+		sha1Hash.Sum(sum[:0])
+		sha256Hash.Sum(sum[:0])
+		sha512Hash.Sum(sum[:0])
 
 		md5Hash.Reset()
 		sha1Hash.Reset()
