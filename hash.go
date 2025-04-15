@@ -359,12 +359,18 @@ func (h *evpHash) BlockSize() int {
 
 func (h *evpHash) Sum(in []byte) []byte {
 	h.init()
+	in = append(in, h.sum()...)
+	runtime.KeepAlive(h)
+	return in
+}
+
+func (h *evpHash) sum() []byte {
 	out := make([]byte, h.Size(), maxHashSize) // explicit cap to allow stack allocation
 	if err := ossl.HashSum(h.ctx, h.ctx2, out); err != nil {
 		panic(err)
 	}
-	runtime.KeepAlive(h)
-	return append(in, out...)
+
+	return out
 }
 
 // Clone returns a new evpHash object that is a deep clone of itself.
