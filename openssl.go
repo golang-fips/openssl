@@ -241,21 +241,34 @@ func proveSHA256(props cString) bool {
 	return sha256Provider(props) != nil
 }
 
+var zero byte
+
+// baseNeverEmpty returns the address of the underlying array in b.
+// If b has zero length, it returns a pointer to a zero byte.
+func baseNeverEmpty(b []byte) *byte {
+	if len(b) == 0 {
+		return &zero
+	}
+	return unsafe.SliceData(b)
+}
+
+// pbaseNeverEmpty returns the address of the underlying array in b.
+// If b has zero length, it returns a pointer to a zero byte.
+func pbaseNeverEmpty(b []byte) unsafe.Pointer {
+	return unsafe.Pointer(baseNeverEmpty(b))
+}
+
 // pbase returns the address of the underlying array in b,
 // being careful not to panic when b has zero length.
 func pbase(b []byte) unsafe.Pointer {
 	return unsafe.Pointer(base(b))
 }
 
-var zero byte
-
 // base returns the address of the underlying array in b,
 // being careful not to panic when b has zero length.
-// If b is empty, it returns a pointer to a zero byte
-// so that it can always be dereferenced.
 func base(b []byte) *byte {
 	if len(b) == 0 {
-		return &zero
+		return nil
 	}
 	return unsafe.SliceData(b)
 }
