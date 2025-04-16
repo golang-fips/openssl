@@ -325,7 +325,7 @@ func (h *evpHash) WriteString(s string) (int, error) {
 		return 0, nil
 	}
 	h.init()
-	if _, err := ossl.EVP_DigestUpdate(h.ctx, unsafe.Pointer(unsafe.StringData(s)), len(s)); err != nil {
+	if _, err := ossl.EVP_DigestUpdate(h.ctx, pbase([]byte(s)), len(s)); err != nil {
 		panic(err)
 	}
 	runtime.KeepAlive(h)

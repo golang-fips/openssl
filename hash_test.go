@@ -262,6 +262,7 @@ func TestHash_StringWriter(t *testing.T) {
 			}
 			h := cryptoToHash(ch)()
 			initSum := h.Sum(nil)
+			h.(io.StringWriter).WriteString("")
 			h.(io.StringWriter).WriteString(string(msg))
 			h.Reset()
 			sum := h.Sum(nil)
