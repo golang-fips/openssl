@@ -429,7 +429,7 @@ func EVP_DecryptUpdate(ctx EVP_CIPHER_CTX_PTR, out *byte, outl *int32, in *byte,
 
 func EVP_Digest(data unsafe.Pointer, count int, md *byte, size *uint32, __type EVP_MD_PTR, impl ENGINE_PTR) (int32, error) {
 	var _err C.mkcgo_err_state
-	_ret := C._mkcgo_EVP_Digest(data, C.size_t(count), (*C.uchar)(unsafe.Pointer(md)), (*C.uint)(unsafe.Pointer(size)), __type, impl, mkcgoNoEscape(&_err))
+	_ret := C._mkcgo_EVP_Digest(unsafe.Pointer(&*(*byte)(data)), C.size_t(count), (*C.uchar)(unsafe.Pointer(md)), (*C.uint)(unsafe.Pointer(size)), __type, impl, mkcgoNoEscape(&_err))
 	return int32(_ret), newMkcgoErr("EVP_Digest", _err)
 }
 
@@ -471,7 +471,7 @@ func EVP_DigestSignInit(ctx EVP_MD_CTX_PTR, pctx *EVP_PKEY_CTX_PTR, __type EVP_M
 
 func EVP_DigestUpdate(ctx EVP_MD_CTX_PTR, d unsafe.Pointer, cnt int) (int32, error) {
 	var _err C.mkcgo_err_state
-	_ret := C._mkcgo_EVP_DigestUpdate(ctx, d, C.size_t(cnt), mkcgoNoEscape(&_err))
+	_ret := C._mkcgo_EVP_DigestUpdate(ctx, unsafe.Pointer(&*(*byte)(d)), C.size_t(cnt), mkcgoNoEscape(&_err))
 	return int32(_ret), newMkcgoErr("EVP_DigestUpdate", _err)
 }
 

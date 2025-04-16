@@ -34,13 +34,14 @@ type Enum struct {
 
 // FuncAttrs contains attributes of a function.
 type FuncAttrs struct {
-	Tags           []TagAttr
-	VariadicTarget string
-	Optional       bool
-	NoError        bool
-	ErrCond        string
-	NoEscape       bool
-	NoCallback     bool
+	Tags             []TagAttr
+	VariadicTarget   string
+	Optional         bool
+	NoError          bool
+	ErrCond          string
+	NoEscape         bool
+	NoCallback       bool
+	NoCheckPtrParams []string
 }
 
 func (attrs *FuncAttrs) String() string {
@@ -69,6 +70,16 @@ func (attrs *FuncAttrs) String() string {
 	}
 	if attrs.NoCallback {
 		bld.WriteString(", nocallback")
+	}
+	if len(attrs.NoCheckPtrParams) != 0 {
+		bld.WriteString(", nocheckptr(")
+		for i, p := range attrs.NoCheckPtrParams {
+			if i > 0 {
+				bld.WriteString(", ")
+			}
+			bld.WriteString(p)
+		}
+		bld.WriteByte(')')
 	}
 	return strings.TrimPrefix(bld.String(), ", ")
 }
@@ -116,7 +127,7 @@ func (f *Func) String() string {
 	}
 	bld.WriteString(")")
 	if attrs := f.FuncAttrs.String(); attrs != "" {
-		bld.WriteString(" ")
+		bld.WriteByte(' ')
 		bld.WriteString(attrs)
 	}
 	return bld.String()
@@ -228,6 +239,14 @@ var attributes = [...]attribute{
 		description: "The C function does not call back into Go.",
 		handle: func(opts *FuncAttrs, s ...string) error {
 			opts.NoCallback = true
+			return nil
+		},
+	},
+	{
+		name:        "nocheckptr",
+		description: "The parameter will be hidden from the Go compiler.",
+		handle: func(opts *FuncAttrs, s ...string) error {
+			opts.NoCheckPtrParams = append(opts.NoCheckPtrParams, s[0])
 			return nil
 		},
 	},

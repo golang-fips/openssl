@@ -407,13 +407,20 @@ func generateCFn(typedefs map[string]string, fn *mkcgo.Func, w io.Writer) {
 }
 
 // paramToGo converts C parameter p to Go parameter.
-func paramToGo(p *mkcgo.Param) string {
+func paramToGo(p *mkcgo.Param, hidden bool) string {
 	goType, needCast := cTypeToGo(p.Type, true)
 	if !needCast {
+		if hidden && goType == "unsafe.Pointer" {
+			// The parameter is not annotated with cgoCheckPointer by cgo
+			// if it has the form unsafe.Pointer(&...).
+			// See https://go-review.googlesource.com/c/go/+/404295.
+			// TODO: support other types.
+			return fmt.Sprintf("unsafe.Pointer(&*(*byte)(%s))", p.Name)
+		}
 		return p.Name
 	}
 	switch {
-	case goType == "unsafe.Pointer" || goType == "":
+	case goType == "":
 		return p.Name
 	case goType[0] == '*':
 		return fmt.Sprintf("(%s)(unsafe.Pointer(%s))", goType, p.Name)
@@ -540,7 +547,7 @@ func fnToGoParams(fn *mkcgo.Func) string {
 // argList returns source code for C parameters for function f.
 func fnToGoArgs(fn *mkcgo.Func) string {
 	return join(fn.Params, func(_ int, p *mkcgo.Param) string {
-		return paramToGo(p)
+		return paramToGo(p, slices.Contains(fn.NoCheckPtrParams, p.Name))
 	}, ", ")
 }
 
