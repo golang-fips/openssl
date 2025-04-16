@@ -19,7 +19,7 @@ import (
 const maxHashSize = 64
 
 func hashOneShot(ch crypto.Hash, p []byte, sum []byte) bool {
-	_, err := ossl.EVP_Digest(pbase(p), len(p), base(sum), nil, loadHash(ch).md, nil)
+	_, err := ossl.EVP_Digest(pbaseNeverEmpty(p), len(p), base(sum), nil, loadHash(ch).md, nil)
 	return err == nil
 }
 

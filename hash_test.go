@@ -329,6 +329,7 @@ func TestHash_OneShot(t *testing.T) {
 			if !openssl.SupportsHash(tt.h) {
 				t.Skip("not supported")
 			}
+			_ = tt.oneShot(nil) // test that does not panic
 			got := tt.oneShot(msg)
 			h := cryptoToHash(tt.h)()
 			h.Write(msg)
