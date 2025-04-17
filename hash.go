@@ -367,7 +367,6 @@ func (h *evpHash) Sum(in []byte) []byte {
 		panic(err)
 	}
 	runtime.KeepAlive(h)
-
 	return append(in, tmp...)
 }
 
