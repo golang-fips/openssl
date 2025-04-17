@@ -180,7 +180,6 @@ func (h *opensslHMAC) Reset() {
 	}
 
 	runtime.KeepAlive(h) // Next line will keep h alive too; just making doubly sure.
-	h.sum = [maxHashSize]byte{}
 }
 
 func (h *opensslHMAC) finalize() {

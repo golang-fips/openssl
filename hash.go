@@ -362,6 +362,7 @@ func (h *evpHash) BlockSize() int {
 func (h *evpHash) Sum(in []byte) []byte {
 	h.init()
 	tmp := h.out[:h.Size()] // Create slice view
+	clear(tmp)
 	if err := ossl.HashSum(h.ctx, h.ctx2, tmp); err != nil {
 		panic(err)
 	}
