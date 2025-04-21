@@ -28,6 +28,18 @@ func SupportsHKDF() bool {
 	}
 }
 
+// SupprtsTLS13KDF reports whether the current OpenSSL version supports TLS13-KDF.
+func SupportsTLS13KDF() bool {
+	switch vMajor {
+	case 3:
+		// TLS13-KDF is available in OpenSSL 3.0.0 and later.
+		_, err := fetchTLS13_KDF()
+		return err == nil
+	default:
+		panic(errUnsupportedVersion())
+	}
+}
+
 func newHKDFCtx1(md ossl.EVP_MD_PTR, mode int32, secret, salt, pseudorandomKey, info []byte) (ctx ossl.EVP_PKEY_CTX_PTR, err error) {
 	checkMajorVersion(1)
 
@@ -215,6 +227,36 @@ func ExpandHKDFOneShot(h func() hash.Hash, pseudorandomKey, info []byte, keyLeng
 	return out, nil
 }
 
+// ExpandHKDFOneShotTLS13_KDF_Support derives a key from the given hash, key, and context info, and will use
+// the TLS 1.3 KDF if the info parameter is in the expected format.
+func ExpandHKDFOneShotTLS13_KDF_Support(h func() hash.Hash, pseudorandomKey, info []byte, keyLength int) ([]byte, error) {
+	if !SupportsTLS13KDF() {
+		return nil, errUnsupportedVersion()
+	}
+
+	md, err := hashFuncToMD(h)
+	if err != nil {
+		return nil, err
+	}
+
+	out := make([]byte, keyLength)
+	switch vMajor {
+	case 3:
+		// TLS13-KDF is available in OpenSSL 3.0.0 and later.
+		ctx, err := newHKDFCtx3_with_TLS13_KDF_Support(md, ossl.EVP_KDF_HKDF_MODE_EXPAND_ONLY, nil, nil, pseudorandomKey, info)
+		if err != nil {
+			return nil, err
+		}
+		defer ossl.EVP_KDF_CTX_free(ctx)
+		if _, err := ossl.EVP_KDF_derive(ctx, base(out), keyLength, nil); err != nil {
+			return nil, err
+		}
+	default:
+		panic(errUnsupportedVersion())
+	}
+	return out, nil
+}
+
 func ExpandHKDF(h func() hash.Hash, pseudorandomKey, info []byte) (io.Reader, error) {
 	if !SupportsHKDF() {
 		return nil, errUnsupportedVersion()
@@ -336,21 +378,8 @@ func ParseForTLS13(info []byte) (isTLS13 bool, label, context []byte) {
 	return
 }
 
-// fetchHKDF3 fetches the HKDF algorithm.
-// It is safe to call this function concurrently.
-// The returned EVP_KDF_PTR shouldn't be freed.
-var fetchHKDF3 = sync.OnceValues(func() (ossl.EVP_KDF_PTR, error) {
-	checkMajorVersion(3)
-
-	kdf, err := ossl.EVP_KDF_fetch(nil, _OSSL_KDF_NAME_HKDF.ptr(), nil)
-	if err != nil {
-		return nil, err
-	}
-	return kdf, nil
-})
-
-// newHKDFCtx3 implements HKDF for OpenSSL 3 using the EVP_KDF API.
-func newHKDFCtx3(md ossl.EVP_MD_PTR, mode int32, secret, salt, pseudorandomKey, info []byte) (_ ossl.EVP_KDF_CTX_PTR, err error) {
+// fetchHKDF3_TLS13KDF fetches the "TLS13-KDF" for TLS 1.3 handshakes, and otherwise falls back to "HKDF".
+func newHKDFCtx3_with_TLS13_KDF_Support(md ossl.EVP_MD_PTR, mode int32, secret, salt, pseudorandomKey, info []byte) (_ ossl.EVP_KDF_CTX_PTR, err error) {
 	checkMajorVersion(3)
 
 	useTLS13KDF, label, context := ParseForTLS13(info)
@@ -411,6 +440,67 @@ func newHKDFCtx3(md ossl.EVP_MD_PTR, mode int32, secret, salt, pseudorandomKey, 
 		if len(info) > 0 {
 			bld.addOctetString(_OSSL_KDF_PARAM_INFO, info)
 		}
+	}
+	params, err := bld.build()
+	if err != nil {
+		return ctx, err
+	}
+	defer ossl.OSSL_PARAM_free(params)
+
+	if _, err := ossl.EVP_KDF_CTX_set_params(ctx, params); err != nil {
+		return ctx, err
+	}
+	return ctx, nil
+}
+
+// fetchHKDF3 fetches the HKDF algorithm.
+// It is safe to call this function concurrently.
+// The returned EVP_KDF_PTR shouldn't be freed.
+var fetchHKDF3 = sync.OnceValues(func() (ossl.EVP_KDF_PTR, error) {
+	checkMajorVersion(3)
+
+	kdf, err := ossl.EVP_KDF_fetch(nil, _OSSL_KDF_NAME_HKDF.ptr(), nil)
+	if err != nil {
+		return nil, err
+	}
+	return kdf, nil
+})
+
+// newHKDFCtx3 implements HKDF for OpenSSL 3 using the EVP_KDF API.
+func newHKDFCtx3(md ossl.EVP_MD_PTR, mode int32, secret, salt, pseudorandomKey, info []byte) (_ ossl.EVP_KDF_CTX_PTR, err error) {
+	checkMajorVersion(3)
+
+	kdf, err := fetchHKDF3()
+	if err != nil {
+		return nil, err
+	}
+	ctx, err := ossl.EVP_KDF_CTX_new(kdf)
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		if err != nil {
+			ossl.EVP_KDF_CTX_free(ctx)
+		}
+	}()
+
+	bld, err := newParamBuilder()
+	if err != nil {
+		return ctx, err
+	}
+	bld.addUTF8String(_OSSL_KDF_PARAM_DIGEST, ossl.EVP_MD_get0_name(md), 0)
+	bld.addInt32(_OSSL_KDF_PARAM_MODE, int32(mode))
+	if len(secret) > 0 {
+		bld.addOctetString(_OSSL_KDF_PARAM_KEY, secret)
+	}
+	if len(salt) > 0 {
+		bld.addOctetString(_OSSL_KDF_PARAM_SALT, salt)
+	}
+	if len(pseudorandomKey) > 0 {
+		bld.addOctetString(_OSSL_KDF_PARAM_KEY, pseudorandomKey)
+	}
+	if len(info) > 0 {
+		bld.addOctetString(_OSSL_KDF_PARAM_INFO, info)
 	}
 	params, err := bld.build()
 	if err != nil {

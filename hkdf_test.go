@@ -463,6 +463,22 @@ func makeInfo(fullLabel string, context []byte) []byte {
 	return info
 }
 
+func TestExpandHKDFOneShot_TLS13_KDF_Support(t *testing.T) {
+	if !openssl.SupportsTLS13KDF() {
+		t.Skip("TLS13-KDF is not supported")
+	}
+	for i, tt := range hkdfTests {
+		out, err := openssl.ExpandHKDFOneShotTLS13_KDF_Support(tt.hash, tt.prk, tt.info, len(tt.out))
+		if err != nil {
+			t.Errorf("test %d: error expanding one-shot: %v.", i, err)
+			continue
+		}
+		if !bytes.Equal(out, tt.out) {
+			t.Errorf("test %d: incorrect output from ExpandHKDFOneShotTLS13_KDF_Support: have %v, need %v.", i, out, tt.out)
+		}
+	}
+}
+
 func TestParseForTLS13_Valid(t *testing.T) {
 	tests := []struct {
 		name         string
