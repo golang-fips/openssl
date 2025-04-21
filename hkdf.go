@@ -36,7 +36,7 @@ func SupportsTLS13KDF() bool {
 		_, err := fetchTLS13_KDF()
 		return err == nil
 	default:
-		panic(errUnsupportedVersion())
+		return false
 	}
 }
 
@@ -227,9 +227,9 @@ func ExpandHKDFOneShot(h func() hash.Hash, pseudorandomKey, info []byte, keyLeng
 	return out, nil
 }
 
-// ExpandHKDFOneShotTLS13_KDF_Support derives a key from the given hash, key, and context info, and will use
+// ExpandHKDFOneShotTLS13KDF derives a key from the given hash, key, and context info, and will use
 // the TLS 1.3 KDF if the info parameter is in the expected format.
-func ExpandHKDFOneShotTLS13_KDF_Support(h func() hash.Hash, pseudorandomKey, info []byte, keyLength int) ([]byte, error) {
+func ExpandHKDFOneShotTLS13KDF(h func() hash.Hash, pseudorandomKey, info []byte, keyLength int) ([]byte, error) {
 	if !SupportsTLS13KDF() {
 		return nil, errUnsupportedVersion()
 	}
@@ -321,7 +321,7 @@ var fetchTLS13_KDF = sync.OnceValues(func() (ossl.EVP_KDF_PTR, error) {
 // https://docs.openssl.org/3.4/man7/EVP_KDF-TLS13_KDF/
 // https://datatracker.ietf.org/doc/html/rfc8446#section-7.1
 //
-// This function parses the info parameter for TLS 1.3 KDF.
+// parseForTLS13 parses the info parameter for TLS 1.3 KDF.
 // The info parameter is expected to be in the format:
 //
 //    +--------------+-----------+-------------------+------------+------------------+
@@ -331,68 +331,71 @@ var fetchTLS13_KDF = sync.OnceValues(func() (ossl.EVP_KDF_PTR, error) {
 //
 // The label bytes are expected to be begin with "tls13 ".
 //
-func ParseForTLS13(info []byte) (isTLS13 bool, label, context []byte) {
-	isTLS13 = false
-	label = nil
-	context = nil
-
-	if len(info) <= 2 {
-		return
+// Based on https://datatracker.ietf.org/doc/html/rfc8446#section-7.1
+// RFC8446 mentioned by https://docs.openssl.org/3.4/man7/EVP_KDF-TLS13_KDF/
+//
+// If info matches expectations, the label, context, and true are returned.
+// Otherwise, nil, nil, and false.
+//
+func parseForTLS13(info []byte) ([]byte, []byte, bool) {
+	if len(info) < 3 {
+		// info too short to contain label and context
+		return nil, nil, false
 	}
 
 	cursor := 2
 	labelLen := int(info[cursor])
 
 	if labelLen < 7 {
-		return
+		// label length is too short to contain 'tls13 ' prefix
+		return nil, nil, false
 	}
 
 	cursor++
 	if cursor+labelLen > len(info) {
-		return
+		return nil, nil, false
 	}
-
 
 	labelBytes := info[cursor : cursor+labelLen]
 	cursor += labelLen
 
 	if !bytes.HasPrefix(labelBytes, []byte("tls13 ")) {
-		return
+		return nil, nil, false
 	}
 
 	if cursor >= len(info) {
-		return
+		// context length byte is missing
+		return nil, nil, false
 	}
 
 	contextLen := int(info[cursor])
 	cursor++
+
 	if cursor+contextLen > len(info) {
-		return
+		return nil, nil, false
 	}
 
-	// Success, set the out parameters
-	label = labelBytes[len("tls13 "):]
-	context = info[cursor : cursor+contextLen]
-	isTLS13 = true
-
-	return
+	label := labelBytes[len("tls13 "):]
+	context := info[cursor : cursor+contextLen]
+	return label, context, true
 }
 
-// fetchHKDF3_TLS13KDF fetches the "TLS13-KDF" for TLS 1.3 handshakes, and otherwise falls back to "HKDF".
+// newHKDFCtx3_with_TLS13_KDF_Support fetches the "TLS13-KDF" for TLS 1.3 handshakes, and otherwise falls back to "HKDF".
 func newHKDFCtx3_with_TLS13_KDF_Support(md ossl.EVP_MD_PTR, mode int32, secret, salt, pseudorandomKey, info []byte) (_ ossl.EVP_KDF_CTX_PTR, err error) {
 	checkMajorVersion(3)
 
-	useTLS13KDF, label, context := ParseForTLS13(info)
-
 	var kdf ossl.EVP_KDF_PTR
-	if useTLS13KDF {
+	label, context, isTLS13 := parseForTLS13(info)
+	if isTLS13 {
 		kdf, err = fetchTLS13_KDF()
 	} else {
 		kdf, err = fetchHKDF3()
 	}
+
 	if err != nil {
 		return nil, err
 	}
+
 	ctx, err := ossl.EVP_KDF_CTX_new(kdf)
 	if err != nil {
 		return nil, err
@@ -410,7 +413,7 @@ func newHKDFCtx3_with_TLS13_KDF_Support(md ossl.EVP_MD_PTR, mode int32, secret, 
 	bld.addUTF8String(_OSSL_KDF_PARAM_DIGEST, ossl.EVP_MD_get0_name(md), 0)
 	bld.addInt32(_OSSL_KDF_PARAM_MODE, int32(mode))
 
-	if useTLS13KDF {
+	if isTLS13 {
 		if (mode == ossl.EVP_KDF_HKDF_MODE_EXTRACT_ONLY) {
 			if len(salt) > 0 {
 				bld.addOctetString(_OSSL_KDF_PARAM_SALT, salt)
