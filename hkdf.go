@@ -4,7 +4,6 @@ package openssl
 
 import "C"
 import (
-	"bytes"
 	"errors"
 	"hash"
 	"io"
@@ -227,9 +226,9 @@ func ExpandHKDFOneShot(h func() hash.Hash, pseudorandomKey, info []byte, keyLeng
 	return out, nil
 }
 
-// ExpandHKDFOneShotTLS13KDF derives a key from the given hash, key, and context info, and will use
-// the TLS 1.3 KDF if the info parameter is in the expected format.
-func ExpandHKDFOneShotTLS13KDF(h func() hash.Hash, pseudorandomKey, info []byte, keyLength int) ([]byte, error) {
+// ExpandTLS13KDF derives a key from the given hash, key, label and context. It will use
+// "TLS13-KDF" algorithm to do so.
+func ExpandTLS13KDF(h func() hash.Hash, pseudorandomKey, label, context []byte, keyLength int) ([]byte, error) {
 	if !SupportsTLS13KDF() {
 		return nil, errUnsupportedVersion()
 	}
@@ -240,19 +239,14 @@ func ExpandHKDFOneShotTLS13KDF(h func() hash.Hash, pseudorandomKey, info []byte,
 	}
 
 	out := make([]byte, keyLength)
-	switch vMajor {
-	case 3:
-		// TLS13-KDF is available in OpenSSL 3.0.0 and later.
-		ctx, err := newHKDFCtx3_with_TLS13_KDF_Support(md, ossl.EVP_KDF_HKDF_MODE_EXPAND_ONLY, nil, nil, pseudorandomKey, info)
-		if err != nil {
-			return nil, err
-		}
-		defer ossl.EVP_KDF_CTX_free(ctx)
-		if _, err := ossl.EVP_KDF_derive(ctx, base(out), keyLength, nil); err != nil {
-			return nil, err
-		}
-	default:
-		panic(errUnsupportedVersion())
+
+	ctx, err := newTLS13KDFExpandCtx3(md, []byte(label), context, pseudorandomKey)
+	if err != nil {
+		return nil, err
+	}
+	defer ossl.EVP_KDF_CTX_free(ctx)
+	if _, err := ossl.EVP_KDF_derive(ctx, base(out), keyLength, nil); err != nil {
+		return nil, err
 	}
 	return out, nil
 }
@@ -317,81 +311,11 @@ var fetchTLS13_KDF = sync.OnceValues(func() (ossl.EVP_KDF_PTR, error) {
 	return kdf, nil
 })
 
-//
-// https://docs.openssl.org/3.4/man7/EVP_KDF-TLS13_KDF/
-// https://datatracker.ietf.org/doc/html/rfc8446#section-7.1
-//
-// parseForTLS13 parses the info parameter for TLS 1.3 KDF.
-// The info parameter is expected to be in the format:
-//
-//    +--------------+-----------+-------------------+------------+------------------+
-//    | total length | labelLen  | label bytes...    | contextLen | context bytes... |
-//    | 2 bytes      | 1 byte    | labelLen bytes    | 1 byte     | contextLen bytes |
-//    +--------------+-----------+-------------------+------------+------------------+
-//
-// The label bytes are expected to be begin with "tls13 ".
-//
-// Based on https://datatracker.ietf.org/doc/html/rfc8446#section-7.1
-// RFC8446 mentioned by https://docs.openssl.org/3.4/man7/EVP_KDF-TLS13_KDF/
-//
-// If info matches expectations, the label, context, and true are returned.
-// Otherwise, nil, nil, and false.
-//
-func parseForTLS13(info []byte) ([]byte, []byte, bool) {
-	if len(info) < 3 {
-		// info too short to contain label and context
-		return nil, nil, false
-	}
-
-	cursor := 2
-	labelLen := int(info[cursor])
-
-	if labelLen < 7 {
-		// label length is too short to contain 'tls13 ' prefix
-		return nil, nil, false
-	}
-
-	cursor++
-	if cursor+labelLen > len(info) {
-		return nil, nil, false
-	}
-
-	labelBytes := info[cursor : cursor+labelLen]
-	cursor += labelLen
-
-	if !bytes.HasPrefix(labelBytes, []byte("tls13 ")) {
-		return nil, nil, false
-	}
-
-	if cursor >= len(info) {
-		// context length byte is missing
-		return nil, nil, false
-	}
-
-	contextLen := int(info[cursor])
-	cursor++
-
-	if cursor+contextLen > len(info) {
-		return nil, nil, false
-	}
-
-	label := labelBytes[len("tls13 "):]
-	context := info[cursor : cursor+contextLen]
-	return label, context, true
-}
-
-// newHKDFCtx3_with_TLS13_KDF_Support fetches the "TLS13-KDF" for TLS 1.3 handshakes, and otherwise falls back to "HKDF".
-func newHKDFCtx3_with_TLS13_KDF_Support(md ossl.EVP_MD_PTR, mode int32, secret, salt, pseudorandomKey, info []byte) (_ ossl.EVP_KDF_CTX_PTR, err error) {
+// newTLS13KDFExpandCtx3 fetches the "TLS13-KDF" for TLS 1.3 handshakes, and otherwise falls back to "HKDF".
+func newTLS13KDFExpandCtx3(md ossl.EVP_MD_PTR, label, context, pseudorandomKey []byte) (_ ossl.EVP_KDF_CTX_PTR, err error) {
 	checkMajorVersion(3)
 
-	var kdf ossl.EVP_KDF_PTR
-	label, context, isTLS13 := parseForTLS13(info)
-	if isTLS13 {
-		kdf, err = fetchTLS13_KDF()
-	} else {
-		kdf, err = fetchHKDF3()
-	}
-
+	kdf, err := fetchTLS13_KDF()
 	if err != nil {
 		return nil, err
 	}
@@ -411,39 +335,14 @@ func newHKDFCtx3_with_TLS13_KDF_Support(md ossl.EVP_MD_PTR, mode int32, secret, 
 		return ctx, err
 	}
 	bld.addUTF8String(_OSSL_KDF_PARAM_DIGEST, ossl.EVP_MD_get0_name(md), 0)
-	bld.addInt32(_OSSL_KDF_PARAM_MODE, int32(mode))
-
-	if isTLS13 {
-		if (mode == ossl.EVP_KDF_HKDF_MODE_EXTRACT_ONLY) {
-			if len(salt) > 0 {
-				bld.addOctetString(_OSSL_KDF_PARAM_SALT, salt)
-			}
-			if len(pseudorandomKey) > 0 {
-				bld.addOctetString(_OSSL_KDF_PARAM_KEY, secret)
-			}
-		} else {
-			bld.addOctetString(_OSSL_KDF_PARAM_PREFIX, []byte("tls13 "))
-			bld.addOctetString(_OSSL_KDF_PARAM_LABEL, label)
-			bld.addOctetString(_OSSL_KDF_PARAM_DATA, context)
-			if len(pseudorandomKey) > 0 {
-				bld.addOctetString(_OSSL_KDF_PARAM_KEY, pseudorandomKey)
-			}
-		}
-
-	} else {
-		if len(secret) > 0 {
-			bld.addOctetString(_OSSL_KDF_PARAM_KEY, secret)
-		}
-		if len(salt) > 0 {
-			bld.addOctetString(_OSSL_KDF_PARAM_SALT, salt)
-		}
-		if len(pseudorandomKey) > 0 {
-			bld.addOctetString(_OSSL_KDF_PARAM_KEY, pseudorandomKey)
-		}
-		if len(info) > 0 {
-			bld.addOctetString(_OSSL_KDF_PARAM_INFO, info)
-		}
+	bld.addInt32(_OSSL_KDF_PARAM_MODE, int32(ossl.EVP_KDF_HKDF_MODE_EXPAND_ONLY))
+	bld.addOctetString(_OSSL_KDF_PARAM_PREFIX, []byte("tls13 "))
+	bld.addOctetString(_OSSL_KDF_PARAM_LABEL, label)
+	bld.addOctetString(_OSSL_KDF_PARAM_DATA, context)
+	if len(pseudorandomKey) > 0 {
+		bld.addOctetString(_OSSL_KDF_PARAM_KEY, pseudorandomKey)
 	}
+
 	params, err := bld.build()
 	if err != nil {
 		return ctx, err
