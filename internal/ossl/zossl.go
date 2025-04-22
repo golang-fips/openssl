@@ -4,6 +4,7 @@ package ossl
 
 /*
 #cgo CFLAGS: -Wno-attributes
+#cgo LDFLAGS: -ldl
 
 #include "zossl.h"
 */
