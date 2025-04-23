@@ -311,7 +311,7 @@ var fetchTLS13_KDF = sync.OnceValues(func() (ossl.EVP_KDF_PTR, error) {
 	return kdf, nil
 })
 
-// newTLS13KDFExpandCtx3 fetches the "TLS13-KDF" for TLS 1.3 handshakes, and otherwise falls back to "HKDF".
+// newTLS13KDFExpandCtx3 fetches the "TLS13-KDF" for TLS 1.3 handshakes.
 func newTLS13KDFExpandCtx3(md ossl.EVP_MD_PTR, label, context, pseudorandomKey []byte) (_ ossl.EVP_KDF_CTX_PTR, err error) {
 	checkMajorVersion(3)
 
