@@ -19,12 +19,7 @@ import (
 const maxHashSize = 64
 
 func hashOneShot(ch crypto.Hash, p []byte, sum []byte) bool {
-	if len(p) > 0 {
-		var pinner runtime.Pinner
-		defer pinner.Unpin()
-		pinner.Pin(&p[0])
-	}
-	_, err := ossl.EVP_Digest(pbase(p), len(p), base(sum), nil, loadHash(ch).md, nil)
+	_, err := ossl.EVP_Digest(pbaseNeverEmpty(p), len(p), base(sum), nil, loadHash(ch).md, nil)
 	return err == nil
 }
 
@@ -254,8 +249,6 @@ type evpHash struct {
 	// the state of ctx. Having it here allows reusing the
 	// same allocated object multiple times.
 	ctx2   ossl.EVP_MD_CTX_PTR
-	pinner runtime.Pinner
-
 	out [maxHashSize]byte
 }
 
@@ -320,8 +313,6 @@ func (h *evpHash) Write(p []byte) (int, error) {
 	if len(p) == 0 {
 		return 0, nil
 	}
-	defer h.pinner.Unpin()
-	h.pinner.Pin(&p[0])
 	h.init()
 	if _, err := ossl.EVP_DigestUpdate(h.ctx, pbase(p), len(p)); err != nil {
 		panic(err)
@@ -334,7 +325,7 @@ func (h *evpHash) WriteString(s string) (int, error) {
 	if len(s) == 0 {
 		return 0, nil
 	}
-	h.init()
+ner	h.init()
 	if _, err := ossl.EVP_DigestUpdate(h.ctx, unsafe.Pointer(unsafe.StringData(s)), len(s)); err != nil {
 		panic(err)
 	}
