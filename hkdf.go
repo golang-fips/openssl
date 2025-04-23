@@ -30,6 +30,8 @@ func SupportsHKDF() bool {
 // SupprtsTLS13KDF reports whether the current OpenSSL version supports TLS13-KDF.
 func SupportsTLS13KDF() bool {
 	switch vMajor {
+	case 1:
+		return false
 	case 3:
 		// TLS13-KDF is available in OpenSSL 3.0.0 and later.
 		_, err := fetchTLS13_KDF()
