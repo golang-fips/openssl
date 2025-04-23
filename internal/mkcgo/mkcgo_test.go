@@ -177,15 +177,16 @@ func TestFuncString(t *testing.T) {
 			name: "Function with attributes",
 			function: &mkcgo.Func{Name: "TestFunc", Ret: "void", Params: []*mkcgo.Param{{Type: "int", Name: "param1"}},
 				FuncAttrs: mkcgo.FuncAttrs{
-					Tags:       []mkcgo.TagAttr{{Tag: "tag1"}, {Tag: "tag2", Name: "name"}},
-					Optional:   true,
-					NoError:    true,
-					ErrCond:    "error_condition",
-					NoEscape:   true,
-					NoCallback: true,
+					Tags:             []mkcgo.TagAttr{{Tag: "tag1"}, {Tag: "tag2", Name: "name"}},
+					Optional:         true,
+					NoError:          true,
+					ErrCond:          "error_condition",
+					NoEscape:         true,
+					NoCallback:       true,
+					NoCheckPtrParams: []string{"param1"},
 				},
 			},
-			want: "void TestFunc(int param1) [{tag1 } {tag2 name}], optional, noerror, errcond(error_condition), noescape, nocallback",
+			want: "void TestFunc(int param1) [{tag1 } {tag2 name}], optional, noerror, errcond(error_condition), noescape, nocallback, nocheckptr(param1)",
 		},
 	}
 
@@ -247,7 +248,7 @@ enum {
 		}, {
 			content: `
 void F0(void) __attribute__((tag("t0"),noerror,tag("t1","tn0")));
-int F1(int p1) __attribute__((errcond("ec0"),  noescape,    nocallback));
+int F1(int p1) __attribute__((errcond("ec0"),  noescape,    nocallback, nocheckptr(p1)));
 int * F2(int **p1, void  * p2);
 int *F3(int p1, void***) __attribute__((optional));
 unsigned   long F4(int func, int type, ...);
@@ -256,7 +257,7 @@ void F6() __attribute__(());`,
 			want: &mkcgo.Source{
 				Funcs: []*mkcgo.Func{
 					{Name: "F0", Ret: "void", Params: []*mkcgo.Param{{"void", ""}}, FuncAttrs: mkcgo.FuncAttrs{Tags: []mkcgo.TagAttr{{Tag: "t0"}, {Tag: "t1", Name: "tn0"}}, NoError: true}},
-					{Name: "F1", Ret: "int", Params: []*mkcgo.Param{{"int", "p1"}}, FuncAttrs: mkcgo.FuncAttrs{ErrCond: "ec0", NoEscape: true, NoCallback: true}},
+					{Name: "F1", Ret: "int", Params: []*mkcgo.Param{{"int", "p1"}}, FuncAttrs: mkcgo.FuncAttrs{ErrCond: "ec0", NoEscape: true, NoCallback: true, NoCheckPtrParams: []string{"p1"}}},
 					{Name: "F2", Ret: "int*", Params: []*mkcgo.Param{{"int**", "p1"}, {"void*", "p2"}}},
 					{Name: "F3", Ret: "int*", Params: []*mkcgo.Param{{"int", "p1"}, {"void***", ""}}, FuncAttrs: mkcgo.FuncAttrs{Optional: true}},
 					{Name: "F4", Ret: "unsigned long", Params: []*mkcgo.Param{{"int", "__func"}, {"int", "__type"}, {"...", ""}}},

@@ -441,8 +441,10 @@ func evpHashSign(withKey withKeyFunc, h crypto.Hash, msg []byte) ([]byte, error)
 	}); err != nil {
 		return nil, err
 	}
-	if _, err := ossl.EVP_DigestUpdate(ctx, unsafe.Pointer(base(msg)), len(msg)); err != nil {
-		return nil, err
+	if len(msg) > 0 {
+		if _, err := ossl.EVP_DigestUpdate(ctx, pbase(msg), len(msg)); err != nil {
+			return nil, err
+		}
 	}
 	// Obtain the signature length
 	if _, err := ossl.EVP_DigestSignFinal(ctx, nil, &outLen); err != nil {
@@ -472,8 +474,10 @@ func evpHashVerify(withKey withKeyFunc, h crypto.Hash, msg, sig []byte) error {
 	}); err != nil {
 		return err
 	}
-	if _, err := ossl.EVP_DigestUpdate(ctx, unsafe.Pointer(base(msg)), len(msg)); err != nil {
-		return err
+	if len(msg) > 0 {
+		if _, err := ossl.EVP_DigestUpdate(ctx, pbase(msg), len(msg)); err != nil {
+			return err
+		}
 	}
 	if _, err := ossl.EVP_DigestVerifyFinal(ctx, base(sig), len(sig)); err != nil {
 		return err
