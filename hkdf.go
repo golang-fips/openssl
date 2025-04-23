@@ -240,7 +240,7 @@ func ExpandTLS13KDF(h func() hash.Hash, pseudorandomKey, label, context []byte, 
 
 	out := make([]byte, keyLength)
 
-	ctx, err := newTLS13KDFExpandCtx3(md, []byte(label), context, pseudorandomKey)
+	ctx, err := newTLS13KDFExpandCtx3(md, label, context, pseudorandomKey)
 	if err != nil {
 		return nil, err
 	}
