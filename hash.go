@@ -248,8 +248,8 @@ type evpHash struct {
 	// ctx2 is used in evpHash.sum to avoid changing
 	// the state of ctx. Having it here allows reusing the
 	// same allocated object multiple times.
-	ctx2   ossl.EVP_MD_CTX_PTR
-	out [maxHashSize]byte
+	ctx2 ossl.EVP_MD_CTX_PTR
+	out  [maxHashSize]byte
 }
 
 func newEvpHash(ch crypto.Hash) *evpHash {
@@ -325,7 +325,7 @@ func (h *evpHash) WriteString(s string) (int, error) {
 	if len(s) == 0 {
 		return 0, nil
 	}
-ner	h.init()
+	h.init()
 	if _, err := ossl.EVP_DigestUpdate(h.ctx, unsafe.Pointer(unsafe.StringData(s)), len(s)); err != nil {
 		panic(err)
 	}
