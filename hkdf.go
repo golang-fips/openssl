@@ -37,7 +37,7 @@ func SupportsTLS13KDF() bool {
 		_, err := fetchTLS13_KDF()
 		return err == nil
 	default:
-		return false
+		panic(errUnsupportedVersion())
 	}
 }
 
