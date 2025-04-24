@@ -26,6 +26,20 @@ func SupportsHKDF() bool {
 	}
 }
 
+// SupprtsTLS13KDF reports whether the current OpenSSL version supports TLS13-KDF.
+func SupportsTLS13KDF() bool {
+	switch vMajor {
+	case 1:
+		return false
+	case 3:
+		// TLS13-KDF is available in OpenSSL 3.0.0 and later.
+		_, err := fetchTLS13_KDF()
+		return err == nil
+	default:
+		panic(errUnsupportedVersion())
+	}
+}
+
 func newHKDFCtx1(md C.GO_EVP_MD_PTR, mode C.int, secret, salt, pseudorandomKey, info []byte) (ctx C.GO_EVP_PKEY_CTX_PTR, err error) {
 	checkMajorVersion(1)
 
@@ -188,6 +202,31 @@ func ExpandHKDFOneShot(h func() hash.Hash, pseudorandomKey, info []byte, keyLeng
 	return out, nil
 }
 
+// ExpandTLS13KDF derives a key from the given hash, key, label and context. It will use
+// "TLS13-KDF" algorithm to do so.
+func ExpandTLS13KDF(h func() hash.Hash, pseudorandomKey, label, context []byte, keyLength int) ([]byte, error) {
+	if !SupportsTLS13KDF() {
+		return nil, errUnsupportedVersion()
+	}
+
+	md, err := hashFuncToMD(h)
+	if err != nil {
+		return nil, err
+	}
+
+	out := make([]byte, keyLength)
+
+	ctx, err := newTLS13KDFExpandCtx3(md, label, context, pseudorandomKey)
+	if err != nil {
+		return nil, err
+	}
+	defer ossl.EVP_KDF_CTX_free(ctx)
+	if _, err := ossl.EVP_KDF_derive(ctx, base(out), keyLength, nil); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func ExpandHKDF(h func() hash.Hash, pseudorandomKey, info []byte) (io.Reader, error) {
 	if !SupportsHKDF() {
 		return nil, errUnsupportedVersion()
@@ -231,6 +270,63 @@ func (c *hkdf3) finalize() {
 	if c.ctx != nil {
 		C.go_openssl_EVP_KDF_CTX_free(c.ctx)
 	}
+}
+
+// fetchTLS13_KDF fetches the TLS13-KDF algorithm.
+// It is safe to call this function concurrently.
+// The returned EVP_KDF_PTR shouldn't be freed.
+var fetchTLS13_KDF = sync.OnceValues(func() (ossl.EVP_KDF_PTR, error) {
+	checkMajorVersion(3)
+
+	kdf, err := ossl.EVP_KDF_fetch(nil, _OSSL_KDF_NAME_TLS13_KDF.ptr(), nil)
+	if err != nil {
+		return nil, err
+	}
+	return kdf, nil
+})
+
+// newTLS13KDFExpandCtx3 fetches the "TLS13-KDF" for TLS 1.3 handshakes.
+func newTLS13KDFExpandCtx3(md ossl.EVP_MD_PTR, label, context, pseudorandomKey []byte) (_ ossl.EVP_KDF_CTX_PTR, err error) {
+	checkMajorVersion(3)
+
+	kdf, err := fetchTLS13_KDF()
+	if err != nil {
+		return nil, err
+	}
+
+	ctx, err := ossl.EVP_KDF_CTX_new(kdf)
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		if err != nil {
+			ossl.EVP_KDF_CTX_free(ctx)
+		}
+	}()
+
+	bld, err := newParamBuilder()
+	if err != nil {
+		return ctx, err
+	}
+	bld.addUTF8String(_OSSL_KDF_PARAM_DIGEST, ossl.EVP_MD_get0_name(md), 0)
+	bld.addInt32(_OSSL_KDF_PARAM_MODE, int32(ossl.EVP_KDF_HKDF_MODE_EXPAND_ONLY))
+	bld.addOctetString(_OSSL_KDF_PARAM_PREFIX, []byte("tls13 "))
+	bld.addOctetString(_OSSL_KDF_PARAM_LABEL, label)
+	bld.addOctetString(_OSSL_KDF_PARAM_DATA, context)
+	if len(pseudorandomKey) > 0 {
+		bld.addOctetString(_OSSL_KDF_PARAM_KEY, pseudorandomKey)
+	}
+
+	params, err := bld.build()
+	if err != nil {
+		return ctx, err
+	}
+	defer ossl.OSSL_PARAM_free(params)
+
+	if _, err := ossl.EVP_KDF_CTX_set_params(ctx, params); err != nil {
+		return ctx, err
+	}
+	return ctx, nil
 }
 
 // fetchHKDF3 fetches the HKDF algorithm.
