@@ -220,8 +220,8 @@ func ExpandTLS13KDF(h func() hash.Hash, pseudorandomKey, label, context []byte, 
 	if err != nil {
 		return nil, err
 	}
-	defer ossl.EVP_KDF_CTX_free(ctx)
-	if _, err := ossl.EVP_KDF_derive(ctx, base(out), keyLength, nil); err != nil {
+	defer C.go_openssl_EVP_KDF_CTX_free(ctx)
+	if _, err := C.go_openssl_EVP_KDF_derive(ctx, base(out), C.size_t(keyLength), nil); err != nil {
 		return nil, err
 	}
 	return out, nil
@@ -275,18 +275,20 @@ func (c *hkdf3) finalize() {
 // fetchTLS13_KDF fetches the TLS13-KDF algorithm.
 // It is safe to call this function concurrently.
 // The returned EVP_KDF_PTR shouldn't be freed.
-var fetchTLS13_KDF = sync.OnceValues(func() (ossl.EVP_KDF_PTR, error) {
+var fetchTLS13_KDF = sync.OnceValues(func() (C.GO_EVP_KDF_PTR, error) {
 	checkMajorVersion(3)
 
-	kdf, err := ossl.EVP_KDF_fetch(nil, _OSSL_KDF_NAME_TLS13_KDF.ptr(), nil)
-	if err != nil {
-		return nil, err
+	name := C.CString("TLS13-KDF")
+	kdf := C.go_openssl_EVP_KDF_fetch(nil, name, nil)
+	C.free(unsafe.Pointer(name))
+	if kdf == nil {
+		return nil, newOpenSSLError("EVP_KDF_fetch")
 	}
 	return kdf, nil
 })
 
 // newTLS13KDFExpandCtx3 fetches the "TLS13-KDF" for TLS 1.3 handshakes.
-func newTLS13KDFExpandCtx3(md ossl.EVP_MD_PTR, label, context, pseudorandomKey []byte) (_ ossl.EVP_KDF_CTX_PTR, err error) {
+func newTLS13KDFExpandCtx3(md C.GO_EVP_MD_PTR, label, context, pseudorandomKey []byte) (_ C.GO_EVP_KDF_CTX_PTR, err error) {
 	checkMajorVersion(3)
 
 	kdf, err := fetchTLS13_KDF()
@@ -294,13 +296,13 @@ func newTLS13KDFExpandCtx3(md ossl.EVP_MD_PTR, label, context, pseudorandomKey [
 		return nil, err
 	}
 
-	ctx, err := ossl.EVP_KDF_CTX_new(kdf)
+	ctx, err := C.go_openssl_EVP_KDF_CTX_new(kdf)
 	if err != nil {
 		return nil, err
 	}
 	defer func() {
 		if err != nil {
-			ossl.EVP_KDF_CTX_free(ctx)
+			C.go_openssl_EVP_KDF_CTX_free(ctx)
 		}
 	}()
 
@@ -308,8 +310,8 @@ func newTLS13KDFExpandCtx3(md ossl.EVP_MD_PTR, label, context, pseudorandomKey [
 	if err != nil {
 		return ctx, err
 	}
-	bld.addUTF8String(_OSSL_KDF_PARAM_DIGEST, ossl.EVP_MD_get0_name(md), 0)
-	bld.addInt32(_OSSL_KDF_PARAM_MODE, int32(ossl.EVP_KDF_HKDF_MODE_EXPAND_ONLY))
+	bld.addUTF8String(_OSSL_KDF_PARAM_DIGEST, C.go_openssl_EVP_MD_get0_name(md), 0)
+	bld.addInt32(_OSSL_KDF_PARAM_MODE, int32(C.GO_EVP_KDF_HKDF_MODE_EXPAND_ONLY))
 	bld.addOctetString(_OSSL_KDF_PARAM_PREFIX, []byte("tls13 "))
 	bld.addOctetString(_OSSL_KDF_PARAM_LABEL, label)
 	bld.addOctetString(_OSSL_KDF_PARAM_DATA, context)
@@ -321,9 +323,9 @@ func newTLS13KDFExpandCtx3(md ossl.EVP_MD_PTR, label, context, pseudorandomKey [
 	if err != nil {
 		return ctx, err
 	}
-	defer ossl.OSSL_PARAM_free(params)
+	defer C.go_openssl_OSSL_PARAM_free(params)
 
-	if _, err := ossl.EVP_KDF_CTX_set_params(ctx, params); err != nil {
+	if _, err := C.go_openssl_EVP_KDF_CTX_set_params(ctx, params); err != nil {
 		return ctx, err
 	}
 	return ctx, nil
