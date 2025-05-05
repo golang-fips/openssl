@@ -18,6 +18,9 @@ var (
 	_OSSL_KDF_PARAM_INFO   = C.CString("info")
 	_OSSL_KDF_PARAM_SALT   = C.CString("salt")
 	_OSSL_KDF_PARAM_MODE   = C.CString("mode")
+	_OSSL_KDF_PARAM_PREFIX = C.CString("prefix")
+	_OSSL_KDF_PARAM_LABEL  = C.CString("label")
+	_OSSL_KDF_PARAM_DATA   = C.CString("data")
 
 	// PKEY parameters
 	_OSSL_PKEY_PARAM_PUB_KEY          = C.CString("pub")
