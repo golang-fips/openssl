@@ -22,6 +22,7 @@ jobs:
     - name: Check headers
       working-directory: ./cmd/checkheader
       run: go run . --ossl-include /usr/local/src/openssl-${{ matrix.openssl-version }}/include -shim ../../shims.h
+      if: ${{ matrix.openssl-version != '1.0.2' }} # Doesn't work on Ubuntu 22.04
     - name: Set OpenSSL config and prove FIPS
       run: |
         sudo cp ./scripts/openssl-3.cnf /usr/local/ssl/openssl.cnf
