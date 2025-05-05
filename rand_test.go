@@ -14,6 +14,9 @@ func TestRand(t *testing.T) {
 }
 
 func TestAllocations(t *testing.T) {
+	if Asan() {
+		t.Skip("skipping allocations test with sanitizers")
+	}
 	n := int(testing.AllocsPerRun(10, func() {
 		buf := make([]byte, 32)
 		openssl.RandReader.Read(buf)
