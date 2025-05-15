@@ -1,3 +1,5 @@
+//go:build !cmd_go_bootstrap && cgo
+
 package openssl
 
 import (
