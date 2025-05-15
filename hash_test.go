@@ -14,7 +14,6 @@ import (
 	_ "crypto/md5"
 	_ "crypto/sha1"
 	_ "crypto/sha256"
-	_ "crypto/sha3"
 	_ "crypto/sha512"
 
 	"github.com/golang-fips/openssl/v2"
