@@ -22,7 +22,10 @@ go_hash_sum(const _EVP_MD_CTX_PTR ctx, _EVP_MD_CTX_PTR ctx2, unsigned char *out,
 }
 */
 import "C"
-import "unsafe"
+import (
+	"math"
+	"unsafe"
+)
 
 func HashSum(ctx1, ctx2 EVP_MD_CTX_PTR, out []byte) error {
 	var errst C.mkcgo_err_state
@@ -37,4 +40,32 @@ func HashSum(ctx1, ctx2 EVP_MD_CTX_PTR, out []byte) error {
 		return newMkcgoErr(msg, errst)
 	}
 	return nil
+}
+
+// OSSL_PARAM is a structure to pass or request object parameters.
+// https://docs.openssl.org/3.0/man3/OSSL_PARAM/.
+type OSSL_PARAM struct {
+	Key        *byte
+	DataType   uint32
+	Data       unsafe.Pointer
+	DataSize   int
+	ReturnSize int
+}
+
+func ossl_param_construct(key *byte, dataType uint32, data unsafe.Pointer, dataSize int) OSSL_PARAM {
+	return OSSL_PARAM{
+		Key:        key,
+		DataType:   dataType,
+		Data:       data,
+		DataSize:   dataSize,
+		ReturnSize: math.MaxInt - 1,
+	}
+}
+
+func OSSL_PARAM_construct_octet_string(key *byte, data unsafe.Pointer, dataSize int) OSSL_PARAM {
+	return ossl_param_construct(key, OSSL_PARAM_OCTET_STRING, data, dataSize)
+}
+
+func OSSL_PARAM_construct_end() OSSL_PARAM {
+	return OSSL_PARAM{}
 }

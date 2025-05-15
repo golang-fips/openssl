@@ -86,6 +86,8 @@ enum {
 	_EVP_PKEY_CTRL_RSA_OAEP_LABEL      = 0x100A,
 	_EVP_PKEY_CTRL_DSA_PARAMGEN_BITS   = 0x1001,
 	_EVP_PKEY_CTRL_DSA_PARAMGEN_Q_BITS = 0x1002,
+
+	_OSSL_PARAM_OCTET_STRING = 5,
 };
 
 typedef void* _OPENSSL_INIT_SETTINGS_PTR;
@@ -189,6 +191,10 @@ _EVP_MD_CTX_PTR EVP_MD_CTX_new(void);
 void EVP_MD_CTX_free(_EVP_MD_CTX_PTR ctx);
 int EVP_MD_CTX_copy(_EVP_MD_CTX_PTR out, const _EVP_MD_CTX_PTR in) __attribute__((noescape,nocallback));
 int EVP_MD_CTX_copy_ex(_EVP_MD_CTX_PTR out, const _EVP_MD_CTX_PTR in);
+_OSSL_PARAM_PTR EVP_MD_CTX_gettable_params(const _EVP_MD_CTX_PTR ctx) __attribute__((tag("3")));
+_OSSL_PARAM_PTR EVP_MD_CTX_settable_params(const _EVP_MD_CTX_PTR ctx) __attribute__((tag("3")));
+int EVP_MD_CTX_get_params(_EVP_MD_CTX_PTR ctx, _OSSL_PARAM_PTR params) __attribute__((tag("3")));
+int EVP_MD_CTX_set_params(_EVP_MD_CTX_PTR ctx, const _OSSL_PARAM_PTR params) __attribute__((tag("3")));
 int EVP_Digest(const void *data, size_t count, unsigned char *md, unsigned int *size, const _EVP_MD_PTR type, _ENGINE_PTR impl) __attribute__((noescape,nocallback,nocheckptr("data")));
 int EVP_DigestInit_ex(_EVP_MD_CTX_PTR ctx, const _EVP_MD_PTR type, _ENGINE_PTR impl);
 int EVP_DigestInit(_EVP_MD_CTX_PTR ctx, const _EVP_MD_PTR type);
@@ -353,6 +359,7 @@ int EVP_MAC_final(_EVP_MAC_CTX_PTR ctx, unsigned char *out, size_t *outl, size_t
 
 // OSSL_PARAM API
 void OSSL_PARAM_free(_OSSL_PARAM_PTR p) __attribute__((tag("3")));
+const _OSSL_PARAM_PTR OSSL_PARAM_locate_const(const _OSSL_PARAM_PTR p, const char *key) __attribute__((tag("3")));
 _OSSL_PARAM_BLD_PTR OSSL_PARAM_BLD_new(void) __attribute__((tag("3")));
 void OSSL_PARAM_BLD_free(_OSSL_PARAM_BLD_PTR bld) __attribute__((tag("3")));
 _OSSL_PARAM_PTR OSSL_PARAM_BLD_to_param(_OSSL_PARAM_BLD_PTR bld) __attribute__((tag("3")));

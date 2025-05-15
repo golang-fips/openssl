@@ -63,14 +63,22 @@ func hashFuncToMD(fn func() hash.Hash) (ossl.EVP_MD_PTR, error) {
 	return md, nil
 }
 
+// provider is an identifier for a known provider.
+type provider uint8
+
+const (
+	providerNone provider = iota
+	providerOSSLDefault
+	providerOSSLFIPS
+	providerSymCrypt
+)
+
 type hashAlgorithm struct {
-	md             ossl.EVP_MD_PTR
-	ch             crypto.Hash
-	size           int
-	blockSize      int
-	marshallable   bool
-	magic          string
-	marshalledSize int
+	md        ossl.EVP_MD_PTR
+	ch        crypto.Hash
+	size      int
+	blockSize int
+	provider  provider
 }
 
 // loadHash converts a crypto.Hash to a EVP_MD.
@@ -87,41 +95,25 @@ func loadHash(ch crypto.Hash) *hashAlgorithm {
 		hash.md = ossl.EVP_md4()
 	case crypto.MD5:
 		hash.md = ossl.EVP_md5()
-		hash.magic = md5Magic
-		hash.marshalledSize = md5MarshaledSize
 	case crypto.MD5SHA1:
 		hash.md = ossl.EVP_md5_sha1()
 	case crypto.SHA1:
 		hash.md = ossl.EVP_sha1()
-		hash.magic = sha1Magic
-		hash.marshalledSize = sha1MarshaledSize
 	case crypto.SHA224:
 		hash.md = ossl.EVP_sha224()
-		hash.magic = magic224
-		hash.marshalledSize = marshaledSize256
 	case crypto.SHA256:
 		hash.md = ossl.EVP_sha256()
-		hash.magic = magic256
-		hash.marshalledSize = marshaledSize256
 	case crypto.SHA384:
 		hash.md = ossl.EVP_sha384()
-		hash.magic = magic384
-		hash.marshalledSize = marshaledSize512
 	case crypto.SHA512:
 		hash.md = ossl.EVP_sha512()
-		hash.magic = magic512
-		hash.marshalledSize = marshaledSize512
 	case crypto.SHA512_224:
 		if versionAtOrAbove(1, 1, 1) {
 			hash.md = ossl.EVP_sha512_224()
-			hash.magic = magic512_224
-			hash.marshalledSize = marshaledSize512
 		}
 	case crypto.SHA512_256:
 		if versionAtOrAbove(1, 1, 1) {
 			hash.md = ossl.EVP_sha512_256()
-			hash.magic = magic512_256
-			hash.marshalledSize = marshaledSize512
 		}
 	case crypto.SHA3_224:
 		if versionAtOrAbove(1, 1, 1) {
@@ -159,7 +151,26 @@ func loadHash(ch crypto.Hash) *hashAlgorithm {
 			hash.md = md
 		}
 	}
-	hash.marshallable = hash.magic != "" && isHashMarshallable(hash.md)
+
+	switch vMajor {
+	case 1:
+		hash.provider = providerOSSLDefault
+	case 3:
+		if prov := ossl.EVP_MD_get0_provider(hash.md); prov != nil {
+			cname := ossl.OSSL_PROVIDER_get0_name(prov)
+			switch C.GoString((*C.char)(unsafe.Pointer(cname))) {
+			case "default":
+				hash.provider = providerOSSLDefault
+			case "fips":
+				hash.provider = providerOSSLFIPS
+			case "symcryptprovider":
+				hash.provider = providerSymCrypt
+			}
+		}
+	default:
+		panic(errUnsupportedVersion())
+	}
+
 	cacheMD.Store(ch, &hash)
 	return &hash
 }

@@ -83,6 +83,7 @@ enum {
 	_EVP_PKEY_CTRL_RSA_OAEP_LABEL = 0x100A,
 	_EVP_PKEY_CTRL_DSA_PARAMGEN_BITS = 0x1001,
 	_EVP_PKEY_CTRL_DSA_PARAMGEN_Q_BITS = 0x1002,
+	_OSSL_PARAM_OCTET_STRING = 5,
 };
 
 typedef void* mkcgo_err_state;
@@ -195,7 +196,11 @@ int _mkcgo_EVP_MAC_update(_EVP_MAC_CTX_PTR, const unsigned char*, size_t, mkcgo_
 int _mkcgo_EVP_MD_CTX_copy(_EVP_MD_CTX_PTR, const _EVP_MD_CTX_PTR, mkcgo_err_state *);
 int _mkcgo_EVP_MD_CTX_copy_ex(_EVP_MD_CTX_PTR, const _EVP_MD_CTX_PTR, mkcgo_err_state *);
 void _mkcgo_EVP_MD_CTX_free(_EVP_MD_CTX_PTR);
+int _mkcgo_EVP_MD_CTX_get_params(_EVP_MD_CTX_PTR, _OSSL_PARAM_PTR, mkcgo_err_state *);
+_OSSL_PARAM_PTR _mkcgo_EVP_MD_CTX_gettable_params(const _EVP_MD_CTX_PTR, mkcgo_err_state *);
 _EVP_MD_CTX_PTR _mkcgo_EVP_MD_CTX_new(mkcgo_err_state *);
+int _mkcgo_EVP_MD_CTX_set_params(_EVP_MD_CTX_PTR, const _OSSL_PARAM_PTR, mkcgo_err_state *);
+_OSSL_PARAM_PTR _mkcgo_EVP_MD_CTX_settable_params(const _EVP_MD_CTX_PTR, mkcgo_err_state *);
 _EVP_MD_PTR _mkcgo_EVP_MD_fetch(_OSSL_LIB_CTX_PTR, const char*, const char*, mkcgo_err_state *);
 void _mkcgo_EVP_MD_free(_EVP_MD_PTR);
 const char* _mkcgo_EVP_MD_get0_name(const _EVP_MD_PTR);
@@ -311,6 +316,7 @@ int _mkcgo_OSSL_PARAM_BLD_push_octet_string(_OSSL_PARAM_BLD_PTR, const char*, co
 int _mkcgo_OSSL_PARAM_BLD_push_utf8_string(_OSSL_PARAM_BLD_PTR, const char*, const char*, size_t, mkcgo_err_state *);
 _OSSL_PARAM_PTR _mkcgo_OSSL_PARAM_BLD_to_param(_OSSL_PARAM_BLD_PTR, mkcgo_err_state *);
 void _mkcgo_OSSL_PARAM_free(_OSSL_PARAM_PTR);
+const _OSSL_PARAM_PTR _mkcgo_OSSL_PARAM_locate_const(const _OSSL_PARAM_PTR, const char*, mkcgo_err_state *);
 int _mkcgo_OSSL_PROVIDER_available(_OSSL_LIB_CTX_PTR, const char*);
 const char* _mkcgo_OSSL_PROVIDER_get0_name(const _OSSL_PROVIDER_PTR);
 _OSSL_PROVIDER_PTR _mkcgo_OSSL_PROVIDER_try_load(_OSSL_LIB_CTX_PTR, const char*, int, mkcgo_err_state *);

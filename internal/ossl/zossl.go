@@ -61,6 +61,7 @@ const (
 	EVP_PKEY_CTRL_RSA_OAEP_LABEL        = 0x100A
 	EVP_PKEY_CTRL_DSA_PARAMGEN_BITS     = 0x1001
 	EVP_PKEY_CTRL_DSA_PARAMGEN_Q_BITS   = 0x1002
+	OSSL_PARAM_OCTET_STRING             = 5
 )
 
 type BIGNUM_PTR = C._BIGNUM_PTR
@@ -612,10 +613,34 @@ func EVP_MD_CTX_free(ctx EVP_MD_CTX_PTR) {
 	C._mkcgo_EVP_MD_CTX_free(ctx)
 }
 
+func EVP_MD_CTX_get_params(ctx EVP_MD_CTX_PTR, params OSSL_PARAM_PTR) (int32, error) {
+	var _err C.mkcgo_err_state
+	_ret := C._mkcgo_EVP_MD_CTX_get_params(ctx, params, mkcgoNoEscape(&_err))
+	return int32(_ret), newMkcgoErr("EVP_MD_CTX_get_params", _err)
+}
+
+func EVP_MD_CTX_gettable_params(ctx EVP_MD_CTX_PTR) (OSSL_PARAM_PTR, error) {
+	var _err C.mkcgo_err_state
+	_ret := C._mkcgo_EVP_MD_CTX_gettable_params(ctx, mkcgoNoEscape(&_err))
+	return _ret, newMkcgoErr("EVP_MD_CTX_gettable_params", _err)
+}
+
 func EVP_MD_CTX_new() (EVP_MD_CTX_PTR, error) {
 	var _err C.mkcgo_err_state
 	_ret := C._mkcgo_EVP_MD_CTX_new(mkcgoNoEscape(&_err))
 	return _ret, newMkcgoErr("EVP_MD_CTX_new", _err)
+}
+
+func EVP_MD_CTX_set_params(ctx EVP_MD_CTX_PTR, params OSSL_PARAM_PTR) (int32, error) {
+	var _err C.mkcgo_err_state
+	_ret := C._mkcgo_EVP_MD_CTX_set_params(ctx, params, mkcgoNoEscape(&_err))
+	return int32(_ret), newMkcgoErr("EVP_MD_CTX_set_params", _err)
+}
+
+func EVP_MD_CTX_settable_params(ctx EVP_MD_CTX_PTR) (OSSL_PARAM_PTR, error) {
+	var _err C.mkcgo_err_state
+	_ret := C._mkcgo_EVP_MD_CTX_settable_params(ctx, mkcgoNoEscape(&_err))
+	return _ret, newMkcgoErr("EVP_MD_CTX_settable_params", _err)
 }
 
 func EVP_MD_fetch(ctx OSSL_LIB_CTX_PTR, algorithm *byte, properties *byte) (EVP_MD_PTR, error) {
@@ -1216,6 +1241,12 @@ func OSSL_PARAM_BLD_to_param(bld OSSL_PARAM_BLD_PTR) (OSSL_PARAM_PTR, error) {
 
 func OSSL_PARAM_free(p OSSL_PARAM_PTR) {
 	C._mkcgo_OSSL_PARAM_free(p)
+}
+
+func OSSL_PARAM_locate_const(p OSSL_PARAM_PTR, key *byte) (OSSL_PARAM_PTR, error) {
+	var _err C.mkcgo_err_state
+	_ret := C._mkcgo_OSSL_PARAM_locate_const(p, (*C.char)(unsafe.Pointer(key)), mkcgoNoEscape(&_err))
+	return _ret, newMkcgoErr("OSSL_PARAM_locate_const", _err)
 }
 
 func OSSL_PROVIDER_available(libctx OSSL_LIB_CTX_PTR, name *byte) int32 {

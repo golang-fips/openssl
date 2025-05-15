@@ -37,13 +37,17 @@ type paramBuilder struct {
 
 // newParamBuilder creates a new paramBuilder.
 func newParamBuilder() (*paramBuilder, error) {
+	return newParamBuilderN(8) // the maximum known number of BIGNUMs to free are 8 for RSA
+}
+
+func newParamBuilderN(n int) (*paramBuilder, error) {
 	bld, err := ossl.OSSL_PARAM_BLD_new()
 	if err != nil {
 		return nil, err
 	}
 	pb := &paramBuilder{
 		bld:      bld,
-		bnToFree: make([]bnParam, 0, 8), // the maximum known number of BIGNUMs to free are 8 for RSA
+		bnToFree: make([]bnParam, 0, n),
 	}
 	runtime.SetFinalizer(pb, (*paramBuilder).finalize)
 	return pb, nil

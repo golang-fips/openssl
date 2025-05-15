@@ -50,7 +50,7 @@ const ( //checkheader:ignore
 	// KDF names
 	_OSSL_KDF_NAME_HKDF      cString = "HKDF\x00"
 	_OSSL_KDF_NAME_PBKDF2    cString = "PBKDF2\x00"
-	_OSSL_KDF_NAME_TLS1_PRF	 cString = "TLS1-PRF\x00"
+	_OSSL_KDF_NAME_TLS1_PRF  cString = "TLS1-PRF\x00"
 	_OSSL_KDF_NAME_TLS13_KDF cString = "TLS13-KDF\x00"
 	_OSSL_MAC_NAME_HMAC      cString = "HMAC\x00"
 
