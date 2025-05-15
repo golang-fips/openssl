@@ -99,10 +99,10 @@ int (*_g_EVP_MD_CTX_copy)(_EVP_MD_CTX_PTR, const _EVP_MD_CTX_PTR);
 int (*_g_EVP_MD_CTX_copy_ex)(_EVP_MD_CTX_PTR, const _EVP_MD_CTX_PTR);
 void (*_g_EVP_MD_CTX_free)(_EVP_MD_CTX_PTR);
 int (*_g_EVP_MD_CTX_get_params)(_EVP_MD_CTX_PTR, _OSSL_PARAM_PTR);
-const _OSSL_PARAM_PTR (*_g_EVP_MD_CTX_gettable_params)(const _EVP_MD_CTX_PTR);
+const _OSSL_PARAM_PTR (*_g_EVP_MD_CTX_gettable_params)(_EVP_MD_CTX_PTR);
 _EVP_MD_CTX_PTR (*_g_EVP_MD_CTX_new)(void);
 int (*_g_EVP_MD_CTX_set_params)(_EVP_MD_CTX_PTR, const _OSSL_PARAM_PTR);
-const _OSSL_PARAM_PTR (*_g_EVP_MD_CTX_settable_params)(const _EVP_MD_CTX_PTR);
+const _OSSL_PARAM_PTR (*_g_EVP_MD_CTX_settable_params)(_EVP_MD_CTX_PTR);
 _EVP_MD_PTR (*_g_EVP_MD_fetch)(_OSSL_LIB_CTX_PTR, const char*, const char*);
 void (*_g_EVP_MD_free)(_EVP_MD_PTR);
 const char* (*_g_EVP_MD_get0_name)(const _EVP_MD_PTR);
@@ -1275,7 +1275,7 @@ int _mkcgo_EVP_MD_CTX_get_params(_EVP_MD_CTX_PTR _arg0, _OSSL_PARAM_PTR _arg1, m
 	return _ret;
 }
 
-const _OSSL_PARAM_PTR _mkcgo_EVP_MD_CTX_gettable_params(const _EVP_MD_CTX_PTR _arg0, mkcgo_err_state *_err_state) {
+const _OSSL_PARAM_PTR _mkcgo_EVP_MD_CTX_gettable_params(_EVP_MD_CTX_PTR _arg0, mkcgo_err_state *_err_state) {
 	mkcgo_err_clear();
 	const _OSSL_PARAM_PTR _ret = _g_EVP_MD_CTX_gettable_params(_arg0);
 	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
@@ -1296,7 +1296,7 @@ int _mkcgo_EVP_MD_CTX_set_params(_EVP_MD_CTX_PTR _arg0, const _OSSL_PARAM_PTR _a
 	return _ret;
 }
 
-const _OSSL_PARAM_PTR _mkcgo_EVP_MD_CTX_settable_params(const _EVP_MD_CTX_PTR _arg0, mkcgo_err_state *_err_state) {
+const _OSSL_PARAM_PTR _mkcgo_EVP_MD_CTX_settable_params(_EVP_MD_CTX_PTR _arg0, mkcgo_err_state *_err_state) {
 	mkcgo_err_clear();
 	const _OSSL_PARAM_PTR _ret = _g_EVP_MD_CTX_settable_params(_arg0);
 	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();

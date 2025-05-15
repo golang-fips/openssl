@@ -197,10 +197,10 @@ int _mkcgo_EVP_MD_CTX_copy(_EVP_MD_CTX_PTR, const _EVP_MD_CTX_PTR, mkcgo_err_sta
 int _mkcgo_EVP_MD_CTX_copy_ex(_EVP_MD_CTX_PTR, const _EVP_MD_CTX_PTR, mkcgo_err_state *);
 void _mkcgo_EVP_MD_CTX_free(_EVP_MD_CTX_PTR);
 int _mkcgo_EVP_MD_CTX_get_params(_EVP_MD_CTX_PTR, _OSSL_PARAM_PTR, mkcgo_err_state *);
-const _OSSL_PARAM_PTR _mkcgo_EVP_MD_CTX_gettable_params(const _EVP_MD_CTX_PTR, mkcgo_err_state *);
+const _OSSL_PARAM_PTR _mkcgo_EVP_MD_CTX_gettable_params(_EVP_MD_CTX_PTR, mkcgo_err_state *);
 _EVP_MD_CTX_PTR _mkcgo_EVP_MD_CTX_new(mkcgo_err_state *);
 int _mkcgo_EVP_MD_CTX_set_params(_EVP_MD_CTX_PTR, const _OSSL_PARAM_PTR, mkcgo_err_state *);
-const _OSSL_PARAM_PTR _mkcgo_EVP_MD_CTX_settable_params(const _EVP_MD_CTX_PTR, mkcgo_err_state *);
+const _OSSL_PARAM_PTR _mkcgo_EVP_MD_CTX_settable_params(_EVP_MD_CTX_PTR, mkcgo_err_state *);
 _EVP_MD_PTR _mkcgo_EVP_MD_fetch(_OSSL_LIB_CTX_PTR, const char*, const char*, mkcgo_err_state *);
 void _mkcgo_EVP_MD_free(_EVP_MD_PTR);
 const char* _mkcgo_EVP_MD_get0_name(const _EVP_MD_PTR);
