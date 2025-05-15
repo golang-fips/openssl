@@ -104,6 +104,10 @@ type hashEncoding interface {
 	hash.Hash
 	encoding.BinaryMarshaler
 	encoding.BinaryUnmarshaler
+}
+
+type hashEncodingAppender interface {
+	hashEncoding
 	AppendBinary(b []byte) ([]byte, error)
 }
 
@@ -143,7 +147,12 @@ func TestHash_BinaryMarshaler(t *testing.T) {
 			}
 
 			// Test that the hash state is compatible with native Go.
-			h := ch.New().(hashEncoding)
+			h, ok := ch.New().(hashEncoding)
+			if !ok {
+				// The standard library doesn't support encoding this hash.
+				// Nothing else to do.
+				return
+			}
 			h.Write(msg)
 			stateh, err := h.(encoding.BinaryMarshaler).MarshalBinary()
 			if err != nil {
@@ -168,7 +177,7 @@ func TestHash_BinaryAppender(t *testing.T) {
 				t.Skip("not supported")
 			}
 
-			hashWithBinaryAppender, ok := cryptoToHash(ch)().(hashEncoding)
+			hashWithBinaryAppender, ok := cryptoToHash(ch)().(hashEncodingAppender)
 			if !ok {
 				t.Fatal("AppendBinary not supported")
 			}
