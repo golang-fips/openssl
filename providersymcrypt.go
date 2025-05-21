@@ -81,7 +81,12 @@ func (u *_UINT64) uint64() uint64 {
 // to the given destination slice.
 func symCryptAppendBinary(dst, chain, buffer []byte, blength _UINT64) []byte {
 	length := blength.uint64()
-	nx := length & 0x3f
+	var nx uint64
+	if len(buffer) <= 64 {
+		nx = length & 0x3f
+	} else {
+		nx = length & 0x7f
+	}
 	dst = append(dst, chain...)
 	dst = append(dst, buffer[:nx]...)
 	dst = append(dst, make([]byte, len(buffer)-int(nx))...)
