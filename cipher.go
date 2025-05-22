@@ -325,6 +325,7 @@ type cipherGCM struct {
 }
 
 const (
+	aesBlockSize         = 16
 	gcmTagSize           = 16
 	gcmStandardNonceSize = 12
 	// TLS 1.2 additional data is constructed as:
@@ -478,6 +479,63 @@ func (g *cipherGCM) Seal(dst, nonce, plaintext, aad []byte) []byte {
 	}
 	runtime.KeepAlive(g)
 	return ret
+}
+
+func (g *cipherGCM) SealWithRandomNonce(out, nonce, plaintext, aad []byte) {
+	if uint64(len(plaintext)) > uint64((1<<32)-2)*aesBlockSize {
+		panic("crypto/cipher: message too large for GCM")
+	}
+	if len(nonce) != gcmStandardNonceSize {
+		panic("crypto/cipher: incorrect nonce length given to GCMWithRandomNonce")
+	}
+	if len(out) != len(plaintext)+gcmTagSize {
+		panic("crypto/cipher: incorrect output length given to GCMWithRandomNonce")
+	}
+	if inexactOverlap(out, plaintext) {
+		panic("crypto/cipher: invalid buffer overlap of output and input")
+	}
+	if anyOverlap(out, aad) {
+		panic("crypto/cipher: invalid buffer overlap of output and additional data")
+	}
+
+	if g.tls != cipherGCMTLSNone {
+		panic("cipher: encryption failed")
+	}
+
+	RandReader.Read(nonce)
+	ctx, err := newCipherCtx(g.c.kind, cipherModeGCM, cipherOpNone, g.c.key, nil)
+	if err != nil {
+		panic(err)
+	}
+	defer ossl.EVP_CIPHER_CTX_free(ctx)
+	// Encrypt additional data.
+	// When sealing a TLS payload, OpenSSL app sets the additional data using
+	// '_EVP_CIPHER_CTX_ctrl(g.ctx, _EVP_CTRL_AEAD_TLS1_AAD, _EVP_AEAD_TLS1_AAD_LEN, base(additionalData))'.
+	// This makes the explicit nonce component to monotonically increase on every Seal operation without
+	// relying in the explicit nonce being securely set externally,
+	// and it also gives some interesting speed gains.
+	// Unfortunately we can't use it because Go expects AEAD.Seal to honor the provided nonce.
+	if _, err := ossl.EVP_EncryptInit_ex(ctx, nil, nil, nil, base(nonce)); err != nil {
+		panic(err)
+	}
+	var outl, discard int32
+	if _, err := ossl.EVP_EncryptUpdate(ctx, nil, &discard, baseNeverEmpty(aad), int32(len(aad))); err != nil {
+		panic(err)
+	}
+	if _, err := ossl.EVP_EncryptUpdate(ctx, base(out), &outl, baseNeverEmpty(plaintext), int32(len(plaintext))); err != nil {
+		panic(err)
+	}
+	if len(plaintext) != int(outl) {
+		panic("cipher: incorrect length returned from GCM EncryptUpdate")
+	}
+	if _, err := ossl.EVP_EncryptFinal_ex(ctx, base(out[outl:]), &discard); err != nil {
+		panic(err)
+	}
+	if _, err := ossl.EVP_CIPHER_CTX_ctrl(ctx, ossl.EVP_CTRL_GCM_GET_TAG, 16, unsafe.Pointer(base(out[outl:]))); err != nil {
+		panic(err)
+	}
+	runtime.KeepAlive(g)
+	return
 }
 
 var errOpen = errors.New("cipher: message authentication failed")
