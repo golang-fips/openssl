@@ -9,6 +9,12 @@ import (
 	"strings"
 	"testing"
 
+	// Blank imports to ensure that the hash functions are registered.
+	_ "crypto/md5"
+	_ "crypto/sha1"
+	_ "crypto/sha256"
+	_ "crypto/sha512"
+
 	"github.com/golang-fips/openssl/v2"
 )
 
@@ -93,6 +99,17 @@ func TestHash(t *testing.T) {
 	}
 }
 
+type hashEncoding interface {
+	hash.Hash
+	encoding.BinaryMarshaler
+	encoding.BinaryUnmarshaler
+}
+
+type hashEncodingAppender interface {
+	hashEncoding
+	AppendBinary(b []byte) ([]byte, error)
+}
+
 func TestHash_BinaryMarshaler(t *testing.T) {
 	msg := []byte("testing")
 	for _, ch := range hashes {
@@ -102,10 +119,7 @@ func TestHash_BinaryMarshaler(t *testing.T) {
 				t.Skip("hash not supported")
 			}
 
-			hashMarshaler, ok := cryptoToHash(ch)().(interface {
-				hash.Hash
-				encoding.BinaryMarshaler
-			})
+			hashMarshaler, ok := cryptoToHash(ch)().(hashEncoding)
 			if !ok {
 				t.Fatal("BinaryMarshaler not supported")
 			}
@@ -122,16 +136,33 @@ func TestHash_BinaryMarshaler(t *testing.T) {
 				t.Fatalf("MarshalBinary failed: %v", err)
 			}
 
-			hashUnmarshaler := cryptoToHash(ch)().(interface {
-				hash.Hash
-				encoding.BinaryUnmarshaler
-			})
+			hashUnmarshaler := cryptoToHash(ch)().(hashEncoding)
 			if err := hashUnmarshaler.UnmarshalBinary(state); err != nil {
 				t.Fatalf("UnmarshalBinary failed: %v", err)
 			}
 
 			if actual, actual2 := hashMarshaler.Sum(nil), hashUnmarshaler.Sum(nil); !bytes.Equal(actual, actual2) {
 				t.Errorf("0x%x != appended 0x%x", actual, actual2)
+			}
+
+			// Test that the hash state is compatible with native Go.
+			h, ok := ch.New().(hashEncoding)
+			if !ok {
+				// The standard library doesn't support encoding this hash.
+				// Nothing else to do.
+				return
+			}
+			h.Write(msg)
+			stateh, err := h.(encoding.BinaryMarshaler).MarshalBinary()
+			if err != nil {
+				t.Error(err)
+			}
+			if !bytes.Equal(state, stateh) {
+				t.Errorf("got 0x%x != want 0x%x", state, stateh)
+			}
+			h = ch.New().(hashEncoding)
+			if err := h.UnmarshalBinary(state); err != nil {
+				t.Error(err)
 			}
 		})
 	}
@@ -145,10 +176,7 @@ func TestHash_BinaryAppender(t *testing.T) {
 				t.Skip("not supported")
 			}
 
-			hashWithBinaryAppender, ok := cryptoToHash(ch)().(interface {
-				hash.Hash
-				AppendBinary(b []byte) ([]byte, error)
-			})
+			hashWithBinaryAppender, ok := cryptoToHash(ch)().(hashEncodingAppender)
 			if !ok {
 				t.Fatal("AppendBinary not supported")
 			}
@@ -180,10 +208,7 @@ func TestHash_BinaryAppender(t *testing.T) {
 			// Use only the newly appended part of the slice
 			appendedState := state[10:]
 
-			h2, ok := cryptoToHash(ch)().(interface {
-				hash.Hash
-				encoding.BinaryUnmarshaler
-			})
+			h2, ok := cryptoToHash(ch)().(hashEncoding)
 			if !ok {
 				t.Skip("not supported")
 			}
@@ -261,6 +286,7 @@ func TestHash_StringWriter(t *testing.T) {
 			}
 			h := cryptoToHash(ch)()
 			initSum := h.Sum(nil)
+			h.(io.StringWriter).WriteString("")
 			h.(io.StringWriter).WriteString(string(msg))
 			h.Reset()
 			sum := h.Sum(nil)
@@ -327,6 +353,7 @@ func TestHash_OneShot(t *testing.T) {
 			if !openssl.SupportsHash(tt.h) {
 				t.Skip("not supported")
 			}
+			_ = tt.oneShot(nil) // test that does not panic
 			got := tt.oneShot(msg)
 			h := cryptoToHash(tt.h)()
 			h.Write(msg)

@@ -14,6 +14,22 @@ import (
 	"unsafe"
 )
 
+const (
+	magicMD5     = "md5\x01"
+	magic1       = "sha\x01"
+	magic224     = "sha\x02"
+	magic256     = "sha\x03"
+	magic384     = "sha\x04"
+	magic512_224 = "sha\x05"
+	magic512_256 = "sha\x06"
+	magic512     = "sha\x07"
+
+	marshaledSizeMD5 = len(magicMD5) + 4*4 + 64 + 8
+	marshaledSize1   = len(magic1) + 5*4 + 64 + 8
+	marshaledSize256 = len(magic256) + 8*4 + 64 + 8
+	marshaledSize512 = len(magic512) + 8*8 + 128 + 8
+)
+
 // maxHashSize is the size of SHA52 and SHA3_512, the largest hashes we support.
 const maxHashSize = 64
 
@@ -215,27 +231,6 @@ func NewSHA3_512() hash.Hash {
 	return newEvpHash(crypto.SHA3_512)
 }
 
-// isHashMarshallable returns true if the memory layout of md
-// is known by this library and can therefore be marshalled.
-func isHashMarshallable(md C.GO_EVP_MD_PTR) bool {
-	if vMajor == 1 {
-		return true
-	}
-	prov := C.go_openssl_EVP_MD_get0_provider(md)
-	if prov == nil {
-		return false
-	}
-	cname := C.go_openssl_OSSL_PROVIDER_get0_name(prov)
-	if cname == nil {
-		return false
-	}
-	name := C.GoString(cname)
-	// We only know the memory layout of the built-in providers.
-	// See evpHash.hashState for more details.
-	marshallable := name == "default" || name == "fips"
-	return marshallable
-}
-
 // cloneHash is an interface that defines a Clone method.
 //
 // hahs.CloneHash will probably be added in Go 1.25, see https://golang.org/issue/69521,
@@ -384,299 +379,74 @@ func (h *evpHash) Clone() hash.Hash {
 	return h2
 }
 
-// hashState returns a pointer to the internal hash structure.
-//
-// The EVP_MD_CTX memory layout has changed in OpenSSL 3
-// and the property holding the internal structure is no longer md_data but algctx.
-func hashState(ctx C.GO_EVP_MD_CTX_PTR) unsafe.Pointer {
-	switch vMajor {
-	case 1:
-		// https://github.com/openssl/openssl/blob/0418e993c717a6863f206feaa40673a261de7395/crypto/evp/evp_local.h#L12.
-		type mdCtx struct {
-			_       [2]unsafe.Pointer
-			_       C.ulong
-			md_data unsafe.Pointer
-		}
-		return (*mdCtx)(unsafe.Pointer(ctx)).md_data
-	case 3:
-		// https://github.com/openssl/openssl/blob/5675a5aaf6a2e489022bcfc18330dae9263e598e/crypto/evp/evp_local.h#L16.
-		type mdCtx struct {
-			_      [3]unsafe.Pointer
-			_      C.ulong
-			_      [3]unsafe.Pointer
-			algctx unsafe.Pointer
-		}
-		return (*mdCtx)(unsafe.Pointer(ctx)).algctx
-	default:
-		panic(errUnsupportedVersion())
-	}
-}
+var errHashNotMarshallable = errors.New("openssl: hash state is not marshallable")
 
 func (d *evpHash) MarshalBinary() ([]byte, error) {
-	if !d.alg.marshallable {
-		return nil, errors.New("openssl: hash state is not marshallable")
-	}
-	buf := make([]byte, 0, d.alg.marshalledSize)
+	buf := make([]byte, 0, marshaledSize512) // stack allocate the buffer by setting the max size we support
 	return d.AppendBinary(buf)
 }
 
 func (d *evpHash) AppendBinary(buf []byte) ([]byte, error) {
 	defer runtime.KeepAlive(d)
 	d.init()
-	if !d.alg.marshallable {
-		return nil, errors.New("openssl: hash state is not marshallable")
+	magic, _ := cryptoHashEncodingInfo(d.alg.ch)
+	if magic == "" {
+		return nil, errHashNotMarshallable
 	}
-	state := hashState(d.ctx)
-	if state == nil {
-		return nil, errors.New("openssl: can't retrieve hash state")
-	}
-	var appender interface {
-		AppendBinary([]byte) ([]byte, error)
-	}
-	switch d.alg.ch {
-	case crypto.MD5:
-		appender = (*md5State)(state)
-	case crypto.SHA1:
-		appender = (*sha1State)(state)
-	case crypto.SHA224:
-		appender = (*sha256State)(state)
-	case crypto.SHA256:
-		appender = (*sha256State)(state)
-	case crypto.SHA384:
-		appender = (*sha512State)(state)
-	case crypto.SHA512:
-		appender = (*sha512State)(state)
-	case crypto.SHA512_224:
-		appender = (*sha512State)(state)
-	case crypto.SHA512_256:
-		appender = (*sha512State)(state)
+	switch d.alg.provider {
+	case providerOSSLDefault, providerOSSLFIPS:
+		return osslHashAppendBinary(d.ctx, d.alg.ch, magic, buf)
+	case providerSymCrypt:
+		return symCryptHashAppendBinary(d.ctx, d.alg.ch, magic, buf)
 	default:
-		panic("openssl: unsupported hash function: " + strconv.Itoa(int(d.alg.ch)))
+		return nil, errHashNotMarshallable
 	}
-	buf = append(buf, d.alg.magic[:]...)
-	return appender.AppendBinary(buf)
 }
 
 func (d *evpHash) UnmarshalBinary(b []byte) error {
 	defer runtime.KeepAlive(d)
 	d.init()
-	if !d.alg.marshallable {
-		return errors.New("openssl: hash state is not marshallable")
+	magic, size := cryptoHashEncodingInfo(d.alg.ch)
+	if magic == "" {
+		return errHashNotMarshallable
 	}
-	if len(b) < len(d.alg.magic) || string(b[:len(d.alg.magic)]) != string(d.alg.magic[:]) {
+	if len(b) < len(magic) || string(b[:len(magic)]) != string(magic[:]) {
 		return errors.New("openssl: invalid hash state identifier")
 	}
-	if len(b) != d.alg.marshalledSize {
+	if len(b) != size {
 		return errors.New("openssl: invalid hash state size")
 	}
-	state := hashState(d.ctx)
-	if state == nil {
-		return errors.New("openssl: can't retrieve hash state")
-	}
-	b = b[len(d.alg.magic):]
-	var unmarshaler interface {
-		UnmarshalBinary([]byte) error
-	}
-	switch d.alg.ch {
-	case crypto.MD5:
-		unmarshaler = (*md5State)(state)
-	case crypto.SHA1:
-		unmarshaler = (*sha1State)(state)
-	case crypto.SHA224:
-		unmarshaler = (*sha256State)(state)
-	case crypto.SHA256:
-		unmarshaler = (*sha256State)(state)
-	case crypto.SHA384:
-		unmarshaler = (*sha512State)(state)
-	case crypto.SHA512:
-		unmarshaler = (*sha512State)(state)
-	case crypto.SHA512_224:
-		unmarshaler = (*sha512State)(state)
-	case crypto.SHA512_256:
-		unmarshaler = (*sha512State)(state)
+	switch d.alg.provider {
+	case providerOSSLDefault, providerOSSLFIPS:
+		return osslHashUnmarshalBinary(d.ctx, d.alg.ch, magic, b)
+	case providerSymCrypt:
+		return symCryptHashUnmarshalBinary(d.ctx, d.alg.ch, magic, b)
 	default:
-		panic("openssl: unsupported hash function: " + strconv.Itoa(int(d.alg.ch)))
+		return errHashNotMarshallable
 	}
-	return unmarshaler.UnmarshalBinary(b)
 }
 
-// md5State layout is taken from
-// https://github.com/openssl/openssl/blob/0418e993c717a6863f206feaa40673a261de7395/include/openssl/md5.h#L33.
-type md5State struct {
-	h      [4]uint32
-	nl, nh uint32
-	x      [64]byte
-	nx     uint32
-}
-
-const (
-	md5Magic         = "md5\x01"
-	md5MarshaledSize = len(md5Magic) + 4*4 + 64 + 8
-)
-
-func (d *md5State) UnmarshalBinary(b []byte) error {
-	b, d.h[0] = consumeUint32(b)
-	b, d.h[1] = consumeUint32(b)
-	b, d.h[2] = consumeUint32(b)
-	b, d.h[3] = consumeUint32(b)
-	b = b[copy(d.x[:], b):]
-	_, n := consumeUint64(b)
-	d.nl = uint32(n << 3)
-	d.nh = uint32(n >> 29)
-	d.nx = uint32(n) % 64
-	return nil
-}
-
-func (d *md5State) AppendBinary(buf []byte) ([]byte, error) {
-	buf = appendUint32(buf, d.h[0])
-	buf = appendUint32(buf, d.h[1])
-	buf = appendUint32(buf, d.h[2])
-	buf = appendUint32(buf, d.h[3])
-	buf = append(buf, d.x[:d.nx]...)
-	buf = append(buf, make([]byte, len(d.x)-int(d.nx))...)
-	buf = appendUint64(buf, uint64(d.nl)>>3|uint64(d.nh)<<29)
-	return buf, nil
-}
-
-// sha1State layout is taken from
-// https://github.com/openssl/openssl/blob/0418e993c717a6863f206feaa40673a261de7395/include/openssl/sha.h#L34.
-type sha1State struct {
-	h      [5]uint32
-	nl, nh uint32
-	x      [64]byte
-	nx     uint32
-}
-
-const (
-	sha1Magic         = "sha\x01"
-	sha1MarshaledSize = len(sha1Magic) + 5*4 + 64 + 8
-)
-
-func (d *sha1State) UnmarshalBinary(b []byte) error {
-	b, d.h[0] = consumeUint32(b)
-	b, d.h[1] = consumeUint32(b)
-	b, d.h[2] = consumeUint32(b)
-	b, d.h[3] = consumeUint32(b)
-	b, d.h[4] = consumeUint32(b)
-	b = b[copy(d.x[:], b):]
-	_, n := consumeUint64(b)
-	d.nl = uint32(n << 3)
-	d.nh = uint32(n >> 29)
-	d.nx = uint32(n) % 64
-	return nil
-}
-
-func (d *sha1State) AppendBinary(buf []byte) ([]byte, error) {
-	buf = appendUint32(buf, d.h[0])
-	buf = appendUint32(buf, d.h[1])
-	buf = appendUint32(buf, d.h[2])
-	buf = appendUint32(buf, d.h[3])
-	buf = appendUint32(buf, d.h[4])
-	buf = append(buf, d.x[:d.nx]...)
-	buf = append(buf, make([]byte, len(d.x)-int(d.nx))...)
-	buf = appendUint64(buf, uint64(d.nl)>>3|uint64(d.nh)<<29)
-	return buf, nil
-}
-
-const (
-	magic224         = "sha\x02"
-	magic256         = "sha\x03"
-	marshaledSize256 = len(magic256) + 8*4 + 64 + 8
-)
-
-// sha256State layout is taken from
-// https://github.com/openssl/openssl/blob/0418e993c717a6863f206feaa40673a261de7395/include/openssl/sha.h#L51.
-type sha256State struct {
-	h      [8]uint32
-	nl, nh uint32
-	x      [64]byte
-	nx     uint32
-}
-
-func (d *sha256State) UnmarshalBinary(b []byte) error {
-	b, d.h[0] = consumeUint32(b)
-	b, d.h[1] = consumeUint32(b)
-	b, d.h[2] = consumeUint32(b)
-	b, d.h[3] = consumeUint32(b)
-	b, d.h[4] = consumeUint32(b)
-	b, d.h[5] = consumeUint32(b)
-	b, d.h[6] = consumeUint32(b)
-	b, d.h[7] = consumeUint32(b)
-	b = b[copy(d.x[:], b):]
-	_, n := consumeUint64(b)
-	d.nl = uint32(n << 3)
-	d.nh = uint32(n >> 29)
-	d.nx = uint32(n) % 64
-	return nil
-}
-
-func (d *sha256State) AppendBinary(buf []byte) ([]byte, error) {
-	buf = appendUint32(buf, d.h[0])
-	buf = appendUint32(buf, d.h[1])
-	buf = appendUint32(buf, d.h[2])
-	buf = appendUint32(buf, d.h[3])
-	buf = appendUint32(buf, d.h[4])
-	buf = appendUint32(buf, d.h[5])
-	buf = appendUint32(buf, d.h[6])
-	buf = appendUint32(buf, d.h[7])
-	buf = append(buf, d.x[:d.nx]...)
-	buf = append(buf, make([]byte, len(d.x)-int(d.nx))...)
-	buf = appendUint64(buf, uint64(d.nl)>>3|uint64(d.nh)<<29)
-	return buf, nil
-}
-
-// sha512State layout is taken from
-// https://github.com/openssl/openssl/blob/0418e993c717a6863f206feaa40673a261de7395/include/openssl/sha.h#L95.
-type sha512State struct {
-	h      [8]uint64
-	nl, nh uint64
-	x      [128]byte
-	nx     uint32
-}
-
-const (
-	magic384         = "sha\x04"
-	magic512_224     = "sha\x05"
-	magic512_256     = "sha\x06"
-	magic512         = "sha\x07"
-	marshaledSize512 = len(magic512) + 8*8 + 128 + 8
-)
-
-func (d *sha512State) MarshalBinary() ([]byte, error) {
-	buf := make([]byte, 0, marshaledSize512)
-	return d.AppendBinary(buf)
-}
-
-func (d *sha512State) UnmarshalBinary(b []byte) error {
-	b, d.h[0] = consumeUint64(b)
-	b, d.h[1] = consumeUint64(b)
-	b, d.h[2] = consumeUint64(b)
-	b, d.h[3] = consumeUint64(b)
-	b, d.h[4] = consumeUint64(b)
-	b, d.h[5] = consumeUint64(b)
-	b, d.h[6] = consumeUint64(b)
-	b, d.h[7] = consumeUint64(b)
-	b = b[copy(d.x[:], b):]
-	_, n := consumeUint64(b)
-	d.nl = n << 3
-	d.nh = n >> 61
-	d.nx = uint32(n) % 128
-	return nil
-}
-
-func (d *sha512State) AppendBinary(buf []byte) ([]byte, error) {
-	buf = appendUint64(buf, d.h[0])
-	buf = appendUint64(buf, d.h[1])
-	buf = appendUint64(buf, d.h[2])
-	buf = appendUint64(buf, d.h[3])
-	buf = appendUint64(buf, d.h[4])
-	buf = appendUint64(buf, d.h[5])
-	buf = appendUint64(buf, d.h[6])
-	buf = appendUint64(buf, d.h[7])
-	buf = append(buf, d.x[:d.nx]...)
-	buf = append(buf, make([]byte, len(d.x)-int(d.nx))...)
-	buf = appendUint64(buf, d.nl>>3|d.nh<<61)
-	return buf, nil
+func cryptoHashEncodingInfo(ch crypto.Hash) (magic string, size int) {
+	switch ch {
+	case crypto.MD5:
+		return magicMD5, marshaledSizeMD5
+	case crypto.SHA1:
+		return magic1, marshaledSize1
+	case crypto.SHA224:
+		return magic224, marshaledSize256
+	case crypto.SHA256:
+		return magic256, marshaledSize256
+	case crypto.SHA384:
+		return magic384, marshaledSize512
+	case crypto.SHA512_224:
+		return magic512_224, marshaledSize512
+	case crypto.SHA512_256:
+		return magic512_256, marshaledSize512
+	case crypto.SHA512:
+		return magic512, marshaledSize512
+	default:
+		return "", 0
+	}
 }
 
 // appendUint64 appends x into b as a big endian byte sequence.
