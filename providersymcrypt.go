@@ -203,8 +203,7 @@ func symCryptHashAppendBinary(ctx ossl.EVP_MD_CTX_PTR, ch crypto.Hash, buf []byt
 		ossl.OSSL_PARAM_construct_end(),
 	}
 	if _, err := ossl.EVP_MD_CTX_get_params(ctx, (ossl.OSSL_PARAM_PTR)(unsafe.Pointer(&params[0]))); err != nil {
-		// Old versions of SCOSSL don't support SCOSSL_DIGEST_PARAM_STATE.
-		return nil, errHashNotMarshallable
+		return nil, err
 	}
 
 	header := (*_SYMCRYPT_BLOB_HEADER)(unsafe.Pointer(&state[0]))
