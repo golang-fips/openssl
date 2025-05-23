@@ -189,7 +189,7 @@ func (b *_SYMCRYPT_SHA512_STATE_EXPORT_BLOB) unmarshalBinary(d []byte) {
 	b.lengthL = symCryptUnmarshalBinary(d, b.chain[:], b.buffer[:])
 }
 
-func symCryptHashAppendBinary(ctx ossl.EVP_MD_CTX_PTR, ch crypto.Hash, buf []byte) ([]byte, error) {
+func symCryptHashAppendBinary(ctx ossl.EVP_MD_CTX_PTR, ch crypto.Hash, magic string, buf []byte) ([]byte, error) {
 	size, typ, serializable := symCryptHashStateInfo(ch)
 	if !serializable {
 		return nil, errHashNotMarshallable
@@ -217,7 +217,6 @@ func symCryptHashAppendBinary(ctx ossl.EVP_MD_CTX_PTR, ch crypto.Hash, buf []byt
 		return nil, errors.New("invalid blob type")
 	}
 
-	magic, _ := cryptoHashEncodingInfo(ch)
 	buf = append(buf, magic...)
 	switch ch {
 	case crypto.MD5:
@@ -237,7 +236,7 @@ func symCryptHashAppendBinary(ctx ossl.EVP_MD_CTX_PTR, ch crypto.Hash, buf []byt
 	}
 }
 
-func symCryptHashUnmarshalBinary(ctx ossl.EVP_MD_CTX_PTR, ch crypto.Hash, b []byte) error {
+func symCryptHashUnmarshalBinary(ctx ossl.EVP_MD_CTX_PTR, ch crypto.Hash, magic string, b []byte) error {
 	size, typ, serializable := symCryptHashStateInfo(ch)
 	if !serializable {
 		return errHashNotMarshallable
@@ -248,7 +247,6 @@ func symCryptHashUnmarshalBinary(ctx ossl.EVP_MD_CTX_PTR, ch crypto.Hash, b []by
 		_type: typ,
 	}
 	var blobPtr unsafe.Pointer
-	magic, _ := cryptoHashEncodingInfo(ch)
 	b = b[len(magic):]
 	switch ch {
 	case crypto.MD5:

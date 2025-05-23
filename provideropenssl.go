@@ -190,12 +190,11 @@ func getOSSLDigetsContext(ctx ossl.EVP_MD_CTX_PTR) unsafe.Pointer {
 
 var errHashStateInvalid = errors.New("openssl: can't retrieve hash state")
 
-func osslHashAppendBinary(ctx ossl.EVP_MD_CTX_PTR, ch crypto.Hash, buf []byte) ([]byte, error) {
+func osslHashAppendBinary(ctx ossl.EVP_MD_CTX_PTR, ch crypto.Hash, magic string, buf []byte) ([]byte, error) {
 	algctx := getOSSLDigetsContext(ctx)
 	if algctx == nil {
 		return nil, errHashStateInvalid
 	}
-	magic, _ := cryptoHashEncodingInfo(ch)
 	buf = append(buf, magic...)
 	switch ch {
 	case crypto.MD5:
@@ -215,12 +214,11 @@ func osslHashAppendBinary(ctx ossl.EVP_MD_CTX_PTR, ch crypto.Hash, buf []byte) (
 	}
 }
 
-func osslHashUnmarshalBinary(ctx ossl.EVP_MD_CTX_PTR, ch crypto.Hash, b []byte) error {
+func osslHashUnmarshalBinary(ctx ossl.EVP_MD_CTX_PTR, ch crypto.Hash, magic string, b []byte) error {
 	algctx := getOSSLDigetsContext(ctx)
 	if algctx == nil {
 		return errHashStateInvalid
 	}
-	magic, _ := cryptoHashEncodingInfo(ch)
 	b = b[len(magic):]
 	switch ch {
 	case crypto.MD5:

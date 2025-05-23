@@ -392,14 +392,15 @@ func (d *evpHash) MarshalBinary() ([]byte, error) {
 func (d *evpHash) AppendBinary(buf []byte) ([]byte, error) {
 	defer runtime.KeepAlive(d)
 	d.init()
-	if magic, _ := cryptoHashEncodingInfo(d.alg.ch); magic == "" {
+	magic, _ := cryptoHashEncodingInfo(d.alg.ch)
+	if magic == "" {
 		return nil, errHashNotMarshallable
 	}
 	switch d.alg.provider {
 	case providerOSSLDefault, providerOSSLFIPS:
-		return osslHashAppendBinary(d.ctx, d.alg.ch, buf)
+		return osslHashAppendBinary(d.ctx, d.alg.ch, magic, buf)
 	case providerSymCrypt:
-		return symCryptHashAppendBinary(d.ctx, d.alg.ch, buf)
+		return symCryptHashAppendBinary(d.ctx, d.alg.ch, magic, buf)
 	default:
 		return nil, errHashNotMarshallable
 	}
@@ -420,9 +421,9 @@ func (d *evpHash) UnmarshalBinary(b []byte) error {
 	}
 	switch d.alg.provider {
 	case providerOSSLDefault, providerOSSLFIPS:
-		return osslHashUnmarshalBinary(d.ctx, d.alg.ch, b)
+		return osslHashUnmarshalBinary(d.ctx, d.alg.ch, magic, b)
 	case providerSymCrypt:
-		return symCryptHashUnmarshalBinary(d.ctx, d.alg.ch, b)
+		return symCryptHashUnmarshalBinary(d.ctx, d.alg.ch, magic, b)
 	default:
 		return errHashNotMarshallable
 	}
