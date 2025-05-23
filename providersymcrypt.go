@@ -105,6 +105,16 @@ func symCryptUnmarshalBinary(d []byte, chain, buffer []byte) _UINT64 {
 	return newUINT64(length)
 }
 
+// swapEndianessInt32 swaps the endianness of the given byte slice
+// in place. It assumes the slice is a backup of a 32-bit integer array.
+func swapEndianessInt32(d []uint8) {
+	for i := 0; i < len(d); i += 4 {
+		d[i], d[i+3] = d[i+3], d[i]
+		d[i+1], d[i+2] = d[i+2], d[i+1]
+	}
+
+}
+
 type _SYMCRYPT_MD5_STATE_EXPORT_BLOB struct {
 	header _SYMCRYPT_BLOB_HEADER
 	chain  [16]uint8 // little endian
@@ -117,21 +127,13 @@ type _SYMCRYPT_MD5_STATE_EXPORT_BLOB struct {
 func (b *_SYMCRYPT_MD5_STATE_EXPORT_BLOB) appendBinary(d []byte) ([]byte, error) {
 	// b.chain is little endian, but Go expects big endian,
 	// we need to swap the bytes.
-	for i := 0; i < len(b.chain); i += 4 {
-		b.chain[i], b.chain[i+3] = b.chain[i+3], b.chain[i]
-		b.chain[i+1], b.chain[i+2] = b.chain[i+2], b.chain[i+1]
-	}
+	swapEndianessInt32(b.chain[:])
 	return symCryptAppendBinary(d, b.chain[:], b.buffer[:], b.length), nil
 }
 
 func (b *_SYMCRYPT_MD5_STATE_EXPORT_BLOB) unmarshalBinary(d []byte) {
 	b.length = symCryptUnmarshalBinary(d, b.chain[:], b.buffer[:])
-	// b.chain should be little endian, but Go uses big endian,
-	// we need to swap the bytes.
-	for i := 0; i < len(b.chain); i += 4 {
-		b.chain[i], b.chain[i+3] = b.chain[i+3], b.chain[i]
-		b.chain[i+1], b.chain[i+2] = b.chain[i+2], b.chain[i+1]
-	}
+	swapEndianessInt32(b.chain[:])
 }
 
 type _SYMCRYPT_SHA1_STATE_EXPORT_BLOB struct {
@@ -283,12 +285,8 @@ func symCryptHashUnmarshalBinary(ctx ossl.EVP_MD_CTX_PTR, ch crypto.Hash, magic 
 	if err != nil {
 		return err
 	}
-	if _, err := ossl.EVP_MD_CTX_set_params(ctx, params); err != nil {
-		// Old versions of SCOSSL don't support SCOSSL_DIGEST_PARAM_STATE
-		// nor _SCOSSL_DIGEST_PARAM_RECOMPUTE_CHECKSUM.
-		return errHashNotMarshallable
-	}
-	return nil
+	_, err = ossl.EVP_MD_CTX_set_params(ctx, params)
+	return err
 }
 
 func symCryptHashStateInfo(ch crypto.Hash) (size, typ uint32, serializable bool) {
