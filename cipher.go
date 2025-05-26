@@ -508,13 +508,7 @@ func (g *cipherGCM) SealWithRandomNonce(out, nonce, plaintext, aad []byte) {
 		panic(err)
 	}
 	defer ossl.EVP_CIPHER_CTX_free(ctx)
-	// Encrypt additional data.
-	// When sealing a TLS payload, OpenSSL app sets the additional data using
-	// '_EVP_CIPHER_CTX_ctrl(g.ctx, _EVP_CTRL_AEAD_TLS1_AAD, _EVP_AEAD_TLS1_AAD_LEN, base(additionalData))'.
-	// This makes the explicit nonce component to monotonically increase on every Seal operation without
-	// relying in the explicit nonce being securely set externally,
-	// and it also gives some interesting speed gains.
-	// Unfortunately we can't use it because Go expects AEAD.Seal to honor the provided nonce.
+
 	if _, err := ossl.EVP_EncryptInit_ex(ctx, nil, nil, nil, base(nonce)); err != nil {
 		panic(err)
 	}
@@ -535,7 +529,6 @@ func (g *cipherGCM) SealWithRandomNonce(out, nonce, plaintext, aad []byte) {
 		panic(err)
 	}
 	runtime.KeepAlive(g)
-	return
 }
 
 var errOpen = errors.New("cipher: message authentication failed")
