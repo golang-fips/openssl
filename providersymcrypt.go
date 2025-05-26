@@ -9,7 +9,6 @@ import (
 	"encoding/binary"
 	"errors"
 	"runtime"
-	"sync"
 	"unsafe"
 )
 
@@ -106,14 +105,13 @@ func symCryptUnmarshalBinary(d []byte, chain, buffer []byte) _UINT64 {
 	return newUINT64(length)
 }
 
-// swapEndianessInt32 swaps the endianness of the given byte slice
+// swapEndianessUint32 swaps the endianness of the given byte slice
 // in place. It assumes the slice is a backup of a 32-bit integer array.
-func swapEndianessInt32(d []uint8) {
+func swapEndianessUint32(d []uint8) {
 	for i := 0; i < len(d); i += 4 {
 		d[i], d[i+3] = d[i+3], d[i]
 		d[i+1], d[i+2] = d[i+2], d[i+1]
 	}
-
 }
 
 type _SYMCRYPT_MD5_STATE_EXPORT_BLOB struct {
@@ -128,13 +126,13 @@ type _SYMCRYPT_MD5_STATE_EXPORT_BLOB struct {
 func (b *_SYMCRYPT_MD5_STATE_EXPORT_BLOB) appendBinary(d []byte) ([]byte, error) {
 	// b.chain is little endian, but Go expects big endian,
 	// we need to swap the bytes.
-	swapEndianessInt32(b.chain[:])
+	swapEndianessUint32(b.chain[:])
 	return symCryptAppendBinary(d, b.chain[:], b.buffer[:], b.length), nil
 }
 
 func (b *_SYMCRYPT_MD5_STATE_EXPORT_BLOB) unmarshalBinary(d []byte) {
 	b.length = symCryptUnmarshalBinary(d, b.chain[:], b.buffer[:])
-	swapEndianessInt32(b.chain[:])
+	swapEndianessUint32(b.chain[:])
 }
 
 type _SYMCRYPT_SHA1_STATE_EXPORT_BLOB struct {
@@ -193,10 +191,7 @@ func (b *_SYMCRYPT_SHA512_STATE_EXPORT_BLOB) unmarshalBinary(d []byte) {
 }
 
 func symCryptHashAppendBinary(ctx C.GO_EVP_MD_CTX_PTR, ch crypto.Hash, magic string, buf []byte) ([]byte, error) {
-	size, typ, serializable := symCryptHashStateInfo(ch)
-	if !serializable {
-		return nil, errHashNotMarshallable
-	}
+	size, typ := symCryptHashStateInfo(ch)
 	state := make([]byte, size, _SYMCRYPT_SHA512_STATE_EXPORT_SIZE) // 512 is the largest size
 	var pinner runtime.Pinner
 	pinner.Pin(&state[0])
@@ -207,6 +202,9 @@ func symCryptHashAppendBinary(ctx C.GO_EVP_MD_CTX_PTR, ch crypto.Hash, magic str
 	}
 	if C.go_openssl_EVP_MD_CTX_get_params(ctx, (C.GO_OSSL_PARAM_PTR)(unsafe.Pointer(&params[0]))) != 1 {
 		return nil, newOpenSSLError("EVP_MD_CTX_get_params")
+	}
+	if !_OSSL_PARAM_modified(&params[0]) {
+		return nil, errors.New("EVP_MD_CTX_get_params did not retrieve the state")
 	}
 
 	header := (*_SYMCRYPT_BLOB_HEADER)(unsafe.Pointer(&state[0]))
@@ -240,10 +238,7 @@ func symCryptHashAppendBinary(ctx C.GO_EVP_MD_CTX_PTR, ch crypto.Hash, magic str
 }
 
 func symCryptHashUnmarshalBinary(ctx C.GO_EVP_MD_CTX_PTR, ch crypto.Hash, magic string, b []byte) error {
-	size, typ, serializable := symCryptHashStateInfo(ch)
-	if !serializable {
-		return errHashNotMarshallable
-	}
+	size, typ := symCryptHashStateInfo(ch)
 	hdr := _SYMCRYPT_BLOB_HEADER{
 		magic: _SYMCRYPT_BLOB_MAGIC,
 		size:  size,
@@ -275,85 +270,53 @@ func symCryptHashUnmarshalBinary(ctx C.GO_EVP_MD_CTX_PTR, ch crypto.Hash, magic 
 	default:
 		panic("unsupported hash " + ch.String())
 	}
-	bld, err := newParamBuilderN(2)
-	if err != nil {
-		return err
+	var checksum int32 = 1
+	var pinner runtime.Pinner
+	pinner.Pin(blobPtr)
+	pinner.Pin(&checksum)
+	defer pinner.Unpin()
+	params := [3]_OSSL_PARAM{
+		_OSSL_PARAM_construct_octet_string(_SCOSSL_DIGEST_PARAM_STATE, blobPtr, int(hdr.size)),
+		_OSSL_PARAM_construct_int32(_SCOSSL_DIGEST_PARAM_RECOMPUTE_CHECKSUM, &checksum),
+		_OSSL_PARAM_construct_end(),
 	}
-	defer bld.finalize()
-	bld.addOctetString(_SCOSSL_DIGEST_PARAM_STATE, unsafe.Slice((*byte)(blobPtr), hdr.size))
-	bld.addInt32(_SCOSSL_DIGEST_PARAM_RECOMPUTE_CHECKSUM, 1)
-	params, err := bld.build()
-	if err != nil {
-		return err
-	}
-	if C.go_openssl_EVP_MD_CTX_set_params(ctx, params) == 0 {
+	if C.go_openssl_EVP_MD_CTX_set_params(ctx, (C.GO_OSSL_PARAM_PTR)(unsafe.Pointer(&params[0]))) != 1 {
 		return newOpenSSLError("EVP_MD_CTX_set_params")
 	}
 	return nil
 }
 
-func symCryptHashStateInfo(ch crypto.Hash) (size, typ uint32, serializable bool) {
+func symCryptHashStateInfo(ch crypto.Hash) (size, typ uint32) {
 	switch ch {
 	case crypto.MD5:
-		return _SYMCRYPT_MD5_STATE_EXPORT_SIZE, _SymCryptBlobTypeMd5State, symCryptHashStateSerializableMD5()
+		return _SYMCRYPT_MD5_STATE_EXPORT_SIZE, _SymCryptBlobTypeMd5State
 	case crypto.SHA1:
-		return _SYMCRYPT_SHA1_STATE_EXPORT_SIZE, _SymCryptBlobTypeSha1State, symCryptHashStateSerializableSHA1()
+		return _SYMCRYPT_SHA1_STATE_EXPORT_SIZE, _SymCryptBlobTypeSha1State
 	case crypto.SHA224:
-		return _SYMCRYPT_SHA256_STATE_EXPORT_SIZE, _SymCryptBlobTypeSha224State, symCryptHashStateSerializableSHA224()
+		return _SYMCRYPT_SHA256_STATE_EXPORT_SIZE, _SymCryptBlobTypeSha224State
 	case crypto.SHA256:
-		return _SYMCRYPT_SHA256_STATE_EXPORT_SIZE, _SymCryptBlobTypeSha256State, symCryptHashStateSerializableSHA256()
+		return _SYMCRYPT_SHA256_STATE_EXPORT_SIZE, _SymCryptBlobTypeSha256State
 	case crypto.SHA384:
-		return _SYMCRYPT_SHA512_STATE_EXPORT_SIZE, _SymCryptBlobTypeSha384State, symCryptHashStateSerializableSHA384()
+		return _SYMCRYPT_SHA512_STATE_EXPORT_SIZE, _SymCryptBlobTypeSha384State
 	case crypto.SHA512_224:
-		return _SYMCRYPT_SHA512_STATE_EXPORT_SIZE, _SymCryptBlobTypeSha512_224State, symCryptHashStateSerializableSHA512_224()
+		return _SYMCRYPT_SHA512_STATE_EXPORT_SIZE, _SymCryptBlobTypeSha512_224State
 	case crypto.SHA512_256:
-		return _SYMCRYPT_SHA512_STATE_EXPORT_SIZE, _SymCryptBlobTypeSha512_256State, symCryptHashStateSerializableSHA512_256()
+		return _SYMCRYPT_SHA512_STATE_EXPORT_SIZE, _SymCryptBlobTypeSha512_256State
 	case crypto.SHA512:
-		return _SYMCRYPT_SHA512_STATE_EXPORT_SIZE, _SymCryptBlobTypeSha512State, symCryptHashStateSerializableSHA512()
+		return _SYMCRYPT_SHA512_STATE_EXPORT_SIZE, _SymCryptBlobTypeSha512State
 	default:
 		panic("unsupported hash " + ch.String())
 	}
 }
 
-var (
-	symCryptHashStateSerializableMD5 = sync.OnceValue(func() bool {
-		return isSymCryptHashStateSerializable(crypto.MD5)
-	})
-	symCryptHashStateSerializableSHA1 = sync.OnceValue(func() bool {
-		return isSymCryptHashStateSerializable(crypto.SHA1)
-	})
-	symCryptHashStateSerializableSHA224 = sync.OnceValue(func() bool {
-		return isSymCryptHashStateSerializable(crypto.SHA224)
-	})
-	symCryptHashStateSerializableSHA256 = sync.OnceValue(func() bool {
-		return isSymCryptHashStateSerializable(crypto.SHA256)
-	})
-	symCryptHashStateSerializableSHA384 = sync.OnceValue(func() bool {
-		return isSymCryptHashStateSerializable(crypto.SHA384)
-	})
-	symCryptHashStateSerializableSHA512_224 = sync.OnceValue(func() bool {
-		return isSymCryptHashStateSerializable(crypto.SHA512_224)
-	})
-	symCryptHashStateSerializableSHA512_256 = sync.OnceValue(func() bool {
-		return isSymCryptHashStateSerializable(crypto.SHA512_256)
-	})
-	symCryptHashStateSerializableSHA512 = sync.OnceValue(func() bool {
-		return isSymCryptHashStateSerializable(crypto.SHA512)
-	})
-)
-
 // isSymCryptHashStateSerializable checks if the SymCrypt hash state is serializable.
-func isSymCryptHashStateSerializable(ch crypto.Hash) bool {
-	alg := loadHash(ch)
-	if alg == nil {
-		return false
-	}
+func isSymCryptHashStateSerializable(md C.GO_EVP_MD_PTR) bool {
 	ctx := C.go_openssl_EVP_MD_CTX_new()
 	if ctx == nil {
 		return false
 	}
 	defer C.go_openssl_EVP_MD_CTX_free(ctx)
-	if C.go_openssl_EVP_DigestInit_ex(ctx, alg.md, nil) != 1 {
+	if C.go_openssl_EVP_DigestInit_ex(ctx, md, nil) != 1 {
 		return false
 	}
 	params := C.go_openssl_EVP_MD_CTX_gettable_params(ctx)

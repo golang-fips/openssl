@@ -79,11 +79,14 @@ const (
 )
 
 type hashAlgorithm struct {
-	md        C.GO_EVP_MD_PTR
-	ch        crypto.Hash
-	size      int
-	blockSize int
-	provider  provider
+	md             C.GO_EVP_MD_PTR
+	ch             crypto.Hash
+	size           int
+	blockSize      int
+	provider       provider
+	marshallable   bool
+	magic          string
+	marshalledSize int
 }
 
 // loadHash converts a crypto.Hash to a EVP_MD.
@@ -100,6 +103,8 @@ func loadHash(ch crypto.Hash) *hashAlgorithm {
 		hash.md = C.go_openssl_EVP_md4()
 	case crypto.MD5:
 		hash.md = C.go_openssl_EVP_md5()
+		hash.magic = magicMD5
+		hash.marshalledSize = marshaledSizeMD5
 	case crypto.MD5SHA1:
 		if vMajor == 1 && vMinor == 0 {
 			// OpenSSL 1.0.2 does not support MD5SHA1.
@@ -109,21 +114,35 @@ func loadHash(ch crypto.Hash) *hashAlgorithm {
 		}
 	case crypto.SHA1:
 		hash.md = C.go_openssl_EVP_sha1()
+		hash.magic = magic1
+		hash.marshalledSize = marshaledSize1
 	case crypto.SHA224:
 		hash.md = C.go_openssl_EVP_sha224()
+		hash.magic = magic224
+		hash.marshalledSize = marshaledSize256
 	case crypto.SHA256:
 		hash.md = C.go_openssl_EVP_sha256()
+		hash.magic = magic256
+		hash.marshalledSize = marshaledSize256
 	case crypto.SHA384:
 		hash.md = C.go_openssl_EVP_sha384()
+		hash.magic = magic384
+		hash.marshalledSize = marshaledSize512
 	case crypto.SHA512:
 		hash.md = C.go_openssl_EVP_sha512()
+		hash.magic = magic512
+		hash.marshalledSize = marshaledSize512
 	case crypto.SHA512_224:
 		if versionAtOrAbove(1, 1, 1) {
 			hash.md = C.go_openssl_EVP_sha512_224()
+			hash.magic = magic512_224
+			hash.marshalledSize = marshaledSize512
 		}
 	case crypto.SHA512_256:
 		if versionAtOrAbove(1, 1, 1) {
 			hash.md = C.go_openssl_EVP_sha512_256()
+			hash.magic = magic512_256
+			hash.marshalledSize = marshaledSize512
 		}
 	case crypto.SHA3_224:
 		if versionAtOrAbove(1, 1, 1) {
@@ -161,6 +180,11 @@ func loadHash(ch crypto.Hash) *hashAlgorithm {
 			hash.md = md
 		}
 	}
+	if hash.magic != "" {
+		if hash.marshalledSize == 0 {
+			panic("marshalledSize must be set for " + hash.magic)
+		}
+	}
 
 	switch vMajor {
 	case 1:
@@ -170,10 +194,13 @@ func loadHash(ch crypto.Hash) *hashAlgorithm {
 			switch C.GoString(C.go_openssl_OSSL_PROVIDER_get0_name(prov)) {
 			case "default":
 				hash.provider = providerOSSLDefault
+				hash.marshallable = hash.magic != ""
 			case "fips":
 				hash.provider = providerOSSLFIPS
+				hash.marshallable = hash.magic != ""
 			case "symcryptprovider":
 				hash.provider = providerSymCrypt
+				hash.marshallable = hash.magic != "" && isSymCryptHashStateSerializable(hash.md)
 			}
 		}
 	default:

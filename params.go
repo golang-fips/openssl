@@ -5,7 +5,6 @@ package openssl
 // #include "goopenssl.h"
 import "C"
 import (
-	"math"
 	"runtime"
 	"unsafe"
 )
@@ -47,14 +46,16 @@ var (
 	_OSSL_MAC_PARAM_DIGEST = C.CString("digest")
 )
 
+const _OSSL_PARAM_UNMODIFIED uint = uint(^uintptr(0))
+
 // _OSSL_PARAM is a structure to pass or request object parameters.
 // https://docs.openssl.org/3.0/man3/OSSL_PARAM/.
 type _OSSL_PARAM struct {
 	Key        *C.char
 	DataType   uint32
 	Data       unsafe.Pointer
-	DataSize   int
-	ReturnSize int
+	DataSize   uint
+	ReturnSize uint
 }
 
 func ossl_param_construct(key *C.char, dataType uint32, data unsafe.Pointer, dataSize int) _OSSL_PARAM {
@@ -62,8 +63,8 @@ func ossl_param_construct(key *C.char, dataType uint32, data unsafe.Pointer, dat
 		Key:        key,
 		DataType:   dataType,
 		Data:       data,
-		DataSize:   dataSize,
-		ReturnSize: math.MaxInt - 1,
+		DataSize:   uint(dataSize),
+		ReturnSize: _OSSL_PARAM_UNMODIFIED,
 	}
 }
 
@@ -71,8 +72,17 @@ func _OSSL_PARAM_construct_octet_string(key *C.char, data unsafe.Pointer, dataSi
 	return ossl_param_construct(key, C.GO_OSSL_PARAM_OCTET_STRING, data, dataSize)
 }
 
+func _OSSL_PARAM_construct_int32(key *C.char, data *int32) _OSSL_PARAM {
+	return ossl_param_construct(key, C.GO_OSSL_PARAM_INTEGER, unsafe.Pointer(data), 4)
+}
+
 func _OSSL_PARAM_construct_end() _OSSL_PARAM {
 	return _OSSL_PARAM{}
+}
+
+func _OSSL_PARAM_modified(param *_OSSL_PARAM) bool {
+	// If ReturnSize is not set, the parameter has not been modified.
+	return param != nil && param.ReturnSize != _OSSL_PARAM_UNMODIFIED
 }
 
 type bnParam struct {
@@ -94,17 +104,13 @@ type paramBuilder struct {
 
 // newParamBuilder creates a new paramBuilder.
 func newParamBuilder() (*paramBuilder, error) {
-	return newParamBuilderN(8) // the maximum known number of BIGNUMs to free are 8 for RSA
-}
-
-func newParamBuilderN(n int) (*paramBuilder, error) {
 	bld := C.go_openssl_OSSL_PARAM_BLD_new()
 	if bld == nil {
 		return nil, newOpenSSLError("OSSL_PARAM_BLD_new")
 	}
 	pb := &paramBuilder{
 		bld:      bld,
-		bnToFree: make([]bnParam, 0, n),
+		bnToFree: make([]bnParam, 0, 8), // the maximum known number of BIGNUMs to free are 8 for RSA
 	}
 	runtime.SetFinalizer(pb, (*paramBuilder).finalize)
 	return pb, nil
