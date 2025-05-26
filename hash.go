@@ -25,10 +25,10 @@ const (
 	magic512_256 = "sha\x06"
 	magic512     = "sha\x07"
 
-	marshaledSizeMD5 = len(magicMD5) + 4*4 + 64 + 8
-	marshaledSize1   = len(magic1) + 5*4 + 64 + 8
-	marshaledSize256 = len(magic256) + 8*4 + 64 + 8
-	marshaledSize512 = len(magic512) + 8*8 + 128 + 8
+	marshaledSizeMD5 = len(magicMD5) + 4*4 + 64 + 8  // from crypto/md5
+	marshaledSize1   = len(magic1) + 5*4 + 64 + 8    // from crypto/sha1
+	marshaledSize256 = len(magic256) + 8*4 + 64 + 8  // from crypto/sha256
+	marshaledSize512 = len(magic512) + 8*8 + 128 + 8 // from crypto/sha512
 )
 
 // maxHashSize is the size of SHA52 and SHA3_512, the largest hashes we support.
@@ -385,70 +385,48 @@ func (h *evpHash) Clone() hash.Hash {
 var errHashNotMarshallable = errors.New("openssl: hash state is not marshallable")
 
 func (d *evpHash) MarshalBinary() ([]byte, error) {
-	buf := make([]byte, 0, marshaledSize512) // stack allocate the buffer by setting the max size we support
+	if !d.alg.marshallable {
+		return nil, errHashNotMarshallable
+	}
+	buf := make([]byte, 0, d.alg.marshalledSize)
 	return d.AppendBinary(buf)
 }
 
 func (d *evpHash) AppendBinary(buf []byte) ([]byte, error) {
 	defer runtime.KeepAlive(d)
-	d.init()
-	magic, _ := cryptoHashEncodingInfo(d.alg.ch)
-	if magic == "" {
+	if !d.alg.marshallable {
 		return nil, errHashNotMarshallable
 	}
+	d.init()
 	switch d.alg.provider {
 	case providerOSSLDefault, providerOSSLFIPS:
-		return osslHashAppendBinary(d.ctx, d.alg.ch, magic, buf)
+		return osslHashAppendBinary(d.ctx, d.alg.ch, d.alg.magic, buf)
 	case providerSymCrypt:
-		return symCryptHashAppendBinary(d.ctx, d.alg.ch, magic, buf)
+		return symCryptHashAppendBinary(d.ctx, d.alg.ch, d.alg.magic, buf)
 	default:
-		return nil, errHashNotMarshallable
+		panic("openssl: unknown hash provider" + strconv.Itoa(int(d.alg.provider)))
 	}
 }
 
 func (d *evpHash) UnmarshalBinary(b []byte) error {
 	defer runtime.KeepAlive(d)
 	d.init()
-	magic, size := cryptoHashEncodingInfo(d.alg.ch)
-	if magic == "" {
+	if !d.alg.marshallable {
 		return errHashNotMarshallable
 	}
-	if len(b) < len(magic) || string(b[:len(magic)]) != string(magic[:]) {
+	if len(b) < len(d.alg.magic) || string(b[:len(d.alg.magic)]) != d.alg.magic {
 		return errors.New("openssl: invalid hash state identifier")
 	}
-	if len(b) != size {
+	if len(b) != d.alg.marshalledSize {
 		return errors.New("openssl: invalid hash state size")
 	}
 	switch d.alg.provider {
 	case providerOSSLDefault, providerOSSLFIPS:
-		return osslHashUnmarshalBinary(d.ctx, d.alg.ch, magic, b)
+		return osslHashUnmarshalBinary(d.ctx, d.alg.ch, d.alg.magic, b)
 	case providerSymCrypt:
-		return symCryptHashUnmarshalBinary(d.ctx, d.alg.ch, magic, b)
+		return symCryptHashUnmarshalBinary(d.ctx, d.alg.ch, d.alg.magic, b)
 	default:
-		return errHashNotMarshallable
-	}
-}
-
-func cryptoHashEncodingInfo(ch crypto.Hash) (magic string, size int) {
-	switch ch {
-	case crypto.MD5:
-		return magicMD5, marshaledSizeMD5
-	case crypto.SHA1:
-		return magic1, marshaledSize1
-	case crypto.SHA224:
-		return magic224, marshaledSize256
-	case crypto.SHA256:
-		return magic256, marshaledSize256
-	case crypto.SHA384:
-		return magic384, marshaledSize512
-	case crypto.SHA512_224:
-		return magic512_224, marshaledSize512
-	case crypto.SHA512_256:
-		return magic512_256, marshaledSize512
-	case crypto.SHA512:
-		return magic512, marshaledSize512
-	default:
-		return "", 0
+		panic("openssl: unknown hash provider" + strconv.Itoa(int(d.alg.provider)))
 	}
 }
 

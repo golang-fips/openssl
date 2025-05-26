@@ -23,7 +23,6 @@ go_hash_sum(const _EVP_MD_CTX_PTR ctx, _EVP_MD_CTX_PTR ctx2, unsigned char *out,
 */
 import "C"
 import (
-	"math"
 	"unsafe"
 )
 
@@ -42,14 +41,16 @@ func HashSum(ctx1, ctx2 EVP_MD_CTX_PTR, out []byte) error {
 	return nil
 }
 
+const _OSSL_PARAM_UNMODIFIED uint = uint(^uintptr(0))
+
 // OSSL_PARAM is a structure to pass or request object parameters.
 // https://docs.openssl.org/3.0/man3/OSSL_PARAM/.
 type OSSL_PARAM struct {
 	Key        *byte
 	DataType   uint32
 	Data       unsafe.Pointer
-	DataSize   int
-	ReturnSize int
+	DataSize   uint
+	ReturnSize uint
 }
 
 func ossl_param_construct(key *byte, dataType uint32, data unsafe.Pointer, dataSize int) OSSL_PARAM {
@@ -57,8 +58,8 @@ func ossl_param_construct(key *byte, dataType uint32, data unsafe.Pointer, dataS
 		Key:        key,
 		DataType:   dataType,
 		Data:       data,
-		DataSize:   dataSize,
-		ReturnSize: math.MaxInt - 1,
+		DataSize:   uint(dataSize),
+		ReturnSize: _OSSL_PARAM_UNMODIFIED,
 	}
 }
 
@@ -66,6 +67,15 @@ func OSSL_PARAM_construct_octet_string(key *byte, data unsafe.Pointer, dataSize 
 	return ossl_param_construct(key, OSSL_PARAM_OCTET_STRING, data, dataSize)
 }
 
+func OSSL_PARAM_construct_int32(key *byte, data *int32) OSSL_PARAM {
+	return ossl_param_construct(key, OSSL_PARAM_INTEGER, unsafe.Pointer(data), 4)
+}
+
 func OSSL_PARAM_construct_end() OSSL_PARAM {
 	return OSSL_PARAM{}
+}
+
+func OSSL_PARAM_modified(param *OSSL_PARAM) bool {
+	// If ReturnSize is not set, the parameter has not been modified.
+	return param != nil && param.ReturnSize != _OSSL_PARAM_UNMODIFIED
 }

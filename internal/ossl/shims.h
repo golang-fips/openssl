@@ -23,6 +23,7 @@
 // #include <openssl/core_names.h>
 // #include <openssl/provider.h>
 // #include <openssl/param_build.h>
+// #include <openssl/params.h>
 // #endif
 // #if OPENSSL_VERSION_NUMBER < 0x10100000L
 // #include <openssl/bn.h>
@@ -87,6 +88,7 @@ enum {
 	_EVP_PKEY_CTRL_DSA_PARAMGEN_BITS   = 0x1001,
 	_EVP_PKEY_CTRL_DSA_PARAMGEN_Q_BITS = 0x1002,
 
+	_OSSL_PARAM_INTEGER = 1,
 	_OSSL_PARAM_OCTET_STRING = 5,
 };
 
