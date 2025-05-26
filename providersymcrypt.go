@@ -106,9 +106,9 @@ func symCryptUnmarshalBinary(d []byte, chain, buffer []byte) _UINT64 {
 	return newUINT64(length)
 }
 
-// swapEndianessInt32 swaps the endianness of the given byte slice
+// swapEndianessUint32 swaps the endianness of the given byte slice
 // in place. It assumes the slice is a backup of a 32-bit integer array.
-func swapEndianessInt32(d []uint8) {
+func swapEndianessUint32(d []uint8) {
 	for i := 0; i < len(d); i += 4 {
 		d[i], d[i+3] = d[i+3], d[i]
 		d[i+1], d[i+2] = d[i+2], d[i+1]
@@ -128,13 +128,13 @@ type _SYMCRYPT_MD5_STATE_EXPORT_BLOB struct {
 func (b *_SYMCRYPT_MD5_STATE_EXPORT_BLOB) appendBinary(d []byte) ([]byte, error) {
 	// b.chain is little endian, but Go expects big endian,
 	// we need to swap the bytes.
-	swapEndianessInt32(b.chain[:])
+	swapEndianessUint32(b.chain[:])
 	return symCryptAppendBinary(d, b.chain[:], b.buffer[:], b.length), nil
 }
 
 func (b *_SYMCRYPT_MD5_STATE_EXPORT_BLOB) unmarshalBinary(d []byte) {
 	b.length = symCryptUnmarshalBinary(d, b.chain[:], b.buffer[:])
-	swapEndianessInt32(b.chain[:])
+	swapEndianessUint32(b.chain[:])
 }
 
 type _SYMCRYPT_SHA1_STATE_EXPORT_BLOB struct {
@@ -208,6 +208,9 @@ func symCryptHashAppendBinary(ctx C.GO_EVP_MD_CTX_PTR, ch crypto.Hash, magic str
 	if C.go_openssl_EVP_MD_CTX_get_params(ctx, (C.GO_OSSL_PARAM_PTR)(unsafe.Pointer(&params[0]))) != 1 {
 		return nil, newOpenSSLError("EVP_MD_CTX_get_params")
 	}
+	if !_OSSL_PARAM_modified(&params[0]) {
+		return nil, errors.New("EVP_MD_CTX_get_params did not retrieve the state")
+	}
 
 	header := (*_SYMCRYPT_BLOB_HEADER)(unsafe.Pointer(&state[0]))
 	if header.magic != _SYMCRYPT_BLOB_MAGIC {
@@ -275,21 +278,17 @@ func symCryptHashUnmarshalBinary(ctx C.GO_EVP_MD_CTX_PTR, ch crypto.Hash, magic 
 	default:
 		panic("unsupported hash " + ch.String())
 	}
-	bld := C.go_openssl_OSSL_PARAM_BLD_new()
-	if bld == nil {
-		return newOpenSSLError("OSSL_PARAM_BLD_new")
+	var checksum int32 = 1
+	cbytesBlob := C.CBytes(unsafe.Slice((*byte)(blobPtr), hdr.size))
+	defer C.free(cbytesBlob)
+	cbytesCheksum := C.CBytes(unsafe.Slice((*byte)(unsafe.Pointer(&checksum)), 4))
+	defer C.free(cbytesCheksum)
+	params := [3]_OSSL_PARAM{
+		_OSSL_PARAM_construct_octet_string(_SCOSSL_DIGEST_PARAM_STATE, cbytesBlob, int(hdr.size)),
+		_OSSL_PARAM_construct_int32(_SCOSSL_DIGEST_PARAM_RECOMPUTE_CHECKSUM, (*int32)(cbytesCheksum)),
+		_OSSL_PARAM_construct_end(),
 	}
-	defer C.go_openssl_OSSL_PARAM_BLD_free(bld)
-	cbytes := C.CBytes(unsafe.Slice((*byte)(blobPtr), hdr.size))
-	defer C.free(cbytes)
-	C.go_openssl_OSSL_PARAM_BLD_push_octet_string(bld, _SCOSSL_DIGEST_PARAM_STATE, cbytes, C.size_t(hdr.size))
-	C.go_openssl_OSSL_PARAM_BLD_push_int32(bld, _SCOSSL_DIGEST_PARAM_RECOMPUTE_CHECKSUM, 1)
-	params := C.go_openssl_OSSL_PARAM_BLD_to_param(bld)
-	if params == nil {
-		return newOpenSSLError("OSSL_PARAM_BLD_to_param")
-	}
-	defer C.go_openssl_OSSL_PARAM_free(params)
-	if C.go_openssl_EVP_MD_CTX_set_params(ctx, params) == 0 {
+	if C.go_openssl_EVP_MD_CTX_set_params(ctx, (C.GO_OSSL_PARAM_PTR)(unsafe.Pointer(&params[0]))) != 1 {
 		return newOpenSSLError("EVP_MD_CTX_set_params")
 	}
 	return nil

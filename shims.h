@@ -26,8 +26,14 @@ enum {
     GO_EVP_MAX_MD_SIZE = 64,
 
     GO_EVP_PKEY_PUBLIC_KEY = 0x86,
-    GO_EVP_PKEY_KEYPAIR = 0x87,
+    GO_EVP_PKEY_KEYPAIR = 0x87
+};
 
+// #if OPENSSL_VERSION_NUMBER >= 0x30000000L
+// #include <openssl/params.h>
+// #endif
+enum {
+    GO_OSSL_PARAM_INTEGER = 1,
     GO_OSSL_PARAM_OCTET_STRING = 5
 };
 
