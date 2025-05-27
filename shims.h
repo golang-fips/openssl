@@ -27,7 +27,15 @@ enum {
     GO_EVP_MAX_MD_SIZE = 64,
 
     GO_EVP_PKEY_PUBLIC_KEY = 0x86,
-    GO_EVP_PKEY_KEYPAIR = 0x87
+    GO_EVP_PKEY_KEYPAIR = 0x87,
+};
+
+// #if OPENSSL_VERSION_NUMBER >= 0x30000000L
+// #include <openssl/params.h>
+// #endif
+enum {
+    GO_OSSL_PARAM_INTEGER = 1,
+    GO_OSSL_PARAM_OCTET_STRING = 5
 };
 
 // #include <openssl/ec.h>
@@ -219,6 +227,10 @@ DEFINEFUNC_RENAMED_1_1(GO_EVP_MD_CTX_PTR, EVP_MD_CTX_new, EVP_MD_CTX_create, (vo
 DEFINEFUNC_RENAMED_1_1(void, EVP_MD_CTX_free, EVP_MD_CTX_destroy, (GO_EVP_MD_CTX_PTR ctx), (ctx)) \
 DEFINEFUNC(int, EVP_MD_CTX_copy, (GO_EVP_MD_CTX_PTR out, const GO_EVP_MD_CTX_PTR in), (out, in)) \
 DEFINEFUNC(int, EVP_MD_CTX_copy_ex, (GO_EVP_MD_CTX_PTR out, const GO_EVP_MD_CTX_PTR in), (out, in)) \
+DEFINEFUNC_3_0(const GO_OSSL_PARAM_PTR, EVP_MD_CTX_gettable_params, (GO_EVP_MD_CTX_PTR ctx), (ctx)) \
+DEFINEFUNC_3_0(const GO_OSSL_PARAM_PTR, EVP_MD_CTX_settable_params, (GO_EVP_MD_CTX_PTR ctx), (ctx)) \
+DEFINEFUNC_3_0(int, EVP_MD_CTX_get_params, (GO_EVP_MD_CTX_PTR ctx, GO_OSSL_PARAM_PTR params), (ctx, params)) \
+DEFINEFUNC_3_0(int, EVP_MD_CTX_set_params, (GO_EVP_MD_CTX_PTR ctx, const GO_OSSL_PARAM_PTR params), (ctx, params)) \
 DEFINEFUNC(int, EVP_Digest, (const void *data, size_t count, unsigned char *md, unsigned int *size, const GO_EVP_MD_PTR type, GO_ENGINE_PTR impl), (data, count, md, size, type, impl)) \
 DEFINEFUNC(int, EVP_DigestInit_ex, (GO_EVP_MD_CTX_PTR ctx, const GO_EVP_MD_PTR type, GO_ENGINE_PTR impl), (ctx, type, impl)) \
 DEFINEFUNC(int, EVP_DigestInit, (GO_EVP_MD_CTX_PTR ctx, const GO_EVP_MD_PTR type), (ctx, type)) \
@@ -376,6 +388,7 @@ DEFINEFUNC_3_0(int, EVP_MAC_init, (GO_EVP_MAC_CTX_PTR ctx, const unsigned char *
 DEFINEFUNC_3_0(int, EVP_MAC_update, (GO_EVP_MAC_CTX_PTR ctx, const unsigned char *data, size_t datalen), (ctx, data, datalen)) \
 DEFINEFUNC_3_0(int, EVP_MAC_final, (GO_EVP_MAC_CTX_PTR ctx, unsigned char *out, size_t *outl, size_t outsize), (ctx, out, outl, outsize)) \
 DEFINEFUNC_3_0(void, OSSL_PARAM_free, (GO_OSSL_PARAM_PTR p), (p)) \
+DEFINEFUNC_3_0(const GO_OSSL_PARAM_PTR, OSSL_PARAM_locate_const, (const GO_OSSL_PARAM_PTR p, const char *key), (p, key)) \
 DEFINEFUNC_3_0(GO_OSSL_PARAM_BLD_PTR, OSSL_PARAM_BLD_new, (void), ()) \
 DEFINEFUNC_3_0(void, OSSL_PARAM_BLD_free, (GO_OSSL_PARAM_BLD_PTR bld), (bld)) \
 DEFINEFUNC_3_0(GO_OSSL_PARAM_PTR, OSSL_PARAM_BLD_to_param, (GO_OSSL_PARAM_BLD_PTR bld), (bld)) \

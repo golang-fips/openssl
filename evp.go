@@ -68,11 +68,22 @@ func hashFuncToMD(fn func() hash.Hash) (C.GO_EVP_MD_PTR, error) {
 	return md, nil
 }
 
+// provider is an identifier for a known provider.
+type provider uint8
+
+const (
+	providerNone provider = iota
+	providerOSSLDefault
+	providerOSSLFIPS
+	providerSymCrypt
+)
+
 type hashAlgorithm struct {
 	md             C.GO_EVP_MD_PTR
 	ch             crypto.Hash
 	size           int
 	blockSize      int
+	provider       provider
 	marshallable   bool
 	magic          string
 	marshalledSize int
@@ -92,8 +103,8 @@ func loadHash(ch crypto.Hash) *hashAlgorithm {
 		hash.md = C.go_openssl_EVP_md4()
 	case crypto.MD5:
 		hash.md = C.go_openssl_EVP_md5()
-		hash.magic = md5Magic
-		hash.marshalledSize = md5MarshaledSize
+		hash.magic = magicMD5
+		hash.marshalledSize = marshaledSizeMD5
 	case crypto.MD5SHA1:
 		if vMajor == 1 && vMinor == 0 {
 			// OpenSSL 1.0.2 does not support MD5SHA1.
@@ -103,8 +114,8 @@ func loadHash(ch crypto.Hash) *hashAlgorithm {
 		}
 	case crypto.SHA1:
 		hash.md = C.go_openssl_EVP_sha1()
-		hash.magic = sha1Magic
-		hash.marshalledSize = sha1MarshaledSize
+		hash.magic = magic1
+		hash.marshalledSize = marshaledSize1
 	case crypto.SHA224:
 		hash.md = C.go_openssl_EVP_sha224()
 		hash.magic = magic224
@@ -169,7 +180,33 @@ func loadHash(ch crypto.Hash) *hashAlgorithm {
 			hash.md = md
 		}
 	}
-	hash.marshallable = hash.magic != "" && isHashMarshallable(hash.md)
+	if hash.magic != "" {
+		if hash.marshalledSize == 0 {
+			panic("marshalledSize must be set for " + hash.magic)
+		}
+	}
+
+	switch vMajor {
+	case 1:
+		hash.provider = providerOSSLDefault
+	case 3:
+		if prov := C.go_openssl_EVP_MD_get0_provider(hash.md); prov != nil {
+			switch C.GoString(C.go_openssl_OSSL_PROVIDER_get0_name(prov)) {
+			case "default":
+				hash.provider = providerOSSLDefault
+				hash.marshallable = hash.magic != ""
+			case "fips":
+				hash.provider = providerOSSLFIPS
+				hash.marshallable = hash.magic != ""
+			case "symcryptprovider":
+				hash.provider = providerSymCrypt
+				hash.marshallable = hash.magic != "" && isSymCryptHashStateSerializable(hash.md)
+			}
+		}
+	default:
+		panic(errUnsupportedVersion())
+	}
+
 	cacheMD.Store(ch, &hash)
 	return &hash
 }
