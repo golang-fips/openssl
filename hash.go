@@ -14,25 +14,6 @@ import (
 	"unsafe"
 )
 
-const (
-	magicMD5     = "md5\x01"
-	magic1       = "sha\x01"
-	magic224     = "sha\x02"
-	magic256     = "sha\x03"
-	magic384     = "sha\x04"
-	magic512_224 = "sha\x05"
-	magic512_256 = "sha\x06"
-	magic512     = "sha\x07"
-
-	marshaledSizeMD5 = len(magicMD5) + 4*4 + 64 + 8
-	marshaledSize1   = len(magic1) + 5*4 + 64 + 8
-	marshaledSize256 = len(magic256) + 8*4 + 64 + 8
-	marshaledSize512 = len(magic512) + 8*8 + 128 + 8
-)
-
-// maxHashSize is the size of SHA52 and SHA3_512, the largest hashes we support.
-const maxHashSize = 64
-
 // NOTE: Implementation ported from https://go-review.googlesource.com/c/go/+/404295.
 // The cgo calls in this file are arranged to avoid marking the parameters as escaping.
 // To do that, we call noescape (including via addr).
@@ -130,49 +111,35 @@ func SHA3_512(p []byte) (sum [64]byte) {
 	return
 }
 
-// provider is an identifier for a known provider.
-type provider uint8
+var isMarshallableCache sync.Map
 
-const (
-	providerNone provider = iota
-	providerOSSLDefault
-	providerOSSLFIPS
-	providerSymCrypt
-)
-
-var mdProviderCache sync.Map
-
-// mdProvider returns the provider for the given hash.
-func mdProvider(ch crypto.Hash) provider {
+// isHashMarshallable returns true if the memory layout of cb
+// is known by this library and can therefore be marshalled.
+func isHashMarshallable(ch crypto.Hash) bool {
 	if vMajor == 1 {
-		return providerOSSLDefault
+		return true
 	}
-	if v, ok := mdProviderCache.Load(ch); ok {
-		return v.(provider)
+	if v, ok := isMarshallableCache.Load(ch); ok {
+		return v.(bool)
 	}
 	md := cryptoHashToMD(ch)
 	if md == nil {
-		return providerNone
+		return false
 	}
 	prov := C.go_openssl_EVP_MD_get0_provider(md)
 	if prov == nil {
-		return providerNone
+		return false
 	}
 	cname := C.go_openssl_OSSL_PROVIDER_get0_name(prov)
 	if cname == nil {
-		return providerNone
+		return false
 	}
-	var provider provider
-	switch C.GoString(cname) {
-	case "default":
-		provider = providerOSSLDefault
-	case "fips":
-		provider = providerOSSLFIPS
-	case "symcryptprovider":
-		provider = providerSymCrypt
-	}
-	mdProviderCache.Store(ch, provider)
-	return provider
+	name := C.GoString(cname)
+	// We only know the memory layout of the built-in providers.
+	// See evpHash.hashState for more details.
+	marshallable := name == "default" || name == "fips"
+	isMarshallableCache.Store(ch, marshallable)
+	return marshallable
 }
 
 // evpHash implements generic hash methods.
@@ -185,7 +152,7 @@ type evpHash struct {
 	size      int
 	blockSize int
 
-	ch crypto.Hash
+	marshallable bool
 }
 
 func newEvpHash(ch crypto.Hash, size, blockSize int) *evpHash {
@@ -205,7 +172,7 @@ func newEvpHash(ch crypto.Hash, size, blockSize int) *evpHash {
 		size:      size,
 		blockSize: blockSize,
 
-		ch: ch,
+		marshallable: isHashMarshallable(ch),
 	}
 	runtime.SetFinalizer(h, (*evpHash).finalize)
 	return h
@@ -282,11 +249,11 @@ func (h *evpHash) clone() (*evpHash, error) {
 		return nil, newOpenSSLError("EVP_MD_CTX_new")
 	}
 	cloned := &evpHash{
-		ctx:       ctx,
-		ctx2:      ctx2,
-		size:      h.size,
-		blockSize: h.blockSize,
-		ch:        h.ch,
+		ctx:          ctx,
+		ctx2:         ctx2,
+		size:         h.size,
+		blockSize:    h.blockSize,
+		marshallable: h.marshallable,
 	}
 	runtime.SetFinalizer(cloned, (*evpHash).finalize)
 	return cloned, nil
@@ -294,67 +261,34 @@ func (h *evpHash) clone() (*evpHash, error) {
 
 var testNotMarshalable bool // Used in tests.
 
-var errHashNotMarshallable = errors.New("openssl: hash state is not marshallable")
-
-func (d *evpHash) MarshalBinary() ([]byte, error) {
-	defer runtime.KeepAlive(d)
-	buf := make([]byte, 0, marshaledSize512) // stack allocate the buffer by setting the max size we support
-	magic, _ := cryptoHashEncodingInfo(d.ch)
-	if magic == "" || testNotMarshalable {
-		return nil, errHashNotMarshallable
+// hashState returns a pointer to the internal hash structure.
+//
+// The EVP_MD_CTX memory layout has changed in OpenSSL 3
+// and the property holding the internal structure is no longer md_data but algctx.
+func (h *evpHash) hashState() unsafe.Pointer {
+	if !h.marshallable || testNotMarshalable {
+		return nil
 	}
-	switch mdProvider(d.ch) {
-	case providerOSSLDefault, providerOSSLFIPS:
-		return osslHashAppendBinary(d.ctx, d.ch, magic, buf)
-	case providerSymCrypt:
-		return symCryptHashAppendBinary(d.ctx, d.ch, magic, buf)
+	switch vMajor {
+	case 1:
+		// https://github.com/openssl/openssl/blob/0418e993c717a6863f206feaa40673a261de7395/crypto/evp/evp_local.h#L12.
+		type mdCtx struct {
+			_       [2]unsafe.Pointer
+			_       C.ulong
+			md_data unsafe.Pointer
+		}
+		return (*mdCtx)(unsafe.Pointer(h.ctx)).md_data
+	case 3:
+		// https://github.com/openssl/openssl/blob/5675a5aaf6a2e489022bcfc18330dae9263e598e/crypto/evp/evp_local.h#L16.
+		type mdCtx struct {
+			_      [3]unsafe.Pointer
+			_      C.ulong
+			_      [3]unsafe.Pointer
+			algctx unsafe.Pointer
+		}
+		return (*mdCtx)(unsafe.Pointer(h.ctx)).algctx
 	default:
-		return nil, errHashNotMarshallable
-	}
-}
-
-func (d *evpHash) UnmarshalBinary(b []byte) error {
-	defer runtime.KeepAlive(d)
-	magic, size := cryptoHashEncodingInfo(d.ch)
-	if magic == "" || testNotMarshalable {
-		return errHashNotMarshallable
-	}
-	if len(b) < len(magic) || string(b[:len(magic)]) != string(magic[:]) {
-		return errors.New("openssl: invalid hash state identifier")
-	}
-	if len(b) != size {
-		return errors.New("openssl: invalid hash state size")
-	}
-	switch mdProvider(d.ch) {
-	case providerOSSLDefault, providerOSSLFIPS:
-		return osslHashUnmarshalBinary(d.ctx, d.ch, magic, b)
-	case providerSymCrypt:
-		return symCryptHashUnmarshalBinary(d.ctx, d.ch, magic, b)
-	default:
-		return errHashNotMarshallable
-	}
-}
-
-func cryptoHashEncodingInfo(ch crypto.Hash) (magic string, size int) {
-	switch ch {
-	case crypto.MD5:
-		return magicMD5, marshaledSizeMD5
-	case crypto.SHA1:
-		return magic1, marshaledSize1
-	case crypto.SHA224:
-		return magic224, marshaledSize256
-	case crypto.SHA256:
-		return magic256, marshaledSize256
-	case crypto.SHA384:
-		return magic384, marshaledSize512
-	case crypto.SHA512_224:
-		return magic512_224, marshaledSize512
-	case crypto.SHA512_256:
-		return magic512_256, marshaledSize512
-	case crypto.SHA512:
-		return magic512, marshaledSize512
-	default:
-		return "", 0
+		panic(errUnsupportedVersion())
 	}
 }
 
@@ -384,6 +318,15 @@ func NewMD5() hash.Hash {
 	}
 }
 
+// md5State layout is taken from
+// https://github.com/openssl/openssl/blob/0418e993c717a6863f206feaa40673a261de7395/include/openssl/md5.h#L33.
+type md5State struct {
+	h      [4]uint32
+	nl, nh uint32
+	x      [64]byte
+	nx     uint32
+}
+
 type md5Hash struct {
 	*evpHash
 	out [16]byte
@@ -392,6 +335,52 @@ type md5Hash struct {
 func (h *md5Hash) Sum(in []byte) []byte {
 	h.sum(h.out[:])
 	return append(in, h.out[:]...)
+}
+
+const (
+	md5Magic         = "md5\x01"
+	md5MarshaledSize = len(md5Magic) + 4*4 + 64 + 8
+)
+
+func (h *md5Hash) MarshalBinary() ([]byte, error) {
+	d := (*md5State)(h.hashState())
+	if d == nil {
+		return nil, errors.New("crypto/md5: can't retrieve hash state")
+	}
+	b := make([]byte, 0, md5MarshaledSize)
+	b = append(b, md5Magic...)
+	b = appendUint32(b, d.h[0])
+	b = appendUint32(b, d.h[1])
+	b = appendUint32(b, d.h[2])
+	b = appendUint32(b, d.h[3])
+	b = append(b, d.x[:d.nx]...)
+	b = b[:len(b)+len(d.x)-int(d.nx)] // already zero
+	b = appendUint64(b, uint64(d.nl)>>3|uint64(d.nh)<<29)
+	return b, nil
+}
+
+func (h *md5Hash) UnmarshalBinary(b []byte) error {
+	if len(b) < len(md5Magic) || string(b[:len(md5Magic)]) != md5Magic {
+		return errors.New("crypto/md5: invalid hash state identifier")
+	}
+	if len(b) != md5MarshaledSize {
+		return errors.New("crypto/md5: invalid hash state size")
+	}
+	d := (*md5State)(h.hashState())
+	if d == nil {
+		return errors.New("crypto/md5: can't retrieve hash state")
+	}
+	b = b[len(md5Magic):]
+	b, d.h[0] = consumeUint32(b)
+	b, d.h[1] = consumeUint32(b)
+	b, d.h[2] = consumeUint32(b)
+	b, d.h[3] = consumeUint32(b)
+	b = b[copy(d.x[:], b):]
+	_, n := consumeUint64(b)
+	d.nl = uint32(n << 3)
+	d.nh = uint32(n >> 29)
+	d.nx = uint32(n) % 64
+	return nil
 }
 
 // NewSHA1 returns a new SHA1 hash.
@@ -409,6 +398,63 @@ type sha1Hash struct {
 func (h *sha1Hash) Sum(in []byte) []byte {
 	h.sum(h.out[:])
 	return append(in, h.out[:]...)
+}
+
+// sha1State layout is taken from
+// https://github.com/openssl/openssl/blob/0418e993c717a6863f206feaa40673a261de7395/include/openssl/sha.h#L34.
+type sha1State struct {
+	h      [5]uint32
+	nl, nh uint32
+	x      [64]byte
+	nx     uint32
+}
+
+const (
+	sha1Magic         = "sha\x01"
+	sha1MarshaledSize = len(sha1Magic) + 5*4 + 64 + 8
+)
+
+func (h *sha1Hash) MarshalBinary() ([]byte, error) {
+	d := (*sha1State)(h.hashState())
+	if d == nil {
+		return nil, errors.New("crypto/sha1: can't retrieve hash state")
+	}
+	b := make([]byte, 0, sha1MarshaledSize)
+	b = append(b, sha1Magic...)
+	b = appendUint32(b, d.h[0])
+	b = appendUint32(b, d.h[1])
+	b = appendUint32(b, d.h[2])
+	b = appendUint32(b, d.h[3])
+	b = appendUint32(b, d.h[4])
+	b = append(b, d.x[:d.nx]...)
+	b = b[:len(b)+len(d.x)-int(d.nx)] // already zero
+	b = appendUint64(b, uint64(d.nl)>>3|uint64(d.nh)<<29)
+	return b, nil
+}
+
+func (h *sha1Hash) UnmarshalBinary(b []byte) error {
+	if len(b) < len(sha1Magic) || string(b[:len(sha1Magic)]) != sha1Magic {
+		return errors.New("crypto/sha1: invalid hash state identifier")
+	}
+	if len(b) != sha1MarshaledSize {
+		return errors.New("crypto/sha1: invalid hash state size")
+	}
+	d := (*sha1State)(h.hashState())
+	if d == nil {
+		return errors.New("crypto/sha1: can't retrieve hash state")
+	}
+	b = b[len(sha1Magic):]
+	b, d.h[0] = consumeUint32(b)
+	b, d.h[1] = consumeUint32(b)
+	b, d.h[2] = consumeUint32(b)
+	b, d.h[3] = consumeUint32(b)
+	b, d.h[4] = consumeUint32(b)
+	b = b[copy(d.x[:], b):]
+	_, n := consumeUint64(b)
+	d.nl = uint32(n << 3)
+	d.nh = uint32(n >> 29)
+	d.nx = uint32(n) % 64
+	return nil
 }
 
 // NewSHA224 returns a new SHA224 hash.
@@ -443,6 +489,119 @@ type sha256Hash struct {
 func (h *sha256Hash) Sum(in []byte) []byte {
 	h.sum(h.out[:])
 	return append(in, h.out[:]...)
+}
+
+const (
+	magic224         = "sha\x02"
+	magic256         = "sha\x03"
+	marshaledSize256 = len(magic256) + 8*4 + 64 + 8
+)
+
+// sha256State layout is taken from
+// https://github.com/openssl/openssl/blob/0418e993c717a6863f206feaa40673a261de7395/include/openssl/sha.h#L51.
+type sha256State struct {
+	h      [8]uint32
+	nl, nh uint32
+	x      [64]byte
+	nx     uint32
+}
+
+func (h *sha224Hash) MarshalBinary() ([]byte, error) {
+	d := (*sha256State)(h.hashState())
+	if d == nil {
+		return nil, errors.New("crypto/sha256: can't retrieve hash state")
+	}
+	b := make([]byte, 0, marshaledSize256)
+	b = append(b, magic224...)
+	b = appendUint32(b, d.h[0])
+	b = appendUint32(b, d.h[1])
+	b = appendUint32(b, d.h[2])
+	b = appendUint32(b, d.h[3])
+	b = appendUint32(b, d.h[4])
+	b = appendUint32(b, d.h[5])
+	b = appendUint32(b, d.h[6])
+	b = appendUint32(b, d.h[7])
+	b = append(b, d.x[:d.nx]...)
+	b = b[:len(b)+len(d.x)-int(d.nx)] // already zero
+	b = appendUint64(b, uint64(d.nl)>>3|uint64(d.nh)<<29)
+	return b, nil
+}
+
+func (h *sha256Hash) MarshalBinary() ([]byte, error) {
+	d := (*sha256State)(h.hashState())
+	if d == nil {
+		return nil, errors.New("crypto/sha256: can't retrieve hash state")
+	}
+	b := make([]byte, 0, marshaledSize256)
+	b = append(b, magic256...)
+	b = appendUint32(b, d.h[0])
+	b = appendUint32(b, d.h[1])
+	b = appendUint32(b, d.h[2])
+	b = appendUint32(b, d.h[3])
+	b = appendUint32(b, d.h[4])
+	b = appendUint32(b, d.h[5])
+	b = appendUint32(b, d.h[6])
+	b = appendUint32(b, d.h[7])
+	b = append(b, d.x[:d.nx]...)
+	b = b[:len(b)+len(d.x)-int(d.nx)] // already zero
+	b = appendUint64(b, uint64(d.nl)>>3|uint64(d.nh)<<29)
+	return b, nil
+}
+
+func (h *sha224Hash) UnmarshalBinary(b []byte) error {
+	if len(b) < len(magic224) || string(b[:len(magic224)]) != magic224 {
+		return errors.New("crypto/sha256: invalid hash state identifier")
+	}
+	if len(b) != marshaledSize256 {
+		return errors.New("crypto/sha256: invalid hash state size")
+	}
+	d := (*sha256State)(h.hashState())
+	if d == nil {
+		return errors.New("crypto/sha256: can't retrieve hash state")
+	}
+	b = b[len(magic224):]
+	b, d.h[0] = consumeUint32(b)
+	b, d.h[1] = consumeUint32(b)
+	b, d.h[2] = consumeUint32(b)
+	b, d.h[3] = consumeUint32(b)
+	b, d.h[4] = consumeUint32(b)
+	b, d.h[5] = consumeUint32(b)
+	b, d.h[6] = consumeUint32(b)
+	b, d.h[7] = consumeUint32(b)
+	b = b[copy(d.x[:], b):]
+	_, n := consumeUint64(b)
+	d.nl = uint32(n << 3)
+	d.nh = uint32(n >> 29)
+	d.nx = uint32(n) % 64
+	return nil
+}
+
+func (h *sha256Hash) UnmarshalBinary(b []byte) error {
+	if len(b) < len(magic256) || string(b[:len(magic256)]) != magic256 {
+		return errors.New("crypto/sha256: invalid hash state identifier")
+	}
+	if len(b) != marshaledSize256 {
+		return errors.New("crypto/sha256: invalid hash state size")
+	}
+	d := (*sha256State)(h.hashState())
+	if d == nil {
+		return errors.New("crypto/sha256: can't retrieve hash state")
+	}
+	b = b[len(magic256):]
+	b, d.h[0] = consumeUint32(b)
+	b, d.h[1] = consumeUint32(b)
+	b, d.h[2] = consumeUint32(b)
+	b, d.h[3] = consumeUint32(b)
+	b, d.h[4] = consumeUint32(b)
+	b, d.h[5] = consumeUint32(b)
+	b, d.h[6] = consumeUint32(b)
+	b, d.h[7] = consumeUint32(b)
+	b = b[copy(d.x[:], b):]
+	_, n := consumeUint64(b)
+	d.nl = uint32(n << 3)
+	d.nh = uint32(n >> 29)
+	d.nx = uint32(n) % 64
+	return nil
 }
 
 // Clone returns a new [hash.Hash] object that is a deep clone of itself.
@@ -499,6 +658,127 @@ type sha512Hash struct {
 func (h *sha512Hash) Sum(in []byte) []byte {
 	h.sum(h.out[:])
 	return append(in, h.out[:]...)
+}
+
+// sha512State layout is taken from
+// https://github.com/openssl/openssl/blob/0418e993c717a6863f206feaa40673a261de7395/include/openssl/sha.h#L95.
+type sha512State struct {
+	h      [8]uint64
+	nl, nh uint64
+	x      [128]byte
+	nx     uint32
+}
+
+const (
+	magic384         = "sha\x04"
+	magic512_224     = "sha\x05"
+	magic512_256     = "sha\x06"
+	magic512         = "sha\x07"
+	marshaledSize512 = len(magic512) + 8*8 + 128 + 8
+)
+
+func (h *sha384Hash) MarshalBinary() ([]byte, error) {
+	d := (*sha512State)(h.hashState())
+	if d == nil {
+		return nil, errors.New("crypto/sha512: can't retrieve hash state")
+	}
+	b := make([]byte, 0, marshaledSize512)
+	b = append(b, magic384...)
+	b = appendUint64(b, d.h[0])
+	b = appendUint64(b, d.h[1])
+	b = appendUint64(b, d.h[2])
+	b = appendUint64(b, d.h[3])
+	b = appendUint64(b, d.h[4])
+	b = appendUint64(b, d.h[5])
+	b = appendUint64(b, d.h[6])
+	b = appendUint64(b, d.h[7])
+	b = append(b, d.x[:d.nx]...)
+	b = b[:len(b)+len(d.x)-int(d.nx)] // already zero
+	b = appendUint64(b, d.nl>>3|d.nh<<61)
+	return b, nil
+}
+
+func (h *sha512Hash) MarshalBinary() ([]byte, error) {
+	d := (*sha512State)(h.hashState())
+	if d == nil {
+		return nil, errors.New("crypto/sha512: can't retrieve hash state")
+	}
+	b := make([]byte, 0, marshaledSize512)
+	b = append(b, magic512...)
+	b = appendUint64(b, d.h[0])
+	b = appendUint64(b, d.h[1])
+	b = appendUint64(b, d.h[2])
+	b = appendUint64(b, d.h[3])
+	b = appendUint64(b, d.h[4])
+	b = appendUint64(b, d.h[5])
+	b = appendUint64(b, d.h[6])
+	b = appendUint64(b, d.h[7])
+	b = append(b, d.x[:d.nx]...)
+	b = b[:len(b)+len(d.x)-int(d.nx)] // already zero
+	b = appendUint64(b, d.nl>>3|d.nh<<61)
+	return b, nil
+}
+
+func (h *sha384Hash) UnmarshalBinary(b []byte) error {
+	if len(b) < len(magic512) {
+		return errors.New("crypto/sha512: invalid hash state identifier")
+	}
+	if string(b[:len(magic384)]) != magic384 {
+		return errors.New("crypto/sha512: invalid hash state identifier")
+	}
+	if len(b) != marshaledSize512 {
+		return errors.New("crypto/sha512: invalid hash state size")
+	}
+	d := (*sha512State)(h.hashState())
+	if d == nil {
+		return errors.New("crypto/sha512: can't retrieve hash state")
+	}
+	b = b[len(magic512):]
+	b, d.h[0] = consumeUint64(b)
+	b, d.h[1] = consumeUint64(b)
+	b, d.h[2] = consumeUint64(b)
+	b, d.h[3] = consumeUint64(b)
+	b, d.h[4] = consumeUint64(b)
+	b, d.h[5] = consumeUint64(b)
+	b, d.h[6] = consumeUint64(b)
+	b, d.h[7] = consumeUint64(b)
+	b = b[copy(d.x[:], b):]
+	_, n := consumeUint64(b)
+	d.nl = n << 3
+	d.nh = n >> 61
+	d.nx = uint32(n) % 128
+	return nil
+}
+
+func (h *sha512Hash) UnmarshalBinary(b []byte) error {
+	if len(b) < len(magic512) {
+		return errors.New("crypto/sha512: invalid hash state identifier")
+	}
+	if string(b[:len(magic512)]) != magic512 {
+		return errors.New("crypto/sha512: invalid hash state identifier")
+	}
+	if len(b) != marshaledSize512 {
+		return errors.New("crypto/sha512: invalid hash state size")
+	}
+	d := (*sha512State)(h.hashState())
+	if d == nil {
+		return errors.New("crypto/sha512: can't retrieve hash state")
+	}
+	b = b[len(magic512):]
+	b, d.h[0] = consumeUint64(b)
+	b, d.h[1] = consumeUint64(b)
+	b, d.h[2] = consumeUint64(b)
+	b, d.h[3] = consumeUint64(b)
+	b, d.h[4] = consumeUint64(b)
+	b, d.h[5] = consumeUint64(b)
+	b, d.h[6] = consumeUint64(b)
+	b, d.h[7] = consumeUint64(b)
+	b = b[copy(d.x[:], b):]
+	_, n := consumeUint64(b)
+	d.nl = n << 3
+	d.nh = n >> 61
+	d.nx = uint32(n) % 128
+	return nil
 }
 
 // Clone returns a new [hash.Hash] object that is a deep clone of itself.
