@@ -541,7 +541,7 @@ func (h *stubHash) Reset()                      {}
 func (h *stubHash) Size() int                   { return 0 }
 func (h *stubHash) BlockSize() int              { return 0 }
 
-// Helper function for writing. Verifies that Write does not error.Add commentMore actions
+// Helper function for writing. Verifies that Write does not error.
 func writeToHash(t *testing.T, h hash.Hash, p []byte) {
 	t.Helper()
 
