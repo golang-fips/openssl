@@ -6,6 +6,7 @@ import "C"
 import (
 	"hash"
 	"runtime"
+	"slices"
 	"sync"
 	"unsafe"
 
@@ -241,4 +242,46 @@ func (h *opensslHMAC) Sum(in []byte) []byte {
 		panic(errUnsupportedVersion())
 	}
 	return append(in, h.sum[:h.size]...)
+}
+
+func (h *opensslHMAC) Clone() (HashCloner, error) {
+	// Make copy of context because Go hash.Hash mandates that Clone
+	// has no effect on the underlying stream.
+	switch vMajor {
+	case 1:
+		ctx2, err := ossl.HMAC_CTX_new()
+		if err != nil {
+			return nil, err
+		}
+		if _, err := ossl.HMAC_CTX_copy(ctx2, h.ctx1.ctx); err != nil {
+			ossl.HMAC_CTX_free(ctx2)
+			return nil, err
+		}
+		cl := &opensslHMAC{
+			ctx1:      hmacCtx1{ctx: ctx2},
+			size:      h.size,
+			blockSize: h.blockSize,
+		}
+		runtime.SetFinalizer(cl, (*opensslHMAC).finalize)
+		return cl, nil
+
+	case 3:
+		ctx2, err := ossl.EVP_MAC_CTX_dup(h.ctx3.ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		// For OpenSSL 3.0.0, 3.0.1, and 3.0.2 we need to copy the key
+		// from the original context to the new one.
+		cl := &opensslHMAC{
+			ctx3:      hmacCtx3{ctx: ctx2, key: slices.Clone(h.ctx3.key)},
+			size:      h.size,
+			blockSize: h.blockSize,
+		}
+		runtime.SetFinalizer(cl, (*opensslHMAC).finalize)
+		return cl, nil
+
+	default:
+		panic(errUnsupportedVersion())
+	}
 }

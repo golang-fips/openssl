@@ -223,18 +223,8 @@ func NewSHA3_512() hash.Hash {
 	return newEvpHash(crypto.SHA3_512)
 }
 
-// cloneHash is an interface that defines a Clone method.
-//
-// hahs.CloneHash will probably be added in Go 1.25, see https://golang.org/issue/69521,
-// but we need it now.
-type cloneHash interface {
-	hash.Hash
-	// Clone returns a separate Hash instance with the same state as h.
-	Clone() hash.Hash
-}
-
 var _ hash.Hash = (*evpHash)(nil)
-var _ cloneHash = (*evpHash)(nil)
+var _ HashCloner = (*evpHash)(nil)
 
 // evpHash implements generic hash methods.
 type evpHash struct {
@@ -359,7 +349,7 @@ func (h *evpHash) Sum(in []byte) []byte {
 // Clone returns a new evpHash object that is a deep clone of itself.
 // The duplicate object contains all state and data contained in the
 // original object at the point of duplication.
-func (h *evpHash) Clone() hash.Hash {
+func (h *evpHash) Clone() (HashCloner, error) {
 	h2 := &evpHash{alg: h.alg}
 	if h.ctx != nil {
 		var err error
@@ -379,7 +369,7 @@ func (h *evpHash) Clone() hash.Hash {
 		runtime.SetFinalizer(h2, (*evpHash).finalize)
 	}
 	runtime.KeepAlive(h)
-	return h2
+	return h2, nil
 }
 
 var errHashNotMarshallable = errors.New("openssl: hash state is not marshallable")
