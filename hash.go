@@ -363,6 +363,7 @@ func (h *evpHash) Clone() (HashCloner, error) {
 		}
 		h2.ctx2, err = ossl.EVP_MD_CTX_new()
 		if err != nil {
+			ossl.EVP_MD_CTX_free(h2.ctx)
 			panic(err)
 		}
 		runtime.SetFinalizer(h2, (*evpHash).finalize)
