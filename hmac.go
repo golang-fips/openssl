@@ -245,8 +245,6 @@ func (h *opensslHMAC) Sum(in []byte) []byte {
 }
 
 func (h *opensslHMAC) Clone() (HashCloner, error) {
-	// Make copy of context because Go hash.Hash mandates that Clone
-	// has no effect on the underlying stream.
 	switch vMajor {
 	case 1:
 		ctx2, err := ossl.HMAC_CTX_new()
