@@ -358,6 +358,7 @@ func (h *evpHash) Clone() (HashCloner, error) {
 			panic(err)
 		}
 		if _, err := ossl.EVP_MD_CTX_copy_ex(h2.ctx, h.ctx); err != nil {
+			ossl.EVP_MD_CTX_free(h2.ctx)
 			panic(err)
 		}
 		h2.ctx2, err = ossl.EVP_MD_CTX_new()

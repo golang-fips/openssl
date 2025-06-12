@@ -252,6 +252,7 @@ func (h *opensslHMAC) Clone() (HashCloner, error) {
 			panic(err)
 		}
 		if _, err := ossl.HMAC_CTX_copy(ctx2, h.ctx1.ctx); err != nil {
+			ossl.HMAC_CTX_free(ctx2)
 			panic(err)
 		}
 		cl := &opensslHMAC{
