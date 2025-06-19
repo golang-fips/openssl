@@ -1,4 +1,4 @@
-//go:build !cmd_go_bootstrap
+//go:build !go1.25 && !cmd_go_bootstrap
 
 package openssl
 
