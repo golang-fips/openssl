@@ -6,6 +6,7 @@ import "C"
 import (
 	"crypto"
 	"errors"
+	"fmt"
 	"hash"
 	"runtime"
 	"strconv"
@@ -372,7 +373,7 @@ func (h *evpHash) Clone() (HashCloner, error) {
 	return h2, nil
 }
 
-var errHashNotMarshallable = errors.New("openssl: hash state is not marshallable")
+var errHashNotMarshallable = fmt.Errorf("openssl: hash state is not marshallable: %w", errors.ErrUnsupported)
 
 func (d *evpHash) MarshalBinary() ([]byte, error) {
 	if !d.alg.marshallable {
