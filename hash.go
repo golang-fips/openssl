@@ -6,7 +6,6 @@ import "C"
 import (
 	"crypto"
 	"errors"
-	"fmt"
 	"hash"
 	"runtime"
 	"strconv"
@@ -373,11 +372,19 @@ func (h *evpHash) Clone() (HashCloner, error) {
 	return h2, nil
 }
 
-var errHashNotMarshallable = fmt.Errorf("openssl: hash state is not marshallable: %w", errors.ErrUnsupported)
+type errMarshallUnsupported struct{}
+
+func (e errMarshallUnsupported) Error() string {
+	return "cryptokit: hash state is not marshallable"
+}
+
+func (e errMarshallUnsupported) Unwrap() error {
+	return errors.ErrUnsupported
+}
 
 func (d *evpHash) MarshalBinary() ([]byte, error) {
 	if !d.alg.marshallable {
-		return nil, errHashNotMarshallable
+		return nil, errMarshallUnsupported{}
 	}
 	buf := make([]byte, 0, d.alg.marshalledSize)
 	return d.AppendBinary(buf)
@@ -386,7 +393,7 @@ func (d *evpHash) MarshalBinary() ([]byte, error) {
 func (d *evpHash) AppendBinary(buf []byte) ([]byte, error) {
 	defer runtime.KeepAlive(d)
 	if !d.alg.marshallable {
-		return nil, errHashNotMarshallable
+		return nil, errMarshallUnsupported{}
 	}
 	d.init()
 	switch d.alg.provider {
@@ -403,7 +410,7 @@ func (d *evpHash) UnmarshalBinary(b []byte) error {
 	defer runtime.KeepAlive(d)
 	d.init()
 	if !d.alg.marshallable {
-		return errHashNotMarshallable
+		return errMarshallUnsupported{}
 	}
 	if len(b) < len(d.alg.magic) || string(b[:len(d.alg.magic)]) != d.alg.magic {
 		return errors.New("openssl: invalid hash state identifier")
