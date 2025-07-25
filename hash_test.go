@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto"
 	"encoding"
+	"errors"
 	"hash"
 	"io"
 	"runtime"
@@ -195,7 +196,7 @@ func TestHash_BinaryAppender(t *testing.T) {
 			// Append binary data to the prebuilt slice
 			state, err := hashWithBinaryAppender.AppendBinary(prebuiltSlice)
 			if err != nil {
-				if strings.Contains(err.Error(), "hash state is not marshallable") {
+				if errors.Is(err, errors.ErrUnsupported) {
 					t.Skip("AppendBinary not supported")
 				}
 				t.Errorf("could not append binary: %v", err)
