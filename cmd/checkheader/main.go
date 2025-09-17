@@ -28,7 +28,7 @@ import (
 
 const description = `
 Example: A check operation:
-  go run ./cmd/checkheader --ossl-include /usr/local/src/openssl-1.1.1/include -shim ./internal/ossl/shims.h 
+  go run ./cmd/checkheader --ossl-include /usr/local/src/openssl-1.1.1/include -shim ./internal/ossl/shims.h
 Checkheader generates a C program and compiles it with gcc. The compilation verifies types and functions defined in the target
 header file match the definitions in --ossl-include.
 `
@@ -119,15 +119,12 @@ func generate(header string) (string, error) {
 	}
 
 	for _, enum := range src.Enums {
-		if enum.Name == "_EVP_PKEY_OP_DERIVE" {
-			// This is defined differently in OpenSSL 3,
-			// but in our code it is only used in OpenSSL 1.
-			continue
+		for _, enumValue := range enum.Values {
+			name := strings.TrimPrefix(enumValue.Name, "_")
+			fmt.Fprintf(w, "#ifdef %s\n", name)
+			fmt.Fprintf(w, "_Static_assert(%s == %s, \"%s\");\n", enumValue.Value, name, enumValue.Name)
+			fmt.Fprintln(w, "#endif")
 		}
-		name := strings.TrimPrefix(enum.Name, "_")
-		fmt.Fprintf(w, "#ifdef %s\n", name)
-		fmt.Fprintf(w, "_Static_assert(%s == %s, \"%s\");\n", enum.Value, name, enum.Name)
-		fmt.Fprintln(w, "#endif")
 	}
 
 	for _, def := range src.TypeDefs {

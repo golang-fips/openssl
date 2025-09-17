@@ -35,12 +35,24 @@ func (src *Source) Parse(r io.Reader) error {
 				inEnum = false
 				continue
 			}
+			if line, found := strings.CutPrefix(line, "} "); found {
+				typeName := strings.TrimSuffix(line, ";")
+				typeName, _ = normalizeParam(typeName, "")
+				if err := src.addSymbol(typeName); err != nil {
+					return err
+				}
+				enum := src.Enums[len(src.Enums)-1]
+				enum.Type = typeName
+				inEnum = false
+				continue
+			}
 			if err := src.addEnum(line); err != nil {
 				return fmt.Errorf("can't parse enum in line %q: %w", line, err)
 			}
 			continue
 		}
-		if strings.HasPrefix(line, "enum {") {
+		if strings.HasPrefix(line, "enum {") || strings.HasPrefix(line, "typedef enum {") {
+			src.Enums = append(src.Enums, &Enum{})
 			inEnum = true
 			continue
 		}
@@ -58,6 +70,14 @@ func (src *Source) Parse(r io.Reader) error {
 		if v, found := strings.CutPrefix(line, "typedef "); found {
 			if err := src.addTypeDef(v); err != nil {
 				return fmt.Errorf("can't parse typedef in line %q: %w", line, err)
+			}
+			continue
+		}
+
+		// Process extern variables.
+		if v, found := strings.CutPrefix(line, "extern "); found {
+			if err := src.addExtern(v); err != nil {
+				return fmt.Errorf("can't parse extern in line %q: %w", line, err)
 			}
 			continue
 		}
@@ -92,7 +112,8 @@ func (src *Source) addEnum(line string) error {
 	if err := src.addSymbol(name); err != nil {
 		return err
 	}
-	src.Enums = append(src.Enums, &Enum{
+	enum := src.Enums[len(src.Enums)-1]
+	enum.Values = append(enum.Values, EnumValue{
 		Name:  name,
 		Value: value,
 	})
@@ -118,11 +139,36 @@ func (src *Source) addTypeDef(line string) error {
 	return nil
 }
 
+func (src *Source) addExtern(line string) error {
+	line = strings.TrimSuffix(line, ";")
+	var attrs Attrs
+	var err error
+	line, err = extractAttributes(line, &attrs)
+	if err != nil {
+		return fmt.Errorf("can't extract extern attributes: %w", err)
+	}
+	idx := strings.LastIndex(line, " ")
+	if idx < 0 {
+		return errors.New("can't extract type name")
+	}
+	name, typ := normalizeParam(line[idx+1:], line[:idx])
+	if err := src.addSymbol(name); err != nil {
+		return err
+	}
+	src.Externs = append(src.Externs, &Extern{
+		Name:      name,
+		Type:      typ,
+		Framework: attrs.Framework,
+		Static:    attrs.Static,
+	})
+	return nil
+}
+
 // addFn parses string s and return created function Fn.
 func (src *Source) addFn(s string) error {
 	s = strings.TrimSuffix(s, ";")
-	var attrs FuncAttrs
-	s, err := extractFunctionAttributes(s, &attrs)
+	var attrs Attrs
+	s, err := extractAttributes(s, &attrs)
 	if err != nil {
 		return fmt.Errorf("can't extract function attributes: %w", err)
 	}
@@ -159,10 +205,10 @@ func (src *Source) addFn(s string) error {
 		return err
 	}
 	src.Funcs = append(src.Funcs, &Func{
-		Name:      name,
-		Ret:       ret,
-		FuncAttrs: attrs,
-		Params:    params,
+		Name:   name,
+		Ret:    ret,
+		Attrs:  attrs,
+		Params: params,
 	})
 	return nil
 }
@@ -245,10 +291,10 @@ func processComments(line string) (comment, remmaining string) {
 	return "", line
 }
 
-// extractFunctionAttributes extracts mkcgo attributes from string s.
+// extractAttributes extracts mkcgo attributes from string s.
 // The attributes format follows the GCC __attribute__ syntax as
 // described in https://gcc.gnu.org/onlinedocs/gcc/Attribute-Syntax.html.
-func extractFunctionAttributes(s string, fnAttrs *FuncAttrs) (string, error) {
+func extractAttributes(s string, fnAttrs *Attrs) (string, error) {
 	// There can be spaces between __attribute__ and the opening parenthesis.
 	prefix, body, found := strings.Cut(s, "__attribute__")
 	if !found {

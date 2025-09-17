@@ -1,4 +1,4 @@
-//go:build unix && !cmd_go_bootstrap
+//go:build unix && !cmd_go_bootstrap && cgo
 
 package openssl
 

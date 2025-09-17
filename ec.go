@@ -2,7 +2,6 @@
 
 package openssl
 
-import "C"
 import "github.com/golang-fips/openssl/v2/internal/ossl"
 
 func curveNID(curve string) int32 {

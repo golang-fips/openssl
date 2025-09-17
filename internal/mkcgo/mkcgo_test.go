@@ -71,32 +71,32 @@ func TestSourceTags(t *testing.T) {
 		{
 			name: "Functions with no tags",
 			funcs: []*mkcgo.Func{
-				{Name: "Func1", FuncAttrs: mkcgo.FuncAttrs{Tags: []mkcgo.TagAttr{}}},
-				{Name: "Func2", FuncAttrs: mkcgo.FuncAttrs{Tags: []mkcgo.TagAttr{}}},
+				{Name: "Func1", Attrs: mkcgo.Attrs{Tags: []mkcgo.TagAttr{}}},
+				{Name: "Func2", Attrs: mkcgo.Attrs{Tags: []mkcgo.TagAttr{}}},
 			},
 			want: []string{""},
 		},
 		{
 			name: "Functions with unique tags",
 			funcs: []*mkcgo.Func{
-				{Name: "Func1", FuncAttrs: mkcgo.FuncAttrs{Tags: []mkcgo.TagAttr{{Tag: "tag1"}}}},
-				{Name: "Func2", FuncAttrs: mkcgo.FuncAttrs{Tags: []mkcgo.TagAttr{{Tag: "tag2"}}}},
+				{Name: "Func1", Attrs: mkcgo.Attrs{Tags: []mkcgo.TagAttr{{Tag: "tag1"}}}},
+				{Name: "Func2", Attrs: mkcgo.Attrs{Tags: []mkcgo.TagAttr{{Tag: "tag2"}}}},
 			},
 			want: []string{"", "tag1", "tag2"},
 		},
 		{
 			name: "Functions with duplicate tags",
 			funcs: []*mkcgo.Func{
-				{Name: "Func1", FuncAttrs: mkcgo.FuncAttrs{Tags: []mkcgo.TagAttr{{Tag: "tag1"}}}},
-				{Name: "Func2", FuncAttrs: mkcgo.FuncAttrs{Tags: []mkcgo.TagAttr{{Tag: "tag1"}, {Tag: "tag2"}}}},
+				{Name: "Func1", Attrs: mkcgo.Attrs{Tags: []mkcgo.TagAttr{{Tag: "tag1"}}}},
+				{Name: "Func2", Attrs: mkcgo.Attrs{Tags: []mkcgo.TagAttr{{Tag: "tag1"}, {Tag: "tag2"}}}},
 			},
 			want: []string{"", "tag1", "tag2"},
 		},
 		{
 			name: "Functions with unsorted tags",
 			funcs: []*mkcgo.Func{
-				{Name: "Func1", FuncAttrs: mkcgo.FuncAttrs{Tags: []mkcgo.TagAttr{{Tag: "tag3"}}}},
-				{Name: "Func2", FuncAttrs: mkcgo.FuncAttrs{Tags: []mkcgo.TagAttr{{Tag: "tag1"}, {Tag: "tag2"}}}},
+				{Name: "Func1", Attrs: mkcgo.Attrs{Tags: []mkcgo.TagAttr{{Tag: "tag3"}}}},
+				{Name: "Func2", Attrs: mkcgo.Attrs{Tags: []mkcgo.TagAttr{{Tag: "tag1"}, {Tag: "tag2"}}}},
 			},
 			want: []string{"", "tag1", "tag2", "tag3"},
 		},
@@ -137,8 +137,8 @@ func TestFuncImportName(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			fn := &mkcgo.Func{
-				FuncAttrs: mkcgo.FuncAttrs{VariadicTarget: tt.variadicTarget},
-				Name:      tt.funcName,
+				Attrs: mkcgo.Attrs{VariadicTarget: tt.variadicTarget},
+				Name:  tt.funcName,
 			}
 			if got := fn.ImportName(); got != tt.want {
 				t.Errorf("Func.ImportName() = %v, want %v", got, tt.want)
@@ -176,7 +176,7 @@ func TestFuncString(t *testing.T) {
 		{
 			name: "Function with attributes",
 			function: &mkcgo.Func{Name: "TestFunc", Ret: "void", Params: []*mkcgo.Param{{Type: "int", Name: "param1"}},
-				FuncAttrs: mkcgo.FuncAttrs{
+				Attrs: mkcgo.Attrs{
 					Tags:             []mkcgo.TagAttr{{Tag: "tag1"}, {Tag: "tag2", Name: "name"}},
 					Optional:         true,
 					NoError:          true,
@@ -184,9 +184,10 @@ func TestFuncString(t *testing.T) {
 					NoEscape:         true,
 					NoCallback:       true,
 					NoCheckPtrParams: []string{"param1"},
+					Framework:        mkcgo.Framework{Name: "CoreFoundation", Version: "A"},
 				},
 			},
-			want: "void TestFunc(int param1) [{tag1 } {tag2 name}], optional, noerror, errcond(error_condition), noescape, nocallback, nocheckptr(param1)",
+			want: "void TestFunc(int param1) [{tag1 } {tag2 name}], optional, noerror, errcond(error_condition), noescape, nocallback, nocheckptr(param1), framework(CoreFoundation, A)",
 		},
 	}
 
@@ -240,9 +241,13 @@ enum {
 };`,
 			want: &mkcgo.Source{
 				Enums: []*mkcgo.Enum{
-					{"E0", "1"},
-					{"E1", "(1+1)"},
-					{"E2", "(1+2)"},
+					{
+						Values: []mkcgo.EnumValue{
+							{"E0", "1"},
+							{"E1", "(1+1)"},
+							{"E2", "(1+2)"},
+						},
+					},
 				},
 			},
 		}, {
@@ -256,12 +261,12 @@ int* F5(float, double) __attribute__((variadic("F4")));
 void F6() __attribute__(());`,
 			want: &mkcgo.Source{
 				Funcs: []*mkcgo.Func{
-					{Name: "F0", Ret: "void", Params: []*mkcgo.Param{{"void", ""}}, FuncAttrs: mkcgo.FuncAttrs{Tags: []mkcgo.TagAttr{{Tag: "t0"}, {Tag: "t1", Name: "tn0"}}, NoError: true}},
-					{Name: "F1", Ret: "int", Params: []*mkcgo.Param{{"int", "p1"}}, FuncAttrs: mkcgo.FuncAttrs{ErrCond: "ec0", NoEscape: true, NoCallback: true, NoCheckPtrParams: []string{"p1"}}},
+					{Name: "F0", Ret: "void", Params: []*mkcgo.Param{{"void", ""}}, Attrs: mkcgo.Attrs{Tags: []mkcgo.TagAttr{{Tag: "t0"}, {Tag: "t1", Name: "tn0"}}, NoError: true}},
+					{Name: "F1", Ret: "int", Params: []*mkcgo.Param{{"int", "p1"}}, Attrs: mkcgo.Attrs{ErrCond: "ec0", NoEscape: true, NoCallback: true, NoCheckPtrParams: []string{"p1"}}},
 					{Name: "F2", Ret: "int*", Params: []*mkcgo.Param{{"int**", "p1"}, {"void*", "p2"}}},
-					{Name: "F3", Ret: "int*", Params: []*mkcgo.Param{{"int", "p1"}, {"void***", ""}}, FuncAttrs: mkcgo.FuncAttrs{Optional: true}},
+					{Name: "F3", Ret: "int*", Params: []*mkcgo.Param{{"int", "p1"}, {"void***", ""}}, Attrs: mkcgo.Attrs{Optional: true}},
 					{Name: "F4", Ret: "unsigned long", Params: []*mkcgo.Param{{"int", "__func"}, {"int", "__type"}, {"...", ""}}},
-					{Name: "F5", Ret: "int*", Params: []*mkcgo.Param{{"float", ""}, {"double", ""}}, FuncAttrs: mkcgo.FuncAttrs{VariadicTarget: "F4"}},
+					{Name: "F5", Ret: "int*", Params: []*mkcgo.Param{{"float", ""}, {"double", ""}}, Attrs: mkcgo.Attrs{VariadicTarget: "F4"}},
 					{Name: "F6", Ret: "void", Params: []*mkcgo.Param{{"void", ""}}},
 				},
 			},
@@ -362,6 +367,11 @@ typedef void* E2;
 void E2(void);
 `,
 			want: `duplicate symbol "E2"`,
+		}, {
+			content: `
+void F1(void) __attribute__((framework("t1")));
+`,
+			want: `can't extract function attributes: error parsing attribute framework: requires 2 arguments`,
 		},
 	}
 	for i, tt := range tests {

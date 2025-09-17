@@ -90,7 +90,7 @@ type OSSL_PARAM_BLD_PTR = C._OSSL_PARAM_BLD_PTR
 type OSSL_PARAM_PTR = C._OSSL_PARAM_PTR
 type OSSL_PROVIDER_PTR = C._OSSL_PROVIDER_PTR
 type RSA_PTR = C._RSA_PTR
-type Point_conversion_form_t = C.point_conversion_form_t
+type point_conversion_form_t = C.point_conversion_form_t
 
 func MkcgoLoad_(handle unsafe.Pointer) {
 	C.__mkcgo_load_(handle)
@@ -330,7 +330,7 @@ func EC_POINT_oct2point(group EC_GROUP_PTR, p EC_POINT_PTR, buf *byte, len int, 
 	return int32(_ret), newMkcgoErr("EC_POINT_oct2point", _err)
 }
 
-func EC_POINT_point2oct(group EC_GROUP_PTR, p EC_POINT_PTR, form Point_conversion_form_t, buf *byte, len int, ctx BN_CTX_PTR) (int, error) {
+func EC_POINT_point2oct(group EC_GROUP_PTR, p EC_POINT_PTR, form point_conversion_form_t, buf *byte, len int, ctx BN_CTX_PTR) (int, error) {
 	var _err C.mkcgo_err_state
 	_ret := C._mkcgo_EC_POINT_point2oct(group, p, form, (*C.uchar)(unsafe.Pointer(buf)), C.size_t(len), ctx, mkcgoNoEscape(&_err))
 	return int(_ret), newMkcgoErr("EC_POINT_point2oct", _err)

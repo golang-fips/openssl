@@ -1,11 +1,10 @@
-//go:build !cmd_go_bootstrap && cgo
+//go:build !cmd_go_bootstrap
 
 package openssl
 
 import (
 	"crypto"
 	"errors"
-	"runtime"
 	"unsafe"
 
 	"github.com/golang-fips/openssl/v2/internal/ossl"
@@ -191,97 +190,99 @@ func (b *_SYMCRYPT_SHA512_STATE_EXPORT_BLOB) unmarshalBinary(d []byte) {
 }
 
 func symCryptHashAppendBinary(ctx ossl.EVP_MD_CTX_PTR, ch crypto.Hash, magic string, buf []byte) ([]byte, error) {
-	size, typ := symCryptHashStateInfo(ch)
-	state := make([]byte, size, _SYMCRYPT_SHA512_STATE_EXPORT_SIZE) // 512 is the largest size
-	var pinner runtime.Pinner
-	pinner.Pin(&state[0])
-	defer pinner.Unpin()
-	params := [2]ossl.OSSL_PARAM{
-		ossl.OSSL_PARAM_construct_octet_string(_SCOSSL_DIGEST_PARAM_STATE.ptr(), unsafe.Pointer(&state[0]), len(state)),
-		ossl.OSSL_PARAM_construct_end(),
-	}
-	if _, err := ossl.EVP_MD_CTX_get_params(ctx, (ossl.OSSL_PARAM_PTR)(unsafe.Pointer(&params[0]))); err != nil {
-		return nil, err
-	}
-	if !ossl.OSSL_PARAM_modified(&params[0]) {
-		return nil, errors.New("EVP_MD_CTX_get_params did not retrieve the state")
-	}
+	// size, typ := symCryptHashStateInfo(ch)
+	// state := make([]byte, size, _SYMCRYPT_SHA512_STATE_EXPORT_SIZE) // 512 is the largest size
+	// var pinner runtime.Pinner
+	// pinner.Pin(&state[0])
+	// defer pinner.Unpin()
+	// params := [2]ossl.OSSL_PARAM{
+	// 	ossl.OSSL_PARAM_construct_octet_string(_SCOSSL_DIGEST_PARAM_STATE.ptr(), unsafe.Pointer(&state[0]), len(state)),
+	// 	ossl.OSSL_PARAM_construct_end(),
+	// }
+	// if _, err := ossl.EVP_MD_CTX_get_params(ctx, (ossl.OSSL_PARAM_PTR)(unsafe.Pointer(&params[0]))); err != nil {
+	// 	return nil, err
+	// }
+	// if !ossl.OSSL_PARAM_modified(&params[0]) {
+	// 	return nil, errors.New("EVP_MD_CTX_get_params did not retrieve the state")
+	// }
 
-	header := (*_SYMCRYPT_BLOB_HEADER)(unsafe.Pointer(&state[0]))
-	if header.magic != _SYMCRYPT_BLOB_MAGIC {
-		return nil, errors.New("invalid blob magic")
-	}
-	if header.size != size {
-		return nil, errors.New("invalid blob size")
-	}
-	if header._type != typ {
-		return nil, errors.New("invalid blob type")
-	}
+	// header := (*_SYMCRYPT_BLOB_HEADER)(unsafe.Pointer(&state[0]))
+	// if header.magic != _SYMCRYPT_BLOB_MAGIC {
+	// 	return nil, errors.New("invalid blob magic")
+	// }
+	// if header.size != size {
+	// 	return nil, errors.New("invalid blob size")
+	// }
+	// if header._type != typ {
+	// 	return nil, errors.New("invalid blob type")
+	// }
 
-	buf = append(buf, magic...)
-	switch ch {
-	case crypto.MD5:
-		blob := (*_SYMCRYPT_MD5_STATE_EXPORT_BLOB)(unsafe.Pointer(&state[0]))
-		return blob.appendBinary(buf)
-	case crypto.SHA1:
-		blob := (*_SYMCRYPT_SHA1_STATE_EXPORT_BLOB)(unsafe.Pointer(&state[0]))
-		return blob.appendBinary(buf)
-	case crypto.SHA224, crypto.SHA256:
-		blob := (*_SYMCRYPT_SHA256_STATE_EXPORT_BLOB)(unsafe.Pointer(&state[0]))
-		return blob.appendBinary(buf)
-	case crypto.SHA384, crypto.SHA512_224, crypto.SHA512_256, crypto.SHA512:
-		blob := (*_SYMCRYPT_SHA512_STATE_EXPORT_BLOB)(unsafe.Pointer(&state[0]))
-		return blob.appendBinary(buf)
-	default:
-		panic("unsupported hash " + ch.String())
-	}
+	// buf = append(buf, magic...)
+	// switch ch {
+	// case crypto.MD5:
+	// 	blob := (*_SYMCRYPT_MD5_STATE_EXPORT_BLOB)(unsafe.Pointer(&state[0]))
+	// 	return blob.appendBinary(buf)
+	// case crypto.SHA1:
+	// 	blob := (*_SYMCRYPT_SHA1_STATE_EXPORT_BLOB)(unsafe.Pointer(&state[0]))
+	// 	return blob.appendBinary(buf)
+	// case crypto.SHA224, crypto.SHA256:
+	// 	blob := (*_SYMCRYPT_SHA256_STATE_EXPORT_BLOB)(unsafe.Pointer(&state[0]))
+	// 	return blob.appendBinary(buf)
+	// case crypto.SHA384, crypto.SHA512_224, crypto.SHA512_256, crypto.SHA512:
+	// 	blob := (*_SYMCRYPT_SHA512_STATE_EXPORT_BLOB)(unsafe.Pointer(&state[0]))
+	// 	return blob.appendBinary(buf)
+	// default:
+	// 	panic("unsupported hash " + ch.String())
+	// }
+	return nil, errors.New("not implemented")
 }
 
 func symCryptHashUnmarshalBinary(ctx ossl.EVP_MD_CTX_PTR, ch crypto.Hash, magic string, b []byte) error {
-	size, typ := symCryptHashStateInfo(ch)
-	hdr := _SYMCRYPT_BLOB_HEADER{
-		magic: _SYMCRYPT_BLOB_MAGIC,
-		size:  size,
-		_type: typ,
-	}
-	var blobPtr unsafe.Pointer
-	b = b[len(magic):]
-	switch ch {
-	case crypto.MD5:
-		var blob _SYMCRYPT_MD5_STATE_EXPORT_BLOB
-		blobPtr = unsafe.Pointer(&blob)
-		blob.header = hdr
-		blob.unmarshalBinary(b)
-	case crypto.SHA1:
-		var blob _SYMCRYPT_SHA1_STATE_EXPORT_BLOB
-		blobPtr = unsafe.Pointer(&blob)
-		blob.header = hdr
-		blob.unmarshalBinary(b)
-	case crypto.SHA224, crypto.SHA256:
-		var blob _SYMCRYPT_SHA256_STATE_EXPORT_BLOB
-		blobPtr = unsafe.Pointer(&blob)
-		blob.header = hdr
-		blob.unmarshalBinary(b)
-	case crypto.SHA384, crypto.SHA512_224, crypto.SHA512_256, crypto.SHA512:
-		var blob _SYMCRYPT_SHA512_STATE_EXPORT_BLOB
-		blobPtr = unsafe.Pointer(&blob)
-		blob.header = hdr
-		blob.unmarshalBinary(b)
-	default:
-		panic("unsupported hash " + ch.String())
-	}
-	var checksum int32 = 1
-	var pinner runtime.Pinner
-	pinner.Pin(blobPtr)
-	pinner.Pin(&checksum)
-	defer pinner.Unpin()
-	params := [3]ossl.OSSL_PARAM{
-		ossl.OSSL_PARAM_construct_octet_string(_SCOSSL_DIGEST_PARAM_STATE.ptr(), blobPtr, int(hdr.size)),
-		ossl.OSSL_PARAM_construct_int32(_SCOSSL_DIGEST_PARAM_RECOMPUTE_CHECKSUM.ptr(), &checksum),
-		ossl.OSSL_PARAM_construct_end(),
-	}
-	_, err := ossl.EVP_MD_CTX_set_params(ctx, (ossl.OSSL_PARAM_PTR)(unsafe.Pointer(&params[0])))
-	return err
+	// size, typ := symCryptHashStateInfo(ch)
+	// hdr := _SYMCRYPT_BLOB_HEADER{
+	// 	magic: _SYMCRYPT_BLOB_MAGIC,
+	// 	size:  size,
+	// 	_type: typ,
+	// }
+	// var blobPtr unsafe.Pointer
+	// b = b[len(magic):]
+	// switch ch {
+	// case crypto.MD5:
+	// 	var blob _SYMCRYPT_MD5_STATE_EXPORT_BLOB
+	// 	blobPtr = unsafe.Pointer(&blob)
+	// 	blob.header = hdr
+	// 	blob.unmarshalBinary(b)
+	// case crypto.SHA1:
+	// 	var blob _SYMCRYPT_SHA1_STATE_EXPORT_BLOB
+	// 	blobPtr = unsafe.Pointer(&blob)
+	// 	blob.header = hdr
+	// 	blob.unmarshalBinary(b)
+	// case crypto.SHA224, crypto.SHA256:
+	// 	var blob _SYMCRYPT_SHA256_STATE_EXPORT_BLOB
+	// 	blobPtr = unsafe.Pointer(&blob)
+	// 	blob.header = hdr
+	// 	blob.unmarshalBinary(b)
+	// case crypto.SHA384, crypto.SHA512_224, crypto.SHA512_256, crypto.SHA512:
+	// 	var blob _SYMCRYPT_SHA512_STATE_EXPORT_BLOB
+	// 	blobPtr = unsafe.Pointer(&blob)
+	// 	blob.header = hdr
+	// 	blob.unmarshalBinary(b)
+	// default:
+	// 	panic("unsupported hash " + ch.String())
+	// }
+	// var checksum int32 = 1
+	// var pinner runtime.Pinner
+	// pinner.Pin(blobPtr)
+	// pinner.Pin(&checksum)
+	// defer pinner.Unpin()
+	// params := [3]ossl.OSSL_PARAM{
+	// 	ossl.OSSL_PARAM_construct_octet_string(_SCOSSL_DIGEST_PARAM_STATE.ptr(), blobPtr, int(hdr.size)),
+	// 	ossl.OSSL_PARAM_construct_int32(_SCOSSL_DIGEST_PARAM_RECOMPUTE_CHECKSUM.ptr(), &checksum),
+	// 	ossl.OSSL_PARAM_construct_end(),
+	// }
+	// _, err := ossl.EVP_MD_CTX_set_params(ctx, (ossl.OSSL_PARAM_PTR)(unsafe.Pointer(&params[0])))
+	// return err
+	return errors.New("not implemented")
 }
 
 func symCryptHashStateInfo(ch crypto.Hash) (size, typ uint32) {

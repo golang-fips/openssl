@@ -1,3 +1,5 @@
+//go:build cgo
+
 package openssl_test
 
 import (
