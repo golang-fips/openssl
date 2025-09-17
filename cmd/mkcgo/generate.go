@@ -683,34 +683,34 @@ func isOpenSSLErrorCheckFunction(fn *mkcgo.Func) bool {
 	// Most OpenSSL functions that return int follow the pattern:
 	// 1 = success, 0 = failure for boolean-style functions
 	// > 0 = success, <= 0 = failure for size/count functions
-	
+
 	// Skip functions that don't return integers
 	goRetType, _ := cTypeToGo(fn.Ret, false)
 	if strings.HasPrefix(goRetType, "*") {
 		// Pointer return functions typically return NULL on failure
 		return true
 	}
-	
+
 	// Check if it's an integer type that could be an error code
 	if goRetType == "int32" || goRetType == "int" || goRetType == "uint32" {
 		// Skip functions that are clearly not error-returning
 		name := fn.Name
-		
+
 		// Functions that return version numbers, sizes, or other values should not be error-checked
-		if strings.Contains(name, "version") || 
-		   strings.Contains(name, "size") ||
-		   strings.Contains(name, "get_bits") ||
-		   strings.Contains(name, "num_") ||
-		   strings.HasSuffix(name, "_id") ||
-		   strings.Contains(name, "nid2") ||
-		   name == "ERR_get_error_line" ||
-		   name == "ERR_get_error_all" {
+		if strings.Contains(name, "version") ||
+			strings.Contains(name, "size") ||
+			strings.Contains(name, "get_bits") ||
+			strings.Contains(name, "num_") ||
+			strings.HasSuffix(name, "_id") ||
+			strings.Contains(name, "nid2") ||
+			name == "ERR_get_error_line" ||
+			name == "ERR_get_error_all" {
 			return false
 		}
-		
+
 		return true
 	}
-	
+
 	return false
 }
 
@@ -786,7 +786,7 @@ func needsAssembly(src *mkcgo.Source) bool {
 func generateNocgoGo(src *mkcgo.Source, w io.Writer) {
 	// Output header notice and package declaration.
 	printHeader(w)
-	fmt.Fprintf(w, "//go:build !cgo && darwin\n\n")
+	fmt.Fprintf(w, "//go:build !cgo\n\n")
 	fmt.Fprintf(w, "package %s\n\n", *packageName)
 
 	needsRuntime := false
