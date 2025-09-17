@@ -38,10 +38,7 @@ func goString(ptr *byte) string {
 
 // goBytes converts a C byte array to a Go byte slice for cgo mode
 func goBytes(ptr unsafe.Pointer, length int) []byte {
-	if ptr == nil || length == 0 {
-		return nil
-	}
-	return unsafe.Slice((*byte)(ptr), length)
+	return C.GoBytes(ptr, C.int(length))
 }
 
 // isProviderAvailable checks if the provider with the given name is available.

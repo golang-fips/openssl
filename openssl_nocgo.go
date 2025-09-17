@@ -29,7 +29,10 @@ func goBytes(ptr unsafe.Pointer, length int) []byte {
 	if ptr == nil || length == 0 {
 		return nil
 	}
-	return unsafe.Slice((*byte)(ptr), length)
+	// Copy the data to Go memory, similar to C.GoBytes
+	result := make([]byte, length)
+	copy(result, unsafe.Slice((*byte)(ptr), length))
+	return result
 }
 
 // VersionText returns the version text of the OpenSSL currently loaded.
