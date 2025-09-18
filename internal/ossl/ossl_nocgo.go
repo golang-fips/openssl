@@ -7,14 +7,14 @@ import (
 )
 
 func dlsym(handle unsafe.Pointer, symbol string, optional bool) unsafe.Pointer {
-	r0, _, err := Dlsym(uintptr(handle), unsafe.StringData(symbol))
-	if err != 0 {
+	r0, err := Dlsym(handle, unsafe.StringData(symbol))
+	if err != nil {
 		if !optional {
 			panic("cannot get required symbol " + symbol + ": " + err.Error())
 		}
 		return nil
 	}
-	return unsafe.Pointer(r0), nil
+	return unsafe.Pointer(r0)
 }
 
 // HashSum copies ctx1 into ctx2 and calls EVP_DigestFinal_ex using ctx2.
