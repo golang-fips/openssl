@@ -783,10 +783,17 @@ func needsAssembly(src *mkcgo.Source) bool {
 }
 
 // generateNocgoGo generates Go source file for nocgo mode from src.
-func generateNocgoGo(src *mkcgo.Source, w io.Writer) {
+func generateNocgoGo(src *mkcgo.Source, w io.Writer, isZdlFile bool) {
 	// Output header notice and package declaration.
 	printHeader(w)
-	fmt.Fprintf(w, "//go:build !cgo\n\n")
+	
+	// Set build tag based on whether this is a zdl file
+	if isZdlFile {
+		fmt.Fprintf(w, "//go:build !cgo && unix\n\n")
+	} else {
+		fmt.Fprintf(w, "//go:build !cgo\n\n")
+	}
+	
 	fmt.Fprintf(w, "package %s\n\n", *packageName)
 
 	needsRuntime := false

@@ -61,9 +61,18 @@ func main() {
 	})
 
 	if *mode == "nocgo" || *mode == "all" {
+		// Determine if this is a zdl file for special handling
+		baseNameForCheck := *fileName
+		if baseNameForCheck == "" {
+			baseNameForCheck = "mkcgo"
+		} else {
+			baseNameForCheck = strings.TrimSuffix(baseNameForCheck, ".go")
+		}
+		isZdlFile := strings.HasPrefix(baseNameForCheck, "zdl")
+		
 		// Generate nocgo mode files
 		var nocgoGoBuffer, assemblyBuffer bytes.Buffer
-		generateNocgoGo(&src, &nocgoGoBuffer)
+		generateNocgoGo(&src, &nocgoGoBuffer, isZdlFile)
 
 		// Only generate assembly if needed (i.e., not all functions are static)
 		needsAsm := needsAssembly(&src)
@@ -74,11 +83,19 @@ func main() {
 		// Format the generated Go source code.
 		nocgoGoData := goformat(nocgoGoBuffer.Bytes())
 
+		// Determine suffix based on the base name
+		suffix := "_nocgo.go"
+		
+		// Special case for zdl files - use _nocgo_unix.go suffix
+		if isZdlFile {
+			suffix = "_nocgo_unix.go"
+		}
+
 		files := []struct {
 			suffix string
 			data   []byte
 		}{
-			{"_nocgo.go", nocgoGoData},
+			{suffix, nocgoGoData},
 		}
 
 		// Only add assembly file if needed
