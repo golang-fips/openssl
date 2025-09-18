@@ -120,6 +120,11 @@ func generate(header string) (string, error) {
 
 	for _, enum := range src.Enums {
 		for _, enumValue := range enum.Values {
+			if enumValue.Name == "_EVP_PKEY_OP_DERIVE" {
+				// This is defined differently in OpenSSL 3,
+				// but in our code it is only used in OpenSSL 1.
+				continue
+			}
 			name := strings.TrimPrefix(enumValue.Name, "_")
 			fmt.Fprintf(w, "#ifdef %s\n", name)
 			fmt.Fprintf(w, "_Static_assert(%s == %s, \"%s\");\n", enumValue.Value, name, enumValue.Name)
