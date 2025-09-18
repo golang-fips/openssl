@@ -790,26 +790,14 @@ func generateNocgoGo(src *mkcgo.Source, w io.Writer) {
 	fmt.Fprintf(w, "package %s\n\n", *packageName)
 
 	needsRuntime := false
-	needsErrors := false
 	for _, fn := range src.Funcs {
 		if !fnCalledFromGo(fn) {
 			continue
-		}
-		// Check if we need runtime import for CCCryptorCreateWithMode
-		if fn.Name == "CCCryptorCreateWithMode" && len(fn.Params) > 9 {
-			needsRuntime = true
-		}
-		// Check if we need errors import for functions with error checking
-		if fnNeedErrWrapper(fn) && isOpenSSLErrorCheckFunction(fn) {
-			needsErrors = true
 		}
 	}
 
 	// Import necessary packages for nocgo mode
 	fmt.Fprintf(w, "import (\n")
-	if needsErrors {
-		fmt.Fprintf(w, "\t\"errors\"\n")
-	}
 	if needsRuntime {
 		fmt.Fprintf(w, "\t\"runtime\"\n")
 	}
@@ -1080,13 +1068,13 @@ func generateNocgoFn(src *mkcgo.Source, fn *mkcgo.Func, w io.Writer) {
 				if strings.HasPrefix(goRetType, "*") {
 					// Pointer return types need to go through unsafe.Pointer
 					fmt.Fprintf(w, "\tif r0 == 0 {\n")
-					fmt.Fprintf(w, "\t\treturn nil, errors.New(\"%s failed\")\n", fn.Name)
+					fmt.Fprintf(w, "\t\treturn nil, newMkcgoErr(\"%s\", nil)\n", fn.Name)
 					fmt.Fprintf(w, "\t}\n")
 					fmt.Fprintf(w, "\treturn (%s)(unsafe.Pointer(r0)), nil\n", goRetType)
 				} else {
 					// For integer returns, check common OpenSSL failure patterns
 					fmt.Fprintf(w, "\tif r0 <= 0 {\n")
-					fmt.Fprintf(w, "\t\treturn 0, errors.New(\"%s failed\")\n", fn.Name)
+					fmt.Fprintf(w, "\t\treturn 0, newMkcgoErr(\"%s\", nil)\n", fn.Name)
 					fmt.Fprintf(w, "\t}\n")
 					fmt.Fprintf(w, "\treturn %s(r0), nil\n", goRetType)
 				}

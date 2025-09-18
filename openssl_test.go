@@ -6,6 +6,7 @@ import (
 	"os"
 	"runtime"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -147,50 +148,50 @@ func TestFIPSCapable(t *testing.T) {
 	}
 }
 
-// func TestErrorMultithread(t *testing.T) {
-// 	// Test that we get the expected error when generating a key
-// 	// with an invalid size in a multithreaded environment
-// 	// while running other OpenSSL operations.
-// 	var wg sync.WaitGroup
-// 	for range 10 {
-// 		wg.Add(2)
-// 		go func() {
-// 			defer wg.Done()
-// 			_, _, _, _, _, _, _, _, err := openssl.GenerateKeyRSA(1)
-// 			if err == nil {
-// 				t.Error("expected error, got nil")
-// 				return
-// 			}
-// 			str := err.Error()
-// 			if !strings.Contains(str, "key size too small") {
-// 				t.Errorf("expected error to contain 'rsa routines', got %q", err)
-// 			}
-// 			if strings.Contains(str, "\x00") {
-// 				t.Errorf("expected error to not contain null byte, got %q", str)
-// 			}
-// 		}()
-// 		go func() {
-// 			defer wg.Done()
-// 			// This should never fail.
-// 			openssl.SHA256([]byte("test"))
-// 		}()
-// 	}
-// 	wg.Wait()
-// }
+func TestErrorMultithread(t *testing.T) {
+	// Test that we get the expected error when generating a key
+	// with an invalid size in a multithreaded environment
+	// while running other OpenSSL operations.
+	var wg sync.WaitGroup
+	for range 10 {
+		wg.Add(2)
+		go func() {
+			defer wg.Done()
+			_, _, _, _, _, _, _, _, err := openssl.GenerateKeyRSA(1)
+			if err == nil {
+				t.Error("expected error, got nil")
+				return
+			}
+			str := err.Error()
+			if !strings.Contains(str, "key size too small") {
+				t.Errorf("expected error to contain 'rsa routines', got %q", err)
+			}
+			if strings.Contains(str, "\x00") {
+				t.Errorf("expected error to not contain null byte, got %q", str)
+			}
+		}()
+		go func() {
+			defer wg.Done()
+			// This should never fail.
+			openssl.SHA256([]byte("test"))
+		}()
+	}
+	wg.Wait()
+}
 
-// func TestErrorAllocs(t *testing.T) {
-// 	n := testing.AllocsPerRun(10, func() {
-// 		openssl.GenerateKeyRSA(1)
-// 	})
-// 	max := 15
-// 	if int(n) > max {
-// 		t.Fatalf("Expected less than max allocations, got %d", int(n))
-// 	}
-// }
+func TestErrorAllocs(t *testing.T) {
+	n := testing.AllocsPerRun(10, func() {
+		openssl.GenerateKeyRSA(1)
+	})
+	max := 15
+	if int(n) > max {
+		t.Fatalf("Expected less than max allocations, got %d", int(n))
+	}
+}
 
-// func BenchmarkError(b *testing.B) {
-// 	b.ReportAllocs()
-// 	for i := 0; i < b.N; i++ {
-// 		openssl.GenerateKeyRSA(1)
-// 	}
-// }
+func BenchmarkError(b *testing.B) {
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+		openssl.GenerateKeyRSA(1)
+	}
+}
