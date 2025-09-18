@@ -6,6 +6,17 @@ import (
 	"unsafe"
 )
 
+func dlsym(handle unsafe.Pointer, symbol string, optional bool) unsafe.Pointer {
+	r0, _, err := Dlsym(uintptr(handle), unsafe.StringData(symbol))
+	if err != 0 {
+		if !optional {
+			panic("cannot get required symbol " + symbol + ": " + err.Error())
+		}
+		return nil
+	}
+	return unsafe.Pointer(r0), nil
+}
+
 // HashSum copies ctx1 into ctx2 and calls EVP_DigestFinal_ex using ctx2.
 // This is necessary because Go hash.Hash mandates that Sum has no effect
 // on the underlying stream. In particular it is OK to Sum, then Write more,

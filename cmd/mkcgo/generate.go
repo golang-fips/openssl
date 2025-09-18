@@ -1596,11 +1596,11 @@ func generateNocgoMkcgoLoadFunctions(src *mkcgo.Source, w io.Writer) {
 						fmt.Fprintf(w, "func %s_%s(handle unsafe.Pointer) {\n", goSymName("mkcgoLoad"), tag)
 						tagOpened = true
 					}
-					// TODO: if necessary, support optional functions in here too.
 					if tagAttr.Name != "" {
-						fmt.Fprintf(w, "\t_mkcgo_%s, _ = Dlsym(handle, unsafe.StringData(\"%s\\x00\"))\n", fn.Name, tagAttr.Name)
+						// TODO: if necessary, support optional functions in here too.
+						fmt.Fprintf(w, "\t_mkcgo_%s = dlsym(handle, \"%s\\x00\", %v)\n", fn.Name, tagAttr.Name, fn.Optional)
 					} else {
-						fmt.Fprintf(w, "\t_mkcgo_%s, _ = Dlsym(handle, unsafe.StringData(\"%s\\x00\"))\n", fn.Name, fn.Name)
+						fmt.Fprintf(w, "\t_mkcgo_%s = dlsym(handle, \"%s\\x00\", %v)\n", fn.Name, fn.Name, fn.Optional)
 					}
 					break
 				}
