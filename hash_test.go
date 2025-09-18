@@ -53,7 +53,7 @@ func cryptoToHash(h crypto.Hash) func() hash.Hash {
 }
 
 var hashes = [...]crypto.Hash{
-	// crypto.MD4, // TODO enable when MD4 when isSupported works properly
+	crypto.MD4,
 	crypto.MD5,
 	crypto.SHA1,
 	crypto.SHA224,
