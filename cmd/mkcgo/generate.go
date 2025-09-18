@@ -790,9 +790,12 @@ func generateNocgoGo(src *mkcgo.Source, w io.Writer) {
 	fmt.Fprintf(w, "package %s\n\n", *packageName)
 
 	needsRuntime := false
+
+	// Check if we need runtime package (for variadic functions with ARM64 handling)
 	for _, fn := range src.Funcs {
-		if !fnCalledFromGo(fn) {
-			continue
+		if fn.Attrs.VariadicTarget != "" {
+			needsRuntime = true
+			break
 		}
 	}
 
@@ -841,10 +844,21 @@ func generateNocgoGo(src *mkcgo.Source, w io.Writer) {
 
 	// Generate cgo_import_dynamic directives for each function
 	for _, fn := range src.Funcs {
-		if !fnCalledFromGo(fn) {
-			continue
+		// Skip base variadic functions unless they are targets for wrapper functions
+		if fn.Variadic() {
+			// Check if this variadic function is used as a target by any wrapper function
+			isTarget := false
+			for _, wrapperFn := range src.Funcs {
+				if wrapperFn.Attrs.VariadicTarget == fn.Name {
+					isTarget = true
+					break
+				}
+			}
+			if !isTarget {
+				continue
+			}
 		}
-		// Skip variadic wrapper functions in nocgo mode as they don't have real symbols
+		// Variadic wrapper functions don't need their own imports since they call the variadic target
 		if fn.Attrs.VariadicTarget != "" {
 			continue
 		}
@@ -895,11 +909,25 @@ func generateNocgoGo(src *mkcgo.Source, w io.Writer) {
 
 	// Generate trampoline address variables and wrapper functions
 	for _, fn := range src.Funcs {
-		if !fnCalledFromGo(fn) {
+		// For base variadic functions, only generate variable if they are targets for wrapper functions
+		if fn.Variadic() {
+			// Check if this variadic function is used as a target by any wrapper function
+			isTarget := false
+			for _, wrapperFn := range src.Funcs {
+				if wrapperFn.Attrs.VariadicTarget == fn.Name {
+					isTarget = true
+					break
+				}
+			}
+			if isTarget {
+				// Generate only the variable declaration for the target function
+				fmt.Fprintf(w, "var _mkcgo_%s unsafe.Pointer\n\n", fn.Name)
+			}
 			continue
 		}
-		// Skip variadic wrapper functions in nocgo mode as they don't have real symbols
+		// Handle variadic wrapper functions by generating proper implementations
 		if fn.Attrs.VariadicTarget != "" {
+			generateNocgoVariadicFn(src, fn, w)
 			continue
 		}
 		if fn.Optional {
@@ -1073,7 +1101,7 @@ func generateNocgoFn(src *mkcgo.Source, fn *mkcgo.Func, w io.Writer) {
 					fmt.Fprintf(w, "\treturn (%s)(unsafe.Pointer(r0)), nil\n", goRetType)
 				} else {
 					// For integer returns, check common OpenSSL failure patterns
-					fmt.Fprintf(w, "\tif r0 <= 0 {\n")
+					fmt.Fprintf(w, "\tif int32(r0) <= 0 {\n")
 					fmt.Fprintf(w, "\t\treturn 0, newMkcgoErr(\"%s\", nil)\n", fn.Name)
 					fmt.Fprintf(w, "\t}\n")
 					fmt.Fprintf(w, "\treturn %s(r0), nil\n", goRetType)
@@ -1089,6 +1117,288 @@ func generateNocgoFn(src *mkcgo.Source, fn *mkcgo.Func, w io.Writer) {
 		} else {
 			if strings.HasPrefix(goRetType, "*") {
 				// Pointer return types need to go through unsafe.Pointer
+				fmt.Fprintf(w, "\treturn (%s)(unsafe.Pointer(r0))\n", goRetType)
+			} else {
+				fmt.Fprintf(w, "\treturn %s(r0)\n", goRetType)
+			}
+		}
+	} else if fnNeedErrWrapper(fn) {
+		fmt.Fprintf(w, "\treturn nil\n")
+	}
+
+	fmt.Fprintf(w, "}\n\n")
+}
+
+// generateNocgoVariadicFn generates a Go wrapper function for variadic functions in nocgo mode.
+// It calls the underlying variadic target function with proper parameter handling.
+func generateNocgoVariadicFn(src *mkcgo.Source, fn *mkcgo.Func, w io.Writer) {
+	goFnName := goSymName(fn.Name)
+	variadicTarget := fn.Attrs.VariadicTarget
+
+	// Note: The variadic target variable (_mkcgo_<target>) should already be generated
+	// when the target function itself is processed, so we don't need to declare it here.
+
+	// Generate Go wrapper function
+	fmt.Fprintf(w, "func %s(", goFnName)
+
+	// Generate parameters
+	paramCount := 0
+	for i, param := range fn.Params {
+		// Skip void parameters
+		if param.Type == "void" {
+			continue
+		}
+
+		if paramCount > 0 {
+			fmt.Fprintf(w, ", ")
+		}
+
+		// Convert C types to Go types for nocgo mode
+		goType, _ := cTypeToGo(param.Type, false)
+		paramName := param.Name
+		if paramName == "" {
+			paramName = fmt.Sprintf("arg%d", i)
+		}
+		fmt.Fprintf(w, "%s %s", paramName, goType)
+		paramCount++
+	}
+	fmt.Fprintf(w, ")")
+
+	// Generate return type - only include error for functions that need error wrappers
+	if fn.Ret != "" && fn.Ret != "void" {
+		goRetType, _ := cTypeToGo(fn.Ret, false)
+		if fnNeedErrWrapper(fn) {
+			fmt.Fprintf(w, " (%s, error)", goRetType)
+		} else {
+			fmt.Fprintf(w, " %s", goRetType)
+		}
+	} else if fnNeedErrWrapper(fn) {
+		fmt.Fprintf(w, " error")
+	}
+
+	fmt.Fprintf(w, " {\n")
+
+	// Generate the function body - call the variadic target with special ARM64 handling
+	if fn.Ret != "" && fn.Ret != "void" {
+		// Check if ARM64 special handling is needed (only for functions with "arg" parameters)
+		needsArm64Handling := false
+		lastParamIdx := len(fn.Params) - 1
+		for lastParamIdx >= 0 && fn.Params[lastParamIdx].Type == "void" {
+			lastParamIdx--
+		}
+		if lastParamIdx >= 0 {
+			lastParam := fn.Params[lastParamIdx]
+			// ARM64 special handling for parameters that start with "arg" (variadic arguments)
+			if strings.HasPrefix(lastParam.Name, "arg") {
+				needsArm64Handling = true
+			}
+		}
+
+		fmt.Fprintf(w, "\tvar r0 uintptr\n")
+		if needsArm64Handling {
+			fmt.Fprintf(w, "\tif runtime.GOOS == \"darwin\" && runtime.GOARCH == \"arm64\" {\n")
+			fmt.Fprintf(w, "\t\tr0, _, _ = syscallN(uintptr(_mkcgo_%s)", variadicTarget)
+			
+			// Add all parameters except the last one for the ARM64 case
+			for i, param := range fn.Params {
+				if param.Type == "void" {
+					continue
+				}
+				// Skip the last parameter for ARM64 - it goes after the padding
+				if i == lastParamIdx {
+					continue
+				}
+				
+				paramName := param.Name
+				if paramName == "" {
+					paramName = fmt.Sprintf("arg%d", i)
+				}
+				
+				goType, _ := cTypeToGo(param.Type, false)
+				if goType == "" {
+					goType = "unsafe.Pointer"
+				}
+				if strings.HasPrefix(goType, "*") {
+					fmt.Fprintf(w, ", uintptr(unsafe.Pointer(%s))", paramName)
+				} else {
+					fmt.Fprintf(w, ", uintptr(%s)", paramName)
+				}
+			}
+			
+			// Add ARM64 padding zeros
+			fmt.Fprintf(w, ", 0, 0, 0, 0, 0")
+			
+			// Add the last actual parameter (ARM64 special handling)
+			if lastParamIdx >= 0 {
+				lastParam := fn.Params[lastParamIdx]
+				paramName := lastParam.Name
+				if paramName == "" {
+					paramName = fmt.Sprintf("arg%d", lastParamIdx)
+				}
+				goType, _ := cTypeToGo(lastParam.Type, false)
+				if goType == "" {
+					goType = "unsafe.Pointer"
+				}
+				if strings.HasPrefix(goType, "*") {
+					fmt.Fprintf(w, ", uintptr(unsafe.Pointer(%s))", paramName)
+				} else {
+					fmt.Fprintf(w, ", uintptr(%s)", paramName)
+				}
+			}
+			fmt.Fprintf(w, ")\n")
+			
+			fmt.Fprintf(w, "\t} else {\n")
+		}
+		
+		fmt.Fprintf(w, "\t\tr0, _, _ = syscallN(uintptr(_mkcgo_%s)", variadicTarget)
+		
+		// Add all parameters for the non-ARM64 case (or when ARM64 handling not needed)
+		for i, param := range fn.Params {
+			if param.Type == "void" {
+				continue
+			}
+			paramName := param.Name
+			if paramName == "" {
+				paramName = fmt.Sprintf("arg%d", i)
+			}
+			
+			goType, _ := cTypeToGo(param.Type, false)
+			if goType == "" {
+				goType = "unsafe.Pointer"
+			}
+			if strings.HasPrefix(goType, "*") {
+				fmt.Fprintf(w, ", uintptr(unsafe.Pointer(%s))", paramName)
+			} else {
+				fmt.Fprintf(w, ", uintptr(%s)", paramName)
+			}
+		}
+		fmt.Fprintf(w, ")\n")
+		
+		if needsArm64Handling {
+			fmt.Fprintf(w, "\t}\n")
+		}
+	} else {
+		// Void return case
+		// Check if ARM64 special handling is needed (only for functions with "arg" parameters)
+		needsArm64Handling := false
+		lastParamIdx := len(fn.Params) - 1
+		for lastParamIdx >= 0 && fn.Params[lastParamIdx].Type == "void" {
+			lastParamIdx--
+		}
+		if lastParamIdx >= 0 {
+			lastParam := fn.Params[lastParamIdx]
+			// ARM64 special handling for parameters that start with "arg" (variadic arguments)
+			if strings.HasPrefix(lastParam.Name, "arg") {
+				needsArm64Handling = true
+			}
+		}
+
+		if needsArm64Handling {
+			fmt.Fprintf(w, "\tif runtime.GOOS == \"darwin\" && runtime.GOARCH == \"arm64\" {\n")
+			fmt.Fprintf(w, "\t\tsyscallN(uintptr(_mkcgo_%s)", variadicTarget)
+			
+			// Add all parameters except the last one for the ARM64 case
+			for i, param := range fn.Params {
+				if param.Type == "void" {
+					continue
+				}
+				// Skip the last parameter for ARM64 - it goes after the padding
+				if i == lastParamIdx {
+					continue
+				}
+				
+				paramName := param.Name
+				if paramName == "" {
+					paramName = fmt.Sprintf("arg%d", i)
+				}
+				
+				goType, _ := cTypeToGo(param.Type, false)
+				if goType == "" {
+					goType = "unsafe.Pointer"
+				}
+				if strings.HasPrefix(goType, "*") {
+					fmt.Fprintf(w, ", uintptr(unsafe.Pointer(%s))", paramName)
+				} else {
+					fmt.Fprintf(w, ", uintptr(%s)", paramName)
+				}
+			}
+			
+			fmt.Fprintf(w, ", 0, 0, 0, 0, 0")
+			
+			if lastParamIdx >= 0 {
+				lastParam := fn.Params[lastParamIdx]
+				paramName := lastParam.Name
+				if paramName == "" {
+					paramName = fmt.Sprintf("arg%d", lastParamIdx)
+				}
+				goType, _ := cTypeToGo(lastParam.Type, false)
+				if goType == "" {
+					goType = "unsafe.Pointer"
+				}
+				if strings.HasPrefix(goType, "*") {
+					fmt.Fprintf(w, ", uintptr(unsafe.Pointer(%s))", paramName)
+				} else {
+					fmt.Fprintf(w, ", uintptr(%s)", paramName)
+				}
+			}
+			fmt.Fprintf(w, ")\n")
+			
+			fmt.Fprintf(w, "\t} else {\n")
+		}
+
+		fmt.Fprintf(w, "\t\tsyscallN(uintptr(_mkcgo_%s)", variadicTarget)
+		
+		for i, param := range fn.Params {
+			if param.Type == "void" {
+				continue
+			}
+			paramName := param.Name
+			if paramName == "" {
+				paramName = fmt.Sprintf("arg%d", i)
+			}
+			
+			goType, _ := cTypeToGo(param.Type, false)
+			if goType == "" {
+				goType = "unsafe.Pointer"
+			}
+			if strings.HasPrefix(goType, "*") {
+				fmt.Fprintf(w, ", uintptr(unsafe.Pointer(%s))", paramName)
+			} else {
+				fmt.Fprintf(w, ", uintptr(%s)", paramName)
+			}
+		}
+		fmt.Fprintf(w, ")\n")
+		
+		if needsArm64Handling {
+			fmt.Fprintf(w, "\t}\n")
+		}
+	}
+
+	// Generate return statement - similar to regular functions
+	if fn.Ret != "" && fn.Ret != "void" {
+		goRetType, _ := cTypeToGo(fn.Ret, false)
+		if fnNeedErrWrapper(fn) {
+			if isOpenSSLErrorCheckFunction(fn) {
+				if strings.HasPrefix(goRetType, "*") {
+					fmt.Fprintf(w, "\tif r0 == 0 {\n")
+					fmt.Fprintf(w, "\t\treturn nil, newMkcgoErr(\"%s\", nil)\n", fn.Name)
+					fmt.Fprintf(w, "\t}\n")
+					fmt.Fprintf(w, "\treturn (%s)(unsafe.Pointer(r0)), nil\n", goRetType)
+				} else {
+					fmt.Fprintf(w, "\tif int32(r0) <= 0 {\n")
+					fmt.Fprintf(w, "\t\treturn 0, newMkcgoErr(\"%s\", nil)\n", fn.Name)
+					fmt.Fprintf(w, "\t}\n")
+					fmt.Fprintf(w, "\treturn %s(r0), nil\n", goRetType)
+				}
+			} else {
+				if strings.HasPrefix(goRetType, "*") {
+					fmt.Fprintf(w, "\treturn (%s)(unsafe.Pointer(r0)), nil\n", goRetType)
+				} else {
+					fmt.Fprintf(w, "\treturn %s(r0), nil\n", goRetType)
+				}
+			}
+		} else {
+			if strings.HasPrefix(goRetType, "*") {
 				fmt.Fprintf(w, "\treturn (%s)(unsafe.Pointer(r0))\n", goRetType)
 			} else {
 				fmt.Fprintf(w, "\treturn %s(r0)\n", goRetType)
@@ -1157,10 +1467,6 @@ func generateAssembly(src *mkcgo.Source, w io.Writer) {
 
 	// Generate trampolines for each function
 	for _, fn := range src.Funcs {
-		if !fnCalledFromGo(fn) {
-			continue
-		}
-
 		fnName := fn.Name
 		fmt.Fprintf(w, "TEXT _mkcgo_%s_trampoline<>(SB),NOSPLIT,$0-0\n", fnName)
 		fmt.Fprintf(w, "    JMP _mkcgo_%s(SB)\n", fnName)
@@ -1266,11 +1572,22 @@ func generateNocgoMkcgoLoadFunctions(src *mkcgo.Source, w io.Writer) {
 		// Collect functions that should be loaded for this tag
 		var funcsForTag []*mkcgo.Func
 		for _, fn := range src.Funcs {
-			if !fnCalledFromGo(fn) {
-				continue
-			}
-			// Skip variadic wrapper functions in nocgo mode as they don't have real symbols
-			if fn.Attrs.VariadicTarget != "" {
+			// For base variadic functions, only include if they are targets for wrapper functions
+			if fn.Variadic() {
+				// Check if this variadic function is used as a target by any wrapper function
+				isTarget := false
+				for _, wrapperFn := range src.Funcs {
+					if wrapperFn.Attrs.VariadicTarget == fn.Name {
+						isTarget = true
+						break
+					}
+				}
+				if !isTarget {
+					continue
+				}
+				// Include it for loading since it's a target
+			} else if fn.Attrs.VariadicTarget != "" {
+				// Skip variadic wrapper functions in nocgo mode as they don't have real symbols
 				continue
 			}
 

@@ -73,3 +73,19 @@ func OSSL_PARAM_modified(param *OSSL_PARAM) bool {
 	// If ReturnSize is not set, the parameter has not been modified.
 	return param != nil && param.ReturnSize != _OSSL_PARAM_UNMODIFIED
 }
+
+// goString converts a C string (byte pointer) to a Go string
+func goString(ptr *byte) string {
+	if ptr == nil {
+		return ""
+	}
+	var result []byte
+	for i := uintptr(0); ; i++ {
+		b := *(*byte)(unsafe.Pointer(uintptr(unsafe.Pointer(ptr)) + i))
+		if b == 0 {
+			break
+		}
+		result = append(result, b)
+	}
+	return string(result)
+}
