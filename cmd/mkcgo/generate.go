@@ -300,50 +300,7 @@ func generateC(src *mkcgo.Source, w io.Writer) {
 		fmt.Fprintf(w, "\t}\n\n")
 
 		// Loader and unloader functions for each tag.
-		for _, tag := range src.Tags() {
-			fmt.Fprintf(w, "void __mkcgo_load_%s(void* handle) {\n", tag)
-			for _, fn := range src.Funcs {
-				if fn.VariadicTarget != "" {
-					continue
-				}
-				tags := fn.Tags
-				if len(tags) == 0 {
-					tags = []mkcgo.TagAttr{{}}
-				}
-				for _, tagAttr := range tags {
-					if tagAttr.Tag == tag {
-						if tagAttr.Name != "" {
-							// TODO: if necessary, support optional functions in here too.
-							fmt.Fprintf(w, "\t__mkcgo__dlsym2(%s, %s)\n", fn.ImportName(), tagAttr.Name)
-						} else if fn.Optional {
-							fmt.Fprintf(w, "\t__mkcgo__dlsym_nocheck(%s, %s)\n", fn.ImportName(), fn.ImportName())
-						} else {
-							fmt.Fprintf(w, "\t__mkcgo__dlsym(%s)\n", fn.ImportName())
-						}
-						break
-					}
-				}
-			}
-			fmt.Fprintf(w, "}\n\n")
-
-			fmt.Fprintf(w, "void __mkcgo_unload_%s() {\n", tag)
-			for _, fn := range src.Funcs {
-				if fn.VariadicTarget != "" {
-					continue
-				}
-				tags := fn.Tags
-				if len(tags) == 0 {
-					tags = []mkcgo.TagAttr{{}}
-				}
-				for _, tagAttr := range tags {
-					if tagAttr.Tag == tag {
-						fmt.Fprintf(w, "\t_g_%s = NULL;\n", fn.ImportName())
-						break
-					}
-				}
-			}
-			fmt.Fprintf(w, "}\n\n")
-		}
+		generateMkcgoLoadFunctions(src, w)
 	}
 
 	// Generate C function wrappers.
@@ -948,7 +905,7 @@ func generateNocgoGo(src *mkcgo.Source, w io.Writer, isZdlFile bool) {
 	}
 
 	// Generate MkcgoLoad and MkcgoUnload functions for each tag
-	generateNocgoMkcgoLoadFunctions(src, w)
+	generateMkcgoLoadFunctions(src, w)
 }
 
 // generateNocgoAliases generates Go type aliases for nocgo mode.
@@ -1570,8 +1527,8 @@ func cTypeSize(src *mkcgo.Source, name string) int {
 	}
 }
 
-// generateNocgoMkcgoLoadFunctions generates MkcgoLoad and MkcgoUnload functions for each tag
-func generateNocgoMkcgoLoadFunctions(src *mkcgo.Source, w io.Writer) {
+// generateMkcgoLoadFunctions generates MkcgoLoad and MkcgoUnload functions for each tag
+func generateMkcgoLoadFunctions(src *mkcgo.Source, w io.Writer) {
 	if *mode != "dynload" {
 		// TODO: support tags for other modes too
 		return
@@ -1593,14 +1550,29 @@ func generateNocgoMkcgoLoadFunctions(src *mkcgo.Source, w io.Writer) {
 			for _, tagAttr := range tags {
 				if tagAttr.Tag == tag {
 					if !tagOpened {
-						fmt.Fprintf(w, "func %s_%s(handle unsafe.Pointer) {\n", goSymName("mkcgoLoad"), tag)
+						if *nocgo {
+							fmt.Fprintf(w, "func %s_%s(handle unsafe.Pointer) {\n", goSymName("mkcgoLoad"), tag)
+						} else {
+							fmt.Fprintf(w, "void __mkcgo_load_%s(void* handle) {\n", tag)
+						}
 						tagOpened = true
 					}
-					if tagAttr.Name != "" {
-						// TODO: if necessary, support optional functions in here too.
-						fmt.Fprintf(w, "\t_mkcgo_%s = dlsym(handle, \"%s\\x00\", %v)\n", fn.Name, tagAttr.Name, fn.Optional)
+					if *nocgo {
+						if tagAttr.Name != "" {
+							// TODO: if necessary, support optional functions in here too.
+							fmt.Fprintf(w, "\t_mkcgo_%s = dlsym(handle, \"%s\\x00\", %v)\n", fn.Name, tagAttr.Name, fn.Optional)
+						} else {
+							fmt.Fprintf(w, "\t_mkcgo_%s = dlsym(handle, \"%s\\x00\", %v)\n", fn.Name, fn.Name, fn.Optional)
+						}
 					} else {
-						fmt.Fprintf(w, "\t_mkcgo_%s = dlsym(handle, \"%s\\x00\", %v)\n", fn.Name, fn.Name, fn.Optional)
+						if tagAttr.Name != "" {
+							// TODO: if necessary, support optional functions in here too.
+							fmt.Fprintf(w, "\t__mkcgo__dlsym2(%s, %s)\n", fn.ImportName(), tagAttr.Name)
+						} else if fn.Optional {
+							fmt.Fprintf(w, "\t__mkcgo__dlsym_nocheck(%s, %s)\n", fn.ImportName(), fn.ImportName())
+						} else {
+							fmt.Fprintf(w, "\t__mkcgo__dlsym(%s)\n", fn.ImportName())
+						}
 					}
 					break
 				}
@@ -1608,7 +1580,11 @@ func generateNocgoMkcgoLoadFunctions(src *mkcgo.Source, w io.Writer) {
 		}
 		if tagOpened {
 			fmt.Fprintf(w, "}\n\n")
-			fmt.Fprintf(w, "func %s_%s() {\n", goSymName("mkcgoUnload"), tag)
+			if *nocgo {
+				fmt.Fprintf(w, "func %s_%s() {\n", goSymName("mkcgoUnload"), tag)
+			} else {
+				fmt.Fprintf(w, "void __mkcgo_unload_%s() {\n", tag)
+			}
 			for _, fn := range src.Funcs {
 				if fn.Attrs.VariadicTarget != "" {
 					// Skip variadic wrapper functions in nocgo mode as they don't have real symbols
@@ -1620,7 +1596,11 @@ func generateNocgoMkcgoLoadFunctions(src *mkcgo.Source, w io.Writer) {
 				}
 				for _, tagAttr := range tags {
 					if tagAttr.Tag == tag {
-						fmt.Fprintf(w, "\t_mkcgo_%s = nil\n", fn.Name)
+						if *nocgo {
+							fmt.Fprintf(w, "\t_mkcgo_%s = nil\n", fn.Name)
+						} else {
+							fmt.Fprintf(w, "\t_g_%s = NULL;\n", fn.ImportName())
+						}
 						break
 					}
 				}
