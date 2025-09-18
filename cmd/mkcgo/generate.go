@@ -1572,16 +1572,16 @@ func cTypeSize(src *mkcgo.Source, name string) int {
 
 // generateNocgoMkcgoLoadFunctions generates MkcgoLoad and MkcgoUnload functions for each tag
 func generateNocgoMkcgoLoadFunctions(src *mkcgo.Source, w io.Writer) {
+	if *mode != "dynload" {
+		// TODO: support tags for other modes too
+		return
+	}
 	// Get all tags from the source
 
 	for _, tag := range src.Tags() {
 		var tagOpened bool
 		// Collect functions that should be loaded for this tag
 		for _, fn := range src.Funcs {
-			if fn.Name == "dlopen" || fn.Name == "dlsym" {
-				// Exclude dlopen and dlsym as they have special handling
-				continue
-			}
 			if fn.Attrs.VariadicTarget != "" {
 				// Skip variadic wrapper functions in nocgo mode as they don't have real symbols
 				continue
