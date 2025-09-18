@@ -1719,7 +1719,7 @@ func OPENSSL_init_crypto(ops uint64, settings OPENSSL_INIT_SETTINGS_PTR) (int32,
 }
 
 func OPENSSL_version_major_Available() bool {
-	return true // All functions assumed available in nocgo mode
+	return _mkcgo_OPENSSL_version_major != nil
 }
 
 var _mkcgo_OPENSSL_version_major unsafe.Pointer
@@ -1730,7 +1730,7 @@ func OPENSSL_version_major() uint32 {
 }
 
 func OPENSSL_version_minor_Available() bool {
-	return true // All functions assumed available in nocgo mode
+	return _mkcgo_OPENSSL_version_minor != nil
 }
 
 var _mkcgo_OPENSSL_version_minor unsafe.Pointer
@@ -1741,7 +1741,7 @@ func OPENSSL_version_minor() uint32 {
 }
 
 func OPENSSL_version_patch_Available() bool {
-	return true // All functions assumed available in nocgo mode
+	return _mkcgo_OPENSSL_version_patch != nil
 }
 
 var _mkcgo_OPENSSL_version_patch unsafe.Pointer
@@ -1853,7 +1853,7 @@ func OpenSSL_version(__type int32) *byte {
 }
 
 func OpenSSL_version_num_Available() bool {
-	return true // All functions assumed available in nocgo mode
+	return _mkcgo_OpenSSL_version_num != nil
 }
 
 var _mkcgo_OpenSSL_version_num unsafe.Pointer

@@ -939,9 +939,9 @@ func generateNocgoGo(src *mkcgo.Source, w io.Writer, isZdlFile bool) {
 		}
 		if fn.Optional {
 			// Generate a function that returns true if the function is available.
-			// For nocgo mode, we assume all functions are available.
+			// For nocgo mode, check if the function pointer is loaded.
 			fmt.Fprintf(w, "func %s() bool {\n", fnGoNameAvailable(fn))
-			fmt.Fprintf(w, "\treturn true // All functions assumed available in nocgo mode\n")
+			fmt.Fprintf(w, "\treturn %s != nil\n", fnCName(fn))
 			fmt.Fprintf(w, "}\n\n")
 		}
 		generateNocgoFn(src, fn, w)
