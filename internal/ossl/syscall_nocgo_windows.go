@@ -21,5 +21,5 @@ func Dlsym(handle unsafe.Pointer, symbol *byte) (unsafe.Pointer, error) {
 	if err != 0 {
 		return nil, err
 	}
-	return unsafe.Pointer(r0), err
+	return unsafe.Pointer(r0), nil
 }
