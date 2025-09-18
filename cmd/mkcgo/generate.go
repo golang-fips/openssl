@@ -786,14 +786,14 @@ func needsAssembly(src *mkcgo.Source) bool {
 func generateNocgoGo(src *mkcgo.Source, w io.Writer, isZdlFile bool) {
 	// Output header notice and package declaration.
 	printHeader(w)
-	
+
 	// Set build tag based on whether this is a zdl file
 	if isZdlFile {
 		fmt.Fprintf(w, "//go:build !cgo && unix\n\n")
 	} else {
 		fmt.Fprintf(w, "//go:build !cgo\n\n")
 	}
-	
+
 	fmt.Fprintf(w, "package %s\n\n", *packageName)
 
 	needsRuntime := false
@@ -1205,7 +1205,7 @@ func generateNocgoVariadicFn(src *mkcgo.Source, fn *mkcgo.Func, w io.Writer) {
 		if needsArm64Handling {
 			fmt.Fprintf(w, "\tif runtime.GOOS == \"darwin\" && runtime.GOARCH == \"arm64\" {\n")
 			fmt.Fprintf(w, "\t\tr0, _, _ = syscallN(uintptr(_mkcgo_%s)", variadicTarget)
-			
+
 			// Add all parameters except the last one for the ARM64 case
 			for i, param := range fn.Params {
 				if param.Type == "void" {
@@ -1215,12 +1215,12 @@ func generateNocgoVariadicFn(src *mkcgo.Source, fn *mkcgo.Func, w io.Writer) {
 				if i == lastParamIdx {
 					continue
 				}
-				
+
 				paramName := param.Name
 				if paramName == "" {
 					paramName = fmt.Sprintf("arg%d", i)
 				}
-				
+
 				goType, _ := cTypeToGo(param.Type, false)
 				if goType == "" {
 					goType = "unsafe.Pointer"
@@ -1231,10 +1231,10 @@ func generateNocgoVariadicFn(src *mkcgo.Source, fn *mkcgo.Func, w io.Writer) {
 					fmt.Fprintf(w, ", uintptr(%s)", paramName)
 				}
 			}
-			
+
 			// Add ARM64 padding zeros
 			fmt.Fprintf(w, ", 0, 0, 0, 0, 0")
-			
+
 			// Add the last actual parameter (ARM64 special handling)
 			if lastParamIdx >= 0 {
 				lastParam := fn.Params[lastParamIdx]
@@ -1253,12 +1253,12 @@ func generateNocgoVariadicFn(src *mkcgo.Source, fn *mkcgo.Func, w io.Writer) {
 				}
 			}
 			fmt.Fprintf(w, ")\n")
-			
+
 			fmt.Fprintf(w, "\t} else {\n")
 		}
-		
+
 		fmt.Fprintf(w, "\t\tr0, _, _ = syscallN(uintptr(_mkcgo_%s)", variadicTarget)
-		
+
 		// Add all parameters for the non-ARM64 case (or when ARM64 handling not needed)
 		for i, param := range fn.Params {
 			if param.Type == "void" {
@@ -1268,7 +1268,7 @@ func generateNocgoVariadicFn(src *mkcgo.Source, fn *mkcgo.Func, w io.Writer) {
 			if paramName == "" {
 				paramName = fmt.Sprintf("arg%d", i)
 			}
-			
+
 			goType, _ := cTypeToGo(param.Type, false)
 			if goType == "" {
 				goType = "unsafe.Pointer"
@@ -1280,7 +1280,7 @@ func generateNocgoVariadicFn(src *mkcgo.Source, fn *mkcgo.Func, w io.Writer) {
 			}
 		}
 		fmt.Fprintf(w, ")\n")
-		
+
 		if needsArm64Handling {
 			fmt.Fprintf(w, "\t}\n")
 		}
@@ -1303,7 +1303,7 @@ func generateNocgoVariadicFn(src *mkcgo.Source, fn *mkcgo.Func, w io.Writer) {
 		if needsArm64Handling {
 			fmt.Fprintf(w, "\tif runtime.GOOS == \"darwin\" && runtime.GOARCH == \"arm64\" {\n")
 			fmt.Fprintf(w, "\t\tsyscallN(uintptr(_mkcgo_%s)", variadicTarget)
-			
+
 			// Add all parameters except the last one for the ARM64 case
 			for i, param := range fn.Params {
 				if param.Type == "void" {
@@ -1313,12 +1313,12 @@ func generateNocgoVariadicFn(src *mkcgo.Source, fn *mkcgo.Func, w io.Writer) {
 				if i == lastParamIdx {
 					continue
 				}
-				
+
 				paramName := param.Name
 				if paramName == "" {
 					paramName = fmt.Sprintf("arg%d", i)
 				}
-				
+
 				goType, _ := cTypeToGo(param.Type, false)
 				if goType == "" {
 					goType = "unsafe.Pointer"
@@ -1329,9 +1329,9 @@ func generateNocgoVariadicFn(src *mkcgo.Source, fn *mkcgo.Func, w io.Writer) {
 					fmt.Fprintf(w, ", uintptr(%s)", paramName)
 				}
 			}
-			
+
 			fmt.Fprintf(w, ", 0, 0, 0, 0, 0")
-			
+
 			if lastParamIdx >= 0 {
 				lastParam := fn.Params[lastParamIdx]
 				paramName := lastParam.Name
@@ -1349,12 +1349,12 @@ func generateNocgoVariadicFn(src *mkcgo.Source, fn *mkcgo.Func, w io.Writer) {
 				}
 			}
 			fmt.Fprintf(w, ")\n")
-			
+
 			fmt.Fprintf(w, "\t} else {\n")
 		}
 
 		fmt.Fprintf(w, "\t\tsyscallN(uintptr(_mkcgo_%s)", variadicTarget)
-		
+
 		for i, param := range fn.Params {
 			if param.Type == "void" {
 				continue
@@ -1363,7 +1363,7 @@ func generateNocgoVariadicFn(src *mkcgo.Source, fn *mkcgo.Func, w io.Writer) {
 			if paramName == "" {
 				paramName = fmt.Sprintf("arg%d", i)
 			}
-			
+
 			goType, _ := cTypeToGo(param.Type, false)
 			if goType == "" {
 				goType = "unsafe.Pointer"
@@ -1375,7 +1375,7 @@ func generateNocgoVariadicFn(src *mkcgo.Source, fn *mkcgo.Func, w io.Writer) {
 			}
 		}
 		fmt.Fprintf(w, ")\n")
-		
+
 		if needsArm64Handling {
 			fmt.Fprintf(w, "\t}\n")
 		}
@@ -1573,83 +1573,59 @@ func cTypeSize(src *mkcgo.Source, name string) int {
 // generateNocgoMkcgoLoadFunctions generates MkcgoLoad and MkcgoUnload functions for each tag
 func generateNocgoMkcgoLoadFunctions(src *mkcgo.Source, w io.Writer) {
 	// Get all tags from the source
-	tags := src.Tags()
 
-	for _, tag := range tags {
+	for _, tag := range src.Tags() {
+		var tagOpened bool
 		// Collect functions that should be loaded for this tag
-		var funcsForTag []*mkcgo.Func
 		for _, fn := range src.Funcs {
-			// For base variadic functions, only include if they are targets for wrapper functions
-			if fn.Variadic() {
-				// Check if this variadic function is used as a target by any wrapper function
-				isTarget := false
-				for _, wrapperFn := range src.Funcs {
-					if wrapperFn.Attrs.VariadicTarget == fn.Name {
-						isTarget = true
-						break
-					}
-				}
-				if !isTarget {
-					continue
-				}
-				// Include it for loading since it's a target
-			} else if fn.Attrs.VariadicTarget != "" {
+			if fn.Name == "dlopen" || fn.Name == "dlsym" {
+				// Exclude dlopen and dlsym as they have special handling
+				continue
+			}
+			if fn.Attrs.VariadicTarget != "" {
 				// Skip variadic wrapper functions in nocgo mode as they don't have real symbols
 				continue
 			}
-
-			// Check if this function should be loaded for this tag
-			if shouldLoadForTag(fn, tag) {
-				funcsForTag = append(funcsForTag, fn)
+			tags := fn.Tags
+			if len(tags) == 0 {
+				tags = []mkcgo.TagAttr{{}}
+			}
+			for _, tagAttr := range tags {
+				if tagAttr.Tag == tag {
+					if !tagOpened {
+						fmt.Fprintf(w, "func %s_%s(handle unsafe.Pointer) {\n", goSymName("mkcgoLoad"), tag)
+						tagOpened = true
+					}
+					// TODO: if necessary, support optional functions in here too.
+					if tagAttr.Name != "" {
+						fmt.Fprintf(w, "\t_mkcgo_%s, _ = Dlsym(handle, unsafe.StringData(\"%s\\x00\"))\n", fn.Name, tagAttr.Name)
+					} else {
+						fmt.Fprintf(w, "\t_mkcgo_%s, _ = Dlsym(handle, unsafe.StringData(\"%s\\x00\"))\n", fn.Name, fn.Name)
+					}
+					break
+				}
 			}
 		}
-
-		// Only generate MkcgoLoad/MkcgoUnload functions if there are functions to load
-		if len(funcsForTag) == 0 {
-			continue
-		}
-
-		// Generate MkcgoLoad function
-		tagSuffix := tag
-		if tag == "" {
-			tagSuffix = "_"
-		} else {
-			tagSuffix = "_" + tag
-		}
-		fmt.Fprintf(w, "func %s%s(handle unsafe.Pointer) {\n", goSymName("mkcgoLoad"), tagSuffix)
-
-		for _, fn := range funcsForTag {
-			fmt.Fprintf(w, "\t_mkcgo_%s, _ = Dlsym(handle, unsafe.StringData(\"%s\\x00\"))\n", fn.Name, fn.Name)
-		}
-		fmt.Fprintf(w, "}\n\n")
-
-		// Generate MkcgoUnload function
-		fmt.Fprintf(w, "func %s%s() {\n", goSymName("mkcgoUnload"), tagSuffix)
-		for _, fn := range funcsForTag {
-			fmt.Fprintf(w, "\t_mkcgo_%s = nil\n", fn.Name)
-		}
-		fmt.Fprintf(w, "}\n\n")
-	}
-}
-
-// shouldLoadForTag determines if a function should be loaded for a specific tag
-func shouldLoadForTag(fn *mkcgo.Func, tag string) bool {
-	// Exclude dlopen and dlsym as they have special handling
-	if fn.Name == "dlopen" || fn.Name == "dlsym" {
-		return false
-	}
-
-	// If the function has no tags, it belongs to the default tag (empty string)
-	if len(fn.Tags) == 0 {
-		return tag == ""
-	}
-
-	// Check if any of the function's tags match the requested tag
-	for _, fnTag := range fn.Tags {
-		if fnTag.Tag == tag {
-			return true
+		if tagOpened {
+			fmt.Fprintf(w, "}\n\n")
+			fmt.Fprintf(w, "func %s_%s() {\n", goSymName("mkcgoUnload"), tag)
+			for _, fn := range src.Funcs {
+				if fn.Attrs.VariadicTarget != "" {
+					// Skip variadic wrapper functions in nocgo mode as they don't have real symbols
+					continue
+				}
+				tags := fn.Tags
+				if len(tags) == 0 {
+					tags = []mkcgo.TagAttr{{}}
+				}
+				for _, tagAttr := range tags {
+					if tagAttr.Tag == tag {
+						fmt.Fprintf(w, "\t_mkcgo_%s = nil\n", fn.Name)
+						break
+					}
+				}
+			}
+			fmt.Fprintf(w, "}\n\n")
 		}
 	}
-
-	return false
 }
