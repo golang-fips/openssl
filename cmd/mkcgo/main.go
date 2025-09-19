@@ -190,7 +190,7 @@ func writeTempSourceFile(data []byte) (string, error) {
 }
 
 func goformat(data []byte) []byte {
-	data, err := format.Source(data)
+	fdata, err := format.Source(data)
 	if err != nil {
 		log.Printf("failed to format source: %v", err)
 		f, err := writeTempSourceFile(data)
@@ -199,5 +199,5 @@ func goformat(data []byte) []byte {
 		}
 		log.Fatalf("for diagnosis, wrote unformatted source to %v", f)
 	}
-	return data
+	return fdata
 }

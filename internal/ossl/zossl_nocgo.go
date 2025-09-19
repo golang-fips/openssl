@@ -1024,8 +1024,7 @@ func EVP_PKEY_Q_keygen_EC(ctx OSSL_LIB_CTX_PTR, propq *byte, __type *byte, arg1 
 }
 
 func EVP_PKEY_Q_keygen_ED25519(ctx OSSL_LIB_CTX_PTR, propq *byte, __type *byte) (EVP_PKEY_PTR, error) {
-	var r0 uintptr
-	r0, _, _ = syscallN(uintptr(_mkcgo_EVP_PKEY_Q_keygen), uintptr(ctx), uintptr(unsafe.Pointer(propq)), uintptr(unsafe.Pointer(__type)))
+	r0, _, _ := syscallN(uintptr(_mkcgo_EVP_PKEY_Q_keygen), uintptr(ctx), uintptr(unsafe.Pointer(propq)), uintptr(unsafe.Pointer(__type)))
 	return EVP_PKEY_PTR(r0), nil
 }
 

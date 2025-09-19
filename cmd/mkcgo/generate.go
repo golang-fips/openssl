@@ -684,9 +684,7 @@ func goSymName(name string) string {
 		panic("empty name")
 	}
 	// Strip the 'go_' prefix commonly used in shims so Go symbols are nicer.
-	if strings.HasPrefix(name, "go_") {
-		name = name[3:]
-	}
+	name = strings.TrimPrefix(name, "go_")
 
 	// Special case: preserve point_conversion_form_t as lowercase
 	if name == "point_conversion_form_t" {
@@ -772,37 +770,19 @@ func generateNocgoGo(src *mkcgo.Source, w io.Writer, isZdlFile bool) {
 	fmt.Fprintf(w, ")\n\n")
 
 	// Generate cgo_import_dynamic directives for extern variables
-	useStaticImports := false
-	for _, c := range src.Comments {
-		if strings.TrimSpace(c) == "mkcgo:static_imports" {
-			useStaticImports = true
-			break
-		}
-	}
-	if useStaticImports {
-		for _, ext := range src.Externs {
-			extName := ext.Name
+	for _, ext := range src.Externs {
+		extName := ext.Name
+		if ext.Static {
 			localName := extName
 			if !strings.HasPrefix(extName, "go_") {
 				localName = "go_" + extName
 			}
 			fmt.Fprintf(w, "//go:linkname %s %s\n", localName, localName)
+			continue
 		}
-	} else {
-		for _, ext := range src.Externs {
-			extName := ext.Name
-			if ext.Static {
-				localName := extName
-				if !strings.HasPrefix(extName, "go_") {
-					localName = "go_" + extName
-				}
-				fmt.Fprintf(w, "//go:linkname %s %s\n", localName, localName)
-				continue
-			}
-			frameworkPath := getFrameworkPath(ext.Framework)
-			fmt.Fprintf(w, "//go:cgo_import_dynamic _mkcgo_%s %s \"%s\"\n", extName, extName, frameworkPath)
-			fmt.Fprintf(w, "//go:linkname _mkcgo_%s _mkcgo_%s\n", extName, extName)
-		}
+		frameworkPath := getFrameworkPath(ext.Framework)
+		fmt.Fprintf(w, "//go:cgo_import_dynamic _mkcgo_%s %s \"%s\"\n", extName, extName, frameworkPath)
+		fmt.Fprintf(w, "//go:linkname _mkcgo_%s _mkcgo_%s\n", extName, extName)
 	}
 	fmt.Fprintf(w, "\n")
 
@@ -828,7 +808,7 @@ func generateNocgoGo(src *mkcgo.Source, w io.Writer, isZdlFile bool) {
 		}
 		fnName := fn.Name
 		frameworkPath := getFrameworkPath(fn.Framework)
-		if useStaticImports || fn.Static {
+		if fn.Static {
 			localName := fnName
 			if !strings.HasPrefix(fnName, "go_") {
 				localName = "go_" + fnName
@@ -850,7 +830,7 @@ func generateNocgoGo(src *mkcgo.Source, w io.Writer, isZdlFile bool) {
 		if !fnCalledFromGo(fn) {
 			continue
 		}
-		if !useStaticImports && !fn.Static {
+		if !fn.Static {
 			continue
 		}
 		localName := fn.Name
@@ -875,23 +855,7 @@ func generateNocgoGo(src *mkcgo.Source, w io.Writer, isZdlFile bool) {
 	for _, fn := range src.Funcs {
 		// For base variadic functions, only generate variable if they are targets for wrapper functions
 		if fn.Variadic() {
-			// Check if this variadic function is used as a target by any wrapper function
-			isTarget := false
-			for _, wrapperFn := range src.Funcs {
-				if wrapperFn.Attrs.VariadicTarget == fn.Name {
-					isTarget = true
-					break
-				}
-			}
-			if isTarget {
-				// Generate only the variable declaration for the target function
-				fmt.Fprintf(w, "var _mkcgo_%s unsafe.Pointer\n\n", fn.Name)
-			}
-			continue
-		}
-		// Handle variadic wrapper functions by generating proper implementations
-		if fn.Attrs.VariadicTarget != "" {
-			generateNocgoVariadicFn(src, fn, w)
+			fmt.Fprintf(w, "var _mkcgo_%s unsafe.Pointer\n\n", fn.Name)
 			continue
 		}
 		if fn.Optional {
@@ -991,6 +955,9 @@ func generateNocgoExterns(externs []*mkcgo.Extern, w io.Writer) {
 }
 
 func trampolineName(fn *mkcgo.Func) string {
+	if *mode == "dynload" {
+		return fmt.Sprintf("_mkcgo_%s", fn.ImportName())
+	}
 	return fmt.Sprintf("_mkcgo_%s_trampoline_addr", fn.Name)
 }
 
@@ -1001,7 +968,7 @@ func generateNocgoFn(src *mkcgo.Source, fn *mkcgo.Func, w io.Writer) {
 	// Generate trampoline address variable only for dlopen and dlsym
 	if fn.Name == "dlopen" || fn.Name == "dlsym" {
 		fmt.Fprintf(w, "var %s uintptr\n\n", trampolineName(fn))
-	} else {
+	} else if fn.VariadicTarget == "" {
 		fmt.Fprintf(w, "var _mkcgo_%s unsafe.Pointer\n\n", fn.Name)
 	}
 
@@ -1048,8 +1015,35 @@ func generateNocgoFn(src *mkcgo.Source, fn *mkcgo.Func, w io.Writer) {
 	// Special handling for MacOS ARM64 stack params
 	// Generate architecture-specific code
 	var tmp strings.Builder
-	macosArm64Params(src, fn.Params, &tmp)
-	generateNocgoFnBody(src, fn, false, w)
+	needsSpecalHandling := macosDarwinArm64Params(src, fn, &tmp)
+
+	if needsSpecalHandling {
+		fmt.Fprintf(w, "\tvar r0 uintptr\n")
+		fmt.Fprintf(w, "\tif runtime.GOOS == \"darwin\" && runtime.GOARCH == \"arm64\" {\n")
+		fmt.Fprintf(w, "\t\t")
+		if fn.Ret != "" && fn.Ret != "void" {
+			fmt.Fprintf(w, "r0, _, _ = ")
+		}
+
+		// Use static function pointer or trampoline address
+		var functionRef string
+		if fn.Static {
+			localName := fn.Name
+			if !strings.HasPrefix(localName, "go_") {
+				localName = "go_" + localName
+			}
+			functionRef = fmt.Sprintf("uintptr(unsafe.Pointer(&%s))", localName)
+		} else {
+			functionRef = fmt.Sprintf("uintptr(%s)", trampolineName(fn))
+		}
+
+		fmt.Fprintf(w, "syscallN(%s, %s)\n", functionRef, tmp.String())
+		fmt.Fprintf(w, "\t} else {\n")
+	}
+	generateNocgoFnBody(src, fn, !needsSpecalHandling, w)
+	if needsSpecalHandling {
+		fmt.Fprintf(w, "\t}\n")
+	}
 
 	// Generate return statement - only include error for functions that need error wrappers
 	if fn.Ret != "" && fn.Ret != "void" {
@@ -1093,288 +1087,6 @@ func generateNocgoFn(src *mkcgo.Source, fn *mkcgo.Func, w io.Writer) {
 	fmt.Fprintf(w, "}\n\n")
 }
 
-// generateNocgoVariadicFn generates a Go wrapper function for variadic functions in nocgo mode.
-// It calls the underlying variadic target function with proper parameter handling.
-func generateNocgoVariadicFn(src *mkcgo.Source, fn *mkcgo.Func, w io.Writer) {
-	goFnName := goSymName(fn.Name)
-	variadicTarget := fn.Attrs.VariadicTarget
-
-	// Note: The variadic target variable (_mkcgo_<target>) should already be generated
-	// when the target function itself is processed, so we don't need to declare it here.
-
-	// Generate Go wrapper function
-	fmt.Fprintf(w, "func %s(", goFnName)
-
-	// Generate parameters
-	paramCount := 0
-	for i, param := range fn.Params {
-		// Skip void parameters
-		if param.Type == "void" {
-			continue
-		}
-
-		if paramCount > 0 {
-			fmt.Fprintf(w, ", ")
-		}
-
-		// Convert C types to Go types for nocgo mode
-		goType, _ := cTypeToGo(param.Type, false)
-		paramName := param.Name
-		if paramName == "" {
-			paramName = fmt.Sprintf("arg%d", i)
-		}
-		fmt.Fprintf(w, "%s %s", paramName, goType)
-		paramCount++
-	}
-	fmt.Fprintf(w, ")")
-
-	// Generate return type - only include error for functions that need error wrappers
-	if fn.Ret != "" && fn.Ret != "void" {
-		goRetType, _ := cTypeToGo(fn.Ret, false)
-		if fnNeedErrWrapper(fn) {
-			fmt.Fprintf(w, " (%s, error)", goRetType)
-		} else {
-			fmt.Fprintf(w, " %s", goRetType)
-		}
-	} else if fnNeedErrWrapper(fn) {
-		fmt.Fprintf(w, " error")
-	}
-
-	fmt.Fprintf(w, " {\n")
-
-	// Generate the function body - call the variadic target with special ARM64 handling
-	if fn.Ret != "" && fn.Ret != "void" {
-		// Check if ARM64 special handling is needed (only for functions with "arg" parameters)
-		needsArm64Handling := false
-		lastParamIdx := len(fn.Params) - 1
-		for lastParamIdx >= 0 && fn.Params[lastParamIdx].Type == "void" {
-			lastParamIdx--
-		}
-		if lastParamIdx >= 0 {
-			lastParam := fn.Params[lastParamIdx]
-			// ARM64 special handling for parameters that start with "arg" (variadic arguments)
-			if strings.HasPrefix(lastParam.Name, "arg") {
-				needsArm64Handling = true
-			}
-		}
-
-		fmt.Fprintf(w, "\tvar r0 uintptr\n")
-		if needsArm64Handling {
-			fmt.Fprintf(w, "\tif runtime.GOOS == \"darwin\" && runtime.GOARCH == \"arm64\" {\n")
-			fmt.Fprintf(w, "\t\tr0, _, _ = syscallN(uintptr(_mkcgo_%s)", variadicTarget)
-
-			// Add all parameters except the last one for the ARM64 case
-			for i, param := range fn.Params {
-				if param.Type == "void" {
-					continue
-				}
-				// Skip the last parameter for ARM64 - it goes after the padding
-				if i == lastParamIdx {
-					continue
-				}
-
-				paramName := param.Name
-				if paramName == "" {
-					paramName = fmt.Sprintf("arg%d", i)
-				}
-
-				goType, _ := cTypeToGo(param.Type, false)
-				if goType == "" {
-					goType = "unsafe.Pointer"
-				}
-				if strings.HasPrefix(goType, "*") {
-					fmt.Fprintf(w, ", uintptr(unsafe.Pointer(%s))", paramName)
-				} else {
-					fmt.Fprintf(w, ", uintptr(%s)", paramName)
-				}
-			}
-
-			// Add ARM64 padding zeros
-			fmt.Fprintf(w, ", 0, 0, 0, 0, 0")
-
-			// Add the last actual parameter (ARM64 special handling)
-			if lastParamIdx >= 0 {
-				lastParam := fn.Params[lastParamIdx]
-				paramName := lastParam.Name
-				if paramName == "" {
-					paramName = fmt.Sprintf("arg%d", lastParamIdx)
-				}
-				goType, _ := cTypeToGo(lastParam.Type, false)
-				if goType == "" {
-					goType = "unsafe.Pointer"
-				}
-				if strings.HasPrefix(goType, "*") {
-					fmt.Fprintf(w, ", uintptr(unsafe.Pointer(%s))", paramName)
-				} else {
-					fmt.Fprintf(w, ", uintptr(%s)", paramName)
-				}
-			}
-			fmt.Fprintf(w, ")\n")
-
-			fmt.Fprintf(w, "\t} else {\n")
-		}
-
-		fmt.Fprintf(w, "\t\tr0, _, _ = syscallN(uintptr(_mkcgo_%s)", variadicTarget)
-
-		// Add all parameters for the non-ARM64 case (or when ARM64 handling not needed)
-		for i, param := range fn.Params {
-			if param.Type == "void" {
-				continue
-			}
-			paramName := param.Name
-			if paramName == "" {
-				paramName = fmt.Sprintf("arg%d", i)
-			}
-
-			goType, _ := cTypeToGo(param.Type, false)
-			if goType == "" {
-				goType = "unsafe.Pointer"
-			}
-			if strings.HasPrefix(goType, "*") {
-				fmt.Fprintf(w, ", uintptr(unsafe.Pointer(%s))", paramName)
-			} else {
-				fmt.Fprintf(w, ", uintptr(%s)", paramName)
-			}
-		}
-		fmt.Fprintf(w, ")\n")
-
-		if needsArm64Handling {
-			fmt.Fprintf(w, "\t}\n")
-		}
-	} else {
-		// Void return case
-		// Check if ARM64 special handling is needed (only for functions with "arg" parameters)
-		needsArm64Handling := false
-		lastParamIdx := len(fn.Params) - 1
-		for lastParamIdx >= 0 && fn.Params[lastParamIdx].Type == "void" {
-			lastParamIdx--
-		}
-		if lastParamIdx >= 0 {
-			lastParam := fn.Params[lastParamIdx]
-			// ARM64 special handling for parameters that start with "arg" (variadic arguments)
-			if strings.HasPrefix(lastParam.Name, "arg") {
-				needsArm64Handling = true
-			}
-		}
-
-		if needsArm64Handling {
-			fmt.Fprintf(w, "\tif runtime.GOOS == \"darwin\" && runtime.GOARCH == \"arm64\" {\n")
-			fmt.Fprintf(w, "\t\tsyscallN(uintptr(_mkcgo_%s)", variadicTarget)
-
-			// Add all parameters except the last one for the ARM64 case
-			for i, param := range fn.Params {
-				if param.Type == "void" {
-					continue
-				}
-				// Skip the last parameter for ARM64 - it goes after the padding
-				if i == lastParamIdx {
-					continue
-				}
-
-				paramName := param.Name
-				if paramName == "" {
-					paramName = fmt.Sprintf("arg%d", i)
-				}
-
-				goType, _ := cTypeToGo(param.Type, false)
-				if goType == "" {
-					goType = "unsafe.Pointer"
-				}
-				if strings.HasPrefix(goType, "*") {
-					fmt.Fprintf(w, ", uintptr(unsafe.Pointer(%s))", paramName)
-				} else {
-					fmt.Fprintf(w, ", uintptr(%s)", paramName)
-				}
-			}
-
-			fmt.Fprintf(w, ", 0, 0, 0, 0, 0")
-
-			if lastParamIdx >= 0 {
-				lastParam := fn.Params[lastParamIdx]
-				paramName := lastParam.Name
-				if paramName == "" {
-					paramName = fmt.Sprintf("arg%d", lastParamIdx)
-				}
-				goType, _ := cTypeToGo(lastParam.Type, false)
-				if goType == "" {
-					goType = "unsafe.Pointer"
-				}
-				if strings.HasPrefix(goType, "*") {
-					fmt.Fprintf(w, ", uintptr(unsafe.Pointer(%s))", paramName)
-				} else {
-					fmt.Fprintf(w, ", uintptr(%s)", paramName)
-				}
-			}
-			fmt.Fprintf(w, ")\n")
-
-			fmt.Fprintf(w, "\t} else {\n")
-		}
-
-		fmt.Fprintf(w, "\t\tsyscallN(uintptr(_mkcgo_%s)", variadicTarget)
-
-		for i, param := range fn.Params {
-			if param.Type == "void" {
-				continue
-			}
-			paramName := param.Name
-			if paramName == "" {
-				paramName = fmt.Sprintf("arg%d", i)
-			}
-
-			goType, _ := cTypeToGo(param.Type, false)
-			if goType == "" {
-				goType = "unsafe.Pointer"
-			}
-			if strings.HasPrefix(goType, "*") {
-				fmt.Fprintf(w, ", uintptr(unsafe.Pointer(%s))", paramName)
-			} else {
-				fmt.Fprintf(w, ", uintptr(%s)", paramName)
-			}
-		}
-		fmt.Fprintf(w, ")\n")
-
-		if needsArm64Handling {
-			fmt.Fprintf(w, "\t}\n")
-		}
-	}
-
-	// Generate return statement - similar to regular functions
-	if fn.Ret != "" && fn.Ret != "void" {
-		goRetType, _ := cTypeToGo(fn.Ret, false)
-		if fnNeedErrWrapper(fn) {
-			if isOpenSSLErrorCheckFunction(fn) {
-				if strings.HasPrefix(goRetType, "*") {
-					fmt.Fprintf(w, "\tif r0 == 0 {\n")
-					fmt.Fprintf(w, "\t\treturn nil, newMkcgoErr(\"%s\", nil)\n", fn.Name)
-					fmt.Fprintf(w, "\t}\n")
-					fmt.Fprintf(w, "\treturn (%s)(unsafe.Pointer(r0)), nil\n", goRetType)
-				} else {
-					fmt.Fprintf(w, "\tif int32(r0) <= 0 {\n")
-					fmt.Fprintf(w, "\t\treturn 0, newMkcgoErr(\"%s\", nil)\n", fn.Name)
-					fmt.Fprintf(w, "\t}\n")
-					fmt.Fprintf(w, "\treturn %s(r0), nil\n", goRetType)
-				}
-			} else {
-				if strings.HasPrefix(goRetType, "*") {
-					fmt.Fprintf(w, "\treturn (%s)(unsafe.Pointer(r0)), nil\n", goRetType)
-				} else {
-					fmt.Fprintf(w, "\treturn %s(r0), nil\n", goRetType)
-				}
-			}
-		} else {
-			if strings.HasPrefix(goRetType, "*") {
-				fmt.Fprintf(w, "\treturn (%s)(unsafe.Pointer(r0))\n", goRetType)
-			} else {
-				fmt.Fprintf(w, "\treturn %s(r0)\n", goRetType)
-			}
-		}
-	} else if fnNeedErrWrapper(fn) {
-		fmt.Fprintf(w, "\treturn nil\n")
-	}
-
-	fmt.Fprintf(w, "}\n\n")
-}
-
 // generateNocgoFnBody generates Go function wrapper body for nocgo mode.
 func generateNocgoFnBody(src *mkcgo.Source, fn *mkcgo.Func, newR0 bool, w io.Writer) {
 	syscallFunc := "syscallN"
@@ -1384,7 +1096,7 @@ func generateNocgoFnBody(src *mkcgo.Source, fn *mkcgo.Func, newR0 bool, w io.Wri
 	if fn.Name == "dlopen" || fn.Name == "dlsym" {
 		functionRef = trampolineName(fn)
 	} else {
-		functionRef = fmt.Sprintf("uintptr(_mkcgo_%s)", fn.Name)
+		functionRef = fmt.Sprintf("uintptr(_mkcgo_%s)", fn.ImportName())
 	}
 
 	// Generate the syscall invocation with proper argument handling for other functions
@@ -1393,7 +1105,7 @@ func generateNocgoFnBody(src *mkcgo.Source, fn *mkcgo.Func, newR0 bool, w io.Wri
 		if !newR0 {
 			colon = ""
 		}
-		fmt.Fprintf(w, "\tr0, _, _ %s:= %s(%s", colon, syscallFunc, functionRef)
+		fmt.Fprintf(w, "\tr0, _, _ %s= %s(%s", colon, syscallFunc, functionRef)
 	} else {
 		fmt.Fprintf(w, "\t%s(%s", syscallFunc, functionRef)
 	}
@@ -1439,12 +1151,32 @@ func generateAssembly(src *mkcgo.Source, w io.Writer) {
 	}
 }
 
-// macosArm64Params writes the string representing the parameters
+// macosDarwinArm64Params writes the string representing the parameters
 // passed to a function on macOS ARM64. This platform is special
 // because the first 9 parameters are passed in registers, and
 // the rest are passed on the stack layed out using each type
-// natural alignment.
-func macosArm64Params(src *mkcgo.Source, params []*mkcgo.Param, w io.Writer) {
+// natural alignment. Also, variadic parameters are passed on the stack.
+func macosDarwinArm64Params(src *mkcgo.Source, fn *mkcgo.Func, w io.Writer) bool {
+	nonVariadicArgs := len(fn.Params)
+	if fn.VariadicTarget != "" {
+		var target *mkcgo.Func
+		for _, f := range src.Funcs {
+			if f.Name == fn.VariadicTarget {
+				target = f
+				break
+			}
+		}
+		if target == nil {
+			panic(fmt.Errorf("variadic target %q for %q not found: ", fn.VariadicTarget, fn.Name))
+		}
+		nonVariadicArgs = len(target.Params)
+		for i := len(target.Params) - 1; i >= 0; i-- {
+			if !target.Params[i].Variadic() {
+				break
+			}
+			nonVariadicArgs--
+		}
+	}
 	var stackOffset, lastShift int
 	shift := func(size int) {
 		v := lastShift + size
@@ -1462,14 +1194,27 @@ func macosArm64Params(src *mkcgo.Source, params []*mkcgo.Param, w io.Writer) {
 			lastShift = 0
 		}
 	}
-	for i, param := range params {
+	var needSpecialHandling bool
+	for i, param := range fn.Params {
+		const maxParamsInRegisters = 8
+		if i == nonVariadicArgs {
+			// Variadic parameters start here, so we need to pad
+			// the remaining registers with zeros.
+			for j := i + 1; j <= maxParamsInRegisters; j++ {
+				needSpecialHandling = true
+				if j != 0 {
+					fmt.Fprintf(w, ", ")
+				}
+				fmt.Fprintf(w, "0")
+			}
+		}
 		var goParam string
 		if goType, _ := cTypeToGo(param.Type, false); strings.HasPrefix(goType, "*") {
 			goParam = fmt.Sprintf("uintptr(unsafe.Pointer(%s))", param.Name)
 		} else {
 			goParam = fmt.Sprintf("uintptr(%s)", param.Name)
 		}
-		if i < 9 {
+		if i <= maxParamsInRegisters {
 			// Regular parameter handling for first 9 parameters.
 			if i != 0 {
 				fmt.Fprintf(w, ", ")
@@ -1482,10 +1227,12 @@ func macosArm64Params(src *mkcgo.Source, params []*mkcgo.Param, w io.Writer) {
 			fmt.Fprintf(w, ", ")
 		} else {
 			fmt.Fprintf(w, "|")
+			needSpecialHandling = true
 		}
 		fmt.Fprintf(w, "%s", goParam)
 		shift(paramSize)
 	}
+	return needSpecialHandling
 }
 
 func cTypeSize(src *mkcgo.Source, name string) int {
