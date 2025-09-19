@@ -16,10 +16,13 @@ func syscallN(fn uintptr, args ...uintptr) (r1, r2 uintptr, err syscall.Errno) {
 	return
 }
 
-func Dlsym(handle unsafe.Pointer, symbol *byte) (unsafe.Pointer, error) {
-	r0, _, err := syscall.SyscallN(procGetProcAddress.Addr(), uintptr(handle), uintptr(unsafe.Pointer(symbol)))
+func dlsym(handle unsafe.Pointer, symbol string, optional bool) unsafe.Pointer {
+	r0, _, err := syscall.SyscallN(procGetProcAddress.Addr(), uintptr(handle), uintptr(unsafe.Pointer(unsafe.StringData(symbol))))
 	if err != 0 {
-		return nil, err
+		if !optional {
+			panic("cannot get required symbol " + symbol + ": " + err.Error())
+		}
+		return nil
 	}
-	return unsafe.Pointer(r0), nil
+	return unsafe.Pointer(r0)
 }
