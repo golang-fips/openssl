@@ -815,12 +815,16 @@ func generateNocgoGo(src *mkcgo.Source, w io.Writer, isZdlFile bool) {
 	generateNocgoExterns(src.Externs, w)
 
 	// Generate trampoline address variables and wrapper functions
-	typedefs := make(map[string]string, len(src.TypeDefs))
+	typePtrs := make(map[string]bool, len(src.TypeDefs))
 	for _, def := range src.TypeDefs {
-		typedefs[def.Name] = def.Type
+		if !strings.ContainsRune(def.Name, '*') {
+			continue
+		}
+		name, _ := cTypeToGo(def.Name, false)
+		typePtrs[name] = true
 	}
 	for _, fn := range src.Funcs {
-		generateNocgoFn(typedefs, src, fn, w)
+		generateNocgoFn(typePtrs, src, fn, w)
 	}
 
 	// Generate MkcgoLoad and MkcgoUnload functions for each tag
@@ -833,25 +837,10 @@ func generateNocgoAliases(typedefs []*mkcgo.TypeDef, w io.Writer) {
 
 	// Handle typedefs first, as they can create proper type aliases
 	for _, typedef := range typedefs {
-		// For basic types, make it an alias to the appropriate Go type
-		goType, _ := cTypeToGo(typedef.Type, false)
-		if goType != "" && goType != "unsafe.Pointer" {
-			fmt.Fprintf(w, "type %s = %s\n", typedef.Name, goType)
-			seenTypes[typedef.Name] = true
-		} else {
-			fmt.Fprintf(w, "type %s unsafe.Pointer\n", typedef.Name)
-			seenTypes[typedef.Name] = true
-		}
-
-		// Also generate non-underscored alias for types that start with an underscore.
-		// Some generated nocgo code expects e.g. BIGNUM_PTR, while low-level typedefs
-		// are generated as _BIGNUM_PTR. Provide an alias so both names are available.
-		if strings.HasPrefix(typedef.Name, "_") {
-			plain := strings.TrimPrefix(typedef.Name, "_")
-			if !seenTypes[plain] {
-				fmt.Fprintf(w, "type %s = %s\n", plain, typedef.Name)
-				seenTypes[plain] = true
-			}
+		plain := strings.TrimPrefix(typedef.Name, "_")
+		if !seenTypes[plain] {
+			fmt.Fprintf(w, "type %s unsafe.Pointer\n", plain)
+			seenTypes[plain] = true
 		}
 	}
 
@@ -917,7 +906,7 @@ func trampolineName(fn *mkcgo.Func) string {
 }
 
 // generateNocgoFn generates Go function wrapper for nocgo mode.
-func generateNocgoFn(typedefs map[string]string, src *mkcgo.Source, fn *mkcgo.Func, w io.Writer) {
+func generateNocgoFn(typePtrs map[string]bool, src *mkcgo.Source, fn *mkcgo.Func, w io.Writer) {
 	if fn.Variadic() {
 		fmt.Fprintf(w, "var _mkcgo_%s unsafe.Pointer\n\n", fn.Name)
 		// Nothing else to do.
@@ -1022,7 +1011,7 @@ func generateNocgoFn(typedefs map[string]string, src *mkcgo.Source, fn *mkcgo.Fu
 			} else if strings.Contains(fn.Ret, "*") {
 				errCond = "== nil"
 				zeroVal = "nil"
-			} else if typ, ok := typedefs[fn.Ret]; ok && typ == "void*" {
+			} else if _, ok := typePtrs[goRetType]; ok {
 				errCond = "== nil"
 				zeroVal = "nil"
 			}
