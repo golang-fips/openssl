@@ -7,10 +7,10 @@ import (
 )
 
 func dlsym(handle unsafe.Pointer, symbol string, optional bool) unsafe.Pointer {
-	r0, err := Dlsym(handle, unsafe.StringData(symbol))
-	if err != nil {
+	r0 := Dlsym(handle, unsafe.StringData(symbol))
+	if r0 == nil {
 		if !optional {
-			panic("cannot get required symbol " + symbol + ": " + err.Error())
+			panic("cannot get required symbol " + symbol)
 		}
 		return nil
 	}

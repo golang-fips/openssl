@@ -4,6 +4,11 @@
 
 #include "textflag.h"
  
+TEXT _mkcgo_dlerror_trampoline<>(SB),NOSPLIT,$0-0
+    JMP _mkcgo_dlerror(SB)
+GLOBL   ·_mkcgo_dlerror_trampoline_addr(SB), RODATA, $8
+DATA    ·_mkcgo_dlerror_trampoline_addr(SB)/8, $_mkcgo_dlerror_trampoline<>(SB)
+
 TEXT _mkcgo_dlopen_trampoline<>(SB),NOSPLIT,$0-0
     JMP _mkcgo_dlopen(SB)
 GLOBL   ·_mkcgo_dlopen_trampoline_addr(SB), RODATA, $8

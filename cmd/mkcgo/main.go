@@ -22,7 +22,7 @@ var (
 	mode              = flag.String("mode", "dynamic", "symbol load mode: dynamic, dynload")
 	private           = flag.Bool("private", false, "all Go generated symbols are kept unexported")
 	useDynamicLoading = flag.Bool("dynamic-loading", false, "use dynamic loading")
-	errors            = flag.Bool("errors", true, "enable error handling")
+	noerrors          = flag.Bool("noerrors", false, "disable error handling")
 )
 
 func usage() {

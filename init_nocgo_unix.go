@@ -3,6 +3,7 @@
 package openssl
 
 import (
+	"errors"
 	"unsafe"
 
 	"github.com/golang-fips/openssl/v2/internal/ossl"
@@ -10,9 +11,9 @@ import (
 
 // dlopen for nocgo mode - returns a dummy handle since libraries are already linked
 func dlopen(file string) (handle unsafe.Pointer, err error) {
-	handle, _ = ossl.Dlopen(unsafe.StringData(file+"\x00"), 1|4)
+	handle = ossl.Dlopen(unsafe.StringData(file+"\x00"), 1|4)
 	if handle == nil {
-		panic("Dlopen failed in nocgo mode")
+		return nil, errors.New(goString(ossl.Dlerror()))
 	}
 	return handle, nil
 }

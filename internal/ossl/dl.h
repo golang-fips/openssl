@@ -9,5 +9,6 @@
 
 void *dlopen(const char *path, int flags);
 void *dlsym(void *handle, const char *symbol);
+char *dlerror(void);
 
 #endif // _GO_DL_SHIMS_H

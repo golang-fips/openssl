@@ -337,7 +337,7 @@ func generateGoFn(fn *mkcgo.Func, w io.Writer) {
 		return
 	}
 	goType, needCast := cTypeToGo(fn.Ret, false)
-	if fn.NoError || !*errors {
+	if fn.NoError || *noerrors {
 		fmt.Fprintf(w, " %s ", goType)
 	} else {
 		fmt.Fprintf(w, " (%s, error) ", goType)
@@ -350,7 +350,7 @@ func generateGoFn(fn *mkcgo.Func, w io.Writer) {
 		goType = fmt.Sprintf("(%s)(unsafe.Pointer", goType)
 		needUnsafeCast = true
 	}
-	if fn.NoError || !*errors {
+	if fn.NoError || *noerrors {
 		// No error handling, just cast the return value if necessary.
 		fmt.Fprintf(w, "\treturn ")
 		if needCast {
@@ -631,44 +631,7 @@ func fnCNameAvailable(fn *mkcgo.Func) string {
 
 // fnNeedErrWrapper reports whether function fn needs an error wrapper.
 func fnNeedErrWrapper(fn *mkcgo.Func) bool {
-	return *errors && !fn.NoError && !isVoid(fn.Ret)
-}
-
-// isOpenSSLErrorCheckFunction reports whether function fn should have
-// OpenSSL-style error checking (checking return codes for failure).
-func isOpenSSLErrorCheckFunction(fn *mkcgo.Func) bool {
-	// Most OpenSSL functions that return int follow the pattern:
-	// 1 = success, 0 = failure for boolean-style functions
-	// > 0 = success, <= 0 = failure for size/count functions
-
-	// Skip functions that don't return integers
-	goRetType, _ := cTypeToGo(fn.Ret, false)
-	if strings.HasPrefix(goRetType, "*") {
-		// Pointer return functions typically return NULL on failure
-		return true
-	}
-
-	// Check if it's an integer type that could be an error code
-	if goRetType == "int32" || goRetType == "int" || goRetType == "uint32" {
-		// Skip functions that are clearly not error-returning
-		name := fn.Name
-
-		// Functions that return version numbers, sizes, or other values should not be error-checked
-		if strings.Contains(name, "version") ||
-			strings.Contains(name, "size") ||
-			strings.Contains(name, "get_bits") ||
-			strings.Contains(name, "num_") ||
-			strings.HasSuffix(name, "_id") ||
-			strings.Contains(name, "nid2") ||
-			name == "ERR_get_error_line" ||
-			name == "ERR_get_error_all" {
-			return false
-		}
-
-		return true
-	}
-
-	return false
+	return !*noerrors && !fn.NoError && !isVoid(fn.Ret)
 }
 
 // fnCalledFromGo reports whether function fn is called from Go code.
@@ -730,7 +693,7 @@ func needsAssembly(src *mkcgo.Source) bool {
 		if !fnCalledFromGo(fn) {
 			continue
 		}
-		if fn.Name == "dlopen" || fn.Name == "dlsym" {
+		if fn.Name == "dlopen" || fn.Name == "dlsym" || fn.Name == "dlclose" {
 			return true
 		}
 	}
@@ -815,7 +778,7 @@ func generateNocgoGo(src *mkcgo.Source, w io.Writer, isZdlFile bool) {
 			}
 			fmt.Fprintf(w, "//go:linkname %s %s\n", localName, localName)
 		} else {
-			if fnName == "dlopen" || fnName == "dlsym" {
+			if fnName == "dlopen" || fnName == "dlsym" || fnName == "dlclose" {
 				fmt.Fprintf(w, "//go:cgo_import_dynamic _mkcgo_%s %s \"%s\"\n", fnName, fnName, frameworkPath)
 			}
 		}
@@ -852,8 +815,12 @@ func generateNocgoGo(src *mkcgo.Source, w io.Writer, isZdlFile bool) {
 	generateNocgoExterns(src.Externs, w)
 
 	// Generate trampoline address variables and wrapper functions
+	typedefs := make(map[string]string, len(src.TypeDefs))
+	for _, def := range src.TypeDefs {
+		typedefs[def.Name] = def.Type
+	}
 	for _, fn := range src.Funcs {
-		generateNocgoFn(src, fn, w)
+		generateNocgoFn(typedefs, src, fn, w)
 	}
 
 	// Generate MkcgoLoad and MkcgoUnload functions for each tag
@@ -950,7 +917,7 @@ func trampolineName(fn *mkcgo.Func) string {
 }
 
 // generateNocgoFn generates Go function wrapper for nocgo mode.
-func generateNocgoFn(src *mkcgo.Source, fn *mkcgo.Func, w io.Writer) {
+func generateNocgoFn(typedefs map[string]string, src *mkcgo.Source, fn *mkcgo.Func, w io.Writer) {
 	if fn.Variadic() {
 		fmt.Fprintf(w, "var _mkcgo_%s unsafe.Pointer\n\n", fn.Name)
 		// Nothing else to do.
@@ -965,7 +932,7 @@ func generateNocgoFn(src *mkcgo.Source, fn *mkcgo.Func, w io.Writer) {
 	}
 
 	// Generate trampoline address variable only for dlopen and dlsym
-	if fn.Name == "dlopen" || fn.Name == "dlsym" {
+	if fn.Name == "dlopen" || fn.Name == "dlsym" || fn.Name == "dlclose" {
 		fmt.Fprintf(w, "var %s uintptr\n\n", trampolineName(fn))
 	} else if fn.VariadicTarget == "" {
 		fmt.Fprintf(w, "var _mkcgo_%s unsafe.Pointer\n\n", fn.Name)
@@ -1048,28 +1015,25 @@ func generateNocgoFn(src *mkcgo.Source, fn *mkcgo.Func, w io.Writer) {
 	if fn.Ret != "" && fn.Ret != "void" {
 		goRetType, _ := cTypeToGo(fn.Ret, false)
 		if fnNeedErrWrapper(fn) {
-			// Check if this is an OpenSSL function that returns success/failure codes
-			if isOpenSSLErrorCheckFunction(fn) {
-				if strings.HasPrefix(goRetType, "*") {
-					// Pointer return types need to go through unsafe.Pointer
-					fmt.Fprintf(w, "\tif r0 == 0 {\n")
-					fmt.Fprintf(w, "\t\treturn nil, newMkcgoErr(\"%s\", nil)\n", fn.Name)
-					fmt.Fprintf(w, "\t}\n")
-					fmt.Fprintf(w, "\treturn (%s)(unsafe.Pointer(r0)), nil\n", goRetType)
-				} else {
-					// For integer returns, check common OpenSSL failure patterns
-					fmt.Fprintf(w, "\tif int32(r0) <= 0 {\n")
-					fmt.Fprintf(w, "\t\treturn 0, newMkcgoErr(\"%s\", nil)\n", fn.Name)
-					fmt.Fprintf(w, "\t}\n")
-					fmt.Fprintf(w, "\treturn %s(r0), nil\n", goRetType)
-				}
+			errCond := "<= 0"
+			zeroVal := "0"
+			if fn.ErrCond != "" {
+				errCond = fn.ErrCond
+			} else if strings.Contains(fn.Ret, "*") {
+				errCond = "== nil"
+				zeroVal = "nil"
+			} else if typ, ok := typedefs[fn.Ret]; ok && typ == "void*" {
+				errCond = "== nil"
+				zeroVal = "nil"
+			}
+			fmt.Fprintf(w, "\tif %s(r0) %s {\n", goRetType, errCond)
+			fmt.Fprintf(w, "\t\treturn %s, newMkcgoErr(\"%s\", nil)\n", zeroVal, fn.Name)
+			fmt.Fprintf(w, "\t}\n")
+			if strings.HasPrefix(goRetType, "*") {
+				// Pointer return types need to go through unsafe.Pointer
+				fmt.Fprintf(w, "\treturn (%s)(unsafe.Pointer(r0)), nil\n", goRetType)
 			} else {
-				if strings.HasPrefix(goRetType, "*") {
-					// Pointer return types need to go through unsafe.Pointer
-					fmt.Fprintf(w, "\treturn (%s)(unsafe.Pointer(r0)), nil\n", goRetType)
-				} else {
-					fmt.Fprintf(w, "\treturn %s(r0), nil\n", goRetType)
-				}
+				fmt.Fprintf(w, "\treturn %s(r0), nil\n", goRetType)
 			}
 		} else {
 			if strings.HasPrefix(goRetType, "*") {
@@ -1092,7 +1056,7 @@ func generateNocgoFnBody(src *mkcgo.Source, fn *mkcgo.Func, newR0 bool, w io.Wri
 
 	// Determine function reference (static pointer or trampoline)
 	var functionRef string
-	if fn.Name == "dlopen" || fn.Name == "dlsym" {
+	if fn.Name == "dlopen" || fn.Name == "dlsym" || fn.Name == "dlclose" {
 		functionRef = trampolineName(fn)
 	} else {
 		functionRef = fmt.Sprintf("uintptr(_mkcgo_%s)", fn.ImportName())

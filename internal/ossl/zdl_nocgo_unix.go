@@ -11,16 +11,23 @@ import (
 //go:cgo_import_dynamic _mkcgo_dlopen dlopen ""
 //go:cgo_import_dynamic _mkcgo_dlsym dlsym ""
 
+var _mkcgo_dlerror unsafe.Pointer
+
+func Dlerror() *byte {
+	r0, _, _ := syscallN(uintptr(_mkcgo_dlerror))
+	return (*byte)(unsafe.Pointer(r0))
+}
+
 var _mkcgo_dlopen_trampoline_addr uintptr
 
-func Dlopen(path *byte, flags int32) (unsafe.Pointer, error) {
+func Dlopen(path *byte, flags int32) unsafe.Pointer {
 	r0, _, _ := syscallN(_mkcgo_dlopen_trampoline_addr, uintptr(unsafe.Pointer(path)), uintptr(flags))
-	return unsafe.Pointer(r0), nil
+	return unsafe.Pointer(r0)
 }
 
 var _mkcgo_dlsym_trampoline_addr uintptr
 
-func Dlsym(handle unsafe.Pointer, symbol *byte) (unsafe.Pointer, error) {
+func Dlsym(handle unsafe.Pointer, symbol *byte) unsafe.Pointer {
 	r0, _, _ := syscallN(_mkcgo_dlsym_trampoline_addr, uintptr(handle), uintptr(unsafe.Pointer(symbol)))
-	return unsafe.Pointer(r0), nil
+	return unsafe.Pointer(r0)
 }
