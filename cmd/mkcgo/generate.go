@@ -817,11 +817,11 @@ func generateNocgoGo(src *mkcgo.Source, w io.Writer, isZdlFile bool) {
 	// Generate trampoline address variables and wrapper functions
 	typePtrs := make(map[string]bool, len(src.TypeDefs))
 	for _, def := range src.TypeDefs {
-		if !strings.ContainsRune(def.Name, '*') {
+		if !strings.ContainsRune(def.Type, '*') {
 			continue
 		}
-		name, _ := cTypeToGo(def.Name, false)
-		typePtrs[name] = true
+		typ, _ := cTypeToGo(def.Name, false)
+		typePtrs[typ] = true
 	}
 	for _, fn := range src.Funcs {
 		generateNocgoFn(typePtrs, src, fn, w)
