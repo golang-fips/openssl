@@ -853,18 +853,6 @@ func generateNocgoGo(src *mkcgo.Source, w io.Writer, isZdlFile bool) {
 
 	// Generate trampoline address variables and wrapper functions
 	for _, fn := range src.Funcs {
-		// For base variadic functions, only generate variable if they are targets for wrapper functions
-		if fn.Variadic() {
-			fmt.Fprintf(w, "var _mkcgo_%s unsafe.Pointer\n\n", fn.Name)
-			continue
-		}
-		if fn.Optional {
-			// Generate a function that returns true if the function is available.
-			// For nocgo mode, check if the function pointer is loaded.
-			fmt.Fprintf(w, "func %s() bool {\n", fnGoNameAvailable(fn))
-			fmt.Fprintf(w, "\treturn %s != nil\n", fnCName(fn))
-			fmt.Fprintf(w, "}\n\n")
-		}
 		generateNocgoFn(src, fn, w)
 	}
 
@@ -963,7 +951,18 @@ func trampolineName(fn *mkcgo.Func) string {
 
 // generateNocgoFn generates Go function wrapper for nocgo mode.
 func generateNocgoFn(src *mkcgo.Source, fn *mkcgo.Func, w io.Writer) {
-	goFnName := goSymName(fn.Name)
+	if fn.Variadic() {
+		fmt.Fprintf(w, "var _mkcgo_%s unsafe.Pointer\n\n", fn.Name)
+		// Nothing else to do.
+		return
+	}
+	if fn.Optional {
+		// Generate a function that returns true if the function is available.
+		// For nocgo mode, check if the function pointer is loaded.
+		fmt.Fprintf(w, "func %s() bool {\n", fnGoNameAvailable(fn))
+		fmt.Fprintf(w, "\treturn %s != nil\n", fnCName(fn))
+		fmt.Fprintf(w, "}\n\n")
+	}
 
 	// Generate trampoline address variable only for dlopen and dlsym
 	if fn.Name == "dlopen" || fn.Name == "dlsym" {
@@ -973,7 +972,7 @@ func generateNocgoFn(src *mkcgo.Source, fn *mkcgo.Func, w io.Writer) {
 	}
 
 	// Generate Go wrapper function
-	fmt.Fprintf(w, "func %s(", goFnName)
+	fmt.Fprintf(w, "func %s(", goSymName(fn.Name))
 
 	// Generate parameters
 	paramCount := 0
