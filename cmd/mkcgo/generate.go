@@ -1156,7 +1156,7 @@ func macosDarwinArm64Params(src *mkcgo.Source, fn *mkcgo.Func, w io.Writer) bool
 			fmt.Fprint(w, goParam)
 			continue
 		}
-		paramSize := cTypeSize(src, param.Type)
+		paramSize := cTypeSize(src, param.Type, "darwin")
 		if stackOffset%8 == 0 || stackOffset%8+paramSize > 8 {
 			fmt.Fprintf(w, ", ")
 		} else {
@@ -1169,7 +1169,7 @@ func macosDarwinArm64Params(src *mkcgo.Source, fn *mkcgo.Func, w io.Writer) bool
 	return needSpecialHandling
 }
 
-func cTypeSize(src *mkcgo.Source, name string) int {
+func cTypeSize(src *mkcgo.Source, name string, goos string) int {
 	if strings.Contains(name, "*") {
 		return 8
 	}
@@ -1200,6 +1200,9 @@ func cTypeSize(src *mkcgo.Source, name string) int {
 	case "int32_t", "uint32_t", "int", "unsigned int", "float":
 		return 4
 	case "long", "long int", "unsigned long", "unsigned long int":
+		if goos == "darwin" {
+			return 8
+		}
 		return 4
 	default:
 		// Consider all other types as 8 bytes.
