@@ -87,7 +87,7 @@ func newMkcgoErr(msg string, errst C.mkcgo_err_state) error {
 	b.WriteString(msg)
 	b.WriteString("\nopenssl error(s):")
 	for i := range C.ERR_NUM_MAX {
-		e := uint32(oerrst.code[i])
+		e := uint64(oerrst.code[i])
 		if e == 0 {
 			break
 		}
