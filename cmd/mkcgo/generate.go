@@ -462,7 +462,7 @@ var cstdTypesToGo = map[string]string{
 	"int":                "int32",
 	"unsigned":           "uint32",
 	"unsigned int":       "uint32",
-	"long":               "int64",
+	"long":               "uint32",
 	"unsigned long":      "uint32",
 	"long long":          "int64",
 	"unsigned long long": "uint64",
