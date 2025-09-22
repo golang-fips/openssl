@@ -714,15 +714,10 @@ func generateNocgoGo(src *mkcgo.Source, w io.Writer, isZdlFile bool) {
 
 	fmt.Fprintf(w, "package %s\n\n", *packageName)
 
-	needsRuntime := false
-
 	// Check if we need runtime package (for variadic functions with ARM64 handling)
-	for _, fn := range src.Funcs {
-		if fn.Attrs.VariadicTarget != "" {
-			needsRuntime = true
-			break
-		}
-	}
+	needsRuntime := slices.ContainsFunc(src.Funcs, func(fn *mkcgo.Func) bool {
+		return fn.Attrs.VariadicTarget != ""
+	})
 
 	// Import necessary packages for nocgo mode
 	fmt.Fprintf(w, "import (\n")
@@ -752,34 +747,16 @@ func generateNocgoGo(src *mkcgo.Source, w io.Writer, isZdlFile bool) {
 	// Generate cgo_import_dynamic directives for each function
 	for _, fn := range src.Funcs {
 		// Skip base variadic functions unless they are targets for wrapper functions
-		if fn.Variadic() {
-			// Check if this variadic function is used as a target by any wrapper function
-			isTarget := false
-			for _, wrapperFn := range src.Funcs {
-				if wrapperFn.Attrs.VariadicTarget == fn.Name {
-					isTarget = true
-					break
-				}
-			}
-			if !isTarget {
-				continue
-			}
-		}
 		// Variadic wrapper functions don't need their own imports since they call the variadic target
 		if fn.Attrs.VariadicTarget != "" {
 			continue
 		}
-		fnName := fn.Name
-		frameworkPath := getFrameworkPath(fn.Framework)
 		if fn.Static {
-			localName := fnName
-			if !strings.HasPrefix(fnName, "go_") {
-				localName = "go_" + fnName
-			}
+			localName := strings.TrimPrefix(fn.Name, "go_")
 			fmt.Fprintf(w, "//go:linkname %s %s\n", localName, localName)
 		} else {
-			if fnName == "dlopen" || fnName == "dlsym" || fnName == "dlclose" {
-				fmt.Fprintf(w, "//go:cgo_import_dynamic _mkcgo_%s %s \"%s\"\n", fnName, fnName, frameworkPath)
+			if fn.Name == "dlopen" || fn.Name == "dlsym" || fn.Name == "dlclose" {
+				fmt.Fprintf(w, "//go:cgo_import_dynamic _mkcgo_%s %s \"%s\"\n", fn.Name, fn.Name, getFrameworkPath(fn.Framework))
 			}
 		}
 	}
@@ -837,10 +814,15 @@ func generateNocgoAliases(typedefs []*mkcgo.TypeDef, w io.Writer) {
 
 	// Handle typedefs first, as they can create proper type aliases
 	for _, typedef := range typedefs {
-		plain := strings.TrimPrefix(typedef.Name, "_")
-		if !seenTypes[plain] {
-			fmt.Fprintf(w, "type %s unsafe.Pointer\n", plain)
-			seenTypes[plain] = true
+		// For basic types, make it an alias to the appropriate Go type
+		goType, _ := cTypeToGo(typedef.Type, false)
+		name := strings.TrimPrefix(typedef.Name, "_")
+		if goType != "" && goType != "unsafe.Pointer" {
+			fmt.Fprintf(w, "type %s = %s\n", name, goType)
+			seenTypes[name] = true
+		} else {
+			fmt.Fprintf(w, "type %s unsafe.Pointer\n", name)
+			seenTypes[name] = true
 		}
 	}
 

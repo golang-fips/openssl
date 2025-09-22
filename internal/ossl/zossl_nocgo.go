@@ -34,7 +34,7 @@ type EVP_SIGNATURE_PTR unsafe.Pointer
 type DSA_PTR unsafe.Pointer
 type EVP_KDF_PTR unsafe.Pointer
 type EVP_KDF_CTX_PTR unsafe.Pointer
-type point_conversion_form_t unsafe.Pointer
+type point_conversion_form_t = int32
 
 const (
 	POINT_CONVERSION_UNCOMPRESSED       = 4

@@ -27,7 +27,7 @@ func retrieveErrorState() *errState {
 		lines: make([]int32, 0, ERR_NUM_MAX),
 	}
 
-	for i := 0; i < ERR_NUM_MAX; i++ {
+	for range ERR_NUM_MAX {
 		var file *byte
 		var line int32
 
@@ -49,7 +49,7 @@ func retrieveErrorState() *errState {
 
 		if file != nil {
 			// Convert C string to Go string
-			filename := cstrToString(file)
+			filename := goString(file)
 			state.files = append(state.files, filename)
 		} else {
 			state.files = append(state.files, "")
@@ -57,18 +57,6 @@ func retrieveErrorState() *errState {
 	}
 
 	return state
-}
-
-// cstrToString converts a C string pointer to a Go string
-func cstrToString(p *byte) string {
-	if p == nil {
-		return ""
-	}
-	end := unsafe.Pointer(p)
-	for *(*byte)(end) != 0 {
-		end = unsafe.Add(end, 1)
-	}
-	return string(unsafe.Slice(p, uintptr(end)-uintptr(unsafe.Pointer(p))))
 }
 
 // newMkcgoErr creates a new error from OpenSSL error queue for nocgo version
@@ -107,13 +95,4 @@ func newMkcgoErr(msg string, errst interface{}) error {
 	}
 
 	return errors.New(b.String())
-}
-
-// checkOpenSSLResult checks an OpenSSL function result and returns an error if it failed
-// This is used to provide proper error handling in nocgo mode
-func checkOpenSSLResult(code int32, funcName string) error {
-	if code <= 0 {
-		return newMkcgoErr(funcName, nil)
-	}
-	return nil
 }
