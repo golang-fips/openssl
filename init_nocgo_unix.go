@@ -9,7 +9,6 @@ import (
 	"github.com/golang-fips/openssl/v2/internal/ossl"
 )
 
-// dlopen for nocgo mode - returns a dummy handle since libraries are already linked
 func dlopen(file string) (handle unsafe.Pointer, err error) {
 	handle = ossl.Dlopen(unsafe.StringData(file+"\x00"), 1|4)
 	if handle == nil {
@@ -18,8 +17,10 @@ func dlopen(file string) (handle unsafe.Pointer, err error) {
 	return handle, nil
 }
 
-// dlclose for nocgo mode - no-op since we don't actually open anything
 func dlclose(handle unsafe.Pointer) error {
-	// No-op since we don't actually open libraries in nocgo mode
+	if ossl.Dlclose(handle) != 0 {
+		errstr := goString(ossl.Dlerror())
+		return errors.New("openssl: can't close libcrypto: " + errstr)
+	}
 	return nil
 }

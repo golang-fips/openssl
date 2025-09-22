@@ -4,10 +4,8 @@
 #ifndef _GO_DL_SHIMS_H // only include this header once
 #define _GO_DL_SHIMS_H
 
-#include <stdlib.h> // size_t
-#include <stdint.h> // uint64_t
-
 void *dlopen(const char *path, int flags);
+int dlclose(void *handle);
 void *dlsym(void *handle, const char *symbol);
 char *dlerror(void);
 

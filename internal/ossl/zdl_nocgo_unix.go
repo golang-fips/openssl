@@ -8,8 +8,16 @@ import (
 	"unsafe"
 )
 
+//go:cgo_import_dynamic _mkcgo_dlclose dlclose ""
 //go:cgo_import_dynamic _mkcgo_dlopen dlopen ""
 //go:cgo_import_dynamic _mkcgo_dlsym dlsym ""
+
+var _mkcgo_dlclose_trampoline_addr uintptr
+
+func Dlclose(handle unsafe.Pointer) int32 {
+	r0, _, _ := syscallN(_mkcgo_dlclose_trampoline_addr, uintptr(handle))
+	return int32(r0)
+}
 
 var _mkcgo_dlerror unsafe.Pointer
 
