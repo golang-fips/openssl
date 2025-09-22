@@ -462,8 +462,6 @@ var cstdTypesToGo = map[string]string{
 	"int":                "int32",
 	"unsigned":           "uint32",
 	"unsigned int":       "uint32",
-	"long":               "int32",
-	"unsigned long":      "uint32",
 	"long long":          "int64",
 	"unsigned long long": "uint64",
 	"size_t":             "int",
@@ -472,6 +470,11 @@ var cstdTypesToGo = map[string]string{
 	"unsigned char":      "byte",
 	"signed char":        "int8",
 	"void":               "",
+	// On Windows, long and unsigned long are 32 bits, but on Unix they are 64 bits.
+	// We assume the Unix variant here, as it won't cause information loss when compiling
+	// for Windows.
+	"long":          "int64",
+	"unsigned long": "uint64",
 }
 
 // cstdTypesToCgo maps C standard types to special cgo types.
@@ -1156,7 +1159,7 @@ func macosDarwinArm64Params(src *mkcgo.Source, fn *mkcgo.Func, w io.Writer) bool
 			fmt.Fprint(w, goParam)
 			continue
 		}
-		paramSize := cTypeSize(src, param.Type, "darwin")
+		paramSize := cTypeSize(src, param.Type)
 		if stackOffset%8 == 0 || stackOffset%8+paramSize > 8 {
 			fmt.Fprintf(w, ", ")
 		} else {
@@ -1169,7 +1172,7 @@ func macosDarwinArm64Params(src *mkcgo.Source, fn *mkcgo.Func, w io.Writer) bool
 	return needSpecialHandling
 }
 
-func cTypeSize(src *mkcgo.Source, name string, goos string) int {
+func cTypeSize(src *mkcgo.Source, name string) int {
 	if strings.Contains(name, "*") {
 		return 8
 	}
@@ -1200,10 +1203,7 @@ func cTypeSize(src *mkcgo.Source, name string, goos string) int {
 	case "int32_t", "uint32_t", "int", "unsigned int", "float":
 		return 4
 	case "long", "long int", "unsigned long", "unsigned long int":
-		if goos == "darwin" {
-			return 8
-		}
-		return 4
+		return 8
 	default:
 		// Consider all other types as 8 bytes.
 		// We don't support types larger than 64 bits for now.

@@ -346,16 +346,16 @@ func ERR_clear_error() {
 	C._mkcgo_ERR_clear_error()
 }
 
-func ERR_error_string_n(e uint32, buf *byte, len int) {
+func ERR_error_string_n(e uint64, buf *byte, len int) {
 	C._mkcgo_ERR_error_string_n(C.ulong(e), (*C.char)(unsafe.Pointer(buf)), C.size_t(len))
 }
 
-func ERR_get_error_all(file **byte, line *int32, __func **byte, data **byte, flags *int32) uint32 {
-	return uint32(C._mkcgo_ERR_get_error_all((**C.char)(unsafe.Pointer(file)), (*C.int)(unsafe.Pointer(line)), (**C.char)(unsafe.Pointer(__func)), (**C.char)(unsafe.Pointer(data)), (*C.int)(unsafe.Pointer(flags))))
+func ERR_get_error_all(file **byte, line *int32, __func **byte, data **byte, flags *int32) uint64 {
+	return uint64(C._mkcgo_ERR_get_error_all((**C.char)(unsafe.Pointer(file)), (*C.int)(unsafe.Pointer(line)), (**C.char)(unsafe.Pointer(__func)), (**C.char)(unsafe.Pointer(data)), (*C.int)(unsafe.Pointer(flags))))
 }
 
-func ERR_get_error_line(file **byte, line *int32) uint32 {
-	return uint32(C._mkcgo_ERR_get_error_line((**C.char)(unsafe.Pointer(file)), (*C.int)(unsafe.Pointer(line))))
+func ERR_get_error_line(file **byte, line *int32) uint64 {
+	return uint64(C._mkcgo_ERR_get_error_line((**C.char)(unsafe.Pointer(file)), (*C.int)(unsafe.Pointer(line))))
 }
 
 func EVP_CIPHER_CTX_ctrl(ctx EVP_CIPHER_CTX_PTR, __type int32, arg int32, ptr unsafe.Pointer) (int32, error) {
@@ -1272,8 +1272,8 @@ func OpenSSL_version_num_Available() bool {
 	return C._mkcgo_available_OpenSSL_version_num() != 0
 }
 
-func OpenSSL_version_num() uint32 {
-	return uint32(C._mkcgo_OpenSSL_version_num())
+func OpenSSL_version_num() uint64 {
+	return uint64(C._mkcgo_OpenSSL_version_num())
 }
 
 func PKCS5_PBKDF2_HMAC(pass *byte, passlen int32, salt *byte, saltlen int32, iter int32, digest EVP_MD_PTR, keylen int32, out *byte) (int32, error) {

@@ -406,22 +406,22 @@ func ERR_clear_error() {
 
 var _mkcgo_ERR_error_string_n unsafe.Pointer
 
-func ERR_error_string_n(e uint32, buf *byte, len int) {
+func ERR_error_string_n(e uint64, buf *byte, len int) {
 	syscallN(uintptr(_mkcgo_ERR_error_string_n), uintptr(e), uintptr(unsafe.Pointer(buf)), uintptr(len))
 }
 
 var _mkcgo_ERR_get_error_all unsafe.Pointer
 
-func ERR_get_error_all(file **byte, line *int32, __func **byte, data **byte, flags *int32) uint32 {
+func ERR_get_error_all(file **byte, line *int32, __func **byte, data **byte, flags *int32) uint64 {
 	r0, _, _ := syscallN(uintptr(_mkcgo_ERR_get_error_all), uintptr(unsafe.Pointer(file)), uintptr(unsafe.Pointer(line)), uintptr(unsafe.Pointer(__func)), uintptr(unsafe.Pointer(data)), uintptr(unsafe.Pointer(flags)))
-	return uint32(r0)
+	return uint64(r0)
 }
 
 var _mkcgo_ERR_get_error_line unsafe.Pointer
 
-func ERR_get_error_line(file **byte, line *int32) uint32 {
+func ERR_get_error_line(file **byte, line *int32) uint64 {
 	r0, _, _ := syscallN(uintptr(_mkcgo_ERR_get_error_line), uintptr(unsafe.Pointer(file)), uintptr(unsafe.Pointer(line)))
-	return uint32(r0)
+	return uint64(r0)
 }
 
 var _mkcgo_EVP_CIPHER_CTX_ctrl unsafe.Pointer
@@ -1952,9 +1952,9 @@ func OpenSSL_version_num_Available() bool {
 
 var _mkcgo_OpenSSL_version_num unsafe.Pointer
 
-func OpenSSL_version_num() uint32 {
+func OpenSSL_version_num() uint64 {
 	r0, _, _ := syscallN(uintptr(_mkcgo_OpenSSL_version_num))
-	return uint32(r0)
+	return uint64(r0)
 }
 
 var _mkcgo_PKCS5_PBKDF2_HMAC unsafe.Pointer

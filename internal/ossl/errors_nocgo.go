@@ -14,7 +14,7 @@ const ERR_NUM_MAX = 16
 
 // errState represents the OpenSSL error state for nocgo version
 type errState struct {
-	codes []uint32
+	codes []uint64
 	files []string
 	lines []int32
 }
@@ -22,7 +22,7 @@ type errState struct {
 // retrieveErrorState retrieves errors from the OpenSSL error queue
 func retrieveErrorState() *errState {
 	state := &errState{
-		codes: make([]uint32, 0, ERR_NUM_MAX),
+		codes: make([]uint64, 0, ERR_NUM_MAX),
 		files: make([]string, 0, ERR_NUM_MAX),
 		lines: make([]int32, 0, ERR_NUM_MAX),
 	}
@@ -31,7 +31,7 @@ func retrieveErrorState() *errState {
 		var file *byte
 		var line int32
 
-		var code uint32
+		var code uint64
 		if OPENSSL_version_major_Available() && OPENSSL_version_major() >= 3 {
 			// OpenSSL 3 error handling
 			code = ERR_get_error_all(&file, &line, nil, nil, nil)
