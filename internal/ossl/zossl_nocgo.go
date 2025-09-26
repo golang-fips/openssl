@@ -34,7 +34,7 @@ type EVP_SIGNATURE_PTR unsafe.Pointer
 type DSA_PTR unsafe.Pointer
 type EVP_KDF_PTR unsafe.Pointer
 type EVP_KDF_CTX_PTR unsafe.Pointer
-type point_conversion_form_t = int32
+type Point_conversion_form_t = int32
 
 const (
 	POINT_CONVERSION_UNCOMPRESSED       = 4
@@ -440,7 +440,7 @@ func EC_POINT_oct2point(group EC_GROUP_PTR, p EC_POINT_PTR, buf *byte, len int, 
 
 var _mkcgo_EC_POINT_point2oct uintptr
 
-func EC_POINT_point2oct(group EC_GROUP_PTR, p EC_POINT_PTR, form point_conversion_form_t, buf *byte, len int, ctx BN_CTX_PTR) (int, error) {
+func EC_POINT_point2oct(group EC_GROUP_PTR, p EC_POINT_PTR, form Point_conversion_form_t, buf *byte, len int, ctx BN_CTX_PTR) (int, error) {
 	r0, _, _ := syscallN(_mkcgo_EC_POINT_point2oct, uintptr(group), uintptr(p), uintptr(form), uintptr(unsafe.Pointer(buf)), uintptr(len), uintptr(ctx))
 	runtime.KeepAlive(group)
 	runtime.KeepAlive(p)
