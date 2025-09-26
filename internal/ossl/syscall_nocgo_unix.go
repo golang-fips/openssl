@@ -4,13 +4,13 @@ package ossl
 
 import "unsafe"
 
-func dlsym(handle unsafe.Pointer, symbol string, optional bool) unsafe.Pointer {
+func dlsym(handle unsafe.Pointer, symbol string, optional bool) uintptr {
 	r0 := Dlsym(handle, unsafe.StringData(symbol))
 	if r0 == nil {
 		if !optional {
 			panic("cannot get required symbol " + symbol)
 		}
-		return nil
+		return 0
 	}
-	return unsafe.Pointer(r0)
+	return uintptr(r0)
 }

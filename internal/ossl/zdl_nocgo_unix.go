@@ -9,6 +9,7 @@ import (
 )
 
 //go:cgo_import_dynamic _mkcgo_dlclose dlclose ""
+//go:cgo_import_dynamic _mkcgo_dlerror dlerror ""
 //go:cgo_import_dynamic _mkcgo_dlopen dlopen ""
 //go:cgo_import_dynamic _mkcgo_dlsym dlsym ""
 
@@ -19,10 +20,10 @@ func Dlclose(handle unsafe.Pointer) int32 {
 	return int32(r0)
 }
 
-var _mkcgo_dlerror unsafe.Pointer
+var _mkcgo_dlerror_trampoline_addr uintptr
 
 func Dlerror() *byte {
-	r0, _, _ := syscallN(uintptr(_mkcgo_dlerror))
+	r0, _, _ := syscallN(_mkcgo_dlerror_trampoline_addr)
 	return (*byte)(unsafe.Pointer(r0))
 }
 

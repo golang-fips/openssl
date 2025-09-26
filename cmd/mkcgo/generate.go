@@ -689,15 +689,13 @@ func getFrameworkPath(dylib mkcgo.Framework) string {
 }
 
 // needsAssembly checks if assembly trampolines are needed for nocgo mode.
-// Returns true only if the source contains dlopen/dlsym functions that need trampolines.
 func needsAssembly(src *mkcgo.Source) bool {
-	// Check if we have dlopen or dlsym functions that need trampolines
+	if *mode == "dynload" {
+		return false
+	}
 	for _, fn := range src.Funcs {
 		if !fnCalledFromGo(fn) {
 			continue
-		}
-		if fn.Name == "dlopen" || fn.Name == "dlsym" || fn.Name == "dlclose" {
-			return true
 		}
 	}
 	return false
@@ -758,7 +756,7 @@ func generateNocgoGo(src *mkcgo.Source, w io.Writer, isZdlFile bool) {
 			localName := strings.TrimPrefix(fn.Name, "go_")
 			fmt.Fprintf(w, "//go:linkname %s %s\n", localName, localName)
 		} else {
-			if fn.Name == "dlopen" || fn.Name == "dlsym" || fn.Name == "dlclose" {
+			if *mode != "dynload" {
 				fmt.Fprintf(w, "//go:cgo_import_dynamic _mkcgo_%s %s \"%s\"\n", fn.Name, fn.Name, getFrameworkPath(fn.Framework))
 			}
 		}
@@ -887,13 +885,13 @@ func trampolineName(fn *mkcgo.Func) string {
 	if *mode == "dynload" {
 		return fmt.Sprintf("_mkcgo_%s", fn.ImportName())
 	}
-	return fmt.Sprintf("_mkcgo_%s_trampoline_addr", fn.Name)
+	return fmt.Sprintf("_mkcgo_%s_trampoline_addr", fn.ImportName())
 }
 
 // generateNocgoFn generates Go function wrapper for nocgo mode.
 func generateNocgoFn(typePtrs map[string]bool, src *mkcgo.Source, fn *mkcgo.Func, w io.Writer) {
 	if fn.Variadic() {
-		fmt.Fprintf(w, "var _mkcgo_%s unsafe.Pointer\n\n", fn.Name)
+		fmt.Fprintf(w, "var %s uintptr\n\n", trampolineName(fn))
 		// Nothing else to do.
 		return
 	}
@@ -901,15 +899,13 @@ func generateNocgoFn(typePtrs map[string]bool, src *mkcgo.Source, fn *mkcgo.Func
 		// Generate a function that returns true if the function is available.
 		// For nocgo mode, check if the function pointer is loaded.
 		fmt.Fprintf(w, "func %s() bool {\n", fnGoNameAvailable(fn))
-		fmt.Fprintf(w, "\treturn %s != nil\n", fnCName(fn))
+		fmt.Fprintf(w, "\treturn %s != 0\n", fnCName(fn))
 		fmt.Fprintf(w, "}\n\n")
 	}
 
-	// Generate trampoline address variable only for dlopen and dlsym
-	if fn.Name == "dlopen" || fn.Name == "dlsym" || fn.Name == "dlclose" {
+	// Generate trampoline address variable
+	if fn.VariadicTarget == "" {
 		fmt.Fprintf(w, "var %s uintptr\n\n", trampolineName(fn))
-	} else if fn.VariadicTarget == "" {
-		fmt.Fprintf(w, "var _mkcgo_%s unsafe.Pointer\n\n", fn.Name)
 	}
 
 	// Generate Go wrapper function
@@ -1026,25 +1022,15 @@ func generateNocgoFn(typePtrs map[string]bool, src *mkcgo.Source, fn *mkcgo.Func
 
 // generateNocgoFnBody generates Go function wrapper body for nocgo mode.
 func generateNocgoFnBody(src *mkcgo.Source, fn *mkcgo.Func, newR0 bool, w io.Writer) {
-	syscallFunc := "syscallN"
-
-	// Determine function reference (static pointer or trampoline)
-	var functionRef string
-	if fn.Name == "dlopen" || fn.Name == "dlsym" || fn.Name == "dlclose" {
-		functionRef = trampolineName(fn)
-	} else {
-		functionRef = fmt.Sprintf("uintptr(_mkcgo_%s)", fn.ImportName())
-	}
-
-	// Generate the syscall invocation with proper argument handling for other functions
+	// Generate the syscall invocation with proper argument handling
 	if fn.Ret != "" && fn.Ret != "void" {
 		colon := ":"
 		if !newR0 {
 			colon = ""
 		}
-		fmt.Fprintf(w, "\tr0, _, _ %s= %s(%s", colon, syscallFunc, functionRef)
+		fmt.Fprintf(w, "\tr0, _, _ %s= syscallN(%s", colon, trampolineName(fn))
 	} else {
-		fmt.Fprintf(w, "\t%s(%s", syscallFunc, functionRef)
+		fmt.Fprintf(w, "\tsyscallN(%s", trampolineName(fn))
 	}
 
 	// Add actual parameters
@@ -1281,7 +1267,7 @@ func generateMkcgoLoadFunctions(src *mkcgo.Source, w io.Writer) {
 				for _, tagAttr := range tags {
 					if tagAttr.Tag == tag {
 						if *nocgo {
-							fmt.Fprintf(w, "\t_mkcgo_%s = nil\n", fn.Name)
+							fmt.Fprintf(w, "\t_mkcgo_%s = 0\n", fn.Name)
 						} else {
 							fmt.Fprintf(w, "\t_g_%s = NULL;\n", fn.ImportName())
 						}
