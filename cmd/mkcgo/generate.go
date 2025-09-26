@@ -715,16 +715,9 @@ func generateNocgoGo(src *mkcgo.Source, w io.Writer, isZdlFile bool) {
 
 	fmt.Fprintf(w, "package %s\n\n", *packageName)
 
-	// Check if we need runtime package (for variadic functions with ARM64 handling)
-	needsRuntime := slices.ContainsFunc(src.Funcs, func(fn *mkcgo.Func) bool {
-		return fn.Attrs.VariadicTarget != ""
-	})
-
 	// Import necessary packages for nocgo mode
 	fmt.Fprintf(w, "import (\n")
-	if needsRuntime {
-		fmt.Fprintf(w, "\t\"runtime\"\n")
-	}
+	fmt.Fprintf(w, "\t\"runtime\"\n")
 	fmt.Fprintf(w, "\t\"unsafe\"\n")
 	fmt.Fprintf(w, ")\n\n")
 
@@ -951,9 +944,9 @@ func generateNocgoFn(typePtrs map[string]bool, src *mkcgo.Source, fn *mkcgo.Func
 	// Special handling for MacOS ARM64 stack params
 	// Generate architecture-specific code
 	var tmp strings.Builder
-	needsSpecalHandling := macosDarwinArm64Params(src, fn, &tmp)
+	needsSpecialHandling := macosDarwinArm64Params(src, fn, &tmp)
 
-	if needsSpecalHandling {
+	if needsSpecialHandling {
 		fmt.Fprintf(w, "\tvar r0 uintptr\n")
 		fmt.Fprintf(w, "\tif runtime.GOOS == \"darwin\" && runtime.GOARCH == \"arm64\" {\n")
 		fmt.Fprintf(w, "\t\t")
@@ -976,9 +969,23 @@ func generateNocgoFn(typePtrs map[string]bool, src *mkcgo.Source, fn *mkcgo.Func
 		fmt.Fprintf(w, "syscallN(%s, %s)\n", functionRef, tmp.String())
 		fmt.Fprintf(w, "\t} else {\n")
 	}
-	generateNocgoFnBody(src, fn, !needsSpecalHandling, w)
-	if needsSpecalHandling {
+	generateNocgoFnBody(src, fn, !needsSpecialHandling, w)
+	if needsSpecialHandling {
 		fmt.Fprintf(w, "\t}\n")
+	}
+
+	for _, param := range fn.Params {
+		// Skip void parameters
+		if param.Type == "void" {
+			continue
+		}
+
+		// Convert C types to Go types for nocgo mode
+		goType, _ := cTypeToGo(param.Type, false)
+		_, isPtr := typePtrs[goType]
+		if isPtr || strings.HasPrefix(goType, "*") {
+			fmt.Fprintf(w, "\truntime.KeepAlive(%s)\n", param.Name)
+		}
 	}
 
 	// Generate return statement - only include error for functions that need error wrappers

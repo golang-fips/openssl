@@ -5,6 +5,7 @@
 package ossl
 
 import (
+	"runtime"
 	"unsafe"
 )
 
@@ -31,6 +32,7 @@ var _mkcgo_dlopen_trampoline_addr uintptr
 
 func Dlopen(path *byte, flags int32) unsafe.Pointer {
 	r0, _, _ := syscallN(_mkcgo_dlopen_trampoline_addr, uintptr(unsafe.Pointer(path)), uintptr(flags))
+	runtime.KeepAlive(path)
 	return unsafe.Pointer(r0)
 }
 
@@ -38,5 +40,6 @@ var _mkcgo_dlsym_trampoline_addr uintptr
 
 func Dlsym(handle unsafe.Pointer, symbol *byte) unsafe.Pointer {
 	r0, _, _ := syscallN(_mkcgo_dlsym_trampoline_addr, uintptr(handle), uintptr(unsafe.Pointer(symbol)))
+	runtime.KeepAlive(symbol)
 	return unsafe.Pointer(r0)
 }
