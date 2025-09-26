@@ -749,7 +749,10 @@ func generateNocgoGo(src *mkcgo.Source, w io.Writer, isZdlFile bool) {
 			continue
 		}
 		if fn.Static {
-			localName := strings.TrimPrefix(fn.Name, "go_")
+			localName := fn.Name
+			if !strings.HasPrefix(localName, "go_") {
+				localName = "go_" + localName
+			}
 			fmt.Fprintf(w, "//go:linkname %s %s\n", localName, localName)
 		} else {
 			if dynamic() {
