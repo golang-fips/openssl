@@ -4,8 +4,6 @@ package openssl
 
 import (
 	"unsafe"
-
-	"github.com/golang-fips/openssl/v2/internal/ossl"
 )
 
 // goString converts a C string pointer to a Go string for nocgo mode
@@ -33,24 +31,6 @@ func goBytes(ptr unsafe.Pointer, length int) []byte {
 	result := make([]byte, length)
 	copy(result, unsafe.Slice((*byte)(ptr), length))
 	return result
-}
-
-// VersionText returns the version text of the OpenSSL currently loaded.
-func VersionText() string {
-	// For nocgo, we need to convert the C string manually
-	ptr := ossl.OpenSSL_version(0)
-	return goString(ptr)
-}
-
-// isProviderAvailable reports whether a provider with the given name is available.
-// This function is used in export_test.go, but must be defined here as test files can't access C functions.
-func isProviderAvailable(name string) bool {
-	if vMajor == 1 {
-		return false
-	}
-	// Convert Go string to null-terminated byte slice for nocgo
-	providerName := append([]byte(name), 0)
-	return ossl.OSSL_PROVIDER_available(nil, &providerName[0]) == 1
 }
 
 func CheckLeaks() {

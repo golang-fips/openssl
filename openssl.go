@@ -344,3 +344,18 @@ func bigEndianUint64(b []byte) uint64 {
 	return uint64(b[7]) | uint64(b[6])<<8 | uint64(b[5])<<16 | uint64(b[4])<<24 |
 		uint64(b[3])<<32 | uint64(b[2])<<40 | uint64(b[1])<<48 | uint64(b[0])<<56
 }
+
+// VersionText returns the version text of the OpenSSL currently loaded.
+func VersionText() string {
+	// For nocgo, we need to convert the C string manually
+	return goString(ossl.OpenSSL_version(0))
+}
+
+// isProviderAvailable reports whether a provider with the given name is available.
+// This function is used in export_test.go, but must be defined here as test files can't access C functions.
+func isProviderAvailable(name string) bool {
+	if vMajor == 1 {
+		return false
+	}
+	return ossl.OSSL_PROVIDER_available(nil, unsafe.StringData(name+"\x00")) == 1
+}
