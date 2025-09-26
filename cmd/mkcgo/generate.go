@@ -700,7 +700,6 @@ func generateNocgoGo(src *mkcgo.Source, w io.Writer) {
 	// Output header notice and package declaration.
 	printHeader(w)
 
-	// Set build tag based on whether this is a zdl file
 	tags := "!cgo"
 	if *extratags != "" {
 		tags += " && (" + *extratags + ")"
@@ -1073,7 +1072,11 @@ func generateNocgoFnBody(src *mkcgo.Source, fn *mkcgo.Func, newR0 bool, w io.Wri
 // This function is only called when dynamic imports are used.
 func generateAssembly(src *mkcgo.Source, w io.Writer) {
 	printHeader(w)
-	fmt.Fprintf(w, "//go:build !cgo\n\n")
+	tags := "!cgo"
+	if *extratags != "" {
+		tags += " && (" + *extratags + ")"
+	}
+	fmt.Fprintf(w, "//go:build %s\n\n", tags)
 	fmt.Fprintf(w, "#include \"textflag.h\"\n \n")
 
 	// Generate trampolines for each function
