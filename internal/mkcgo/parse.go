@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
+	"go/token"
 	"io"
 	"slices"
 	"strings"
@@ -221,8 +222,7 @@ func normalizeParam(name, typ string) (string, string) {
 		name = name[1:]
 		typ += "*"
 	}
-	switch name {
-	case "type", "func":
+	if token.IsKeyword(name) || name == "error" {
 		name = "__" + name
 	}
 	// Remove duplicated spaces.

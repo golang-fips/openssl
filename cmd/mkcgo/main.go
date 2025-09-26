@@ -15,14 +15,13 @@ import (
 )
 
 var (
-	fileName          = flag.String("out", "", "output file name (standard output if omitted)")
-	includeHeader     = flag.String("include", "", "include header file")
-	packageName       = flag.String("package", "", "package name")
-	nocgo             = flag.Bool("nocgo", false, "don't use cgo")
-	mode              = flag.String("mode", "dynamic", "symbol load mode: dynamic, dynload")
-	private           = flag.Bool("private", false, "all Go generated symbols are kept unexported")
-	useDynamicLoading = flag.Bool("dynamic-loading", false, "use dynamic loading")
-	noerrors          = flag.Bool("noerrors", false, "disable error handling")
+	fileName      = flag.String("out", "", "output file name (standard output if omitted)")
+	includeHeader = flag.String("include", "", "include header file")
+	packageName   = flag.String("package", "", "package name")
+	nocgo         = flag.Bool("nocgo", false, "don't use cgo")
+	mode          = flag.String("mode", "dynamic", "symbol load mode: dynamic, dynload")
+	private       = flag.Bool("private", false, "all Go generated symbols are kept unexported")
+	noerrors      = flag.Bool("noerrors", false, "disable error handling")
 )
 
 func usage() {
@@ -30,6 +29,14 @@ func usage() {
 	flag.PrintDefaults()
 	fmt.Fprintf(os.Stderr, "\n")
 	os.Exit(1)
+}
+
+func dynamic() bool {
+	return *mode == "dynamic"
+}
+
+func dynload() bool {
+	return *mode == "dynload"
 }
 
 func main() {

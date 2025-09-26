@@ -1280,7 +1280,7 @@ var _mkcgo_EVP_PKEY_Q_keygen uintptr
 func EVP_PKEY_Q_keygen_EC(ctx OSSL_LIB_CTX_PTR, propq *byte, __type *byte, arg1 *byte) (EVP_PKEY_PTR, error) {
 	var r0 uintptr
 	if runtime.GOOS == "darwin" && runtime.GOARCH == "arm64" {
-		r0, _, _ = syscallN(uintptr(_mkcgo_EVP_PKEY_Q_keygen), uintptr(ctx), uintptr(unsafe.Pointer(propq)), uintptr(unsafe.Pointer(__type)), 0, 0, 0, 0, 0, uintptr(unsafe.Pointer(arg1)))
+		r0, _, _ = syscallN(_mkcgo_EVP_PKEY_Q_keygen, uintptr(ctx), uintptr(unsafe.Pointer(propq)), uintptr(unsafe.Pointer(__type)), 0, 0, 0, 0, 0, uintptr(unsafe.Pointer(arg1)))
 	} else {
 		r0, _, _ = syscallN(_mkcgo_EVP_PKEY_Q_keygen, uintptr(ctx), uintptr(unsafe.Pointer(propq)), uintptr(unsafe.Pointer(__type)), uintptr(unsafe.Pointer(arg1)))
 	}
@@ -1308,7 +1308,7 @@ func EVP_PKEY_Q_keygen_ED25519(ctx OSSL_LIB_CTX_PTR, propq *byte, __type *byte) 
 func EVP_PKEY_Q_keygen_RSA(ctx OSSL_LIB_CTX_PTR, propq *byte, __type *byte, arg1 int) (EVP_PKEY_PTR, error) {
 	var r0 uintptr
 	if runtime.GOOS == "darwin" && runtime.GOARCH == "arm64" {
-		r0, _, _ = syscallN(uintptr(_mkcgo_EVP_PKEY_Q_keygen), uintptr(ctx), uintptr(unsafe.Pointer(propq)), uintptr(unsafe.Pointer(__type)), 0, 0, 0, 0, 0, uintptr(arg1))
+		r0, _, _ = syscallN(_mkcgo_EVP_PKEY_Q_keygen, uintptr(ctx), uintptr(unsafe.Pointer(propq)), uintptr(unsafe.Pointer(__type)), 0, 0, 0, 0, 0, uintptr(arg1))
 	} else {
 		r0, _, _ = syscallN(_mkcgo_EVP_PKEY_Q_keygen, uintptr(ctx), uintptr(unsafe.Pointer(propq)), uintptr(unsafe.Pointer(__type)), uintptr(arg1))
 	}
