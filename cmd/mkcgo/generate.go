@@ -176,7 +176,6 @@ func generateCHeader(src *mkcgo.Source, w io.Writer) {
 	fmt.Fprintf(w, "typedef void* %s;\n", mkcgoErrState)
 	fmt.Fprintf(w, "%s mkcgo_err_retrieve();\n", mkcgoErrState)
 	fmt.Fprintf(w, "void mkcgo_err_free(%s);\n", mkcgoErrState)
-	fmt.Fprintf(w, "void mkcgo_err_clear();\n\n")
 
 	// Add forward declarations for loader functions.
 	for _, tag := range src.Tags() {
@@ -392,7 +391,6 @@ func generateCFn(typedefs map[string]string, fn *mkcgo.Func, w io.Writer) {
 	}
 
 	fmt.Fprintf(w, "%s %s(%s) {\n", fn.Ret, fnCName(fn), fnCErrWrapperParams(fn, true))
-	fmt.Fprintf(w, "\tmkcgo_err_clear();\n") // clear any previous error
 	fmt.Fprintf(w, "\t%s _ret = _g_%s(%s);\n", fn.Ret, fn.ImportName(), fnToCArgs(fn, false, true))
 	errCond := "<= 0"
 	if fn.ErrCond != "" {

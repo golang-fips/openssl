@@ -90,8 +90,6 @@ enum {
 typedef void* mkcgo_err_state;
 mkcgo_err_state mkcgo_err_retrieve();
 void mkcgo_err_free(mkcgo_err_state);
-void mkcgo_err_clear();
-
 void __mkcgo_load_(void* handle);
 void __mkcgo_unload_();
 void __mkcgo_load_111(void* handle);
