@@ -676,9 +676,7 @@ func goSymName(name string) string {
 
 // getFrameworkPath returns the absolute framework path.
 func getFrameworkPath(dylib mkcgo.Framework) string {
-	// Special case for OpenSSL which is a dylib, not a framework
 	if dylib.Name == "" && dylib.Version == "" {
-		// For OpenSSL on macOS, use the Homebrew path (ARM64 Macs use /opt/homebrew, Intel Macs use /usr/local)
 		return ""
 	}
 	return fmt.Sprintf("/System/Library/Frameworks/%s.framework/Versions/%s/%s", dylib.Name, dylib.Version, dylib.Name)
