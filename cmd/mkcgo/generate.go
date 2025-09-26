@@ -878,6 +878,13 @@ func generateNocgoExterns(externs []*mkcgo.Extern, w io.Writer) {
 }
 
 func trampolineName(fn *mkcgo.Func) string {
+	if fn.Static {
+		name := fn.Name
+		if !strings.HasPrefix(name, "go_") {
+			name = "go_" + name
+		}
+		return name
+	}
 	if dynload() {
 		return fmt.Sprintf("_mkcgo_%s", fn.ImportName())
 	}
@@ -887,7 +894,9 @@ func trampolineName(fn *mkcgo.Func) string {
 // generateNocgoFn generates Go function wrapper for nocgo mode.
 func generateNocgoFn(typePtrs map[string]bool, src *mkcgo.Source, fn *mkcgo.Func, w io.Writer) {
 	if fn.Variadic() {
-		fmt.Fprintf(w, "var %s uintptr\n\n", trampolineName(fn))
+		if !fn.Static {
+			fmt.Fprintf(w, "var %s uintptr\n\n", trampolineName(fn))
+		}
 		// Nothing else to do.
 		return
 	}
@@ -900,7 +909,7 @@ func generateNocgoFn(typePtrs map[string]bool, src *mkcgo.Source, fn *mkcgo.Func
 	}
 
 	// Generate trampoline address variable
-	if fn.VariadicTarget == "" {
+	if fn.VariadicTarget == "" && !fn.Static {
 		fmt.Fprintf(w, "var %s uintptr\n\n", trampolineName(fn))
 	}
 
@@ -958,15 +967,9 @@ func generateNocgoFn(typePtrs map[string]bool, src *mkcgo.Source, fn *mkcgo.Func
 		}
 
 		// Use static function pointer or trampoline address
-		var functionRef string
+		functionRef := trampolineName(fn)
 		if fn.Static {
-			localName := fn.Name
-			if !strings.HasPrefix(localName, "go_") {
-				localName = "go_" + localName
-			}
-			functionRef = fmt.Sprintf("uintptr(unsafe.Pointer(&%s))", localName)
-		} else {
-			functionRef = trampolineName(fn)
+			functionRef = fmt.Sprintf("uintptr(unsafe.Pointer(&%s))", functionRef)
 		}
 
 		fmt.Fprintf(w, "syscallN(%s, %s)\n", functionRef, tmp.String())
@@ -1032,15 +1035,20 @@ func generateNocgoFn(typePtrs map[string]bool, src *mkcgo.Source, fn *mkcgo.Func
 
 // generateNocgoFnBody generates Go function wrapper body for nocgo mode.
 func generateNocgoFnBody(src *mkcgo.Source, fn *mkcgo.Func, newR0 bool, w io.Writer) {
+	fnArg := trampolineName(fn)
+	if fn.Static {
+		fnArg = fmt.Sprintf("uintptr(unsafe.Pointer(&%s))", fnArg)
+	}
+
 	// Generate the syscall invocation with proper argument handling
 	if fn.Ret != "" && fn.Ret != "void" {
 		colon := ":"
 		if !newR0 {
 			colon = ""
 		}
-		fmt.Fprintf(w, "\tr0, _, _ %s= syscallN(%s", colon, trampolineName(fn))
+		fmt.Fprintf(w, "\tr0, _, _ %s= syscallN(%s", colon, fnArg)
 	} else {
-		fmt.Fprintf(w, "\tsyscallN(%s", trampolineName(fn))
+		fmt.Fprintf(w, "\tsyscallN(%s", fnArg)
 	}
 
 	// Add actual parameters
