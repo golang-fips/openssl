@@ -4,13 +4,19 @@ package openssl
 
 import (
 	"errors"
+	"runtime"
 	"unsafe"
 
 	"github.com/golang-fips/openssl/v2/internal/ossl"
 )
 
 func dlopen(file string) (handle unsafe.Pointer, err error) {
-	handle = ossl.Dlopen(unsafe.StringData(file+"\x00"), 1|4)
+	const RTLD_LAZY = 1
+	var RTLD_LOCAL = 0
+	if runtime.GOOS == "darwin" {
+		RTLD_LOCAL = 4 // darwin uses 4 as RTLD_LOCAL
+	}
+	handle = ossl.Dlopen(unsafe.StringData(file+"\x00"), int32(RTLD_LAZY|RTLD_LOCAL))
 	if handle == nil {
 		return nil, errors.New(goString(ossl.Dlerror()))
 	}
