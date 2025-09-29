@@ -683,7 +683,7 @@ func getFrameworkPath(dylib mkcgo.Framework) string {
 }
 
 // needsAssembly checks if assembly trampolines are needed for nocgo mode.
-func needsAssembly(src *mkcgo.Source) bool {
+func needsAssembly() bool {
 	return dynamic()
 }
 
