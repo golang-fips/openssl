@@ -16,12 +16,6 @@ typedef struct ossl_err_state_st {
 	char *file[ERR_NUM_MAX];
 } ossl_err_state;
 
-// mkcgo_err_clear clears the error queue in OpenSSL.
-void mkcgo_err_clear() {
-	// Clear the error queue.
-	_mkcgo_ERR_clear_error();
-}
-
 // mkcgo_err_retrieve retrieves the error state from OpenSSL.
 // It returns a pointer to a mkcgo_err_state structure
 // that contains the error codes, lines, and file names.
