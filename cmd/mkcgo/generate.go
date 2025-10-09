@@ -89,6 +89,11 @@ func generateGoCgo(src *mkcgo.Source, w io.Writer) {
 
 // generateGo124 generates Go source code Go 1.24 and later.
 func generateGo124(src *mkcgo.Source, w io.Writer) {
+	if !slices.ContainsFunc(src.Funcs, func(fn *mkcgo.Func) bool {
+		return fn.NoEscape || fn.NoCallback
+	}) {
+		return
+	}
 	// Output header notice and package declaration.
 	printHeader(w)
 	fmt.Fprintf(w, "//go:build go1.24 && !cmd_go_bootstrap\n\n")
