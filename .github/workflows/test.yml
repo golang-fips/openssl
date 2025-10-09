@@ -134,3 +134,25 @@ jobs:
         env:
           CGO_ENABLED: 0
           GOFLAGS: -tags=goexperiment.ms_go_nocgo_opensslcrypto
+
+  # Verify that golang-fips/openssl builds successfully without cgo enabled.
+  #
+  # A project can avoid attempting to build the openssl package by only
+  # importing it from Go files with a cgo build tag. However, this isn't always
+  # reasonable. In that case, we can help by making sure the openssl package
+  # builds successfully even without cgo.
+  #
+  # For example, the Microsoft build of Go compiles this module without cgo when
+  # running a cross-platform build.
+  #
+  # The golang-fips/openssl module can't do any crypto when built without cgo,
+  # but it exports a few simple functions and types.
+  #
+  # TODO: Remove once ms_go_nocgo_opensslcrypto is enabled by default.
+  cgolessbuild:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+    - name: Run Build
+      run: CGO_ENABLED=0 go build ./...
