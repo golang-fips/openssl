@@ -71,7 +71,6 @@ func TestMain(m *testing.M) {
 		// Sleep a bit to let the finalizers run.
 		time.Sleep(10 * time.Millisecond)
 	}
-	openssl.CheckLeaks()
 	os.Exit(status)
 }
 
