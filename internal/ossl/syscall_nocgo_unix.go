@@ -1,4 +1,4 @@
-//go:build !cgo && unix
+//go:build !cgo && unix && goexperiment.ms_go_nocgo_opensslcrypto
 
 package ossl
 
