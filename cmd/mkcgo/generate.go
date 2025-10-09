@@ -680,11 +680,6 @@ func getFrameworkPath(dylib mkcgo.Framework) string {
 	return fmt.Sprintf("/System/Library/Frameworks/%s.framework/Versions/%s/%s", dylib.Name, dylib.Version, dylib.Name)
 }
 
-// needsAssembly checks if assembly trampolines are needed for nocgo mode.
-func needsAssembly() bool {
-	return dynamic()
-}
-
 // generateNocgoGo generates Go source file for nocgo mode from src.
 func generateNocgoGo(src *mkcgo.Source, w io.Writer) {
 	// Output header notice and package declaration.
