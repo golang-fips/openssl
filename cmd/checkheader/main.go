@@ -11,8 +11,8 @@ import (
 	"github.com/golang-fips/openssl/v2/internal/mkcgo"
 )
 
-// checkheader is a static analyzer that detects incompatibilities between wrapper definitions and OpenSSL headers.
-// It generates a C source file where for each wrapper, the file declares a new symbol that's assigned to the symbol it represents in the actual OpenSSL headers.
+// checkheader is a static analyzer that detects incompatibilities between wrapper definitions and system headers.
+// It generates a C source file where for each wrapper, the file declares a new symbol that's assigned to the symbol it represents in the actual system headers.
 // This C file is then compiled using GCC. The compilation will succeed if everything is compatible, else it will
 // report a meaningful error.
 //
@@ -21,20 +21,20 @@ import (
 // - Blank lines are discarded.
 // - Comments are discarded unless they contain a C directive, i.e #include, #if or #endif. The directive in the comment is included in the output.
 // - Typedefs following the pattern "typedef void* _%name%_PTR" are translated into "#define %name% _%name%_PTR".
-// - Go constants are validated against their definition in the OpenSSL headers. Example:
+// - Go constants are validated against their definition in the system headers. Example:
 //   "const { _EVP_CTRL_GCM_SET_TAG = 0x11 }" => "_Static_assert(EVP_CTRL_GCM_SET_TAG == 0x11);"
-// - Function macros are validated against their definition in the OpenSSL headers. Example:
+// - Function macros are validated against their definition in the system headers. Example:
 //   "int RAND_bytes(unsigned char *a0, int a1)" => "int(*__check_0)(unsigned char *, int) = RAND_bytes;"
 
 const description = `
 Example: A check operation:
-  go run ./cmd/checkheader --ossl-include /usr/local/src/openssl-1.1.1/include -shim ./internal/ossl/shims.h
+  go run ./cmd/checkheader -include /usr/local/src/openssl-1.1.1/include -shim ./internal/ossl/shims.h
 Checkheader generates a C program and compiles it with gcc. The compilation verifies types and functions defined in the target
-header file match the definitions in --ossl-include.
+header file match the definitions in -include.
 `
 
-var osslInclude = flag.String("ossl-include", "", "OpenSSL include directory. Required.")
-var osslShim = flag.String("shim", "", "C header containing the OpenSSL wrappers. Required.")
+var shim = flag.String("shim", "", "C header containing the OpenSSL wrappers. Required.")
+var include = flag.String("include", "", "include directory")
 var work = flag.Bool("work", false, "print the name of the temporary C program file and do not delete it when exiting.")
 
 func main() {
@@ -44,20 +44,17 @@ func main() {
 		fmt.Fprintf(flag.CommandLine.Output(), "%s\n\n", description)
 	}
 	flag.Parse()
-	if *osslInclude == "" {
-		fmt.Fprintln(flag.CommandLine.Output(), "required flag not provided: --ossl-include")
-		flag.Usage()
-		os.Exit(1)
-	}
-	if *osslShim == "" {
+	if *shim == "" {
 		fmt.Fprintln(flag.CommandLine.Output(), "required flag not provided: -shim")
 		flag.Usage()
 		os.Exit(1)
 	}
-	if _, err := os.Stat(*osslInclude); err != nil {
-		log.Fatalf("OpenSSL include directory not found: %v\n", err)
+	if *include != "" {
+		if _, err := os.Stat(*include); err != nil {
+			log.Fatalf("OpenSSL include directory not found: %v\n", err)
+		}
 	}
-	s, err := generate(*osslShim)
+	s, err := generate(*shim)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -91,7 +88,7 @@ func gccRun(program string) error {
 		"-c",                      // skip linking
 		"-Werror",                 // promote all warnings to errors
 		"-DOPENSSL_NO_DEPRECATED", // hide deprecated functions
-		"-isystem", *osslInclude,  // OpenSSL include from --ossl-include must be preferred over system includes
+		"-isystem", *include,      // OpenSSL include from --isystem must be preferred over system includes
 		"-o", os.DevNull, // discard output
 		name)
 	p.Stdout = os.Stdout
