@@ -3,6 +3,24 @@
 // Package openssl provides access to OpenSSL cryptographic functions.
 package openssl
 
+/*
+#include <stdlib.h> // for free()
+
+static inline void
+go_openssl_do_leak_check(void)
+{
+#ifndef __has_feature
+#define __has_feature(x) 0
+#endif
+
+#if (defined(__SANITIZE_ADDRESS__) && __SANITIZE_ADDRESS__) ||	\
+    __has_feature(address_sanitizer)
+    extern void __lsan_do_leak_check(void);
+    __lsan_do_leak_check();
+#endif
+}
+*/
+import "C"
 import (
 	"errors"
 	"math/bits"
@@ -85,6 +103,11 @@ type fail string
 
 func (e fail) Error() string { return "openssl: " + string(e) + " failed" }
 
+// VersionText returns the version text of the OpenSSL currently loaded.
+func VersionText() string {
+	return C.GoString((*C.char)(unsafe.Pointer(ossl.OpenSSL_version(0))))
+}
+
 // FIPS returns true if OpenSSL is running in FIPS mode and there is
 // a provider available that supports FIPS. It returns false otherwise.
 // All OpenSSL functions used in here should be tagged with "init_1" or "init_3" in shims.h.
@@ -141,6 +164,17 @@ func FIPSCapable() bool {
 		return provFIPS == provDefault
 	}
 	return false
+}
+
+// isProviderAvailable checks if the provider with the given name is available.
+// This function is used in export_test.go, but must be defined here as test files can't access C functions.
+func isProviderAvailable(name string) bool {
+	if vMajor == 1 {
+		return false
+	}
+	providerName := C.CString(name)
+	defer C.free(unsafe.Pointer(providerName))
+	return ossl.OSSL_PROVIDER_available(nil, (*byte)(unsafe.Pointer(providerName))) == 1
 }
 
 // SetFIPS enables or disables FIPS mode.
@@ -255,7 +289,7 @@ func cryptoMalloc(n int) unsafe.Pointer {
 	if p == nil {
 		// Un-recover()-ably crash the program in the same manner as the
 		// C.malloc() wrapper function.
-		panic("openssl: CRYPTO_malloc failed")
+		runtime_throw("openssl: CRYPTO_malloc failed")
 	}
 	return p
 }
@@ -332,6 +366,10 @@ func bnToBinPad(bn ossl.BIGNUM_PTR, to []byte) error {
 	return err
 }
 
+func CheckLeaks() {
+	C.go_openssl_do_leak_check()
+}
+
 // versionAtOrAbove returns true when
 // (vMajor, vMinor, vPatch) >= (major, minor, patch),
 // compared lexicographically.
@@ -343,19 +381,4 @@ func bigEndianUint64(b []byte) uint64 {
 	_ = b[7] // bounds check hint to compiler; see golang.org/issue/14808
 	return uint64(b[7]) | uint64(b[6])<<8 | uint64(b[5])<<16 | uint64(b[4])<<24 |
 		uint64(b[3])<<32 | uint64(b[2])<<40 | uint64(b[1])<<48 | uint64(b[0])<<56
-}
-
-// VersionText returns the version text of the OpenSSL currently loaded.
-func VersionText() string {
-	// For nocgo, we need to convert the C string manually
-	return goString(ossl.OpenSSL_version(0))
-}
-
-// isProviderAvailable reports whether a provider with the given name is available.
-// This function is used in export_test.go, but must be defined here as test files can't access C functions.
-func isProviderAvailable(name string) bool {
-	if vMajor == 1 {
-		return false
-	}
-	return ossl.OSSL_PROVIDER_available(nil, unsafe.StringData(name+"\x00")) == 1
 }

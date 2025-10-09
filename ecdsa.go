@@ -2,6 +2,7 @@
 
 package openssl
 
+import "C"
 import (
 	"crypto"
 	"errors"

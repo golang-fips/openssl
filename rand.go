@@ -2,6 +2,7 @@
 
 package openssl
 
+import "C"
 import "github.com/golang-fips/openssl/v2/internal/ossl"
 
 type randReader int

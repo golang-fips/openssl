@@ -2,6 +2,7 @@
 
 package openssl
 
+import "C"
 import (
 	"errors"
 	"runtime"
@@ -95,7 +96,7 @@ func (k *PrivateKeyECDH) PublicKey() (*PublicKeyECDH, error) {
 		if err != nil {
 			return nil, err
 		}
-		bytes = goBytes(unsafe.Pointer(cbytes), int(n))
+		bytes = C.GoBytes(unsafe.Pointer(cbytes), C.int(n))
 		cryptoFree(unsafe.Pointer(cbytes))
 	default:
 		panic(errUnsupportedVersion())

@@ -2,6 +2,7 @@
 
 package openssl
 
+import "C"
 import (
 	"crypto"
 	"errors"
@@ -181,7 +182,7 @@ func loadHash(ch crypto.Hash) *hashAlgorithm {
 	case 3:
 		if prov := ossl.EVP_MD_get0_provider(hash.md); prov != nil {
 			cname := ossl.OSSL_PROVIDER_get0_name(prov)
-			switch goString(cname) {
+			switch C.GoString((*C.char)(unsafe.Pointer(cname))) {
 			case "default":
 				hash.provider = providerOSSLDefault
 				hash.marshallable = hash.magic != ""
