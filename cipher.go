@@ -1,8 +1,6 @@
-//go:build !cmd_go_bootstrap
+//go:build !cmd_go_bootstrap && cgo
 
 package openssl
-
-import "C"
 
 import (
 	"crypto/cipher"

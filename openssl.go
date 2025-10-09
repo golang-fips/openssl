@@ -1,9 +1,8 @@
-//go:build !cmd_go_bootstrap
+//go:build !cmd_go_bootstrap && cgo
 
 // Package openssl provides access to OpenSSL cryptographic functions.
 package openssl
 
-import "C"
 import (
 	"errors"
 	"math/bits"

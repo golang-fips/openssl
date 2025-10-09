@@ -1,6 +1,5 @@
 package openssl
 
-import "C"
 import "unsafe"
 
 // cString is a null-terminated string,
