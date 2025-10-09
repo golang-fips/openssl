@@ -47,7 +47,7 @@ jobs:
       env:
         GO_OPENSSL_VERSION_OVERRIDE: ${{ matrix.openssl-version }}
         CGO_ENABLED: 0
-        GOFLAGS: -tags=goexperiment.ms_go_nocgo_opensslcrypto
+        GOFLAGS: -tags=goexperiment.ms_nocgo_opensslcrypto
     - name: Run Test with address sanitizer
       run: |
         ok=true
@@ -82,7 +82,7 @@ jobs:
       env:
         GO_OPENSSL_VERSION_OVERRIDE: ${{ matrix.openssl-version }}
         CGO_ENABLED: 0
-        GOFLAGS: -tags=goexperiment.ms_go_nocgo_opensslcrypto
+        GOFLAGS: -tags=goexperiment.ms_nocgo_opensslcrypto
 
   mactest:
     strategy:
@@ -108,7 +108,7 @@ jobs:
       env:
         GO_OPENSSL_VERSION_OVERRIDE: ${{ matrix.openssl-version }}
         CGO_ENABLED: 0
-        GOFLAGS: -tags=goexperiment.ms_go_nocgo_opensslcrypto
+        GOFLAGS: -tags=goexperiment.ms_nocgo_opensslcrypto
 
   azurelinux:
     runs-on: ubuntu-latest
@@ -124,7 +124,7 @@ jobs:
       run: go test -v ./...
       env:
         CGO_ENABLED: 0
-        GOFLAGS: -tags=goexperiment.ms_go_nocgo_opensslcrypto
+        GOFLAGS: -tags=goexperiment.ms_nocgo_opensslcrypto
 
   mariner2:
     runs-on: ubuntu-latest
@@ -140,7 +140,7 @@ jobs:
       run: go test -v ./...
       env:
         CGO_ENABLED: 0
-        GOFLAGS: -tags=goexperiment.ms_go_nocgo_opensslcrypto
+        GOFLAGS: -tags=goexperiment.ms_nocgo_opensslcrypto
 
   # Verify that golang-fips/openssl builds successfully without cgo enabled.
   #
