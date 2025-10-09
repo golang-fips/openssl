@@ -59,8 +59,9 @@ func retrieveErrorState() *errState {
 	return state
 }
 
-// newMkcgoErr creates a new error from OpenSSL error queue for nocgo version
-// The errst parameter is ignored in nocgo mode, errors are retrieved directly from OpenSSL
+// newMkcgoErr creates a new error from the OpenSSL error queue for the nocgo version.
+// The errst parameter is present for API compatibility with the CGO implementation,
+// but is intentionally ignored in nocgo mode; errors are always retrieved directly from OpenSSL.
 func newMkcgoErr(msg string, errst interface{}) error {
 	// Retrieve error state from OpenSSL error queue
 	state := retrieveErrorState()
