@@ -23,7 +23,10 @@ var (
 	private       = flag.Bool("private", false, "all Go generated symbols are kept unexported")
 	noerrors      = flag.Bool("noerrors", false, "disable error handling")
 	extratags     = flag.String("tags", "", "tags to add to the generated files")
+	copyrightFile = flag.String("copyright", "", "file containing copyright notice to add to the generated files")
 )
+
+var copyright []byte
 
 func usage() {
 	fmt.Fprintf(os.Stderr, "usage: mkcgo [flags] [path ...]\n")
@@ -47,6 +50,14 @@ func main() {
 	if len(flag.Args()) == 0 {
 		fmt.Fprintln(os.Stderr, "no files to parse provided")
 		usage()
+	}
+
+	if *copyrightFile != "" {
+		var err error
+		copyright, err = os.ReadFile(*copyrightFile)
+		if err != nil {
+			log.Fatalf("failed to read copyright file: %v", err)
+		}
 	}
 
 	var src mkcgo.Source
