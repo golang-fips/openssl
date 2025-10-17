@@ -117,7 +117,7 @@ jobs:
     - name: Run Test CGO disabled
       run: go test -count 10 -v ./...
       env:
-        GO_OPENSSL_VERSION_OVERRIDE: ${{ matrix.openssl-version }}
+        GO_OPENSSL_VERSION_OVERRIDE: ${{ matrix.host.openssl-version }}
         CGO_ENABLED: 0
         GOFLAGS: -tags=goexperiment.ms_nocgo_opensslcrypto
 
