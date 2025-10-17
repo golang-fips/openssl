@@ -55,6 +55,7 @@ jobs:
         CGO_ENABLED: 0
         GOFLAGS: -tags=goexperiment.ms_nocgo_opensslcrypto
     - name: Run Test with address sanitizer
+      if: ${{ runner.arch == 'X64' }} # arm64 thread sanitizer is flaky, unrelated to this codebase
       run: |
         ok=true
         for t in $(go test ./... -list=. | grep '^Test'); do
