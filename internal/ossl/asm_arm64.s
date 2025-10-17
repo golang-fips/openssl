@@ -9,7 +9,7 @@
 
 GLOBL ·syscallNABI0(SB), NOPTR|RODATA, $8
 DATA ·syscallNABI0(SB)/8, $syscallN_trampoline(SB)
-TEXT syscallN_trampoline(SB),NOSPLIT,$0
+TEXT syscallN_trampoline(SB),NOSPLIT,$16
 	STP	(R19, R20), 16(RSP) // save old R19, R20
 	MOVD	R0, R19	// save struct pointer
 	MOVD	RSP, R20	// save stack pointer
