@@ -8,7 +8,11 @@
 #include "textflag.h"
 
 TEXT ·syscallNSystemStack_trampoline(SB),NOSPLIT,$16
-	MOVQ	AX, 0(SP)
+#ifdef GOOS_windows
+	MOVQ	CX, 0(SP)
+#else
+	MOVQ	DI, 0(SP)
+#endif
 	CALL	·syscallNSystemStack(SB)
 	RET
 
