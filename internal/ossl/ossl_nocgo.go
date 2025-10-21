@@ -9,9 +9,6 @@ import "unsafe"
 // on the underlying stream. In particular it is OK to Sum, then Write more,
 // then Sum again, and the second Sum acts as if the first didn't happen.
 func HashSum(ctx1, ctx2 EVP_MD_CTX_PTR, out []byte) error {
-	// Clear any existing errors
-	ERR_clear_error()
-
 	// Copy ctx1 to ctx2 using EVP_MD_CTX_copy_ex
 	code, err := EVP_MD_CTX_copy_ex(ctx2, ctx1)
 	if err != nil {
