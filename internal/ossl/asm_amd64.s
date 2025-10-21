@@ -16,6 +16,12 @@ TEXT ·syscallNSystemStack_trampoline(SB),NOSPLIT,$16
 	CALL	·syscallNSystemStack(SB)
 	RET
 
+#ifdef GOOS_windows
+#define RegArgsN 4
+#else
+#define RegArgsN 6
+#endif
+
 TEXT ·syscallNAsm(SB),NOSPLIT,$16-8
 	// Load pointer from stack (ABI0 calling convention)
 	// Store argument and original SP in a callee-saved register
@@ -42,19 +48,19 @@ TEXT ·syscallNAsm(SB),NOSPLIT,$16-8
 
 	// Reserve stack space for remaining args
 	MOVQ	CX, R12
-	SUBQ	$6, R12
+	SUBQ	$RegArgsN, R12
 	ADDQ	$1, R12 // make even number of words for stack alignment
 	ANDQ	$~1, R12
 	SHLQ	$3, R12
 	SUBQ	R12, SP
 
 	// Copy args to the stack.
-	// CX: count of stack arguments (n-6)
-	// SI: &args[6]
+	// CX: count of stack arguments (n-RegArgsN)
+	// SI: &args[RegArgsN]
 	// DI: copy of RSP
-	SUBQ	$6, CX
+	SUBQ	$RegArgsN, CX
 	MOVQ	R10, SI
-	ADDQ	$(8*6), SI
+	ADDQ	$(8*RegArgsN), SI
 	MOVQ	SP, DI
 	CLD
 	REP; MOVSQ
