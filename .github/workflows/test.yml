@@ -180,7 +180,7 @@ jobs:
           -w /workspace \
           golang:${{ matrix.go-version }} \
           bash -c "
-            go test -shuffle=on ./... -v
+            go test -shuffle=on -v ./...
           "
 
   # Verify that golang-fips/openssl builds successfully without cgo enabled.
