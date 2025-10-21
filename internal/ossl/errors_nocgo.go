@@ -57,6 +57,9 @@ func newMkcgoErr(msg string, state *errState) error {
 	b.WriteString("\nopenssl error(s):")
 
 	for _, code := range state.codes {
+		if code == 0 {
+			break
+		}
 		b.WriteByte('\n')
 		var buf [256]byte
 		ERR_error_string_n(code, unsafe.SliceData(buf[:]), len(buf))
