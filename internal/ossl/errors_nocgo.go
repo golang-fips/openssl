@@ -32,10 +32,6 @@ func retrieveErrorState(state *errState) {
 		if libcArgs.r1 == 0 {
 			break
 		}
-		if i >= len(state.codes) {
-			// Too many errors, discard the rest
-			continue
-		}
 		state.codes[i] = uint64(libcArgs.r1)
 	}
 }
