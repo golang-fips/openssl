@@ -2,22 +2,27 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-//go:build !cgo && unix && goexperiment.ms_nocgo_opensslcrypto
+//go:build !cgo && goexperiment.ms_nocgo_opensslcrypto
 
 #include "go_asm.h"
 #include "textflag.h"
 
-GLOBL ·syscallNABI0(SB), NOPTR|RODATA, $8
-DATA ·syscallNABI0(SB)/8, $syscallN_trampoline(SB)
-TEXT syscallN_trampoline(SB),NOSPLIT,$16
-	STP	(R19, R20), 16(RSP) // save old R19, R20
-	MOVD	R0, R19	// save struct pointer
-	MOVD	RSP, R20	// save stack pointer
-	SUB	$16, RSP // reserve 16 bytes for sp-8 where fp may be saved.
+TEXT ·syscallNSystemStack_trampoline(SB),NOSPLIT,$16
+	MOVD	R0, 8(RSP)
+	CALL	·syscallNSystemStack(SB)
+	RET
 
-	MOVD	libcCallInfo_args(R19), R12
+TEXT ·syscallNAsm(SB),NOSPLIT,$0-16
+	// Save original stack pointer
+	MOVD	RSP, R20
+
+	// Load pointer from stack (ABI0 calling convention)
+	MOVD	libcArgs+0(FP), R3
+
+	MOVD	libcCallInfo_args(R3), R12
+	MOVD	libcCallInfo_fn(R3), R13
 	// Do we have more than 8 arguments?
-	MOVD	libcCallInfo_n(R19), R0
+	MOVD	libcCallInfo_n(R3), R0
 	CMP	$0,	R0; BEQ	_0args
 	CMP	$1,	R0; BEQ	_1args
 	CMP	$2,	R0; BEQ	_2args
@@ -70,14 +75,13 @@ _1args:
 	MOVD	(0*8)(R12), R0
 _0args:
 
-	MOVD	libcCallInfo_fn(R19), R12
-	BL	(R12)
+	BL	(R13)
 
-	MOVD	R20, RSP			// free stack space
+	// Restore original stack pointer
+	MOVD	R20, RSP
 
-	MOVD	R0, libcCallInfo_r1(R19)	// save r1
-	MOVD	R1, libcCallInfo_r2(R19)	// save r2
+	MOVD	libcArgs+0(FP), R3
+	MOVD	R0, libcCallInfo_r1(R3)	// save r1
+	MOVD	R1, libcCallInfo_r2(R3)	// save r2
 
-	// Restore callee-saved registers.
-	LDP	16(RSP), (R19, R20)
     RET

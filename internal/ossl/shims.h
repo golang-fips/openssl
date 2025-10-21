@@ -131,6 +131,7 @@ typedef int point_conversion_form_t;
 // the noescape/nocallback criteria.
 
 // ERR API
+unsigned long ERR_get_error(void) __attribute__((noerror));
 void ERR_error_string_n(unsigned long e, char *buf, size_t len);
 void ERR_clear_error(void) __attribute__((tag(""),tag("init_3")));
 unsigned long ERR_get_error_line(const char **file, int *line) __attribute__((tag("legacy_1"),noerror));

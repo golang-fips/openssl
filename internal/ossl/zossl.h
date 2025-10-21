@@ -148,6 +148,7 @@ size_t _mkcgo_EC_POINT_point2oct(const _EC_GROUP_PTR, const _EC_POINT_PTR, point
 int _mkcgo_EC_POINT_set_affine_coordinates(const _EC_GROUP_PTR, _EC_POINT_PTR, const _BIGNUM_PTR, const _BIGNUM_PTR, _BN_CTX_PTR, mkcgo_err_state *);
 void _mkcgo_ERR_clear_error(void);
 void _mkcgo_ERR_error_string_n(unsigned long, char*, size_t);
+unsigned long _mkcgo_ERR_get_error(void);
 unsigned long _mkcgo_ERR_get_error_all(const char**, int*, const char**, const char**, int*);
 unsigned long _mkcgo_ERR_get_error_line(const char**, int*);
 int _mkcgo_EVP_CIPHER_CTX_ctrl(_EVP_CIPHER_CTX_PTR, int, int, void*, mkcgo_err_state *);

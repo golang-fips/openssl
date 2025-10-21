@@ -5,7 +5,6 @@ package ossl
 import (
 	"bytes"
 	"errors"
-	"strconv"
 	"strings"
 	"unsafe"
 )
@@ -14,60 +13,42 @@ const ERR_NUM_MAX = 16
 
 // errState represents the OpenSSL error state for nocgo version
 type errState struct {
-	codes []uint64
-	files []string
-	lines []int32
+	hasError bool
+	codes    [ERR_NUM_MAX]uint64
 }
 
-// retrieveErrorState retrieves errors from the OpenSSL error queue
-func retrieveErrorState() *errState {
-	state := &errState{
-		codes: make([]uint64, 0, ERR_NUM_MAX),
-		files: make([]string, 0, ERR_NUM_MAX),
-		lines: make([]int32, 0, ERR_NUM_MAX),
+// retrieveErrorState retrieves errors from the OpenSSL error queue.
+// It might run on the system stack, so it can't allocate Go memory
+// nor grow the stack over the nosplit limit.
+//
+//go:nosplit
+func retrieveErrorState(state *errState) {
+	state.hasError = true
+	libcArgs := libcCallInfo{
+		fn: _mkcgo_ERR_get_error,
 	}
-
-	for range ERR_NUM_MAX {
-		var file *byte
-		var line int32
-
-		var code uint64
-		if OPENSSL_version_major_Available() && OPENSSL_version_major() >= 3 {
-			// OpenSSL 3 error handling
-			code = ERR_get_error_all(&file, &line, nil, nil, nil)
-		} else {
-			// OpenSSL 1 error handling
-			code = ERR_get_error_line(&file, &line)
-		}
-
-		if code == 0 {
+	for i := range ERR_NUM_MAX {
+		syscallNAsm(&libcArgs)
+		if libcArgs.r1 == 0 {
 			break
 		}
-
-		state.codes = append(state.codes, code)
-		state.lines = append(state.lines, line)
-
-		if file != nil {
-			// Convert C string to Go string
-			filename := goString(file)
-			state.files = append(state.files, filename)
-		} else {
-			state.files = append(state.files, "")
+		if i >= len(state.codes) {
+			// Too many errors, discard the rest
+			continue
 		}
+		state.codes[i] = uint64(libcArgs.r1)
 	}
-
-	return state
 }
 
 // newMkcgoErr creates a new error from the OpenSSL error queue for the nocgo version.
 // The errst parameter is present for API compatibility with the CGO implementation,
 // but is intentionally ignored in nocgo mode; errors are always retrieved directly from OpenSSL.
-func newMkcgoErr(msg string, errst interface{}) error {
-	// Retrieve error state from OpenSSL error queue
-	state := retrieveErrorState()
-
-	// If no errors in queue, return simple message
-	if len(state.codes) == 0 {
+func newMkcgoErr(msg string, state *errState) error {
+	if !state.hasError {
+		return nil
+	}
+	if state.codes[0] == 0 {
+		// If no errors in queue, return simple message
 		return errors.New(msg + " failed")
 	}
 
@@ -75,7 +56,7 @@ func newMkcgoErr(msg string, errst interface{}) error {
 	b.WriteString(msg)
 	b.WriteString("\nopenssl error(s):")
 
-	for i, code := range state.codes {
+	for _, code := range state.codes {
 		b.WriteByte('\n')
 		var buf [256]byte
 		ERR_error_string_n(code, unsafe.SliceData(buf[:]), len(buf))
@@ -83,15 +64,6 @@ func newMkcgoErr(msg string, errst interface{}) error {
 			b.Write(buf[:termIdx])
 		} else {
 			b.Write(buf[:])
-		}
-
-		if i < len(state.files) && state.files[i] != "" {
-			b.WriteString("\n\t")
-			b.WriteString(state.files[i])
-			b.WriteByte(':')
-			if i < len(state.lines) {
-				b.WriteString(strconv.Itoa(int(state.lines[i])))
-			}
 		}
 	}
 

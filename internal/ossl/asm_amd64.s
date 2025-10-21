@@ -2,17 +2,24 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-//go:build !cgo && unix && goexperiment.ms_nocgo_opensslcrypto
+//go:build !cgo && goexperiment.ms_nocgo_opensslcrypto
 
 #include "go_asm.h"
 #include "textflag.h"
 
-GLOBL ·syscallNABI0(SB), NOPTR|RODATA, $8
-DATA ·syscallNABI0(SB)/8, $syscallN_trampoline(SB)
-TEXT syscallN_trampoline(SB),NOSPLIT,$0
-	// store argument and original SP in a callee-saved register
-	MOVQ	DI, R13
+TEXT ·syscallNSystemStack_trampoline(SB),NOSPLIT,$16
+	MOVQ	AX, 0(SP)
+	CALL	·syscallNSystemStack(SB)
+	RET
+
+TEXT ·syscallNAsm(SB),NOSPLIT,$16-8
+	// Load pointer from stack (ABI0 calling convention)
+	// Store argument and original SP in a callee-saved register
+	MOVQ	libcArgs+0(FP), R13
 	MOVQ	SP, R14
+	
+	// Align stack to 16 bytes
+	ANDQ	$~15, SP
 
 	MOVQ	libcCallInfo_fn(R13), R11
 	MOVQ	libcCallInfo_n(R13), CX
@@ -24,8 +31,10 @@ TEXT syscallN_trampoline(SB),NOSPLIT,$0
 	CMPL	CX, $2;	JE	_2args
 	CMPL	CX, $3;	JE	_3args
 	CMPL	CX, $4;	JE	_4args
+#ifndef GOOS_windows // Windows does not pass more than 4 args in registers
 	CMPL	CX, $5;	JE	_5args
 	CMPL	CX, $6;	JE	_6args
+#endif
 
 	// Reserve stack space for remaining args
 	MOVQ	CX, R12
@@ -46,10 +55,12 @@ TEXT syscallN_trampoline(SB),NOSPLIT,$0
 	CLD
 	REP; MOVSQ
 
+#ifndef GOOS_windows
 _6args:
 	MOVQ	(5*8)(R10), R9
 _5args:
 	MOVQ	(4*8)(R10), R8
+#endif
 _4args:
 	MOVQ	(3*8)(R10), CX
 _3args:
@@ -62,7 +73,21 @@ _0args:
 
 	XORL	AX, AX	    // vararg: say "no float args"
 
+#ifdef GOOS_windows
+	// Windows x64 syscall ABI: first four integer args in CX, DX, R8, R9
+	// and 32 bytes of shadow space on the stack.
+	ADJSP	$32
+	MOVQ	CX, R9
+	MOVQ	DX, R8
+	MOVQ	SI, DX
+	MOVQ	DI, CX
+#endif
+
 	CALL	R11
+
+#ifdef GOOS_windows
+	ADJSP	$-32
+#endif
 
 	MOVQ	R14, SP		// free stack space
 

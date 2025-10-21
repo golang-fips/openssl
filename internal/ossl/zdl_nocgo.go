@@ -17,21 +17,21 @@ import (
 var _mkcgo_dlclose_trampoline_addr uintptr
 
 func Dlclose(handle unsafe.Pointer) int32 {
-	r0, _, _ := syscallN(_mkcgo_dlclose_trampoline_addr, uintptr(handle))
+	r0, _ := syscallN(0, _mkcgo_dlclose_trampoline_addr, uintptr(handle))
 	return int32(r0)
 }
 
 var _mkcgo_dlerror_trampoline_addr uintptr
 
 func Dlerror() *byte {
-	r0, _, _ := syscallN(_mkcgo_dlerror_trampoline_addr)
+	r0, _ := syscallN(0, _mkcgo_dlerror_trampoline_addr)
 	return (*byte)(unsafe.Pointer(r0))
 }
 
 var _mkcgo_dlopen_trampoline_addr uintptr
 
 func Dlopen(path *byte, flags int32) unsafe.Pointer {
-	r0, _, _ := syscallN(_mkcgo_dlopen_trampoline_addr, uintptr(unsafe.Pointer(path)), uintptr(flags))
+	r0, _ := syscallN(0, _mkcgo_dlopen_trampoline_addr, uintptr(unsafe.Pointer(path)), uintptr(flags))
 	runtime.KeepAlive(path)
 	return unsafe.Pointer(r0)
 }
@@ -39,7 +39,7 @@ func Dlopen(path *byte, flags int32) unsafe.Pointer {
 var _mkcgo_dlsym_trampoline_addr uintptr
 
 func Dlsym(handle unsafe.Pointer, symbol *byte) unsafe.Pointer {
-	r0, _, _ := syscallN(_mkcgo_dlsym_trampoline_addr, uintptr(handle), uintptr(unsafe.Pointer(symbol)))
+	r0, _ := syscallN(0, _mkcgo_dlsym_trampoline_addr, uintptr(handle), uintptr(unsafe.Pointer(symbol)))
 	runtime.KeepAlive(symbol)
 	return unsafe.Pointer(r0)
 }

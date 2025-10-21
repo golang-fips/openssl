@@ -296,6 +296,10 @@ func ERR_error_string_n(e uint64, buf *byte, len int) {
 	C._mkcgo_ERR_error_string_n(C.ulong(e), (*C.char)(unsafe.Pointer(buf)), C.size_t(len))
 }
 
+func ERR_get_error() uint64 {
+	return uint64(C._mkcgo_ERR_get_error())
+}
+
 func ERR_get_error_all(file **byte, line *int32, __func **byte, data **byte, flags *int32) uint64 {
 	return uint64(C._mkcgo_ERR_get_error_all((**C.char)(unsafe.Pointer(file)), (*C.int)(unsafe.Pointer(line)), (**C.char)(unsafe.Pointer(__func)), (**C.char)(unsafe.Pointer(data)), (*C.int)(unsafe.Pointer(flags))))
 }

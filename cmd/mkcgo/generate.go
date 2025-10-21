@@ -1,9 +1,11 @@
 package main
 
 import (
+	"cmp"
 	"fmt"
 	"go/token"
 	"io"
+	"maps"
 	"slices"
 	"strconv"
 	"strings"
@@ -798,6 +800,8 @@ func generateGoNocgo(src *mkcgo.Source, w io.Writer) {
 		generateNocgoFn(typePtrs, src, fn, w)
 	}
 
+	generateNoCgoErrorCheck(w)
+
 	// Generate MkcgoLoad and MkcgoUnload functions for each tag
 	generateMkcgoLoadFunctions(src, w)
 }
@@ -878,6 +882,74 @@ func trampolineName(fn *mkcgo.Func) string {
 	return fmt.Sprintf("_mkcgo_%s_trampoline_addr", fn.ImportName())
 }
 
+func errorCheckName() string {
+	return "_mkcgo_error_check"
+}
+
+func generateNoCgoErrorCheck(w io.Writer) {
+	if len(errCheck) == 0 {
+		return
+	}
+	fmt.Fprintf(w, "//go:nosplit\n")
+	fmt.Fprintf(w, "func %s(errType, r1, args, n uintptr) {\n", errorCheckName())
+	keys := slices.Collect(maps.Keys(errCheck))
+	slices.SortFunc(keys, func(a, b string) int {
+		return cmp.Compare(errCheck[a], errCheck[b])
+	})
+	fmt.Fprintf(w, "\tvar hasError bool\n")
+	fmt.Fprintf(w, "\tswitch errType {\n")
+	for _, cond := range keys {
+		id := errCheck[cond]
+		fmt.Fprintf(w, "\tcase %d:\n", id)
+		fmt.Fprintf(w, "\t\thasError = %s\n", cond)
+	}
+	fmt.Fprintf(w, "\tdefault:\n")
+	fmt.Fprintf(w, "\t\tpanic(\"invalid error check type\")\n")
+	fmt.Fprintf(w, "\t}\n")
+	fmt.Fprintf(w, "\tif hasError {\n")
+	fmt.Fprintf(w, "\t\terrPtr := (*errState)(unsafe.Pointer(*(*uintptr)(unsafe.Pointer(args + unsafe.Sizeof(uintptr(0))*n))))\n")
+	fmt.Fprintf(w, "\t\tretrieveErrorState(errPtr)\n")
+	fmt.Fprintf(w, "\t}\n")
+	fmt.Fprintf(w, "}\n\n")
+}
+
+var errCheck map[string]int
+
+func fnErrorType(src *mkcgo.Source, typePtrs map[string]bool, fn *mkcgo.Func) int {
+	if !fnNeedErrWrapper(fn) {
+		return 0
+	}
+	addCheck := func(v string) int {
+		if v, ok := errCheck[v]; ok {
+			return v
+		}
+		if errCheck == nil {
+			errCheck = make(map[string]int)
+		}
+		id := len(errCheck) + 1
+		errCheck[v] = id
+		return id
+	}
+	goRetType, _ := cTypeToGo(fn.Ret, false)
+	if fn.ErrCond != "" {
+		return addCheck(goRetType + "(r1) " + fn.ErrCond)
+	}
+	if _, isPtr := typePtrs[goRetType]; isPtr || strings.Contains(fn.Ret, "*") {
+		return addCheck("r1 == 0")
+	}
+	switch cTypeSize(src, fn.Ret) {
+	case 1:
+		return addCheck("int8(r1) <= 0")
+	case 2:
+		return addCheck("int16(r1) <= 0")
+	case 4:
+		return addCheck("int32(r1) <= 0")
+	case 8:
+		return addCheck("int64(r1) <= 0")
+	}
+	panic("unsupported return type size for error checking")
+}
+
 // generateNocgoFn generates Go function wrapper for nocgo mode.
 func generateNocgoFn(typePtrs map[string]bool, src *mkcgo.Source, fn *mkcgo.Func, w io.Writer) {
 	if fn.Variadic() {
@@ -945,12 +1017,16 @@ func generateNocgoFn(typePtrs map[string]bool, src *mkcgo.Source, fn *mkcgo.Func
 	var tmp strings.Builder
 	needsSpecialHandling := macosDarwinArm64Params(src, fn, &tmp)
 
+	errorType := fnErrorType(src, typePtrs, fn)
+	if errorType != 0 {
+		fmt.Fprintf(w, "\tvar _err errState\n")
+	}
 	if needsSpecialHandling {
 		fmt.Fprintf(w, "\tvar r0 uintptr\n")
 		fmt.Fprintf(w, "\tif runtime.GOOS == \"darwin\" && runtime.GOARCH == \"arm64\" {\n")
 		fmt.Fprintf(w, "\t\t")
 		if fn.Ret != "" && fn.Ret != "void" {
-			fmt.Fprintf(w, "r0, _, _ = ")
+			fmt.Fprintf(w, "r0, _ = ")
 		}
 
 		// Use static function pointer or trampoline address
@@ -959,10 +1035,17 @@ func generateNocgoFn(typePtrs map[string]bool, src *mkcgo.Source, fn *mkcgo.Func
 			functionRef = fmt.Sprintf("uintptr(unsafe.Pointer(&%s))", functionRef)
 		}
 
-		fmt.Fprintf(w, "syscallN(%s, %s)\n", functionRef, tmp.String())
+		if errorType != 0 {
+			if tmp.Len() > 0 {
+				tmp.WriteString(", ")
+			}
+			tmp.WriteString("uintptr(unsafe.Pointer(&_err))")
+		}
+
+		fmt.Fprintf(w, "syscallN(%d, %s, %s)\n", errorType, functionRef, tmp.String())
 		fmt.Fprintf(w, "\t} else {\n")
 	}
-	generateNocgoFnBody(src, fn, !needsSpecialHandling, w)
+	generateNocgoFnBody(src, fn, errorType, !needsSpecialHandling, w)
 	if needsSpecialHandling {
 		fmt.Fprintf(w, "\t}\n")
 	}
@@ -985,25 +1068,11 @@ func generateNocgoFn(typePtrs map[string]bool, src *mkcgo.Source, fn *mkcgo.Func
 	if fn.Ret != "" && fn.Ret != "void" {
 		goRetType, _ := cTypeToGo(fn.Ret, false)
 		if fnNeedErrWrapper(fn) {
-			errCond := "<= 0"
-			zeroVal := "0"
-			if fn.ErrCond != "" {
-				errCond = fn.ErrCond
-			} else if strings.Contains(fn.Ret, "*") {
-				errCond = "== nil"
-				zeroVal = "nil"
-			} else if _, ok := typePtrs[goRetType]; ok {
-				errCond = "== nil"
-				zeroVal = "nil"
-			}
-			fmt.Fprintf(w, "\tif %s(r0) %s {\n", goRetType, errCond)
-			fmt.Fprintf(w, "\t\treturn %s, newMkcgoErr(\"%s\", nil)\n", zeroVal, fn.Name)
-			fmt.Fprintf(w, "\t}\n")
 			if strings.HasPrefix(goRetType, "*") {
 				// Pointer return types need to go through unsafe.Pointer
-				fmt.Fprintf(w, "\treturn (%s)(unsafe.Pointer(r0)), nil\n", goRetType)
+				fmt.Fprintf(w, "\treturn (%s)(unsafe.Pointer(r0)), newMkcgoErr(\"%s\", &_err)\n", goRetType, fn.Name)
 			} else {
-				fmt.Fprintf(w, "\treturn %s(r0), nil\n", goRetType)
+				fmt.Fprintf(w, "\treturn %s(r0), newMkcgoErr(\"%s\", &_err)\n", goRetType, fn.Name)
 			}
 		} else {
 			if strings.HasPrefix(goRetType, "*") {
@@ -1021,7 +1090,7 @@ func generateNocgoFn(typePtrs map[string]bool, src *mkcgo.Source, fn *mkcgo.Func
 }
 
 // generateNocgoFnBody generates Go function wrapper body for nocgo mode.
-func generateNocgoFnBody(src *mkcgo.Source, fn *mkcgo.Func, newR0 bool, w io.Writer) {
+func generateNocgoFnBody(src *mkcgo.Source, fn *mkcgo.Func, errorType int, newR0 bool, w io.Writer) {
 	fnArg := trampolineName(fn)
 	if fn.Static {
 		fnArg = fmt.Sprintf("uintptr(unsafe.Pointer(&%s))", fnArg)
@@ -1033,9 +1102,9 @@ func generateNocgoFnBody(src *mkcgo.Source, fn *mkcgo.Func, newR0 bool, w io.Wri
 		if !newR0 {
 			colon = ""
 		}
-		fmt.Fprintf(w, "\tr0, _, _ %s= syscallN(%s", colon, fnArg)
+		fmt.Fprintf(w, "\tr0, _ %s= syscallN(%d, %s", colon, errorType, fnArg)
 	} else {
-		fmt.Fprintf(w, "\tsyscallN(%s", fnArg)
+		fmt.Fprintf(w, "\tsyscallN(%d, %s", errorType, fnArg)
 	}
 
 	// Add actual parameters
@@ -1058,6 +1127,9 @@ func generateNocgoFnBody(src *mkcgo.Source, fn *mkcgo.Func, newR0 bool, w io.Wri
 		} else {
 			fmt.Fprintf(w, ", uintptr(%s)", paramName)
 		}
+	}
+	if errorType != 0 {
+		fmt.Fprintf(w, ", uintptr(unsafe.Pointer(&_err))")
 	}
 	fmt.Fprintf(w, ")\n")
 }

@@ -51,6 +51,7 @@ size_t (*_g_EC_POINT_point2oct)(const _EC_GROUP_PTR, const _EC_POINT_PTR, point_
 int (*_g_EC_POINT_set_affine_coordinates)(const _EC_GROUP_PTR, _EC_POINT_PTR, const _BIGNUM_PTR, const _BIGNUM_PTR, _BN_CTX_PTR);
 void (*_g_ERR_clear_error)(void);
 void (*_g_ERR_error_string_n)(unsigned long, char*, size_t);
+unsigned long (*_g_ERR_get_error)(void);
 unsigned long (*_g_ERR_get_error_all)(const char**, int*, const char**, const char**, int*);
 unsigned long (*_g_ERR_get_error_line)(const char**, int*);
 int (*_g_EVP_CIPHER_CTX_ctrl)(_EVP_CIPHER_CTX_PTR, int, int, void*);
@@ -265,6 +266,7 @@ void __mkcgo_load_(void* handle) {
 	__mkcgo__dlsym(EC_POINT_point2oct)
 	__mkcgo__dlsym(ERR_clear_error)
 	__mkcgo__dlsym(ERR_error_string_n)
+	__mkcgo__dlsym(ERR_get_error)
 	__mkcgo__dlsym(EVP_CIPHER_CTX_ctrl)
 	__mkcgo__dlsym(EVP_CIPHER_CTX_free)
 	__mkcgo__dlsym(EVP_CIPHER_CTX_new)
@@ -367,6 +369,7 @@ void __mkcgo_unload_() {
 	_g_EC_POINT_point2oct = NULL;
 	_g_ERR_clear_error = NULL;
 	_g_ERR_error_string_n = NULL;
+	_g_ERR_get_error = NULL;
 	_g_EVP_CIPHER_CTX_ctrl = NULL;
 	_g_EVP_CIPHER_CTX_free = NULL;
 	_g_EVP_CIPHER_CTX_new = NULL;
@@ -942,6 +945,10 @@ void _mkcgo_ERR_clear_error(void) {
 
 void _mkcgo_ERR_error_string_n(unsigned long _arg0, char* _arg1, size_t _arg2) {
 	_g_ERR_error_string_n(_arg0, _arg1, _arg2);
+}
+
+unsigned long _mkcgo_ERR_get_error(void) {
+	return _g_ERR_get_error();
 }
 
 unsigned long _mkcgo_ERR_get_error_all(const char** _arg0, int* _arg1, const char** _arg2, const char** _arg3, int* _arg4) {

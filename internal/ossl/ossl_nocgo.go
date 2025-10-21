@@ -17,8 +17,10 @@ func HashSum(ctx1, ctx2 EVP_MD_CTX_PTR, out []byte) error {
 	if err != nil {
 		return err
 	}
+	var errState errState
 	if code != 1 {
-		return newMkcgoErr("EVP_MD_CTX_copy_ex", nil)
+		retrieveErrorState(&errState)
+		return newMkcgoErr("EVP_MD_CTX_copy_ex", &errState)
 	}
 
 	// Finalize the hash using ctx2
@@ -27,7 +29,8 @@ func HashSum(ctx1, ctx2 EVP_MD_CTX_PTR, out []byte) error {
 		return err
 	}
 	if code <= 0 {
-		return newMkcgoErr("EVP_DigestFinal_ex", nil)
+		retrieveErrorState(&errState)
+		return newMkcgoErr("EVP_DigestFinal_ex", &errState)
 	}
 
 	return nil

@@ -39,86 +39,76 @@ type Point_conversion_form_t = int32
 var _mkcgo_BN_bin2bn uintptr
 
 func BN_bin2bn(arg0 *byte, arg1 int32, arg2 BIGNUM_PTR) (BIGNUM_PTR, error) {
-	r0, _, _ := syscallN(_mkcgo_BN_bin2bn, uintptr(unsafe.Pointer(arg0)), uintptr(arg1), uintptr(arg2))
+	var _err errState
+	r0, _ := syscallN(1, _mkcgo_BN_bin2bn, uintptr(unsafe.Pointer(arg0)), uintptr(arg1), uintptr(arg2), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(arg0)
 	runtime.KeepAlive(arg2)
-	if BIGNUM_PTR(r0) == nil {
-		return nil, newMkcgoErr("BN_bin2bn", nil)
-	}
-	return BIGNUM_PTR(r0), nil
+	return BIGNUM_PTR(r0), newMkcgoErr("BN_bin2bn", &_err)
 }
 
 var _mkcgo_BN_bn2binpad uintptr
 
 func BN_bn2binpad(a BIGNUM_PTR, to *byte, tolen int32) (int32, error) {
-	r0, _, _ := syscallN(_mkcgo_BN_bn2binpad, uintptr(a), uintptr(unsafe.Pointer(to)), uintptr(tolen))
+	var _err errState
+	r0, _ := syscallN(2, _mkcgo_BN_bn2binpad, uintptr(a), uintptr(unsafe.Pointer(to)), uintptr(tolen), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(a)
 	runtime.KeepAlive(to)
-	if int32(r0) == -1 {
-		return 0, newMkcgoErr("BN_bn2binpad", nil)
-	}
-	return int32(r0), nil
+	return int32(r0), newMkcgoErr("BN_bn2binpad", &_err)
 }
 
 var _mkcgo_BN_bn2lebinpad uintptr
 
 func BN_bn2lebinpad(a BIGNUM_PTR, to *byte, tolen int32) (int32, error) {
-	r0, _, _ := syscallN(_mkcgo_BN_bn2lebinpad, uintptr(a), uintptr(unsafe.Pointer(to)), uintptr(tolen))
+	var _err errState
+	r0, _ := syscallN(2, _mkcgo_BN_bn2lebinpad, uintptr(a), uintptr(unsafe.Pointer(to)), uintptr(tolen), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(a)
 	runtime.KeepAlive(to)
-	if int32(r0) == -1 {
-		return 0, newMkcgoErr("BN_bn2lebinpad", nil)
-	}
-	return int32(r0), nil
+	return int32(r0), newMkcgoErr("BN_bn2lebinpad", &_err)
 }
 
 var _mkcgo_BN_clear uintptr
 
 func BN_clear(arg0 BIGNUM_PTR) {
-	syscallN(_mkcgo_BN_clear, uintptr(arg0))
+	syscallN(0, _mkcgo_BN_clear, uintptr(arg0))
 	runtime.KeepAlive(arg0)
 }
 
 var _mkcgo_BN_clear_free uintptr
 
 func BN_clear_free(arg0 BIGNUM_PTR) {
-	syscallN(_mkcgo_BN_clear_free, uintptr(arg0))
+	syscallN(0, _mkcgo_BN_clear_free, uintptr(arg0))
 	runtime.KeepAlive(arg0)
 }
 
 var _mkcgo_BN_free uintptr
 
 func BN_free(arg0 BIGNUM_PTR) {
-	syscallN(_mkcgo_BN_free, uintptr(arg0))
+	syscallN(0, _mkcgo_BN_free, uintptr(arg0))
 	runtime.KeepAlive(arg0)
 }
 
 var _mkcgo_BN_lebin2bn uintptr
 
 func BN_lebin2bn(s *byte, len int32, ret BIGNUM_PTR) (BIGNUM_PTR, error) {
-	r0, _, _ := syscallN(_mkcgo_BN_lebin2bn, uintptr(unsafe.Pointer(s)), uintptr(len), uintptr(ret))
+	var _err errState
+	r0, _ := syscallN(1, _mkcgo_BN_lebin2bn, uintptr(unsafe.Pointer(s)), uintptr(len), uintptr(ret), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(s)
 	runtime.KeepAlive(ret)
-	if BIGNUM_PTR(r0) == nil {
-		return nil, newMkcgoErr("BN_lebin2bn", nil)
-	}
-	return BIGNUM_PTR(r0), nil
+	return BIGNUM_PTR(r0), newMkcgoErr("BN_lebin2bn", &_err)
 }
 
 var _mkcgo_BN_new uintptr
 
 func BN_new() (BIGNUM_PTR, error) {
-	r0, _, _ := syscallN(_mkcgo_BN_new)
-	if BIGNUM_PTR(r0) == nil {
-		return nil, newMkcgoErr("BN_new", nil)
-	}
-	return BIGNUM_PTR(r0), nil
+	var _err errState
+	r0, _ := syscallN(1, _mkcgo_BN_new, uintptr(unsafe.Pointer(&_err)))
+	return BIGNUM_PTR(r0), newMkcgoErr("BN_new", &_err)
 }
 
 var _mkcgo_BN_num_bits uintptr
 
 func BN_num_bits(arg0 BIGNUM_PTR) int32 {
-	r0, _, _ := syscallN(_mkcgo_BN_num_bits, uintptr(arg0))
+	r0, _ := syscallN(0, _mkcgo_BN_num_bits, uintptr(arg0))
 	runtime.KeepAlive(arg0)
 	return int32(r0)
 }
@@ -126,43 +116,39 @@ func BN_num_bits(arg0 BIGNUM_PTR) int32 {
 var _mkcgo_CRYPTO_free uintptr
 
 func CRYPTO_free(str unsafe.Pointer, file *byte, line int32) {
-	syscallN(_mkcgo_CRYPTO_free, uintptr(str), uintptr(unsafe.Pointer(file)), uintptr(line))
+	syscallN(0, _mkcgo_CRYPTO_free, uintptr(str), uintptr(unsafe.Pointer(file)), uintptr(line))
 	runtime.KeepAlive(file)
 }
 
 var _mkcgo_CRYPTO_malloc uintptr
 
 func CRYPTO_malloc(num int, file *byte, line int32) (unsafe.Pointer, error) {
-	r0, _, _ := syscallN(_mkcgo_CRYPTO_malloc, uintptr(num), uintptr(unsafe.Pointer(file)), uintptr(line))
+	var _err errState
+	r0, _ := syscallN(1, _mkcgo_CRYPTO_malloc, uintptr(num), uintptr(unsafe.Pointer(file)), uintptr(line), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(file)
-	if unsafe.Pointer(r0) == nil {
-		return nil, newMkcgoErr("CRYPTO_malloc", nil)
-	}
-	return unsafe.Pointer(r0), nil
+	return unsafe.Pointer(r0), newMkcgoErr("CRYPTO_malloc", &_err)
 }
 
 var _mkcgo_DSA_free uintptr
 
 func DSA_free(r DSA_PTR) {
-	syscallN(_mkcgo_DSA_free, uintptr(r))
+	syscallN(0, _mkcgo_DSA_free, uintptr(r))
 	runtime.KeepAlive(r)
 }
 
 var _mkcgo_DSA_generate_key uintptr
 
 func DSA_generate_key(a DSA_PTR) (int32, error) {
-	r0, _, _ := syscallN(_mkcgo_DSA_generate_key, uintptr(a))
+	var _err errState
+	r0, _ := syscallN(3, _mkcgo_DSA_generate_key, uintptr(a), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(a)
-	if int32(r0) <= 0 {
-		return 0, newMkcgoErr("DSA_generate_key", nil)
-	}
-	return int32(r0), nil
+	return int32(r0), newMkcgoErr("DSA_generate_key", &_err)
 }
 
 var _mkcgo_DSA_get0_key uintptr
 
 func DSA_get0_key(d DSA_PTR, pub_key *BIGNUM_PTR, priv_key *BIGNUM_PTR) {
-	syscallN(_mkcgo_DSA_get0_key, uintptr(d), uintptr(unsafe.Pointer(pub_key)), uintptr(unsafe.Pointer(priv_key)))
+	syscallN(0, _mkcgo_DSA_get0_key, uintptr(d), uintptr(unsafe.Pointer(pub_key)), uintptr(unsafe.Pointer(priv_key)))
 	runtime.KeepAlive(d)
 	runtime.KeepAlive(pub_key)
 	runtime.KeepAlive(priv_key)
@@ -171,7 +157,7 @@ func DSA_get0_key(d DSA_PTR, pub_key *BIGNUM_PTR, priv_key *BIGNUM_PTR) {
 var _mkcgo_DSA_get0_pqg uintptr
 
 func DSA_get0_pqg(d DSA_PTR, p *BIGNUM_PTR, q *BIGNUM_PTR, g *BIGNUM_PTR) {
-	syscallN(_mkcgo_DSA_get0_pqg, uintptr(d), uintptr(unsafe.Pointer(p)), uintptr(unsafe.Pointer(q)), uintptr(unsafe.Pointer(g)))
+	syscallN(0, _mkcgo_DSA_get0_pqg, uintptr(d), uintptr(unsafe.Pointer(p)), uintptr(unsafe.Pointer(q)), uintptr(unsafe.Pointer(g)))
 	runtime.KeepAlive(d)
 	runtime.KeepAlive(p)
 	runtime.KeepAlive(q)
@@ -181,79 +167,69 @@ func DSA_get0_pqg(d DSA_PTR, p *BIGNUM_PTR, q *BIGNUM_PTR, g *BIGNUM_PTR) {
 var _mkcgo_DSA_new uintptr
 
 func DSA_new() (DSA_PTR, error) {
-	r0, _, _ := syscallN(_mkcgo_DSA_new)
-	if DSA_PTR(r0) == nil {
-		return nil, newMkcgoErr("DSA_new", nil)
-	}
-	return DSA_PTR(r0), nil
+	var _err errState
+	r0, _ := syscallN(1, _mkcgo_DSA_new, uintptr(unsafe.Pointer(&_err)))
+	return DSA_PTR(r0), newMkcgoErr("DSA_new", &_err)
 }
 
 var _mkcgo_DSA_set0_key uintptr
 
 func DSA_set0_key(d DSA_PTR, pub_key BIGNUM_PTR, priv_key BIGNUM_PTR) (int32, error) {
-	r0, _, _ := syscallN(_mkcgo_DSA_set0_key, uintptr(d), uintptr(pub_key), uintptr(priv_key))
+	var _err errState
+	r0, _ := syscallN(3, _mkcgo_DSA_set0_key, uintptr(d), uintptr(pub_key), uintptr(priv_key), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(d)
 	runtime.KeepAlive(pub_key)
 	runtime.KeepAlive(priv_key)
-	if int32(r0) <= 0 {
-		return 0, newMkcgoErr("DSA_set0_key", nil)
-	}
-	return int32(r0), nil
+	return int32(r0), newMkcgoErr("DSA_set0_key", &_err)
 }
 
 var _mkcgo_DSA_set0_pqg uintptr
 
 func DSA_set0_pqg(d DSA_PTR, p BIGNUM_PTR, q BIGNUM_PTR, g BIGNUM_PTR) (int32, error) {
-	r0, _, _ := syscallN(_mkcgo_DSA_set0_pqg, uintptr(d), uintptr(p), uintptr(q), uintptr(g))
+	var _err errState
+	r0, _ := syscallN(3, _mkcgo_DSA_set0_pqg, uintptr(d), uintptr(p), uintptr(q), uintptr(g), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(d)
 	runtime.KeepAlive(p)
 	runtime.KeepAlive(q)
 	runtime.KeepAlive(g)
-	if int32(r0) <= 0 {
-		return 0, newMkcgoErr("DSA_set0_pqg", nil)
-	}
-	return int32(r0), nil
+	return int32(r0), newMkcgoErr("DSA_set0_pqg", &_err)
 }
 
 var _mkcgo_EC_GROUP_free uintptr
 
 func EC_GROUP_free(group EC_GROUP_PTR) {
-	syscallN(_mkcgo_EC_GROUP_free, uintptr(group))
+	syscallN(0, _mkcgo_EC_GROUP_free, uintptr(group))
 	runtime.KeepAlive(group)
 }
 
 var _mkcgo_EC_GROUP_new_by_curve_name uintptr
 
 func EC_GROUP_new_by_curve_name(nid int32) (EC_GROUP_PTR, error) {
-	r0, _, _ := syscallN(_mkcgo_EC_GROUP_new_by_curve_name, uintptr(nid))
-	if EC_GROUP_PTR(r0) == nil {
-		return nil, newMkcgoErr("EC_GROUP_new_by_curve_name", nil)
-	}
-	return EC_GROUP_PTR(r0), nil
+	var _err errState
+	r0, _ := syscallN(1, _mkcgo_EC_GROUP_new_by_curve_name, uintptr(nid), uintptr(unsafe.Pointer(&_err)))
+	return EC_GROUP_PTR(r0), newMkcgoErr("EC_GROUP_new_by_curve_name", &_err)
 }
 
 var _mkcgo_EC_KEY_check_key uintptr
 
 func EC_KEY_check_key(key EC_KEY_PTR) (int32, error) {
-	r0, _, _ := syscallN(_mkcgo_EC_KEY_check_key, uintptr(key))
+	var _err errState
+	r0, _ := syscallN(3, _mkcgo_EC_KEY_check_key, uintptr(key), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(key)
-	if int32(r0) <= 0 {
-		return 0, newMkcgoErr("EC_KEY_check_key", nil)
-	}
-	return int32(r0), nil
+	return int32(r0), newMkcgoErr("EC_KEY_check_key", &_err)
 }
 
 var _mkcgo_EC_KEY_free uintptr
 
 func EC_KEY_free(arg0 EC_KEY_PTR) {
-	syscallN(_mkcgo_EC_KEY_free, uintptr(arg0))
+	syscallN(0, _mkcgo_EC_KEY_free, uintptr(arg0))
 	runtime.KeepAlive(arg0)
 }
 
 var _mkcgo_EC_KEY_get0_group uintptr
 
 func EC_KEY_get0_group(arg0 EC_KEY_PTR) EC_GROUP_PTR {
-	r0, _, _ := syscallN(_mkcgo_EC_KEY_get0_group, uintptr(arg0))
+	r0, _ := syscallN(0, _mkcgo_EC_KEY_get0_group, uintptr(arg0))
 	runtime.KeepAlive(arg0)
 	return EC_GROUP_PTR(r0)
 }
@@ -261,7 +237,7 @@ func EC_KEY_get0_group(arg0 EC_KEY_PTR) EC_GROUP_PTR {
 var _mkcgo_EC_KEY_get0_private_key uintptr
 
 func EC_KEY_get0_private_key(arg0 EC_KEY_PTR) BIGNUM_PTR {
-	r0, _, _ := syscallN(_mkcgo_EC_KEY_get0_private_key, uintptr(arg0))
+	r0, _ := syscallN(0, _mkcgo_EC_KEY_get0_private_key, uintptr(arg0))
 	runtime.KeepAlive(arg0)
 	return BIGNUM_PTR(r0)
 }
@@ -269,7 +245,7 @@ func EC_KEY_get0_private_key(arg0 EC_KEY_PTR) BIGNUM_PTR {
 var _mkcgo_EC_KEY_get0_public_key uintptr
 
 func EC_KEY_get0_public_key(arg0 EC_KEY_PTR) EC_POINT_PTR {
-	r0, _, _ := syscallN(_mkcgo_EC_KEY_get0_public_key, uintptr(arg0))
+	r0, _ := syscallN(0, _mkcgo_EC_KEY_get0_public_key, uintptr(arg0))
 	runtime.KeepAlive(arg0)
 	return EC_POINT_PTR(r0)
 }
@@ -277,159 +253,146 @@ func EC_KEY_get0_public_key(arg0 EC_KEY_PTR) EC_POINT_PTR {
 var _mkcgo_EC_KEY_new_by_curve_name uintptr
 
 func EC_KEY_new_by_curve_name(arg0 int32) (EC_KEY_PTR, error) {
-	r0, _, _ := syscallN(_mkcgo_EC_KEY_new_by_curve_name, uintptr(arg0))
-	if EC_KEY_PTR(r0) == nil {
-		return nil, newMkcgoErr("EC_KEY_new_by_curve_name", nil)
-	}
-	return EC_KEY_PTR(r0), nil
+	var _err errState
+	r0, _ := syscallN(1, _mkcgo_EC_KEY_new_by_curve_name, uintptr(arg0), uintptr(unsafe.Pointer(&_err)))
+	return EC_KEY_PTR(r0), newMkcgoErr("EC_KEY_new_by_curve_name", &_err)
 }
 
 var _mkcgo_EC_KEY_set_private_key uintptr
 
 func EC_KEY_set_private_key(arg0 EC_KEY_PTR, arg1 BIGNUM_PTR) (int32, error) {
-	r0, _, _ := syscallN(_mkcgo_EC_KEY_set_private_key, uintptr(arg0), uintptr(arg1))
+	var _err errState
+	r0, _ := syscallN(3, _mkcgo_EC_KEY_set_private_key, uintptr(arg0), uintptr(arg1), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(arg0)
 	runtime.KeepAlive(arg1)
-	if int32(r0) <= 0 {
-		return 0, newMkcgoErr("EC_KEY_set_private_key", nil)
-	}
-	return int32(r0), nil
+	return int32(r0), newMkcgoErr("EC_KEY_set_private_key", &_err)
 }
 
 var _mkcgo_EC_KEY_set_public_key uintptr
 
 func EC_KEY_set_public_key(key EC_KEY_PTR, pub EC_POINT_PTR) (int32, error) {
-	r0, _, _ := syscallN(_mkcgo_EC_KEY_set_public_key, uintptr(key), uintptr(pub))
+	var _err errState
+	r0, _ := syscallN(3, _mkcgo_EC_KEY_set_public_key, uintptr(key), uintptr(pub), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(key)
 	runtime.KeepAlive(pub)
-	if int32(r0) <= 0 {
-		return 0, newMkcgoErr("EC_KEY_set_public_key", nil)
-	}
-	return int32(r0), nil
+	return int32(r0), newMkcgoErr("EC_KEY_set_public_key", &_err)
 }
 
 var _mkcgo_EC_KEY_set_public_key_affine_coordinates uintptr
 
 func EC_KEY_set_public_key_affine_coordinates(key EC_KEY_PTR, x BIGNUM_PTR, y BIGNUM_PTR) (int32, error) {
-	r0, _, _ := syscallN(_mkcgo_EC_KEY_set_public_key_affine_coordinates, uintptr(key), uintptr(x), uintptr(y))
+	var _err errState
+	r0, _ := syscallN(3, _mkcgo_EC_KEY_set_public_key_affine_coordinates, uintptr(key), uintptr(x), uintptr(y), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(key)
 	runtime.KeepAlive(x)
 	runtime.KeepAlive(y)
-	if int32(r0) <= 0 {
-		return 0, newMkcgoErr("EC_KEY_set_public_key_affine_coordinates", nil)
-	}
-	return int32(r0), nil
+	return int32(r0), newMkcgoErr("EC_KEY_set_public_key_affine_coordinates", &_err)
 }
 
 var _mkcgo_EC_POINT_free uintptr
 
 func EC_POINT_free(arg0 EC_POINT_PTR) {
-	syscallN(_mkcgo_EC_POINT_free, uintptr(arg0))
+	syscallN(0, _mkcgo_EC_POINT_free, uintptr(arg0))
 	runtime.KeepAlive(arg0)
 }
 
 var _mkcgo_EC_POINT_get_affine_coordinates_GFp uintptr
 
 func EC_POINT_get_affine_coordinates_GFp(arg0 EC_GROUP_PTR, arg1 EC_POINT_PTR, arg2 BIGNUM_PTR, arg3 BIGNUM_PTR, arg4 BN_CTX_PTR) (int32, error) {
-	r0, _, _ := syscallN(_mkcgo_EC_POINT_get_affine_coordinates_GFp, uintptr(arg0), uintptr(arg1), uintptr(arg2), uintptr(arg3), uintptr(arg4))
+	var _err errState
+	r0, _ := syscallN(3, _mkcgo_EC_POINT_get_affine_coordinates_GFp, uintptr(arg0), uintptr(arg1), uintptr(arg2), uintptr(arg3), uintptr(arg4), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(arg0)
 	runtime.KeepAlive(arg1)
 	runtime.KeepAlive(arg2)
 	runtime.KeepAlive(arg3)
 	runtime.KeepAlive(arg4)
-	if int32(r0) <= 0 {
-		return 0, newMkcgoErr("EC_POINT_get_affine_coordinates_GFp", nil)
-	}
-	return int32(r0), nil
+	return int32(r0), newMkcgoErr("EC_POINT_get_affine_coordinates_GFp", &_err)
 }
 
 var _mkcgo_EC_POINT_mul uintptr
 
 func EC_POINT_mul(group EC_GROUP_PTR, r EC_POINT_PTR, n BIGNUM_PTR, q EC_POINT_PTR, m BIGNUM_PTR, ctx BN_CTX_PTR) (int32, error) {
-	r0, _, _ := syscallN(_mkcgo_EC_POINT_mul, uintptr(group), uintptr(r), uintptr(n), uintptr(q), uintptr(m), uintptr(ctx))
+	var _err errState
+	r0, _ := syscallN(3, _mkcgo_EC_POINT_mul, uintptr(group), uintptr(r), uintptr(n), uintptr(q), uintptr(m), uintptr(ctx), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(group)
 	runtime.KeepAlive(r)
 	runtime.KeepAlive(n)
 	runtime.KeepAlive(q)
 	runtime.KeepAlive(m)
 	runtime.KeepAlive(ctx)
-	if int32(r0) <= 0 {
-		return 0, newMkcgoErr("EC_POINT_mul", nil)
-	}
-	return int32(r0), nil
+	return int32(r0), newMkcgoErr("EC_POINT_mul", &_err)
 }
 
 var _mkcgo_EC_POINT_new uintptr
 
 func EC_POINT_new(arg0 EC_GROUP_PTR) (EC_POINT_PTR, error) {
-	r0, _, _ := syscallN(_mkcgo_EC_POINT_new, uintptr(arg0))
+	var _err errState
+	r0, _ := syscallN(1, _mkcgo_EC_POINT_new, uintptr(arg0), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(arg0)
-	if EC_POINT_PTR(r0) == nil {
-		return nil, newMkcgoErr("EC_POINT_new", nil)
-	}
-	return EC_POINT_PTR(r0), nil
+	return EC_POINT_PTR(r0), newMkcgoErr("EC_POINT_new", &_err)
 }
 
 var _mkcgo_EC_POINT_oct2point uintptr
 
 func EC_POINT_oct2point(group EC_GROUP_PTR, p EC_POINT_PTR, buf *byte, len int, ctx BN_CTX_PTR) (int32, error) {
-	r0, _, _ := syscallN(_mkcgo_EC_POINT_oct2point, uintptr(group), uintptr(p), uintptr(unsafe.Pointer(buf)), uintptr(len), uintptr(ctx))
+	var _err errState
+	r0, _ := syscallN(3, _mkcgo_EC_POINT_oct2point, uintptr(group), uintptr(p), uintptr(unsafe.Pointer(buf)), uintptr(len), uintptr(ctx), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(group)
 	runtime.KeepAlive(p)
 	runtime.KeepAlive(buf)
 	runtime.KeepAlive(ctx)
-	if int32(r0) <= 0 {
-		return 0, newMkcgoErr("EC_POINT_oct2point", nil)
-	}
-	return int32(r0), nil
+	return int32(r0), newMkcgoErr("EC_POINT_oct2point", &_err)
 }
 
 var _mkcgo_EC_POINT_point2oct uintptr
 
 func EC_POINT_point2oct(group EC_GROUP_PTR, p EC_POINT_PTR, form Point_conversion_form_t, buf *byte, len int, ctx BN_CTX_PTR) (int, error) {
-	r0, _, _ := syscallN(_mkcgo_EC_POINT_point2oct, uintptr(group), uintptr(p), uintptr(form), uintptr(unsafe.Pointer(buf)), uintptr(len), uintptr(ctx))
+	var _err errState
+	r0, _ := syscallN(4, _mkcgo_EC_POINT_point2oct, uintptr(group), uintptr(p), uintptr(form), uintptr(unsafe.Pointer(buf)), uintptr(len), uintptr(ctx), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(group)
 	runtime.KeepAlive(p)
 	runtime.KeepAlive(buf)
 	runtime.KeepAlive(ctx)
-	if int(r0) <= 0 {
-		return 0, newMkcgoErr("EC_POINT_point2oct", nil)
-	}
-	return int(r0), nil
+	return int(r0), newMkcgoErr("EC_POINT_point2oct", &_err)
 }
 
 var _mkcgo_EC_POINT_set_affine_coordinates uintptr
 
 func EC_POINT_set_affine_coordinates(arg0 EC_GROUP_PTR, arg1 EC_POINT_PTR, arg2 BIGNUM_PTR, arg3 BIGNUM_PTR, arg4 BN_CTX_PTR) (int32, error) {
-	r0, _, _ := syscallN(_mkcgo_EC_POINT_set_affine_coordinates, uintptr(arg0), uintptr(arg1), uintptr(arg2), uintptr(arg3), uintptr(arg4))
+	var _err errState
+	r0, _ := syscallN(3, _mkcgo_EC_POINT_set_affine_coordinates, uintptr(arg0), uintptr(arg1), uintptr(arg2), uintptr(arg3), uintptr(arg4), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(arg0)
 	runtime.KeepAlive(arg1)
 	runtime.KeepAlive(arg2)
 	runtime.KeepAlive(arg3)
 	runtime.KeepAlive(arg4)
-	if int32(r0) <= 0 {
-		return 0, newMkcgoErr("EC_POINT_set_affine_coordinates", nil)
-	}
-	return int32(r0), nil
+	return int32(r0), newMkcgoErr("EC_POINT_set_affine_coordinates", &_err)
 }
 
 var _mkcgo_ERR_clear_error uintptr
 
 func ERR_clear_error() {
-	syscallN(_mkcgo_ERR_clear_error)
+	syscallN(0, _mkcgo_ERR_clear_error)
 }
 
 var _mkcgo_ERR_error_string_n uintptr
 
 func ERR_error_string_n(e uint64, buf *byte, len int) {
-	syscallN(_mkcgo_ERR_error_string_n, uintptr(e), uintptr(unsafe.Pointer(buf)), uintptr(len))
+	syscallN(0, _mkcgo_ERR_error_string_n, uintptr(e), uintptr(unsafe.Pointer(buf)), uintptr(len))
 	runtime.KeepAlive(buf)
+}
+
+var _mkcgo_ERR_get_error uintptr
+
+func ERR_get_error() uint64 {
+	r0, _ := syscallN(0, _mkcgo_ERR_get_error)
+	return uint64(r0)
 }
 
 var _mkcgo_ERR_get_error_all uintptr
 
 func ERR_get_error_all(file **byte, line *int32, __func **byte, data **byte, flags *int32) uint64 {
-	r0, _, _ := syscallN(_mkcgo_ERR_get_error_all, uintptr(unsafe.Pointer(file)), uintptr(unsafe.Pointer(line)), uintptr(unsafe.Pointer(__func)), uintptr(unsafe.Pointer(data)), uintptr(unsafe.Pointer(flags)))
+	r0, _ := syscallN(0, _mkcgo_ERR_get_error_all, uintptr(unsafe.Pointer(file)), uintptr(unsafe.Pointer(line)), uintptr(unsafe.Pointer(__func)), uintptr(unsafe.Pointer(data)), uintptr(unsafe.Pointer(flags)))
 	runtime.KeepAlive(file)
 	runtime.KeepAlive(line)
 	runtime.KeepAlive(__func)
@@ -441,7 +404,7 @@ func ERR_get_error_all(file **byte, line *int32, __func **byte, data **byte, fla
 var _mkcgo_ERR_get_error_line uintptr
 
 func ERR_get_error_line(file **byte, line *int32) uint64 {
-	r0, _, _ := syscallN(_mkcgo_ERR_get_error_line, uintptr(unsafe.Pointer(file)), uintptr(unsafe.Pointer(line)))
+	r0, _ := syscallN(0, _mkcgo_ERR_get_error_line, uintptr(unsafe.Pointer(file)), uintptr(unsafe.Pointer(line)))
 	runtime.KeepAlive(file)
 	runtime.KeepAlive(line)
 	return uint64(r0)
@@ -450,70 +413,60 @@ func ERR_get_error_line(file **byte, line *int32) uint64 {
 var _mkcgo_EVP_CIPHER_CTX_ctrl uintptr
 
 func EVP_CIPHER_CTX_ctrl(ctx EVP_CIPHER_CTX_PTR, __type int32, arg int32, ptr unsafe.Pointer) (int32, error) {
-	r0, _, _ := syscallN(_mkcgo_EVP_CIPHER_CTX_ctrl, uintptr(ctx), uintptr(__type), uintptr(arg), uintptr(ptr))
+	var _err errState
+	r0, _ := syscallN(3, _mkcgo_EVP_CIPHER_CTX_ctrl, uintptr(ctx), uintptr(__type), uintptr(arg), uintptr(ptr), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(ctx)
-	if int32(r0) <= 0 {
-		return 0, newMkcgoErr("EVP_CIPHER_CTX_ctrl", nil)
-	}
-	return int32(r0), nil
+	return int32(r0), newMkcgoErr("EVP_CIPHER_CTX_ctrl", &_err)
 }
 
 var _mkcgo_EVP_CIPHER_CTX_free uintptr
 
 func EVP_CIPHER_CTX_free(arg0 EVP_CIPHER_CTX_PTR) {
-	syscallN(_mkcgo_EVP_CIPHER_CTX_free, uintptr(arg0))
+	syscallN(0, _mkcgo_EVP_CIPHER_CTX_free, uintptr(arg0))
 	runtime.KeepAlive(arg0)
 }
 
 var _mkcgo_EVP_CIPHER_CTX_new uintptr
 
 func EVP_CIPHER_CTX_new() (EVP_CIPHER_CTX_PTR, error) {
-	r0, _, _ := syscallN(_mkcgo_EVP_CIPHER_CTX_new)
-	if EVP_CIPHER_CTX_PTR(r0) == nil {
-		return nil, newMkcgoErr("EVP_CIPHER_CTX_new", nil)
-	}
-	return EVP_CIPHER_CTX_PTR(r0), nil
+	var _err errState
+	r0, _ := syscallN(1, _mkcgo_EVP_CIPHER_CTX_new, uintptr(unsafe.Pointer(&_err)))
+	return EVP_CIPHER_CTX_PTR(r0), newMkcgoErr("EVP_CIPHER_CTX_new", &_err)
 }
 
 var _mkcgo_EVP_CIPHER_CTX_set_key_length uintptr
 
 func EVP_CIPHER_CTX_set_key_length(x EVP_CIPHER_CTX_PTR, keylen int32) (int32, error) {
-	r0, _, _ := syscallN(_mkcgo_EVP_CIPHER_CTX_set_key_length, uintptr(x), uintptr(keylen))
+	var _err errState
+	r0, _ := syscallN(3, _mkcgo_EVP_CIPHER_CTX_set_key_length, uintptr(x), uintptr(keylen), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(x)
-	if int32(r0) <= 0 {
-		return 0, newMkcgoErr("EVP_CIPHER_CTX_set_key_length", nil)
-	}
-	return int32(r0), nil
+	return int32(r0), newMkcgoErr("EVP_CIPHER_CTX_set_key_length", &_err)
 }
 
 var _mkcgo_EVP_CIPHER_CTX_set_padding uintptr
 
 func EVP_CIPHER_CTX_set_padding(x EVP_CIPHER_CTX_PTR, padding int32) (int32, error) {
-	r0, _, _ := syscallN(_mkcgo_EVP_CIPHER_CTX_set_padding, uintptr(x), uintptr(padding))
+	var _err errState
+	r0, _ := syscallN(3, _mkcgo_EVP_CIPHER_CTX_set_padding, uintptr(x), uintptr(padding), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(x)
-	if int32(r0) <= 0 {
-		return 0, newMkcgoErr("EVP_CIPHER_CTX_set_padding", nil)
-	}
-	return int32(r0), nil
+	return int32(r0), newMkcgoErr("EVP_CIPHER_CTX_set_padding", &_err)
 }
 
 var _mkcgo_EVP_CIPHER_fetch uintptr
 
 func EVP_CIPHER_fetch(ctx OSSL_LIB_CTX_PTR, algorithm *byte, properties *byte) (EVP_CIPHER_PTR, error) {
-	r0, _, _ := syscallN(_mkcgo_EVP_CIPHER_fetch, uintptr(ctx), uintptr(unsafe.Pointer(algorithm)), uintptr(unsafe.Pointer(properties)))
+	var _err errState
+	r0, _ := syscallN(1, _mkcgo_EVP_CIPHER_fetch, uintptr(ctx), uintptr(unsafe.Pointer(algorithm)), uintptr(unsafe.Pointer(properties)), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(ctx)
 	runtime.KeepAlive(algorithm)
 	runtime.KeepAlive(properties)
-	if EVP_CIPHER_PTR(r0) == nil {
-		return nil, newMkcgoErr("EVP_CIPHER_fetch", nil)
-	}
-	return EVP_CIPHER_PTR(r0), nil
+	return EVP_CIPHER_PTR(r0), newMkcgoErr("EVP_CIPHER_fetch", &_err)
 }
 
 var _mkcgo_EVP_CIPHER_get0_name uintptr
 
 func EVP_CIPHER_get0_name(cipher EVP_CIPHER_PTR) *byte {
-	r0, _, _ := syscallN(_mkcgo_EVP_CIPHER_get0_name, uintptr(cipher))
+	r0, _ := syscallN(0, _mkcgo_EVP_CIPHER_get0_name, uintptr(cipher))
 	runtime.KeepAlive(cipher)
 	return (*byte)(unsafe.Pointer(r0))
 }
@@ -521,7 +474,7 @@ func EVP_CIPHER_get0_name(cipher EVP_CIPHER_PTR) *byte {
 var _mkcgo_EVP_CIPHER_get_block_size uintptr
 
 func EVP_CIPHER_get_block_size(cipher EVP_CIPHER_PTR) int32 {
-	r0, _, _ := syscallN(_mkcgo_EVP_CIPHER_get_block_size, uintptr(cipher))
+	r0, _ := syscallN(0, _mkcgo_EVP_CIPHER_get_block_size, uintptr(cipher))
 	runtime.KeepAlive(cipher)
 	return int32(r0)
 }
@@ -529,538 +482,460 @@ func EVP_CIPHER_get_block_size(cipher EVP_CIPHER_PTR) int32 {
 var _mkcgo_EVP_CipherInit_ex uintptr
 
 func EVP_CipherInit_ex(ctx EVP_CIPHER_CTX_PTR, __type EVP_CIPHER_PTR, impl ENGINE_PTR, key *byte, iv *byte, enc int32) (int32, error) {
-	r0, _, _ := syscallN(_mkcgo_EVP_CipherInit_ex, uintptr(ctx), uintptr(__type), uintptr(impl), uintptr(unsafe.Pointer(key)), uintptr(unsafe.Pointer(iv)), uintptr(enc))
+	var _err errState
+	r0, _ := syscallN(3, _mkcgo_EVP_CipherInit_ex, uintptr(ctx), uintptr(__type), uintptr(impl), uintptr(unsafe.Pointer(key)), uintptr(unsafe.Pointer(iv)), uintptr(enc), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(ctx)
 	runtime.KeepAlive(__type)
 	runtime.KeepAlive(impl)
 	runtime.KeepAlive(key)
 	runtime.KeepAlive(iv)
-	if int32(r0) <= 0 {
-		return 0, newMkcgoErr("EVP_CipherInit_ex", nil)
-	}
-	return int32(r0), nil
+	return int32(r0), newMkcgoErr("EVP_CipherInit_ex", &_err)
 }
 
 var _mkcgo_EVP_CipherUpdate uintptr
 
 func EVP_CipherUpdate(ctx EVP_CIPHER_CTX_PTR, out *byte, outl *int32, in *byte, inl int32) (int32, error) {
-	r0, _, _ := syscallN(_mkcgo_EVP_CipherUpdate, uintptr(ctx), uintptr(unsafe.Pointer(out)), uintptr(unsafe.Pointer(outl)), uintptr(unsafe.Pointer(in)), uintptr(inl))
+	var _err errState
+	r0, _ := syscallN(3, _mkcgo_EVP_CipherUpdate, uintptr(ctx), uintptr(unsafe.Pointer(out)), uintptr(unsafe.Pointer(outl)), uintptr(unsafe.Pointer(in)), uintptr(inl), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(ctx)
 	runtime.KeepAlive(out)
 	runtime.KeepAlive(outl)
 	runtime.KeepAlive(in)
-	if int32(r0) <= 0 {
-		return 0, newMkcgoErr("EVP_CipherUpdate", nil)
-	}
-	return int32(r0), nil
+	return int32(r0), newMkcgoErr("EVP_CipherUpdate", &_err)
 }
 
 var _mkcgo_EVP_DecryptFinal_ex uintptr
 
 func EVP_DecryptFinal_ex(ctx EVP_CIPHER_CTX_PTR, outm *byte, outl *int32) (int32, error) {
-	r0, _, _ := syscallN(_mkcgo_EVP_DecryptFinal_ex, uintptr(ctx), uintptr(unsafe.Pointer(outm)), uintptr(unsafe.Pointer(outl)))
+	var _err errState
+	r0, _ := syscallN(3, _mkcgo_EVP_DecryptFinal_ex, uintptr(ctx), uintptr(unsafe.Pointer(outm)), uintptr(unsafe.Pointer(outl)), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(ctx)
 	runtime.KeepAlive(outm)
 	runtime.KeepAlive(outl)
-	if int32(r0) <= 0 {
-		return 0, newMkcgoErr("EVP_DecryptFinal_ex", nil)
-	}
-	return int32(r0), nil
+	return int32(r0), newMkcgoErr("EVP_DecryptFinal_ex", &_err)
 }
 
 var _mkcgo_EVP_DecryptInit_ex uintptr
 
 func EVP_DecryptInit_ex(ctx EVP_CIPHER_CTX_PTR, __type EVP_CIPHER_PTR, impl ENGINE_PTR, key *byte, iv *byte) (int32, error) {
-	r0, _, _ := syscallN(_mkcgo_EVP_DecryptInit_ex, uintptr(ctx), uintptr(__type), uintptr(impl), uintptr(unsafe.Pointer(key)), uintptr(unsafe.Pointer(iv)))
+	var _err errState
+	r0, _ := syscallN(3, _mkcgo_EVP_DecryptInit_ex, uintptr(ctx), uintptr(__type), uintptr(impl), uintptr(unsafe.Pointer(key)), uintptr(unsafe.Pointer(iv)), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(ctx)
 	runtime.KeepAlive(__type)
 	runtime.KeepAlive(impl)
 	runtime.KeepAlive(key)
 	runtime.KeepAlive(iv)
-	if int32(r0) <= 0 {
-		return 0, newMkcgoErr("EVP_DecryptInit_ex", nil)
-	}
-	return int32(r0), nil
+	return int32(r0), newMkcgoErr("EVP_DecryptInit_ex", &_err)
 }
 
 var _mkcgo_EVP_DecryptUpdate uintptr
 
 func EVP_DecryptUpdate(ctx EVP_CIPHER_CTX_PTR, out *byte, outl *int32, in *byte, inl int32) (int32, error) {
-	r0, _, _ := syscallN(_mkcgo_EVP_DecryptUpdate, uintptr(ctx), uintptr(unsafe.Pointer(out)), uintptr(unsafe.Pointer(outl)), uintptr(unsafe.Pointer(in)), uintptr(inl))
+	var _err errState
+	r0, _ := syscallN(3, _mkcgo_EVP_DecryptUpdate, uintptr(ctx), uintptr(unsafe.Pointer(out)), uintptr(unsafe.Pointer(outl)), uintptr(unsafe.Pointer(in)), uintptr(inl), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(ctx)
 	runtime.KeepAlive(out)
 	runtime.KeepAlive(outl)
 	runtime.KeepAlive(in)
-	if int32(r0) <= 0 {
-		return 0, newMkcgoErr("EVP_DecryptUpdate", nil)
-	}
-	return int32(r0), nil
+	return int32(r0), newMkcgoErr("EVP_DecryptUpdate", &_err)
 }
 
 var _mkcgo_EVP_Digest uintptr
 
 func EVP_Digest(data unsafe.Pointer, count int, md *byte, size *uint32, __type EVP_MD_PTR, impl ENGINE_PTR) (int32, error) {
-	r0, _, _ := syscallN(_mkcgo_EVP_Digest, uintptr(data), uintptr(count), uintptr(unsafe.Pointer(md)), uintptr(unsafe.Pointer(size)), uintptr(__type), uintptr(impl))
+	var _err errState
+	r0, _ := syscallN(3, _mkcgo_EVP_Digest, uintptr(data), uintptr(count), uintptr(unsafe.Pointer(md)), uintptr(unsafe.Pointer(size)), uintptr(__type), uintptr(impl), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(md)
 	runtime.KeepAlive(size)
 	runtime.KeepAlive(__type)
 	runtime.KeepAlive(impl)
-	if int32(r0) <= 0 {
-		return 0, newMkcgoErr("EVP_Digest", nil)
-	}
-	return int32(r0), nil
+	return int32(r0), newMkcgoErr("EVP_Digest", &_err)
 }
 
 var _mkcgo_EVP_DigestFinal_ex uintptr
 
 func EVP_DigestFinal_ex(ctx EVP_MD_CTX_PTR, md *byte, s *uint32) (int32, error) {
-	r0, _, _ := syscallN(_mkcgo_EVP_DigestFinal_ex, uintptr(ctx), uintptr(unsafe.Pointer(md)), uintptr(unsafe.Pointer(s)))
+	var _err errState
+	r0, _ := syscallN(3, _mkcgo_EVP_DigestFinal_ex, uintptr(ctx), uintptr(unsafe.Pointer(md)), uintptr(unsafe.Pointer(s)), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(ctx)
 	runtime.KeepAlive(md)
 	runtime.KeepAlive(s)
-	if int32(r0) <= 0 {
-		return 0, newMkcgoErr("EVP_DigestFinal_ex", nil)
-	}
-	return int32(r0), nil
+	return int32(r0), newMkcgoErr("EVP_DigestFinal_ex", &_err)
 }
 
 var _mkcgo_EVP_DigestInit uintptr
 
 func EVP_DigestInit(ctx EVP_MD_CTX_PTR, __type EVP_MD_PTR) (int32, error) {
-	r0, _, _ := syscallN(_mkcgo_EVP_DigestInit, uintptr(ctx), uintptr(__type))
+	var _err errState
+	r0, _ := syscallN(3, _mkcgo_EVP_DigestInit, uintptr(ctx), uintptr(__type), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(ctx)
 	runtime.KeepAlive(__type)
-	if int32(r0) <= 0 {
-		return 0, newMkcgoErr("EVP_DigestInit", nil)
-	}
-	return int32(r0), nil
+	return int32(r0), newMkcgoErr("EVP_DigestInit", &_err)
 }
 
 var _mkcgo_EVP_DigestInit_ex uintptr
 
 func EVP_DigestInit_ex(ctx EVP_MD_CTX_PTR, __type EVP_MD_PTR, impl ENGINE_PTR) (int32, error) {
-	r0, _, _ := syscallN(_mkcgo_EVP_DigestInit_ex, uintptr(ctx), uintptr(__type), uintptr(impl))
+	var _err errState
+	r0, _ := syscallN(3, _mkcgo_EVP_DigestInit_ex, uintptr(ctx), uintptr(__type), uintptr(impl), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(ctx)
 	runtime.KeepAlive(__type)
 	runtime.KeepAlive(impl)
-	if int32(r0) <= 0 {
-		return 0, newMkcgoErr("EVP_DigestInit_ex", nil)
-	}
-	return int32(r0), nil
+	return int32(r0), newMkcgoErr("EVP_DigestInit_ex", &_err)
 }
 
 var _mkcgo_EVP_DigestSign uintptr
 
 func EVP_DigestSign(ctx EVP_MD_CTX_PTR, sigret *byte, siglen *int, tbs *byte, tbslen int) (int32, error) {
-	r0, _, _ := syscallN(_mkcgo_EVP_DigestSign, uintptr(ctx), uintptr(unsafe.Pointer(sigret)), uintptr(unsafe.Pointer(siglen)), uintptr(unsafe.Pointer(tbs)), uintptr(tbslen))
+	var _err errState
+	r0, _ := syscallN(3, _mkcgo_EVP_DigestSign, uintptr(ctx), uintptr(unsafe.Pointer(sigret)), uintptr(unsafe.Pointer(siglen)), uintptr(unsafe.Pointer(tbs)), uintptr(tbslen), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(ctx)
 	runtime.KeepAlive(sigret)
 	runtime.KeepAlive(siglen)
 	runtime.KeepAlive(tbs)
-	if int32(r0) <= 0 {
-		return 0, newMkcgoErr("EVP_DigestSign", nil)
-	}
-	return int32(r0), nil
+	return int32(r0), newMkcgoErr("EVP_DigestSign", &_err)
 }
 
 var _mkcgo_EVP_DigestSignFinal uintptr
 
 func EVP_DigestSignFinal(ctx EVP_MD_CTX_PTR, sig *byte, siglen *int) (int32, error) {
-	r0, _, _ := syscallN(_mkcgo_EVP_DigestSignFinal, uintptr(ctx), uintptr(unsafe.Pointer(sig)), uintptr(unsafe.Pointer(siglen)))
+	var _err errState
+	r0, _ := syscallN(3, _mkcgo_EVP_DigestSignFinal, uintptr(ctx), uintptr(unsafe.Pointer(sig)), uintptr(unsafe.Pointer(siglen)), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(ctx)
 	runtime.KeepAlive(sig)
 	runtime.KeepAlive(siglen)
-	if int32(r0) <= 0 {
-		return 0, newMkcgoErr("EVP_DigestSignFinal", nil)
-	}
-	return int32(r0), nil
+	return int32(r0), newMkcgoErr("EVP_DigestSignFinal", &_err)
 }
 
 var _mkcgo_EVP_DigestSignInit uintptr
 
 func EVP_DigestSignInit(ctx EVP_MD_CTX_PTR, pctx *EVP_PKEY_CTX_PTR, __type EVP_MD_PTR, e ENGINE_PTR, pkey EVP_PKEY_PTR) (int32, error) {
-	r0, _, _ := syscallN(_mkcgo_EVP_DigestSignInit, uintptr(ctx), uintptr(unsafe.Pointer(pctx)), uintptr(__type), uintptr(e), uintptr(pkey))
+	var _err errState
+	r0, _ := syscallN(3, _mkcgo_EVP_DigestSignInit, uintptr(ctx), uintptr(unsafe.Pointer(pctx)), uintptr(__type), uintptr(e), uintptr(pkey), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(ctx)
 	runtime.KeepAlive(pctx)
 	runtime.KeepAlive(__type)
 	runtime.KeepAlive(e)
 	runtime.KeepAlive(pkey)
-	if int32(r0) <= 0 {
-		return 0, newMkcgoErr("EVP_DigestSignInit", nil)
-	}
-	return int32(r0), nil
+	return int32(r0), newMkcgoErr("EVP_DigestSignInit", &_err)
 }
 
 var _mkcgo_EVP_DigestUpdate uintptr
 
 func EVP_DigestUpdate(ctx EVP_MD_CTX_PTR, d unsafe.Pointer, cnt int) (int32, error) {
-	r0, _, _ := syscallN(_mkcgo_EVP_DigestUpdate, uintptr(ctx), uintptr(d), uintptr(cnt))
+	var _err errState
+	r0, _ := syscallN(3, _mkcgo_EVP_DigestUpdate, uintptr(ctx), uintptr(d), uintptr(cnt), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(ctx)
-	if int32(r0) <= 0 {
-		return 0, newMkcgoErr("EVP_DigestUpdate", nil)
-	}
-	return int32(r0), nil
+	return int32(r0), newMkcgoErr("EVP_DigestUpdate", &_err)
 }
 
 var _mkcgo_EVP_DigestVerify uintptr
 
 func EVP_DigestVerify(ctx EVP_MD_CTX_PTR, sigret *byte, siglen int, tbs *byte, tbslen int) (int32, error) {
-	r0, _, _ := syscallN(_mkcgo_EVP_DigestVerify, uintptr(ctx), uintptr(unsafe.Pointer(sigret)), uintptr(siglen), uintptr(unsafe.Pointer(tbs)), uintptr(tbslen))
+	var _err errState
+	r0, _ := syscallN(3, _mkcgo_EVP_DigestVerify, uintptr(ctx), uintptr(unsafe.Pointer(sigret)), uintptr(siglen), uintptr(unsafe.Pointer(tbs)), uintptr(tbslen), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(ctx)
 	runtime.KeepAlive(sigret)
 	runtime.KeepAlive(tbs)
-	if int32(r0) <= 0 {
-		return 0, newMkcgoErr("EVP_DigestVerify", nil)
-	}
-	return int32(r0), nil
+	return int32(r0), newMkcgoErr("EVP_DigestVerify", &_err)
 }
 
 var _mkcgo_EVP_DigestVerifyFinal uintptr
 
 func EVP_DigestVerifyFinal(ctx EVP_MD_CTX_PTR, sig *byte, siglen int) (int32, error) {
-	r0, _, _ := syscallN(_mkcgo_EVP_DigestVerifyFinal, uintptr(ctx), uintptr(unsafe.Pointer(sig)), uintptr(siglen))
+	var _err errState
+	r0, _ := syscallN(3, _mkcgo_EVP_DigestVerifyFinal, uintptr(ctx), uintptr(unsafe.Pointer(sig)), uintptr(siglen), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(ctx)
 	runtime.KeepAlive(sig)
-	if int32(r0) <= 0 {
-		return 0, newMkcgoErr("EVP_DigestVerifyFinal", nil)
-	}
-	return int32(r0), nil
+	return int32(r0), newMkcgoErr("EVP_DigestVerifyFinal", &_err)
 }
 
 var _mkcgo_EVP_DigestVerifyInit uintptr
 
 func EVP_DigestVerifyInit(ctx EVP_MD_CTX_PTR, pctx *EVP_PKEY_CTX_PTR, __type EVP_MD_PTR, e ENGINE_PTR, pkey EVP_PKEY_PTR) (int32, error) {
-	r0, _, _ := syscallN(_mkcgo_EVP_DigestVerifyInit, uintptr(ctx), uintptr(unsafe.Pointer(pctx)), uintptr(__type), uintptr(e), uintptr(pkey))
+	var _err errState
+	r0, _ := syscallN(3, _mkcgo_EVP_DigestVerifyInit, uintptr(ctx), uintptr(unsafe.Pointer(pctx)), uintptr(__type), uintptr(e), uintptr(pkey), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(ctx)
 	runtime.KeepAlive(pctx)
 	runtime.KeepAlive(__type)
 	runtime.KeepAlive(e)
 	runtime.KeepAlive(pkey)
-	if int32(r0) <= 0 {
-		return 0, newMkcgoErr("EVP_DigestVerifyInit", nil)
-	}
-	return int32(r0), nil
+	return int32(r0), newMkcgoErr("EVP_DigestVerifyInit", &_err)
 }
 
 var _mkcgo_EVP_EncryptFinal_ex uintptr
 
 func EVP_EncryptFinal_ex(ctx EVP_CIPHER_CTX_PTR, out *byte, outl *int32) (int32, error) {
-	r0, _, _ := syscallN(_mkcgo_EVP_EncryptFinal_ex, uintptr(ctx), uintptr(unsafe.Pointer(out)), uintptr(unsafe.Pointer(outl)))
+	var _err errState
+	r0, _ := syscallN(3, _mkcgo_EVP_EncryptFinal_ex, uintptr(ctx), uintptr(unsafe.Pointer(out)), uintptr(unsafe.Pointer(outl)), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(ctx)
 	runtime.KeepAlive(out)
 	runtime.KeepAlive(outl)
-	if int32(r0) <= 0 {
-		return 0, newMkcgoErr("EVP_EncryptFinal_ex", nil)
-	}
-	return int32(r0), nil
+	return int32(r0), newMkcgoErr("EVP_EncryptFinal_ex", &_err)
 }
 
 var _mkcgo_EVP_EncryptInit_ex uintptr
 
 func EVP_EncryptInit_ex(ctx EVP_CIPHER_CTX_PTR, __type EVP_CIPHER_PTR, impl ENGINE_PTR, key *byte, iv *byte) (int32, error) {
-	r0, _, _ := syscallN(_mkcgo_EVP_EncryptInit_ex, uintptr(ctx), uintptr(__type), uintptr(impl), uintptr(unsafe.Pointer(key)), uintptr(unsafe.Pointer(iv)))
+	var _err errState
+	r0, _ := syscallN(3, _mkcgo_EVP_EncryptInit_ex, uintptr(ctx), uintptr(__type), uintptr(impl), uintptr(unsafe.Pointer(key)), uintptr(unsafe.Pointer(iv)), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(ctx)
 	runtime.KeepAlive(__type)
 	runtime.KeepAlive(impl)
 	runtime.KeepAlive(key)
 	runtime.KeepAlive(iv)
-	if int32(r0) <= 0 {
-		return 0, newMkcgoErr("EVP_EncryptInit_ex", nil)
-	}
-	return int32(r0), nil
+	return int32(r0), newMkcgoErr("EVP_EncryptInit_ex", &_err)
 }
 
 var _mkcgo_EVP_EncryptUpdate uintptr
 
 func EVP_EncryptUpdate(ctx EVP_CIPHER_CTX_PTR, out *byte, outl *int32, in *byte, inl int32) (int32, error) {
-	r0, _, _ := syscallN(_mkcgo_EVP_EncryptUpdate, uintptr(ctx), uintptr(unsafe.Pointer(out)), uintptr(unsafe.Pointer(outl)), uintptr(unsafe.Pointer(in)), uintptr(inl))
+	var _err errState
+	r0, _ := syscallN(3, _mkcgo_EVP_EncryptUpdate, uintptr(ctx), uintptr(unsafe.Pointer(out)), uintptr(unsafe.Pointer(outl)), uintptr(unsafe.Pointer(in)), uintptr(inl), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(ctx)
 	runtime.KeepAlive(out)
 	runtime.KeepAlive(outl)
 	runtime.KeepAlive(in)
-	if int32(r0) <= 0 {
-		return 0, newMkcgoErr("EVP_EncryptUpdate", nil)
-	}
-	return int32(r0), nil
+	return int32(r0), newMkcgoErr("EVP_EncryptUpdate", &_err)
 }
 
 var _mkcgo_EVP_KDF_CTX_free uintptr
 
 func EVP_KDF_CTX_free(ctx EVP_KDF_CTX_PTR) {
-	syscallN(_mkcgo_EVP_KDF_CTX_free, uintptr(ctx))
+	syscallN(0, _mkcgo_EVP_KDF_CTX_free, uintptr(ctx))
 	runtime.KeepAlive(ctx)
 }
 
 var _mkcgo_EVP_KDF_CTX_get_kdf_size uintptr
 
 func EVP_KDF_CTX_get_kdf_size(ctx EVP_KDF_CTX_PTR) (int, error) {
-	r0, _, _ := syscallN(_mkcgo_EVP_KDF_CTX_get_kdf_size, uintptr(ctx))
+	var _err errState
+	r0, _ := syscallN(4, _mkcgo_EVP_KDF_CTX_get_kdf_size, uintptr(ctx), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(ctx)
-	if int(r0) <= 0 {
-		return 0, newMkcgoErr("EVP_KDF_CTX_get_kdf_size", nil)
-	}
-	return int(r0), nil
+	return int(r0), newMkcgoErr("EVP_KDF_CTX_get_kdf_size", &_err)
 }
 
 var _mkcgo_EVP_KDF_CTX_new uintptr
 
 func EVP_KDF_CTX_new(kdf EVP_KDF_PTR) (EVP_KDF_CTX_PTR, error) {
-	r0, _, _ := syscallN(_mkcgo_EVP_KDF_CTX_new, uintptr(kdf))
+	var _err errState
+	r0, _ := syscallN(1, _mkcgo_EVP_KDF_CTX_new, uintptr(kdf), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(kdf)
-	if EVP_KDF_CTX_PTR(r0) == nil {
-		return nil, newMkcgoErr("EVP_KDF_CTX_new", nil)
-	}
-	return EVP_KDF_CTX_PTR(r0), nil
+	return EVP_KDF_CTX_PTR(r0), newMkcgoErr("EVP_KDF_CTX_new", &_err)
 }
 
 var _mkcgo_EVP_KDF_CTX_set_params uintptr
 
 func EVP_KDF_CTX_set_params(ctx EVP_KDF_CTX_PTR, params OSSL_PARAM_PTR) (int32, error) {
-	r0, _, _ := syscallN(_mkcgo_EVP_KDF_CTX_set_params, uintptr(ctx), uintptr(params))
+	var _err errState
+	r0, _ := syscallN(3, _mkcgo_EVP_KDF_CTX_set_params, uintptr(ctx), uintptr(params), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(ctx)
 	runtime.KeepAlive(params)
-	if int32(r0) <= 0 {
-		return 0, newMkcgoErr("EVP_KDF_CTX_set_params", nil)
-	}
-	return int32(r0), nil
+	return int32(r0), newMkcgoErr("EVP_KDF_CTX_set_params", &_err)
 }
 
 var _mkcgo_EVP_KDF_derive uintptr
 
 func EVP_KDF_derive(ctx EVP_KDF_CTX_PTR, key *byte, keylen int, params OSSL_PARAM_PTR) (int32, error) {
-	r0, _, _ := syscallN(_mkcgo_EVP_KDF_derive, uintptr(ctx), uintptr(unsafe.Pointer(key)), uintptr(keylen), uintptr(params))
+	var _err errState
+	r0, _ := syscallN(3, _mkcgo_EVP_KDF_derive, uintptr(ctx), uintptr(unsafe.Pointer(key)), uintptr(keylen), uintptr(params), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(ctx)
 	runtime.KeepAlive(key)
 	runtime.KeepAlive(params)
-	if int32(r0) <= 0 {
-		return 0, newMkcgoErr("EVP_KDF_derive", nil)
-	}
-	return int32(r0), nil
+	return int32(r0), newMkcgoErr("EVP_KDF_derive", &_err)
 }
 
 var _mkcgo_EVP_KDF_fetch uintptr
 
 func EVP_KDF_fetch(libctx OSSL_LIB_CTX_PTR, algorithm *byte, properties *byte) (EVP_KDF_PTR, error) {
-	r0, _, _ := syscallN(_mkcgo_EVP_KDF_fetch, uintptr(libctx), uintptr(unsafe.Pointer(algorithm)), uintptr(unsafe.Pointer(properties)))
+	var _err errState
+	r0, _ := syscallN(1, _mkcgo_EVP_KDF_fetch, uintptr(libctx), uintptr(unsafe.Pointer(algorithm)), uintptr(unsafe.Pointer(properties)), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(libctx)
 	runtime.KeepAlive(algorithm)
 	runtime.KeepAlive(properties)
-	if EVP_KDF_PTR(r0) == nil {
-		return nil, newMkcgoErr("EVP_KDF_fetch", nil)
-	}
-	return EVP_KDF_PTR(r0), nil
+	return EVP_KDF_PTR(r0), newMkcgoErr("EVP_KDF_fetch", &_err)
 }
 
 var _mkcgo_EVP_KDF_free uintptr
 
 func EVP_KDF_free(kdf EVP_KDF_PTR) {
-	syscallN(_mkcgo_EVP_KDF_free, uintptr(kdf))
+	syscallN(0, _mkcgo_EVP_KDF_free, uintptr(kdf))
 	runtime.KeepAlive(kdf)
 }
 
 var _mkcgo_EVP_MAC_CTX_dup uintptr
 
 func EVP_MAC_CTX_dup(arg0 EVP_MAC_CTX_PTR) (EVP_MAC_CTX_PTR, error) {
-	r0, _, _ := syscallN(_mkcgo_EVP_MAC_CTX_dup, uintptr(arg0))
+	var _err errState
+	r0, _ := syscallN(1, _mkcgo_EVP_MAC_CTX_dup, uintptr(arg0), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(arg0)
-	if EVP_MAC_CTX_PTR(r0) == nil {
-		return nil, newMkcgoErr("EVP_MAC_CTX_dup", nil)
-	}
-	return EVP_MAC_CTX_PTR(r0), nil
+	return EVP_MAC_CTX_PTR(r0), newMkcgoErr("EVP_MAC_CTX_dup", &_err)
 }
 
 var _mkcgo_EVP_MAC_CTX_free uintptr
 
 func EVP_MAC_CTX_free(arg0 EVP_MAC_CTX_PTR) {
-	syscallN(_mkcgo_EVP_MAC_CTX_free, uintptr(arg0))
+	syscallN(0, _mkcgo_EVP_MAC_CTX_free, uintptr(arg0))
 	runtime.KeepAlive(arg0)
 }
 
 var _mkcgo_EVP_MAC_CTX_new uintptr
 
 func EVP_MAC_CTX_new(arg0 EVP_MAC_PTR) (EVP_MAC_CTX_PTR, error) {
-	r0, _, _ := syscallN(_mkcgo_EVP_MAC_CTX_new, uintptr(arg0))
+	var _err errState
+	r0, _ := syscallN(1, _mkcgo_EVP_MAC_CTX_new, uintptr(arg0), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(arg0)
-	if EVP_MAC_CTX_PTR(r0) == nil {
-		return nil, newMkcgoErr("EVP_MAC_CTX_new", nil)
-	}
-	return EVP_MAC_CTX_PTR(r0), nil
+	return EVP_MAC_CTX_PTR(r0), newMkcgoErr("EVP_MAC_CTX_new", &_err)
 }
 
 var _mkcgo_EVP_MAC_CTX_set_params uintptr
 
 func EVP_MAC_CTX_set_params(ctx EVP_MAC_CTX_PTR, params OSSL_PARAM_PTR) (int32, error) {
-	r0, _, _ := syscallN(_mkcgo_EVP_MAC_CTX_set_params, uintptr(ctx), uintptr(params))
+	var _err errState
+	r0, _ := syscallN(3, _mkcgo_EVP_MAC_CTX_set_params, uintptr(ctx), uintptr(params), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(ctx)
 	runtime.KeepAlive(params)
-	if int32(r0) <= 0 {
-		return 0, newMkcgoErr("EVP_MAC_CTX_set_params", nil)
-	}
-	return int32(r0), nil
+	return int32(r0), newMkcgoErr("EVP_MAC_CTX_set_params", &_err)
 }
 
 var _mkcgo_EVP_MAC_fetch uintptr
 
 func EVP_MAC_fetch(ctx OSSL_LIB_CTX_PTR, algorithm *byte, properties *byte) (EVP_MAC_PTR, error) {
-	r0, _, _ := syscallN(_mkcgo_EVP_MAC_fetch, uintptr(ctx), uintptr(unsafe.Pointer(algorithm)), uintptr(unsafe.Pointer(properties)))
+	var _err errState
+	r0, _ := syscallN(1, _mkcgo_EVP_MAC_fetch, uintptr(ctx), uintptr(unsafe.Pointer(algorithm)), uintptr(unsafe.Pointer(properties)), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(ctx)
 	runtime.KeepAlive(algorithm)
 	runtime.KeepAlive(properties)
-	if EVP_MAC_PTR(r0) == nil {
-		return nil, newMkcgoErr("EVP_MAC_fetch", nil)
-	}
-	return EVP_MAC_PTR(r0), nil
+	return EVP_MAC_PTR(r0), newMkcgoErr("EVP_MAC_fetch", &_err)
 }
 
 var _mkcgo_EVP_MAC_final uintptr
 
 func EVP_MAC_final(ctx EVP_MAC_CTX_PTR, out *byte, outl *int, outsize int) (int32, error) {
-	r0, _, _ := syscallN(_mkcgo_EVP_MAC_final, uintptr(ctx), uintptr(unsafe.Pointer(out)), uintptr(unsafe.Pointer(outl)), uintptr(outsize))
+	var _err errState
+	r0, _ := syscallN(3, _mkcgo_EVP_MAC_final, uintptr(ctx), uintptr(unsafe.Pointer(out)), uintptr(unsafe.Pointer(outl)), uintptr(outsize), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(ctx)
 	runtime.KeepAlive(out)
 	runtime.KeepAlive(outl)
-	if int32(r0) <= 0 {
-		return 0, newMkcgoErr("EVP_MAC_final", nil)
-	}
-	return int32(r0), nil
+	return int32(r0), newMkcgoErr("EVP_MAC_final", &_err)
 }
 
 var _mkcgo_EVP_MAC_init uintptr
 
 func EVP_MAC_init(ctx EVP_MAC_CTX_PTR, key *byte, keylen int, params OSSL_PARAM_PTR) (int32, error) {
-	r0, _, _ := syscallN(_mkcgo_EVP_MAC_init, uintptr(ctx), uintptr(unsafe.Pointer(key)), uintptr(keylen), uintptr(params))
+	var _err errState
+	r0, _ := syscallN(3, _mkcgo_EVP_MAC_init, uintptr(ctx), uintptr(unsafe.Pointer(key)), uintptr(keylen), uintptr(params), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(ctx)
 	runtime.KeepAlive(key)
 	runtime.KeepAlive(params)
-	if int32(r0) <= 0 {
-		return 0, newMkcgoErr("EVP_MAC_init", nil)
-	}
-	return int32(r0), nil
+	return int32(r0), newMkcgoErr("EVP_MAC_init", &_err)
 }
 
 var _mkcgo_EVP_MAC_update uintptr
 
 func EVP_MAC_update(ctx EVP_MAC_CTX_PTR, data *byte, datalen int) (int32, error) {
-	r0, _, _ := syscallN(_mkcgo_EVP_MAC_update, uintptr(ctx), uintptr(unsafe.Pointer(data)), uintptr(datalen))
+	var _err errState
+	r0, _ := syscallN(3, _mkcgo_EVP_MAC_update, uintptr(ctx), uintptr(unsafe.Pointer(data)), uintptr(datalen), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(ctx)
 	runtime.KeepAlive(data)
-	if int32(r0) <= 0 {
-		return 0, newMkcgoErr("EVP_MAC_update", nil)
-	}
-	return int32(r0), nil
+	return int32(r0), newMkcgoErr("EVP_MAC_update", &_err)
 }
 
 var _mkcgo_EVP_MD_CTX_copy uintptr
 
 func EVP_MD_CTX_copy(out EVP_MD_CTX_PTR, in EVP_MD_CTX_PTR) (int32, error) {
-	r0, _, _ := syscallN(_mkcgo_EVP_MD_CTX_copy, uintptr(out), uintptr(in))
+	var _err errState
+	r0, _ := syscallN(3, _mkcgo_EVP_MD_CTX_copy, uintptr(out), uintptr(in), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(out)
 	runtime.KeepAlive(in)
-	if int32(r0) <= 0 {
-		return 0, newMkcgoErr("EVP_MD_CTX_copy", nil)
-	}
-	return int32(r0), nil
+	return int32(r0), newMkcgoErr("EVP_MD_CTX_copy", &_err)
 }
 
 var _mkcgo_EVP_MD_CTX_copy_ex uintptr
 
 func EVP_MD_CTX_copy_ex(out EVP_MD_CTX_PTR, in EVP_MD_CTX_PTR) (int32, error) {
-	r0, _, _ := syscallN(_mkcgo_EVP_MD_CTX_copy_ex, uintptr(out), uintptr(in))
+	var _err errState
+	r0, _ := syscallN(3, _mkcgo_EVP_MD_CTX_copy_ex, uintptr(out), uintptr(in), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(out)
 	runtime.KeepAlive(in)
-	if int32(r0) <= 0 {
-		return 0, newMkcgoErr("EVP_MD_CTX_copy_ex", nil)
-	}
-	return int32(r0), nil
+	return int32(r0), newMkcgoErr("EVP_MD_CTX_copy_ex", &_err)
 }
 
 var _mkcgo_EVP_MD_CTX_free uintptr
 
 func EVP_MD_CTX_free(ctx EVP_MD_CTX_PTR) {
-	syscallN(_mkcgo_EVP_MD_CTX_free, uintptr(ctx))
+	syscallN(0, _mkcgo_EVP_MD_CTX_free, uintptr(ctx))
 	runtime.KeepAlive(ctx)
 }
 
 var _mkcgo_EVP_MD_CTX_get_params uintptr
 
 func EVP_MD_CTX_get_params(ctx EVP_MD_CTX_PTR, params OSSL_PARAM_PTR) (int32, error) {
-	r0, _, _ := syscallN(_mkcgo_EVP_MD_CTX_get_params, uintptr(ctx), uintptr(params))
+	var _err errState
+	r0, _ := syscallN(3, _mkcgo_EVP_MD_CTX_get_params, uintptr(ctx), uintptr(params), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(ctx)
 	runtime.KeepAlive(params)
-	if int32(r0) <= 0 {
-		return 0, newMkcgoErr("EVP_MD_CTX_get_params", nil)
-	}
-	return int32(r0), nil
+	return int32(r0), newMkcgoErr("EVP_MD_CTX_get_params", &_err)
 }
 
 var _mkcgo_EVP_MD_CTX_gettable_params uintptr
 
 func EVP_MD_CTX_gettable_params(ctx EVP_MD_CTX_PTR) (OSSL_PARAM_PTR, error) {
-	r0, _, _ := syscallN(_mkcgo_EVP_MD_CTX_gettable_params, uintptr(ctx))
+	var _err errState
+	r0, _ := syscallN(1, _mkcgo_EVP_MD_CTX_gettable_params, uintptr(ctx), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(ctx)
-	if OSSL_PARAM_PTR(r0) == nil {
-		return nil, newMkcgoErr("EVP_MD_CTX_gettable_params", nil)
-	}
-	return OSSL_PARAM_PTR(r0), nil
+	return OSSL_PARAM_PTR(r0), newMkcgoErr("EVP_MD_CTX_gettable_params", &_err)
 }
 
 var _mkcgo_EVP_MD_CTX_new uintptr
 
 func EVP_MD_CTX_new() (EVP_MD_CTX_PTR, error) {
-	r0, _, _ := syscallN(_mkcgo_EVP_MD_CTX_new)
-	if EVP_MD_CTX_PTR(r0) == nil {
-		return nil, newMkcgoErr("EVP_MD_CTX_new", nil)
-	}
-	return EVP_MD_CTX_PTR(r0), nil
+	var _err errState
+	r0, _ := syscallN(1, _mkcgo_EVP_MD_CTX_new, uintptr(unsafe.Pointer(&_err)))
+	return EVP_MD_CTX_PTR(r0), newMkcgoErr("EVP_MD_CTX_new", &_err)
 }
 
 var _mkcgo_EVP_MD_CTX_set_params uintptr
 
 func EVP_MD_CTX_set_params(ctx EVP_MD_CTX_PTR, params OSSL_PARAM_PTR) (int32, error) {
-	r0, _, _ := syscallN(_mkcgo_EVP_MD_CTX_set_params, uintptr(ctx), uintptr(params))
+	var _err errState
+	r0, _ := syscallN(3, _mkcgo_EVP_MD_CTX_set_params, uintptr(ctx), uintptr(params), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(ctx)
 	runtime.KeepAlive(params)
-	if int32(r0) <= 0 {
-		return 0, newMkcgoErr("EVP_MD_CTX_set_params", nil)
-	}
-	return int32(r0), nil
+	return int32(r0), newMkcgoErr("EVP_MD_CTX_set_params", &_err)
 }
 
 var _mkcgo_EVP_MD_CTX_settable_params uintptr
 
 func EVP_MD_CTX_settable_params(ctx EVP_MD_CTX_PTR) (OSSL_PARAM_PTR, error) {
-	r0, _, _ := syscallN(_mkcgo_EVP_MD_CTX_settable_params, uintptr(ctx))
+	var _err errState
+	r0, _ := syscallN(1, _mkcgo_EVP_MD_CTX_settable_params, uintptr(ctx), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(ctx)
-	if OSSL_PARAM_PTR(r0) == nil {
-		return nil, newMkcgoErr("EVP_MD_CTX_settable_params", nil)
-	}
-	return OSSL_PARAM_PTR(r0), nil
+	return OSSL_PARAM_PTR(r0), newMkcgoErr("EVP_MD_CTX_settable_params", &_err)
 }
 
 var _mkcgo_EVP_MD_fetch uintptr
 
 func EVP_MD_fetch(ctx OSSL_LIB_CTX_PTR, algorithm *byte, properties *byte) (EVP_MD_PTR, error) {
-	r0, _, _ := syscallN(_mkcgo_EVP_MD_fetch, uintptr(ctx), uintptr(unsafe.Pointer(algorithm)), uintptr(unsafe.Pointer(properties)))
+	var _err errState
+	r0, _ := syscallN(1, _mkcgo_EVP_MD_fetch, uintptr(ctx), uintptr(unsafe.Pointer(algorithm)), uintptr(unsafe.Pointer(properties)), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(ctx)
 	runtime.KeepAlive(algorithm)
 	runtime.KeepAlive(properties)
-	if EVP_MD_PTR(r0) == nil {
-		return nil, newMkcgoErr("EVP_MD_fetch", nil)
-	}
-	return EVP_MD_PTR(r0), nil
+	return EVP_MD_PTR(r0), newMkcgoErr("EVP_MD_fetch", &_err)
 }
 
 var _mkcgo_EVP_MD_free uintptr
 
 func EVP_MD_free(md EVP_MD_PTR) {
-	syscallN(_mkcgo_EVP_MD_free, uintptr(md))
+	syscallN(0, _mkcgo_EVP_MD_free, uintptr(md))
 	runtime.KeepAlive(md)
 }
 
 var _mkcgo_EVP_MD_get0_name uintptr
 
 func EVP_MD_get0_name(md EVP_MD_PTR) *byte {
-	r0, _, _ := syscallN(_mkcgo_EVP_MD_get0_name, uintptr(md))
+	r0, _ := syscallN(0, _mkcgo_EVP_MD_get0_name, uintptr(md))
 	runtime.KeepAlive(md)
 	return (*byte)(unsafe.Pointer(r0))
 }
@@ -1068,7 +943,7 @@ func EVP_MD_get0_name(md EVP_MD_PTR) *byte {
 var _mkcgo_EVP_MD_get0_provider uintptr
 
 func EVP_MD_get0_provider(md EVP_MD_PTR) OSSL_PROVIDER_PTR {
-	r0, _, _ := syscallN(_mkcgo_EVP_MD_get0_provider, uintptr(md))
+	r0, _ := syscallN(0, _mkcgo_EVP_MD_get0_provider, uintptr(md))
 	runtime.KeepAlive(md)
 	return OSSL_PROVIDER_PTR(r0)
 }
@@ -1076,7 +951,7 @@ func EVP_MD_get0_provider(md EVP_MD_PTR) OSSL_PROVIDER_PTR {
 var _mkcgo_EVP_MD_get_block_size uintptr
 
 func EVP_MD_get_block_size(md EVP_MD_PTR) int32 {
-	r0, _, _ := syscallN(_mkcgo_EVP_MD_get_block_size, uintptr(md))
+	r0, _ := syscallN(0, _mkcgo_EVP_MD_get_block_size, uintptr(md))
 	runtime.KeepAlive(md)
 	return int32(r0)
 }
@@ -1084,7 +959,7 @@ func EVP_MD_get_block_size(md EVP_MD_PTR) int32 {
 var _mkcgo_EVP_MD_get_size uintptr
 
 func EVP_MD_get_size(md EVP_MD_PTR) int32 {
-	r0, _, _ := syscallN(_mkcgo_EVP_MD_get_size, uintptr(md))
+	r0, _ := syscallN(0, _mkcgo_EVP_MD_get_size, uintptr(md))
 	runtime.KeepAlive(md)
 	return int32(r0)
 }
@@ -1092,7 +967,7 @@ func EVP_MD_get_size(md EVP_MD_PTR) int32 {
 var _mkcgo_EVP_MD_get_type uintptr
 
 func EVP_MD_get_type(md EVP_MD_PTR) int32 {
-	r0, _, _ := syscallN(_mkcgo_EVP_MD_get_type, uintptr(md))
+	r0, _ := syscallN(0, _mkcgo_EVP_MD_get_type, uintptr(md))
 	runtime.KeepAlive(md)
 	return int32(r0)
 }
@@ -1100,712 +975,612 @@ func EVP_MD_get_type(md EVP_MD_PTR) int32 {
 var _mkcgo_EVP_PKEY_CTX_add1_hkdf_info uintptr
 
 func EVP_PKEY_CTX_add1_hkdf_info(arg0 EVP_PKEY_CTX_PTR, arg1 *byte, arg2 int32) (int32, error) {
-	r0, _, _ := syscallN(_mkcgo_EVP_PKEY_CTX_add1_hkdf_info, uintptr(arg0), uintptr(unsafe.Pointer(arg1)), uintptr(arg2))
+	var _err errState
+	r0, _ := syscallN(3, _mkcgo_EVP_PKEY_CTX_add1_hkdf_info, uintptr(arg0), uintptr(unsafe.Pointer(arg1)), uintptr(arg2), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(arg0)
 	runtime.KeepAlive(arg1)
-	if int32(r0) <= 0 {
-		return 0, newMkcgoErr("EVP_PKEY_CTX_add1_hkdf_info", nil)
-	}
-	return int32(r0), nil
+	return int32(r0), newMkcgoErr("EVP_PKEY_CTX_add1_hkdf_info", &_err)
 }
 
 var _mkcgo_EVP_PKEY_CTX_ctrl uintptr
 
 func EVP_PKEY_CTX_ctrl(ctx EVP_PKEY_CTX_PTR, keytype int32, optype int32, cmd int32, p1 int32, p2 unsafe.Pointer) (int32, error) {
-	r0, _, _ := syscallN(_mkcgo_EVP_PKEY_CTX_ctrl, uintptr(ctx), uintptr(keytype), uintptr(optype), uintptr(cmd), uintptr(p1), uintptr(p2))
+	var _err errState
+	r0, _ := syscallN(3, _mkcgo_EVP_PKEY_CTX_ctrl, uintptr(ctx), uintptr(keytype), uintptr(optype), uintptr(cmd), uintptr(p1), uintptr(p2), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(ctx)
-	if int32(r0) <= 0 {
-		return 0, newMkcgoErr("EVP_PKEY_CTX_ctrl", nil)
-	}
-	return int32(r0), nil
+	return int32(r0), newMkcgoErr("EVP_PKEY_CTX_ctrl", &_err)
 }
 
 var _mkcgo_EVP_PKEY_CTX_free uintptr
 
 func EVP_PKEY_CTX_free(arg0 EVP_PKEY_CTX_PTR) {
-	syscallN(_mkcgo_EVP_PKEY_CTX_free, uintptr(arg0))
+	syscallN(0, _mkcgo_EVP_PKEY_CTX_free, uintptr(arg0))
 	runtime.KeepAlive(arg0)
 }
 
 var _mkcgo_EVP_PKEY_CTX_new uintptr
 
 func EVP_PKEY_CTX_new(arg0 EVP_PKEY_PTR, arg1 ENGINE_PTR) (EVP_PKEY_CTX_PTR, error) {
-	r0, _, _ := syscallN(_mkcgo_EVP_PKEY_CTX_new, uintptr(arg0), uintptr(arg1))
+	var _err errState
+	r0, _ := syscallN(1, _mkcgo_EVP_PKEY_CTX_new, uintptr(arg0), uintptr(arg1), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(arg0)
 	runtime.KeepAlive(arg1)
-	if EVP_PKEY_CTX_PTR(r0) == nil {
-		return nil, newMkcgoErr("EVP_PKEY_CTX_new", nil)
-	}
-	return EVP_PKEY_CTX_PTR(r0), nil
+	return EVP_PKEY_CTX_PTR(r0), newMkcgoErr("EVP_PKEY_CTX_new", &_err)
 }
 
 var _mkcgo_EVP_PKEY_CTX_new_from_pkey uintptr
 
 func EVP_PKEY_CTX_new_from_pkey(libctx OSSL_LIB_CTX_PTR, pkey EVP_PKEY_PTR, propquery *byte) (EVP_PKEY_CTX_PTR, error) {
-	r0, _, _ := syscallN(_mkcgo_EVP_PKEY_CTX_new_from_pkey, uintptr(libctx), uintptr(pkey), uintptr(unsafe.Pointer(propquery)))
+	var _err errState
+	r0, _ := syscallN(1, _mkcgo_EVP_PKEY_CTX_new_from_pkey, uintptr(libctx), uintptr(pkey), uintptr(unsafe.Pointer(propquery)), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(libctx)
 	runtime.KeepAlive(pkey)
 	runtime.KeepAlive(propquery)
-	if EVP_PKEY_CTX_PTR(r0) == nil {
-		return nil, newMkcgoErr("EVP_PKEY_CTX_new_from_pkey", nil)
-	}
-	return EVP_PKEY_CTX_PTR(r0), nil
+	return EVP_PKEY_CTX_PTR(r0), newMkcgoErr("EVP_PKEY_CTX_new_from_pkey", &_err)
 }
 
 var _mkcgo_EVP_PKEY_CTX_new_id uintptr
 
 func EVP_PKEY_CTX_new_id(id int32, e ENGINE_PTR) (EVP_PKEY_CTX_PTR, error) {
-	r0, _, _ := syscallN(_mkcgo_EVP_PKEY_CTX_new_id, uintptr(id), uintptr(e))
+	var _err errState
+	r0, _ := syscallN(1, _mkcgo_EVP_PKEY_CTX_new_id, uintptr(id), uintptr(e), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(e)
-	if EVP_PKEY_CTX_PTR(r0) == nil {
-		return nil, newMkcgoErr("EVP_PKEY_CTX_new_id", nil)
-	}
-	return EVP_PKEY_CTX_PTR(r0), nil
+	return EVP_PKEY_CTX_PTR(r0), newMkcgoErr("EVP_PKEY_CTX_new_id", &_err)
 }
 
 var _mkcgo_EVP_PKEY_CTX_set0_rsa_oaep_label uintptr
 
 func EVP_PKEY_CTX_set0_rsa_oaep_label(ctx EVP_PKEY_CTX_PTR, label unsafe.Pointer, len int32) (int32, error) {
-	r0, _, _ := syscallN(_mkcgo_EVP_PKEY_CTX_set0_rsa_oaep_label, uintptr(ctx), uintptr(label), uintptr(len))
+	var _err errState
+	r0, _ := syscallN(3, _mkcgo_EVP_PKEY_CTX_set0_rsa_oaep_label, uintptr(ctx), uintptr(label), uintptr(len), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(ctx)
-	if int32(r0) <= 0 {
-		return 0, newMkcgoErr("EVP_PKEY_CTX_set0_rsa_oaep_label", nil)
-	}
-	return int32(r0), nil
+	return int32(r0), newMkcgoErr("EVP_PKEY_CTX_set0_rsa_oaep_label", &_err)
 }
 
 var _mkcgo_EVP_PKEY_CTX_set1_hkdf_key uintptr
 
 func EVP_PKEY_CTX_set1_hkdf_key(arg0 EVP_PKEY_CTX_PTR, arg1 *byte, arg2 int32) (int32, error) {
-	r0, _, _ := syscallN(_mkcgo_EVP_PKEY_CTX_set1_hkdf_key, uintptr(arg0), uintptr(unsafe.Pointer(arg1)), uintptr(arg2))
+	var _err errState
+	r0, _ := syscallN(3, _mkcgo_EVP_PKEY_CTX_set1_hkdf_key, uintptr(arg0), uintptr(unsafe.Pointer(arg1)), uintptr(arg2), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(arg0)
 	runtime.KeepAlive(arg1)
-	if int32(r0) <= 0 {
-		return 0, newMkcgoErr("EVP_PKEY_CTX_set1_hkdf_key", nil)
-	}
-	return int32(r0), nil
+	return int32(r0), newMkcgoErr("EVP_PKEY_CTX_set1_hkdf_key", &_err)
 }
 
 var _mkcgo_EVP_PKEY_CTX_set1_hkdf_salt uintptr
 
 func EVP_PKEY_CTX_set1_hkdf_salt(arg0 EVP_PKEY_CTX_PTR, arg1 *byte, arg2 int32) (int32, error) {
-	r0, _, _ := syscallN(_mkcgo_EVP_PKEY_CTX_set1_hkdf_salt, uintptr(arg0), uintptr(unsafe.Pointer(arg1)), uintptr(arg2))
+	var _err errState
+	r0, _ := syscallN(3, _mkcgo_EVP_PKEY_CTX_set1_hkdf_salt, uintptr(arg0), uintptr(unsafe.Pointer(arg1)), uintptr(arg2), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(arg0)
 	runtime.KeepAlive(arg1)
-	if int32(r0) <= 0 {
-		return 0, newMkcgoErr("EVP_PKEY_CTX_set1_hkdf_salt", nil)
-	}
-	return int32(r0), nil
+	return int32(r0), newMkcgoErr("EVP_PKEY_CTX_set1_hkdf_salt", &_err)
 }
 
 var _mkcgo_EVP_PKEY_CTX_set_hkdf_md uintptr
 
 func EVP_PKEY_CTX_set_hkdf_md(arg0 EVP_PKEY_CTX_PTR, arg1 EVP_MD_PTR) (int32, error) {
-	r0, _, _ := syscallN(_mkcgo_EVP_PKEY_CTX_set_hkdf_md, uintptr(arg0), uintptr(arg1))
+	var _err errState
+	r0, _ := syscallN(3, _mkcgo_EVP_PKEY_CTX_set_hkdf_md, uintptr(arg0), uintptr(arg1), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(arg0)
 	runtime.KeepAlive(arg1)
-	if int32(r0) <= 0 {
-		return 0, newMkcgoErr("EVP_PKEY_CTX_set_hkdf_md", nil)
-	}
-	return int32(r0), nil
+	return int32(r0), newMkcgoErr("EVP_PKEY_CTX_set_hkdf_md", &_err)
 }
 
 var _mkcgo_EVP_PKEY_CTX_set_hkdf_mode uintptr
 
 func EVP_PKEY_CTX_set_hkdf_mode(arg0 EVP_PKEY_CTX_PTR, arg1 int32) (int32, error) {
-	r0, _, _ := syscallN(_mkcgo_EVP_PKEY_CTX_set_hkdf_mode, uintptr(arg0), uintptr(arg1))
+	var _err errState
+	r0, _ := syscallN(3, _mkcgo_EVP_PKEY_CTX_set_hkdf_mode, uintptr(arg0), uintptr(arg1), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(arg0)
-	if int32(r0) <= 0 {
-		return 0, newMkcgoErr("EVP_PKEY_CTX_set_hkdf_mode", nil)
-	}
-	return int32(r0), nil
+	return int32(r0), newMkcgoErr("EVP_PKEY_CTX_set_hkdf_mode", &_err)
 }
 
 var _mkcgo_EVP_PKEY_Q_keygen uintptr
 
 func EVP_PKEY_Q_keygen_EC(ctx OSSL_LIB_CTX_PTR, propq *byte, __type *byte, arg1 *byte) (EVP_PKEY_PTR, error) {
+	var _err errState
 	var r0 uintptr
 	if runtime.GOOS == "darwin" && runtime.GOARCH == "arm64" {
-		r0, _, _ = syscallN(_mkcgo_EVP_PKEY_Q_keygen, uintptr(ctx), uintptr(unsafe.Pointer(propq)), uintptr(unsafe.Pointer(__type)), 0, 0, 0, 0, 0, uintptr(unsafe.Pointer(arg1)))
+		r0, _ = syscallN(1, _mkcgo_EVP_PKEY_Q_keygen, uintptr(ctx), uintptr(unsafe.Pointer(propq)), uintptr(unsafe.Pointer(__type)), 0, 0, 0, 0, 0, uintptr(unsafe.Pointer(arg1)), uintptr(unsafe.Pointer(&_err)))
 	} else {
-		r0, _, _ = syscallN(_mkcgo_EVP_PKEY_Q_keygen, uintptr(ctx), uintptr(unsafe.Pointer(propq)), uintptr(unsafe.Pointer(__type)), uintptr(unsafe.Pointer(arg1)))
+		r0, _ = syscallN(1, _mkcgo_EVP_PKEY_Q_keygen, uintptr(ctx), uintptr(unsafe.Pointer(propq)), uintptr(unsafe.Pointer(__type)), uintptr(unsafe.Pointer(arg1)), uintptr(unsafe.Pointer(&_err)))
 	}
 	runtime.KeepAlive(ctx)
 	runtime.KeepAlive(propq)
 	runtime.KeepAlive(__type)
 	runtime.KeepAlive(arg1)
-	if EVP_PKEY_PTR(r0) == nil {
-		return nil, newMkcgoErr("EVP_PKEY_Q_keygen_EC", nil)
-	}
-	return EVP_PKEY_PTR(r0), nil
+	return EVP_PKEY_PTR(r0), newMkcgoErr("EVP_PKEY_Q_keygen_EC", &_err)
 }
 
 func EVP_PKEY_Q_keygen_ED25519(ctx OSSL_LIB_CTX_PTR, propq *byte, __type *byte) (EVP_PKEY_PTR, error) {
-	r0, _, _ := syscallN(_mkcgo_EVP_PKEY_Q_keygen, uintptr(ctx), uintptr(unsafe.Pointer(propq)), uintptr(unsafe.Pointer(__type)))
+	var _err errState
+	r0, _ := syscallN(1, _mkcgo_EVP_PKEY_Q_keygen, uintptr(ctx), uintptr(unsafe.Pointer(propq)), uintptr(unsafe.Pointer(__type)), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(ctx)
 	runtime.KeepAlive(propq)
 	runtime.KeepAlive(__type)
-	if EVP_PKEY_PTR(r0) == nil {
-		return nil, newMkcgoErr("EVP_PKEY_Q_keygen_ED25519", nil)
-	}
-	return EVP_PKEY_PTR(r0), nil
+	return EVP_PKEY_PTR(r0), newMkcgoErr("EVP_PKEY_Q_keygen_ED25519", &_err)
 }
 
 func EVP_PKEY_Q_keygen_RSA(ctx OSSL_LIB_CTX_PTR, propq *byte, __type *byte, arg1 int) (EVP_PKEY_PTR, error) {
+	var _err errState
 	var r0 uintptr
 	if runtime.GOOS == "darwin" && runtime.GOARCH == "arm64" {
-		r0, _, _ = syscallN(_mkcgo_EVP_PKEY_Q_keygen, uintptr(ctx), uintptr(unsafe.Pointer(propq)), uintptr(unsafe.Pointer(__type)), 0, 0, 0, 0, 0, uintptr(arg1))
+		r0, _ = syscallN(1, _mkcgo_EVP_PKEY_Q_keygen, uintptr(ctx), uintptr(unsafe.Pointer(propq)), uintptr(unsafe.Pointer(__type)), 0, 0, 0, 0, 0, uintptr(arg1), uintptr(unsafe.Pointer(&_err)))
 	} else {
-		r0, _, _ = syscallN(_mkcgo_EVP_PKEY_Q_keygen, uintptr(ctx), uintptr(unsafe.Pointer(propq)), uintptr(unsafe.Pointer(__type)), uintptr(arg1))
+		r0, _ = syscallN(1, _mkcgo_EVP_PKEY_Q_keygen, uintptr(ctx), uintptr(unsafe.Pointer(propq)), uintptr(unsafe.Pointer(__type)), uintptr(arg1), uintptr(unsafe.Pointer(&_err)))
 	}
 	runtime.KeepAlive(ctx)
 	runtime.KeepAlive(propq)
 	runtime.KeepAlive(__type)
-	if EVP_PKEY_PTR(r0) == nil {
-		return nil, newMkcgoErr("EVP_PKEY_Q_keygen_RSA", nil)
-	}
-	return EVP_PKEY_PTR(r0), nil
+	return EVP_PKEY_PTR(r0), newMkcgoErr("EVP_PKEY_Q_keygen_RSA", &_err)
 }
 
 var _mkcgo_EVP_PKEY_assign uintptr
 
 func EVP_PKEY_assign(pkey EVP_PKEY_PTR, __type int32, key unsafe.Pointer) (int32, error) {
-	r0, _, _ := syscallN(_mkcgo_EVP_PKEY_assign, uintptr(pkey), uintptr(__type), uintptr(key))
+	var _err errState
+	r0, _ := syscallN(3, _mkcgo_EVP_PKEY_assign, uintptr(pkey), uintptr(__type), uintptr(key), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(pkey)
-	if int32(r0) <= 0 {
-		return 0, newMkcgoErr("EVP_PKEY_assign", nil)
-	}
-	return int32(r0), nil
+	return int32(r0), newMkcgoErr("EVP_PKEY_assign", &_err)
 }
 
 var _mkcgo_EVP_PKEY_decrypt uintptr
 
 func EVP_PKEY_decrypt(arg0 EVP_PKEY_CTX_PTR, arg1 *byte, arg2 *int, arg3 *byte, arg4 int) (int32, error) {
-	r0, _, _ := syscallN(_mkcgo_EVP_PKEY_decrypt, uintptr(arg0), uintptr(unsafe.Pointer(arg1)), uintptr(unsafe.Pointer(arg2)), uintptr(unsafe.Pointer(arg3)), uintptr(arg4))
+	var _err errState
+	r0, _ := syscallN(3, _mkcgo_EVP_PKEY_decrypt, uintptr(arg0), uintptr(unsafe.Pointer(arg1)), uintptr(unsafe.Pointer(arg2)), uintptr(unsafe.Pointer(arg3)), uintptr(arg4), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(arg0)
 	runtime.KeepAlive(arg1)
 	runtime.KeepAlive(arg2)
 	runtime.KeepAlive(arg3)
-	if int32(r0) <= 0 {
-		return 0, newMkcgoErr("EVP_PKEY_decrypt", nil)
-	}
-	return int32(r0), nil
+	return int32(r0), newMkcgoErr("EVP_PKEY_decrypt", &_err)
 }
 
 var _mkcgo_EVP_PKEY_decrypt_init uintptr
 
 func EVP_PKEY_decrypt_init(arg0 EVP_PKEY_CTX_PTR) (int32, error) {
-	r0, _, _ := syscallN(_mkcgo_EVP_PKEY_decrypt_init, uintptr(arg0))
+	var _err errState
+	r0, _ := syscallN(3, _mkcgo_EVP_PKEY_decrypt_init, uintptr(arg0), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(arg0)
-	if int32(r0) <= 0 {
-		return 0, newMkcgoErr("EVP_PKEY_decrypt_init", nil)
-	}
-	return int32(r0), nil
+	return int32(r0), newMkcgoErr("EVP_PKEY_decrypt_init", &_err)
 }
 
 var _mkcgo_EVP_PKEY_derive uintptr
 
 func EVP_PKEY_derive(ctx EVP_PKEY_CTX_PTR, key *byte, keylen *int) (int32, error) {
-	r0, _, _ := syscallN(_mkcgo_EVP_PKEY_derive, uintptr(ctx), uintptr(unsafe.Pointer(key)), uintptr(unsafe.Pointer(keylen)))
+	var _err errState
+	r0, _ := syscallN(3, _mkcgo_EVP_PKEY_derive, uintptr(ctx), uintptr(unsafe.Pointer(key)), uintptr(unsafe.Pointer(keylen)), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(ctx)
 	runtime.KeepAlive(key)
 	runtime.KeepAlive(keylen)
-	if int32(r0) <= 0 {
-		return 0, newMkcgoErr("EVP_PKEY_derive", nil)
-	}
-	return int32(r0), nil
+	return int32(r0), newMkcgoErr("EVP_PKEY_derive", &_err)
 }
 
 var _mkcgo_EVP_PKEY_derive_init uintptr
 
 func EVP_PKEY_derive_init(ctx EVP_PKEY_CTX_PTR) (int32, error) {
-	r0, _, _ := syscallN(_mkcgo_EVP_PKEY_derive_init, uintptr(ctx))
+	var _err errState
+	r0, _ := syscallN(3, _mkcgo_EVP_PKEY_derive_init, uintptr(ctx), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(ctx)
-	if int32(r0) <= 0 {
-		return 0, newMkcgoErr("EVP_PKEY_derive_init", nil)
-	}
-	return int32(r0), nil
+	return int32(r0), newMkcgoErr("EVP_PKEY_derive_init", &_err)
 }
 
 var _mkcgo_EVP_PKEY_derive_set_peer uintptr
 
 func EVP_PKEY_derive_set_peer(ctx EVP_PKEY_CTX_PTR, peer EVP_PKEY_PTR) (int32, error) {
-	r0, _, _ := syscallN(_mkcgo_EVP_PKEY_derive_set_peer, uintptr(ctx), uintptr(peer))
+	var _err errState
+	r0, _ := syscallN(3, _mkcgo_EVP_PKEY_derive_set_peer, uintptr(ctx), uintptr(peer), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(ctx)
 	runtime.KeepAlive(peer)
-	if int32(r0) <= 0 {
-		return 0, newMkcgoErr("EVP_PKEY_derive_set_peer", nil)
-	}
-	return int32(r0), nil
+	return int32(r0), newMkcgoErr("EVP_PKEY_derive_set_peer", &_err)
 }
 
 var _mkcgo_EVP_PKEY_encrypt uintptr
 
 func EVP_PKEY_encrypt(arg0 EVP_PKEY_CTX_PTR, arg1 *byte, arg2 *int, arg3 *byte, arg4 int) (int32, error) {
-	r0, _, _ := syscallN(_mkcgo_EVP_PKEY_encrypt, uintptr(arg0), uintptr(unsafe.Pointer(arg1)), uintptr(unsafe.Pointer(arg2)), uintptr(unsafe.Pointer(arg3)), uintptr(arg4))
+	var _err errState
+	r0, _ := syscallN(3, _mkcgo_EVP_PKEY_encrypt, uintptr(arg0), uintptr(unsafe.Pointer(arg1)), uintptr(unsafe.Pointer(arg2)), uintptr(unsafe.Pointer(arg3)), uintptr(arg4), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(arg0)
 	runtime.KeepAlive(arg1)
 	runtime.KeepAlive(arg2)
 	runtime.KeepAlive(arg3)
-	if int32(r0) <= 0 {
-		return 0, newMkcgoErr("EVP_PKEY_encrypt", nil)
-	}
-	return int32(r0), nil
+	return int32(r0), newMkcgoErr("EVP_PKEY_encrypt", &_err)
 }
 
 var _mkcgo_EVP_PKEY_encrypt_init uintptr
 
 func EVP_PKEY_encrypt_init(arg0 EVP_PKEY_CTX_PTR) (int32, error) {
-	r0, _, _ := syscallN(_mkcgo_EVP_PKEY_encrypt_init, uintptr(arg0))
+	var _err errState
+	r0, _ := syscallN(3, _mkcgo_EVP_PKEY_encrypt_init, uintptr(arg0), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(arg0)
-	if int32(r0) <= 0 {
-		return 0, newMkcgoErr("EVP_PKEY_encrypt_init", nil)
-	}
-	return int32(r0), nil
+	return int32(r0), newMkcgoErr("EVP_PKEY_encrypt_init", &_err)
 }
 
 var _mkcgo_EVP_PKEY_free uintptr
 
 func EVP_PKEY_free(arg0 EVP_PKEY_PTR) {
-	syscallN(_mkcgo_EVP_PKEY_free, uintptr(arg0))
+	syscallN(0, _mkcgo_EVP_PKEY_free, uintptr(arg0))
 	runtime.KeepAlive(arg0)
 }
 
 var _mkcgo_EVP_PKEY_fromdata uintptr
 
 func EVP_PKEY_fromdata(ctx EVP_PKEY_CTX_PTR, pkey *EVP_PKEY_PTR, selection int32, params OSSL_PARAM_PTR) (int32, error) {
-	r0, _, _ := syscallN(_mkcgo_EVP_PKEY_fromdata, uintptr(ctx), uintptr(unsafe.Pointer(pkey)), uintptr(selection), uintptr(params))
+	var _err errState
+	r0, _ := syscallN(3, _mkcgo_EVP_PKEY_fromdata, uintptr(ctx), uintptr(unsafe.Pointer(pkey)), uintptr(selection), uintptr(params), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(ctx)
 	runtime.KeepAlive(pkey)
 	runtime.KeepAlive(params)
-	if int32(r0) <= 0 {
-		return 0, newMkcgoErr("EVP_PKEY_fromdata", nil)
-	}
-	return int32(r0), nil
+	return int32(r0), newMkcgoErr("EVP_PKEY_fromdata", &_err)
 }
 
 var _mkcgo_EVP_PKEY_fromdata_init uintptr
 
 func EVP_PKEY_fromdata_init(ctx EVP_PKEY_CTX_PTR) (int32, error) {
-	r0, _, _ := syscallN(_mkcgo_EVP_PKEY_fromdata_init, uintptr(ctx))
+	var _err errState
+	r0, _ := syscallN(3, _mkcgo_EVP_PKEY_fromdata_init, uintptr(ctx), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(ctx)
-	if int32(r0) <= 0 {
-		return 0, newMkcgoErr("EVP_PKEY_fromdata_init", nil)
-	}
-	return int32(r0), nil
+	return int32(r0), newMkcgoErr("EVP_PKEY_fromdata_init", &_err)
 }
 
 var _mkcgo_EVP_PKEY_get0_DSA uintptr
 
 func EVP_PKEY_get0_DSA(pkey EVP_PKEY_PTR) (DSA_PTR, error) {
-	r0, _, _ := syscallN(_mkcgo_EVP_PKEY_get0_DSA, uintptr(pkey))
+	var _err errState
+	r0, _ := syscallN(1, _mkcgo_EVP_PKEY_get0_DSA, uintptr(pkey), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(pkey)
-	if DSA_PTR(r0) == nil {
-		return nil, newMkcgoErr("EVP_PKEY_get0_DSA", nil)
-	}
-	return DSA_PTR(r0), nil
+	return DSA_PTR(r0), newMkcgoErr("EVP_PKEY_get0_DSA", &_err)
 }
 
 var _mkcgo_EVP_PKEY_get0_EC_KEY uintptr
 
 func EVP_PKEY_get0_EC_KEY(pkey EVP_PKEY_PTR) (EC_KEY_PTR, error) {
-	r0, _, _ := syscallN(_mkcgo_EVP_PKEY_get0_EC_KEY, uintptr(pkey))
+	var _err errState
+	r0, _ := syscallN(1, _mkcgo_EVP_PKEY_get0_EC_KEY, uintptr(pkey), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(pkey)
-	if EC_KEY_PTR(r0) == nil {
-		return nil, newMkcgoErr("EVP_PKEY_get0_EC_KEY", nil)
-	}
-	return EC_KEY_PTR(r0), nil
+	return EC_KEY_PTR(r0), newMkcgoErr("EVP_PKEY_get0_EC_KEY", &_err)
 }
 
 var _mkcgo_EVP_PKEY_get1_RSA uintptr
 
 func EVP_PKEY_get1_RSA(pkey EVP_PKEY_PTR) (RSA_PTR, error) {
-	r0, _, _ := syscallN(_mkcgo_EVP_PKEY_get1_RSA, uintptr(pkey))
+	var _err errState
+	r0, _ := syscallN(1, _mkcgo_EVP_PKEY_get1_RSA, uintptr(pkey), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(pkey)
-	if RSA_PTR(r0) == nil {
-		return nil, newMkcgoErr("EVP_PKEY_get1_RSA", nil)
-	}
-	return RSA_PTR(r0), nil
+	return RSA_PTR(r0), newMkcgoErr("EVP_PKEY_get1_RSA", &_err)
 }
 
 var _mkcgo_EVP_PKEY_get1_encoded_public_key uintptr
 
 func EVP_PKEY_get1_encoded_public_key(pkey EVP_PKEY_PTR, ppub **byte) (int, error) {
-	r0, _, _ := syscallN(_mkcgo_EVP_PKEY_get1_encoded_public_key, uintptr(pkey), uintptr(unsafe.Pointer(ppub)))
+	var _err errState
+	r0, _ := syscallN(4, _mkcgo_EVP_PKEY_get1_encoded_public_key, uintptr(pkey), uintptr(unsafe.Pointer(ppub)), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(pkey)
 	runtime.KeepAlive(ppub)
-	if int(r0) <= 0 {
-		return 0, newMkcgoErr("EVP_PKEY_get1_encoded_public_key", nil)
-	}
-	return int(r0), nil
+	return int(r0), newMkcgoErr("EVP_PKEY_get1_encoded_public_key", &_err)
 }
 
 var _mkcgo_EVP_PKEY_get_bits uintptr
 
 func EVP_PKEY_get_bits(pkey EVP_PKEY_PTR) (int32, error) {
-	r0, _, _ := syscallN(_mkcgo_EVP_PKEY_get_bits, uintptr(pkey))
+	var _err errState
+	r0, _ := syscallN(3, _mkcgo_EVP_PKEY_get_bits, uintptr(pkey), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(pkey)
-	if int32(r0) <= 0 {
-		return 0, newMkcgoErr("EVP_PKEY_get_bits", nil)
-	}
-	return int32(r0), nil
+	return int32(r0), newMkcgoErr("EVP_PKEY_get_bits", &_err)
 }
 
 var _mkcgo_EVP_PKEY_get_bn_param uintptr
 
 func EVP_PKEY_get_bn_param(pkey EVP_PKEY_PTR, key_name *byte, bn *BIGNUM_PTR) (int32, error) {
-	r0, _, _ := syscallN(_mkcgo_EVP_PKEY_get_bn_param, uintptr(pkey), uintptr(unsafe.Pointer(key_name)), uintptr(unsafe.Pointer(bn)))
+	var _err errState
+	r0, _ := syscallN(3, _mkcgo_EVP_PKEY_get_bn_param, uintptr(pkey), uintptr(unsafe.Pointer(key_name)), uintptr(unsafe.Pointer(bn)), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(pkey)
 	runtime.KeepAlive(key_name)
 	runtime.KeepAlive(bn)
-	if int32(r0) <= 0 {
-		return 0, newMkcgoErr("EVP_PKEY_get_bn_param", nil)
-	}
-	return int32(r0), nil
+	return int32(r0), newMkcgoErr("EVP_PKEY_get_bn_param", &_err)
 }
 
 var _mkcgo_EVP_PKEY_get_raw_private_key uintptr
 
 func EVP_PKEY_get_raw_private_key(pkey EVP_PKEY_PTR, priv *byte, len *int) (int32, error) {
-	r0, _, _ := syscallN(_mkcgo_EVP_PKEY_get_raw_private_key, uintptr(pkey), uintptr(unsafe.Pointer(priv)), uintptr(unsafe.Pointer(len)))
+	var _err errState
+	r0, _ := syscallN(3, _mkcgo_EVP_PKEY_get_raw_private_key, uintptr(pkey), uintptr(unsafe.Pointer(priv)), uintptr(unsafe.Pointer(len)), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(pkey)
 	runtime.KeepAlive(priv)
 	runtime.KeepAlive(len)
-	if int32(r0) <= 0 {
-		return 0, newMkcgoErr("EVP_PKEY_get_raw_private_key", nil)
-	}
-	return int32(r0), nil
+	return int32(r0), newMkcgoErr("EVP_PKEY_get_raw_private_key", &_err)
 }
 
 var _mkcgo_EVP_PKEY_get_raw_public_key uintptr
 
 func EVP_PKEY_get_raw_public_key(pkey EVP_PKEY_PTR, pub *byte, len *int) (int32, error) {
-	r0, _, _ := syscallN(_mkcgo_EVP_PKEY_get_raw_public_key, uintptr(pkey), uintptr(unsafe.Pointer(pub)), uintptr(unsafe.Pointer(len)))
+	var _err errState
+	r0, _ := syscallN(3, _mkcgo_EVP_PKEY_get_raw_public_key, uintptr(pkey), uintptr(unsafe.Pointer(pub)), uintptr(unsafe.Pointer(len)), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(pkey)
 	runtime.KeepAlive(pub)
 	runtime.KeepAlive(len)
-	if int32(r0) <= 0 {
-		return 0, newMkcgoErr("EVP_PKEY_get_raw_public_key", nil)
-	}
-	return int32(r0), nil
+	return int32(r0), newMkcgoErr("EVP_PKEY_get_raw_public_key", &_err)
 }
 
 var _mkcgo_EVP_PKEY_get_size uintptr
 
 func EVP_PKEY_get_size(pkey EVP_PKEY_PTR) (int32, error) {
-	r0, _, _ := syscallN(_mkcgo_EVP_PKEY_get_size, uintptr(pkey))
+	var _err errState
+	r0, _ := syscallN(3, _mkcgo_EVP_PKEY_get_size, uintptr(pkey), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(pkey)
-	if int32(r0) <= 0 {
-		return 0, newMkcgoErr("EVP_PKEY_get_size", nil)
-	}
-	return int32(r0), nil
+	return int32(r0), newMkcgoErr("EVP_PKEY_get_size", &_err)
 }
 
 var _mkcgo_EVP_PKEY_keygen uintptr
 
 func EVP_PKEY_keygen(ctx EVP_PKEY_CTX_PTR, ppkey *EVP_PKEY_PTR) (int32, error) {
-	r0, _, _ := syscallN(_mkcgo_EVP_PKEY_keygen, uintptr(ctx), uintptr(unsafe.Pointer(ppkey)))
+	var _err errState
+	r0, _ := syscallN(3, _mkcgo_EVP_PKEY_keygen, uintptr(ctx), uintptr(unsafe.Pointer(ppkey)), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(ctx)
 	runtime.KeepAlive(ppkey)
-	if int32(r0) <= 0 {
-		return 0, newMkcgoErr("EVP_PKEY_keygen", nil)
-	}
-	return int32(r0), nil
+	return int32(r0), newMkcgoErr("EVP_PKEY_keygen", &_err)
 }
 
 var _mkcgo_EVP_PKEY_keygen_init uintptr
 
 func EVP_PKEY_keygen_init(ctx EVP_PKEY_CTX_PTR) (int32, error) {
-	r0, _, _ := syscallN(_mkcgo_EVP_PKEY_keygen_init, uintptr(ctx))
+	var _err errState
+	r0, _ := syscallN(3, _mkcgo_EVP_PKEY_keygen_init, uintptr(ctx), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(ctx)
-	if int32(r0) <= 0 {
-		return 0, newMkcgoErr("EVP_PKEY_keygen_init", nil)
-	}
-	return int32(r0), nil
+	return int32(r0), newMkcgoErr("EVP_PKEY_keygen_init", &_err)
 }
 
 var _mkcgo_EVP_PKEY_new uintptr
 
 func EVP_PKEY_new() (EVP_PKEY_PTR, error) {
-	r0, _, _ := syscallN(_mkcgo_EVP_PKEY_new)
-	if EVP_PKEY_PTR(r0) == nil {
-		return nil, newMkcgoErr("EVP_PKEY_new", nil)
-	}
-	return EVP_PKEY_PTR(r0), nil
+	var _err errState
+	r0, _ := syscallN(1, _mkcgo_EVP_PKEY_new, uintptr(unsafe.Pointer(&_err)))
+	return EVP_PKEY_PTR(r0), newMkcgoErr("EVP_PKEY_new", &_err)
 }
 
 var _mkcgo_EVP_PKEY_new_raw_private_key uintptr
 
 func EVP_PKEY_new_raw_private_key(__type int32, e ENGINE_PTR, key *byte, keylen int) (EVP_PKEY_PTR, error) {
-	r0, _, _ := syscallN(_mkcgo_EVP_PKEY_new_raw_private_key, uintptr(__type), uintptr(e), uintptr(unsafe.Pointer(key)), uintptr(keylen))
+	var _err errState
+	r0, _ := syscallN(1, _mkcgo_EVP_PKEY_new_raw_private_key, uintptr(__type), uintptr(e), uintptr(unsafe.Pointer(key)), uintptr(keylen), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(e)
 	runtime.KeepAlive(key)
-	if EVP_PKEY_PTR(r0) == nil {
-		return nil, newMkcgoErr("EVP_PKEY_new_raw_private_key", nil)
-	}
-	return EVP_PKEY_PTR(r0), nil
+	return EVP_PKEY_PTR(r0), newMkcgoErr("EVP_PKEY_new_raw_private_key", &_err)
 }
 
 var _mkcgo_EVP_PKEY_new_raw_public_key uintptr
 
 func EVP_PKEY_new_raw_public_key(__type int32, e ENGINE_PTR, key *byte, keylen int) (EVP_PKEY_PTR, error) {
-	r0, _, _ := syscallN(_mkcgo_EVP_PKEY_new_raw_public_key, uintptr(__type), uintptr(e), uintptr(unsafe.Pointer(key)), uintptr(keylen))
+	var _err errState
+	r0, _ := syscallN(1, _mkcgo_EVP_PKEY_new_raw_public_key, uintptr(__type), uintptr(e), uintptr(unsafe.Pointer(key)), uintptr(keylen), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(e)
 	runtime.KeepAlive(key)
-	if EVP_PKEY_PTR(r0) == nil {
-		return nil, newMkcgoErr("EVP_PKEY_new_raw_public_key", nil)
-	}
-	return EVP_PKEY_PTR(r0), nil
+	return EVP_PKEY_PTR(r0), newMkcgoErr("EVP_PKEY_new_raw_public_key", &_err)
 }
 
 var _mkcgo_EVP_PKEY_paramgen uintptr
 
 func EVP_PKEY_paramgen(ctx EVP_PKEY_CTX_PTR, ppkey *EVP_PKEY_PTR) (int32, error) {
-	r0, _, _ := syscallN(_mkcgo_EVP_PKEY_paramgen, uintptr(ctx), uintptr(unsafe.Pointer(ppkey)))
+	var _err errState
+	r0, _ := syscallN(3, _mkcgo_EVP_PKEY_paramgen, uintptr(ctx), uintptr(unsafe.Pointer(ppkey)), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(ctx)
 	runtime.KeepAlive(ppkey)
-	if int32(r0) <= 0 {
-		return 0, newMkcgoErr("EVP_PKEY_paramgen", nil)
-	}
-	return int32(r0), nil
+	return int32(r0), newMkcgoErr("EVP_PKEY_paramgen", &_err)
 }
 
 var _mkcgo_EVP_PKEY_paramgen_init uintptr
 
 func EVP_PKEY_paramgen_init(ctx EVP_PKEY_CTX_PTR) (int32, error) {
-	r0, _, _ := syscallN(_mkcgo_EVP_PKEY_paramgen_init, uintptr(ctx))
+	var _err errState
+	r0, _ := syscallN(3, _mkcgo_EVP_PKEY_paramgen_init, uintptr(ctx), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(ctx)
-	if int32(r0) <= 0 {
-		return 0, newMkcgoErr("EVP_PKEY_paramgen_init", nil)
-	}
-	return int32(r0), nil
+	return int32(r0), newMkcgoErr("EVP_PKEY_paramgen_init", &_err)
 }
 
 var _mkcgo_EVP_PKEY_private_check uintptr
 
 func EVP_PKEY_private_check(ctx EVP_PKEY_CTX_PTR) (int32, error) {
-	r0, _, _ := syscallN(_mkcgo_EVP_PKEY_private_check, uintptr(ctx))
+	var _err errState
+	r0, _ := syscallN(3, _mkcgo_EVP_PKEY_private_check, uintptr(ctx), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(ctx)
-	if int32(r0) <= 0 {
-		return 0, newMkcgoErr("EVP_PKEY_private_check", nil)
-	}
-	return int32(r0), nil
+	return int32(r0), newMkcgoErr("EVP_PKEY_private_check", &_err)
 }
 
 var _mkcgo_EVP_PKEY_public_check_quick uintptr
 
 func EVP_PKEY_public_check_quick(ctx EVP_PKEY_CTX_PTR) (int32, error) {
-	r0, _, _ := syscallN(_mkcgo_EVP_PKEY_public_check_quick, uintptr(ctx))
+	var _err errState
+	r0, _ := syscallN(3, _mkcgo_EVP_PKEY_public_check_quick, uintptr(ctx), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(ctx)
-	if int32(r0) <= 0 {
-		return 0, newMkcgoErr("EVP_PKEY_public_check_quick", nil)
-	}
-	return int32(r0), nil
+	return int32(r0), newMkcgoErr("EVP_PKEY_public_check_quick", &_err)
 }
 
 var _mkcgo_EVP_PKEY_set1_EC_KEY uintptr
 
 func EVP_PKEY_set1_EC_KEY(pkey EVP_PKEY_PTR, key EC_KEY_PTR) (int32, error) {
-	r0, _, _ := syscallN(_mkcgo_EVP_PKEY_set1_EC_KEY, uintptr(pkey), uintptr(key))
+	var _err errState
+	r0, _ := syscallN(3, _mkcgo_EVP_PKEY_set1_EC_KEY, uintptr(pkey), uintptr(key), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(pkey)
 	runtime.KeepAlive(key)
-	if int32(r0) <= 0 {
-		return 0, newMkcgoErr("EVP_PKEY_set1_EC_KEY", nil)
-	}
-	return int32(r0), nil
+	return int32(r0), newMkcgoErr("EVP_PKEY_set1_EC_KEY", &_err)
 }
 
 var _mkcgo_EVP_PKEY_set1_encoded_public_key uintptr
 
 func EVP_PKEY_set1_encoded_public_key(pkey EVP_PKEY_PTR, pub *byte, publen int) (int32, error) {
-	r0, _, _ := syscallN(_mkcgo_EVP_PKEY_set1_encoded_public_key, uintptr(pkey), uintptr(unsafe.Pointer(pub)), uintptr(publen))
+	var _err errState
+	r0, _ := syscallN(3, _mkcgo_EVP_PKEY_set1_encoded_public_key, uintptr(pkey), uintptr(unsafe.Pointer(pub)), uintptr(publen), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(pkey)
 	runtime.KeepAlive(pub)
-	if int32(r0) <= 0 {
-		return 0, newMkcgoErr("EVP_PKEY_set1_encoded_public_key", nil)
-	}
-	return int32(r0), nil
+	return int32(r0), newMkcgoErr("EVP_PKEY_set1_encoded_public_key", &_err)
 }
 
 var _mkcgo_EVP_PKEY_sign uintptr
 
 func EVP_PKEY_sign(arg0 EVP_PKEY_CTX_PTR, arg1 *byte, arg2 *int, arg3 *byte, arg4 int) (int32, error) {
-	r0, _, _ := syscallN(_mkcgo_EVP_PKEY_sign, uintptr(arg0), uintptr(unsafe.Pointer(arg1)), uintptr(unsafe.Pointer(arg2)), uintptr(unsafe.Pointer(arg3)), uintptr(arg4))
+	var _err errState
+	r0, _ := syscallN(3, _mkcgo_EVP_PKEY_sign, uintptr(arg0), uintptr(unsafe.Pointer(arg1)), uintptr(unsafe.Pointer(arg2)), uintptr(unsafe.Pointer(arg3)), uintptr(arg4), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(arg0)
 	runtime.KeepAlive(arg1)
 	runtime.KeepAlive(arg2)
 	runtime.KeepAlive(arg3)
-	if int32(r0) <= 0 {
-		return 0, newMkcgoErr("EVP_PKEY_sign", nil)
-	}
-	return int32(r0), nil
+	return int32(r0), newMkcgoErr("EVP_PKEY_sign", &_err)
 }
 
 var _mkcgo_EVP_PKEY_sign_init uintptr
 
 func EVP_PKEY_sign_init(arg0 EVP_PKEY_CTX_PTR) (int32, error) {
-	r0, _, _ := syscallN(_mkcgo_EVP_PKEY_sign_init, uintptr(arg0))
+	var _err errState
+	r0, _ := syscallN(3, _mkcgo_EVP_PKEY_sign_init, uintptr(arg0), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(arg0)
-	if int32(r0) <= 0 {
-		return 0, newMkcgoErr("EVP_PKEY_sign_init", nil)
-	}
-	return int32(r0), nil
+	return int32(r0), newMkcgoErr("EVP_PKEY_sign_init", &_err)
 }
 
 var _mkcgo_EVP_PKEY_up_ref uintptr
 
 func EVP_PKEY_up_ref(key EVP_PKEY_PTR) (int32, error) {
-	r0, _, _ := syscallN(_mkcgo_EVP_PKEY_up_ref, uintptr(key))
+	var _err errState
+	r0, _ := syscallN(3, _mkcgo_EVP_PKEY_up_ref, uintptr(key), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(key)
-	if int32(r0) <= 0 {
-		return 0, newMkcgoErr("EVP_PKEY_up_ref", nil)
-	}
-	return int32(r0), nil
+	return int32(r0), newMkcgoErr("EVP_PKEY_up_ref", &_err)
 }
 
 var _mkcgo_EVP_PKEY_verify uintptr
 
 func EVP_PKEY_verify(ctx EVP_PKEY_CTX_PTR, sig *byte, siglen int, tbs *byte, tbslen int) (int32, error) {
-	r0, _, _ := syscallN(_mkcgo_EVP_PKEY_verify, uintptr(ctx), uintptr(unsafe.Pointer(sig)), uintptr(siglen), uintptr(unsafe.Pointer(tbs)), uintptr(tbslen))
+	var _err errState
+	r0, _ := syscallN(3, _mkcgo_EVP_PKEY_verify, uintptr(ctx), uintptr(unsafe.Pointer(sig)), uintptr(siglen), uintptr(unsafe.Pointer(tbs)), uintptr(tbslen), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(ctx)
 	runtime.KeepAlive(sig)
 	runtime.KeepAlive(tbs)
-	if int32(r0) <= 0 {
-		return 0, newMkcgoErr("EVP_PKEY_verify", nil)
-	}
-	return int32(r0), nil
+	return int32(r0), newMkcgoErr("EVP_PKEY_verify", &_err)
 }
 
 var _mkcgo_EVP_PKEY_verify_init uintptr
 
 func EVP_PKEY_verify_init(arg0 EVP_PKEY_CTX_PTR) (int32, error) {
-	r0, _, _ := syscallN(_mkcgo_EVP_PKEY_verify_init, uintptr(arg0))
+	var _err errState
+	r0, _ := syscallN(3, _mkcgo_EVP_PKEY_verify_init, uintptr(arg0), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(arg0)
-	if int32(r0) <= 0 {
-		return 0, newMkcgoErr("EVP_PKEY_verify_init", nil)
-	}
-	return int32(r0), nil
+	return int32(r0), newMkcgoErr("EVP_PKEY_verify_init", &_err)
 }
 
 var _mkcgo_EVP_SIGNATURE_fetch uintptr
 
 func EVP_SIGNATURE_fetch(ctx OSSL_LIB_CTX_PTR, algorithm *byte, properties *byte) (EVP_SIGNATURE_PTR, error) {
-	r0, _, _ := syscallN(_mkcgo_EVP_SIGNATURE_fetch, uintptr(ctx), uintptr(unsafe.Pointer(algorithm)), uintptr(unsafe.Pointer(properties)))
+	var _err errState
+	r0, _ := syscallN(1, _mkcgo_EVP_SIGNATURE_fetch, uintptr(ctx), uintptr(unsafe.Pointer(algorithm)), uintptr(unsafe.Pointer(properties)), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(ctx)
 	runtime.KeepAlive(algorithm)
 	runtime.KeepAlive(properties)
-	if EVP_SIGNATURE_PTR(r0) == nil {
-		return nil, newMkcgoErr("EVP_SIGNATURE_fetch", nil)
-	}
-	return EVP_SIGNATURE_PTR(r0), nil
+	return EVP_SIGNATURE_PTR(r0), newMkcgoErr("EVP_SIGNATURE_fetch", &_err)
 }
 
 var _mkcgo_EVP_SIGNATURE_free uintptr
 
 func EVP_SIGNATURE_free(signature EVP_SIGNATURE_PTR) {
-	syscallN(_mkcgo_EVP_SIGNATURE_free, uintptr(signature))
+	syscallN(0, _mkcgo_EVP_SIGNATURE_free, uintptr(signature))
 	runtime.KeepAlive(signature)
 }
 
 var _mkcgo_EVP_aes_128_cbc uintptr
 
 func EVP_aes_128_cbc() EVP_CIPHER_PTR {
-	r0, _, _ := syscallN(_mkcgo_EVP_aes_128_cbc)
+	r0, _ := syscallN(0, _mkcgo_EVP_aes_128_cbc)
 	return EVP_CIPHER_PTR(r0)
 }
 
 var _mkcgo_EVP_aes_128_ctr uintptr
 
 func EVP_aes_128_ctr() EVP_CIPHER_PTR {
-	r0, _, _ := syscallN(_mkcgo_EVP_aes_128_ctr)
+	r0, _ := syscallN(0, _mkcgo_EVP_aes_128_ctr)
 	return EVP_CIPHER_PTR(r0)
 }
 
 var _mkcgo_EVP_aes_128_ecb uintptr
 
 func EVP_aes_128_ecb() EVP_CIPHER_PTR {
-	r0, _, _ := syscallN(_mkcgo_EVP_aes_128_ecb)
+	r0, _ := syscallN(0, _mkcgo_EVP_aes_128_ecb)
 	return EVP_CIPHER_PTR(r0)
 }
 
 var _mkcgo_EVP_aes_128_gcm uintptr
 
 func EVP_aes_128_gcm() EVP_CIPHER_PTR {
-	r0, _, _ := syscallN(_mkcgo_EVP_aes_128_gcm)
+	r0, _ := syscallN(0, _mkcgo_EVP_aes_128_gcm)
 	return EVP_CIPHER_PTR(r0)
 }
 
 var _mkcgo_EVP_aes_192_cbc uintptr
 
 func EVP_aes_192_cbc() EVP_CIPHER_PTR {
-	r0, _, _ := syscallN(_mkcgo_EVP_aes_192_cbc)
+	r0, _ := syscallN(0, _mkcgo_EVP_aes_192_cbc)
 	return EVP_CIPHER_PTR(r0)
 }
 
 var _mkcgo_EVP_aes_192_ctr uintptr
 
 func EVP_aes_192_ctr() EVP_CIPHER_PTR {
-	r0, _, _ := syscallN(_mkcgo_EVP_aes_192_ctr)
+	r0, _ := syscallN(0, _mkcgo_EVP_aes_192_ctr)
 	return EVP_CIPHER_PTR(r0)
 }
 
 var _mkcgo_EVP_aes_192_ecb uintptr
 
 func EVP_aes_192_ecb() EVP_CIPHER_PTR {
-	r0, _, _ := syscallN(_mkcgo_EVP_aes_192_ecb)
+	r0, _ := syscallN(0, _mkcgo_EVP_aes_192_ecb)
 	return EVP_CIPHER_PTR(r0)
 }
 
 var _mkcgo_EVP_aes_192_gcm uintptr
 
 func EVP_aes_192_gcm() EVP_CIPHER_PTR {
-	r0, _, _ := syscallN(_mkcgo_EVP_aes_192_gcm)
+	r0, _ := syscallN(0, _mkcgo_EVP_aes_192_gcm)
 	return EVP_CIPHER_PTR(r0)
 }
 
 var _mkcgo_EVP_aes_256_cbc uintptr
 
 func EVP_aes_256_cbc() EVP_CIPHER_PTR {
-	r0, _, _ := syscallN(_mkcgo_EVP_aes_256_cbc)
+	r0, _ := syscallN(0, _mkcgo_EVP_aes_256_cbc)
 	return EVP_CIPHER_PTR(r0)
 }
 
 var _mkcgo_EVP_aes_256_ctr uintptr
 
 func EVP_aes_256_ctr() EVP_CIPHER_PTR {
-	r0, _, _ := syscallN(_mkcgo_EVP_aes_256_ctr)
+	r0, _ := syscallN(0, _mkcgo_EVP_aes_256_ctr)
 	return EVP_CIPHER_PTR(r0)
 }
 
 var _mkcgo_EVP_aes_256_ecb uintptr
 
 func EVP_aes_256_ecb() EVP_CIPHER_PTR {
-	r0, _, _ := syscallN(_mkcgo_EVP_aes_256_ecb)
+	r0, _ := syscallN(0, _mkcgo_EVP_aes_256_ecb)
 	return EVP_CIPHER_PTR(r0)
 }
 
 var _mkcgo_EVP_aes_256_gcm uintptr
 
 func EVP_aes_256_gcm() EVP_CIPHER_PTR {
-	r0, _, _ := syscallN(_mkcgo_EVP_aes_256_gcm)
+	r0, _ := syscallN(0, _mkcgo_EVP_aes_256_gcm)
 	return EVP_CIPHER_PTR(r0)
 }
 
 var _mkcgo_EVP_default_properties_enable_fips uintptr
 
 func EVP_default_properties_enable_fips(libctx OSSL_LIB_CTX_PTR, enable int32) (int32, error) {
-	r0, _, _ := syscallN(_mkcgo_EVP_default_properties_enable_fips, uintptr(libctx), uintptr(enable))
+	var _err errState
+	r0, _ := syscallN(3, _mkcgo_EVP_default_properties_enable_fips, uintptr(libctx), uintptr(enable), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(libctx)
-	if int32(r0) <= 0 {
-		return 0, newMkcgoErr("EVP_default_properties_enable_fips", nil)
-	}
-	return int32(r0), nil
+	return int32(r0), newMkcgoErr("EVP_default_properties_enable_fips", &_err)
 }
 
 var _mkcgo_EVP_default_properties_is_fips_enabled uintptr
 
 func EVP_default_properties_is_fips_enabled(libctx OSSL_LIB_CTX_PTR) int32 {
-	r0, _, _ := syscallN(_mkcgo_EVP_default_properties_is_fips_enabled, uintptr(libctx))
+	r0, _ := syscallN(0, _mkcgo_EVP_default_properties_is_fips_enabled, uintptr(libctx))
 	runtime.KeepAlive(libctx)
 	return int32(r0)
 }
@@ -1813,249 +1588,235 @@ func EVP_default_properties_is_fips_enabled(libctx OSSL_LIB_CTX_PTR) int32 {
 var _mkcgo_EVP_des_cbc uintptr
 
 func EVP_des_cbc() EVP_CIPHER_PTR {
-	r0, _, _ := syscallN(_mkcgo_EVP_des_cbc)
+	r0, _ := syscallN(0, _mkcgo_EVP_des_cbc)
 	return EVP_CIPHER_PTR(r0)
 }
 
 var _mkcgo_EVP_des_ecb uintptr
 
 func EVP_des_ecb() EVP_CIPHER_PTR {
-	r0, _, _ := syscallN(_mkcgo_EVP_des_ecb)
+	r0, _ := syscallN(0, _mkcgo_EVP_des_ecb)
 	return EVP_CIPHER_PTR(r0)
 }
 
 var _mkcgo_EVP_des_ede3_cbc uintptr
 
 func EVP_des_ede3_cbc() EVP_CIPHER_PTR {
-	r0, _, _ := syscallN(_mkcgo_EVP_des_ede3_cbc)
+	r0, _ := syscallN(0, _mkcgo_EVP_des_ede3_cbc)
 	return EVP_CIPHER_PTR(r0)
 }
 
 var _mkcgo_EVP_des_ede3_ecb uintptr
 
 func EVP_des_ede3_ecb() EVP_CIPHER_PTR {
-	r0, _, _ := syscallN(_mkcgo_EVP_des_ede3_ecb)
+	r0, _ := syscallN(0, _mkcgo_EVP_des_ede3_ecb)
 	return EVP_CIPHER_PTR(r0)
 }
 
 var _mkcgo_EVP_md4 uintptr
 
 func EVP_md4() EVP_MD_PTR {
-	r0, _, _ := syscallN(_mkcgo_EVP_md4)
+	r0, _ := syscallN(0, _mkcgo_EVP_md4)
 	return EVP_MD_PTR(r0)
 }
 
 var _mkcgo_EVP_md5 uintptr
 
 func EVP_md5() EVP_MD_PTR {
-	r0, _, _ := syscallN(_mkcgo_EVP_md5)
+	r0, _ := syscallN(0, _mkcgo_EVP_md5)
 	return EVP_MD_PTR(r0)
 }
 
 var _mkcgo_EVP_md5_sha1 uintptr
 
 func EVP_md5_sha1() EVP_MD_PTR {
-	r0, _, _ := syscallN(_mkcgo_EVP_md5_sha1)
+	r0, _ := syscallN(0, _mkcgo_EVP_md5_sha1)
 	return EVP_MD_PTR(r0)
 }
 
 var _mkcgo_EVP_rc4 uintptr
 
 func EVP_rc4() EVP_CIPHER_PTR {
-	r0, _, _ := syscallN(_mkcgo_EVP_rc4)
+	r0, _ := syscallN(0, _mkcgo_EVP_rc4)
 	return EVP_CIPHER_PTR(r0)
 }
 
 var _mkcgo_EVP_ripemd160 uintptr
 
 func EVP_ripemd160() EVP_MD_PTR {
-	r0, _, _ := syscallN(_mkcgo_EVP_ripemd160)
+	r0, _ := syscallN(0, _mkcgo_EVP_ripemd160)
 	return EVP_MD_PTR(r0)
 }
 
 var _mkcgo_EVP_sha1 uintptr
 
 func EVP_sha1() EVP_MD_PTR {
-	r0, _, _ := syscallN(_mkcgo_EVP_sha1)
+	r0, _ := syscallN(0, _mkcgo_EVP_sha1)
 	return EVP_MD_PTR(r0)
 }
 
 var _mkcgo_EVP_sha224 uintptr
 
 func EVP_sha224() EVP_MD_PTR {
-	r0, _, _ := syscallN(_mkcgo_EVP_sha224)
+	r0, _ := syscallN(0, _mkcgo_EVP_sha224)
 	return EVP_MD_PTR(r0)
 }
 
 var _mkcgo_EVP_sha256 uintptr
 
 func EVP_sha256() EVP_MD_PTR {
-	r0, _, _ := syscallN(_mkcgo_EVP_sha256)
+	r0, _ := syscallN(0, _mkcgo_EVP_sha256)
 	return EVP_MD_PTR(r0)
 }
 
 var _mkcgo_EVP_sha384 uintptr
 
 func EVP_sha384() EVP_MD_PTR {
-	r0, _, _ := syscallN(_mkcgo_EVP_sha384)
+	r0, _ := syscallN(0, _mkcgo_EVP_sha384)
 	return EVP_MD_PTR(r0)
 }
 
 var _mkcgo_EVP_sha3_224 uintptr
 
 func EVP_sha3_224() EVP_MD_PTR {
-	r0, _, _ := syscallN(_mkcgo_EVP_sha3_224)
+	r0, _ := syscallN(0, _mkcgo_EVP_sha3_224)
 	return EVP_MD_PTR(r0)
 }
 
 var _mkcgo_EVP_sha3_256 uintptr
 
 func EVP_sha3_256() EVP_MD_PTR {
-	r0, _, _ := syscallN(_mkcgo_EVP_sha3_256)
+	r0, _ := syscallN(0, _mkcgo_EVP_sha3_256)
 	return EVP_MD_PTR(r0)
 }
 
 var _mkcgo_EVP_sha3_384 uintptr
 
 func EVP_sha3_384() EVP_MD_PTR {
-	r0, _, _ := syscallN(_mkcgo_EVP_sha3_384)
+	r0, _ := syscallN(0, _mkcgo_EVP_sha3_384)
 	return EVP_MD_PTR(r0)
 }
 
 var _mkcgo_EVP_sha3_512 uintptr
 
 func EVP_sha3_512() EVP_MD_PTR {
-	r0, _, _ := syscallN(_mkcgo_EVP_sha3_512)
+	r0, _ := syscallN(0, _mkcgo_EVP_sha3_512)
 	return EVP_MD_PTR(r0)
 }
 
 var _mkcgo_EVP_sha512 uintptr
 
 func EVP_sha512() EVP_MD_PTR {
-	r0, _, _ := syscallN(_mkcgo_EVP_sha512)
+	r0, _ := syscallN(0, _mkcgo_EVP_sha512)
 	return EVP_MD_PTR(r0)
 }
 
 var _mkcgo_EVP_sha512_224 uintptr
 
 func EVP_sha512_224() EVP_MD_PTR {
-	r0, _, _ := syscallN(_mkcgo_EVP_sha512_224)
+	r0, _ := syscallN(0, _mkcgo_EVP_sha512_224)
 	return EVP_MD_PTR(r0)
 }
 
 var _mkcgo_EVP_sha512_256 uintptr
 
 func EVP_sha512_256() EVP_MD_PTR {
-	r0, _, _ := syscallN(_mkcgo_EVP_sha512_256)
+	r0, _ := syscallN(0, _mkcgo_EVP_sha512_256)
 	return EVP_MD_PTR(r0)
 }
 
 var _mkcgo_FIPS_mode uintptr
 
 func FIPS_mode() int32 {
-	r0, _, _ := syscallN(_mkcgo_FIPS_mode)
+	r0, _ := syscallN(0, _mkcgo_FIPS_mode)
 	return int32(r0)
 }
 
 var _mkcgo_FIPS_mode_set uintptr
 
 func FIPS_mode_set(r int32) (int32, error) {
-	r0, _, _ := syscallN(_mkcgo_FIPS_mode_set, uintptr(r))
-	if int32(r0) <= 0 {
-		return 0, newMkcgoErr("FIPS_mode_set", nil)
-	}
-	return int32(r0), nil
+	var _err errState
+	r0, _ := syscallN(3, _mkcgo_FIPS_mode_set, uintptr(r), uintptr(unsafe.Pointer(&_err)))
+	return int32(r0), newMkcgoErr("FIPS_mode_set", &_err)
 }
 
 var _mkcgo_HMAC_CTX_copy uintptr
 
 func HMAC_CTX_copy(dest HMAC_CTX_PTR, src HMAC_CTX_PTR) (int32, error) {
-	r0, _, _ := syscallN(_mkcgo_HMAC_CTX_copy, uintptr(dest), uintptr(src))
+	var _err errState
+	r0, _ := syscallN(3, _mkcgo_HMAC_CTX_copy, uintptr(dest), uintptr(src), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(dest)
 	runtime.KeepAlive(src)
-	if int32(r0) <= 0 {
-		return 0, newMkcgoErr("HMAC_CTX_copy", nil)
-	}
-	return int32(r0), nil
+	return int32(r0), newMkcgoErr("HMAC_CTX_copy", &_err)
 }
 
 var _mkcgo_HMAC_CTX_free uintptr
 
 func HMAC_CTX_free(arg0 HMAC_CTX_PTR) {
-	syscallN(_mkcgo_HMAC_CTX_free, uintptr(arg0))
+	syscallN(0, _mkcgo_HMAC_CTX_free, uintptr(arg0))
 	runtime.KeepAlive(arg0)
 }
 
 var _mkcgo_HMAC_CTX_new uintptr
 
 func HMAC_CTX_new() (HMAC_CTX_PTR, error) {
-	r0, _, _ := syscallN(_mkcgo_HMAC_CTX_new)
-	if HMAC_CTX_PTR(r0) == nil {
-		return nil, newMkcgoErr("HMAC_CTX_new", nil)
-	}
-	return HMAC_CTX_PTR(r0), nil
+	var _err errState
+	r0, _ := syscallN(1, _mkcgo_HMAC_CTX_new, uintptr(unsafe.Pointer(&_err)))
+	return HMAC_CTX_PTR(r0), newMkcgoErr("HMAC_CTX_new", &_err)
 }
 
 var _mkcgo_HMAC_Final uintptr
 
 func HMAC_Final(arg0 HMAC_CTX_PTR, arg1 *byte, arg2 *uint32) (int32, error) {
-	r0, _, _ := syscallN(_mkcgo_HMAC_Final, uintptr(arg0), uintptr(unsafe.Pointer(arg1)), uintptr(unsafe.Pointer(arg2)))
+	var _err errState
+	r0, _ := syscallN(3, _mkcgo_HMAC_Final, uintptr(arg0), uintptr(unsafe.Pointer(arg1)), uintptr(unsafe.Pointer(arg2)), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(arg0)
 	runtime.KeepAlive(arg1)
 	runtime.KeepAlive(arg2)
-	if int32(r0) <= 0 {
-		return 0, newMkcgoErr("HMAC_Final", nil)
-	}
-	return int32(r0), nil
+	return int32(r0), newMkcgoErr("HMAC_Final", &_err)
 }
 
 var _mkcgo_HMAC_Init_ex uintptr
 
 func HMAC_Init_ex(arg0 HMAC_CTX_PTR, arg1 unsafe.Pointer, arg2 int32, arg3 EVP_MD_PTR, arg4 ENGINE_PTR) (int32, error) {
-	r0, _, _ := syscallN(_mkcgo_HMAC_Init_ex, uintptr(arg0), uintptr(arg1), uintptr(arg2), uintptr(arg3), uintptr(arg4))
+	var _err errState
+	r0, _ := syscallN(3, _mkcgo_HMAC_Init_ex, uintptr(arg0), uintptr(arg1), uintptr(arg2), uintptr(arg3), uintptr(arg4), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(arg0)
 	runtime.KeepAlive(arg3)
 	runtime.KeepAlive(arg4)
-	if int32(r0) <= 0 {
-		return 0, newMkcgoErr("HMAC_Init_ex", nil)
-	}
-	return int32(r0), nil
+	return int32(r0), newMkcgoErr("HMAC_Init_ex", &_err)
 }
 
 var _mkcgo_HMAC_Update uintptr
 
 func HMAC_Update(arg0 HMAC_CTX_PTR, arg1 *byte, arg2 int) (int32, error) {
-	r0, _, _ := syscallN(_mkcgo_HMAC_Update, uintptr(arg0), uintptr(unsafe.Pointer(arg1)), uintptr(arg2))
+	var _err errState
+	r0, _ := syscallN(3, _mkcgo_HMAC_Update, uintptr(arg0), uintptr(unsafe.Pointer(arg1)), uintptr(arg2), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(arg0)
 	runtime.KeepAlive(arg1)
-	if int32(r0) <= 0 {
-		return 0, newMkcgoErr("HMAC_Update", nil)
-	}
-	return int32(r0), nil
+	return int32(r0), newMkcgoErr("HMAC_Update", &_err)
 }
 
 var _mkcgo_OBJ_nid2sn uintptr
 
 func OBJ_nid2sn(n int32) *byte {
-	r0, _, _ := syscallN(_mkcgo_OBJ_nid2sn, uintptr(n))
+	r0, _ := syscallN(0, _mkcgo_OBJ_nid2sn, uintptr(n))
 	return (*byte)(unsafe.Pointer(r0))
 }
 
 var _mkcgo_OPENSSL_init uintptr
 
 func OPENSSL_init() {
-	syscallN(_mkcgo_OPENSSL_init)
+	syscallN(0, _mkcgo_OPENSSL_init)
 }
 
 var _mkcgo_OPENSSL_init_crypto uintptr
 
 func OPENSSL_init_crypto(ops uint64, settings OPENSSL_INIT_SETTINGS_PTR) (int32, error) {
-	r0, _, _ := syscallN(_mkcgo_OPENSSL_init_crypto, uintptr(ops), uintptr(settings))
+	var _err errState
+	r0, _ := syscallN(3, _mkcgo_OPENSSL_init_crypto, uintptr(ops), uintptr(settings), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(settings)
-	if int32(r0) <= 0 {
-		return 0, newMkcgoErr("OPENSSL_init_crypto", nil)
-	}
-	return int32(r0), nil
+	return int32(r0), newMkcgoErr("OPENSSL_init_crypto", &_err)
 }
 
 func OPENSSL_version_major_Available() bool {
@@ -2065,7 +1826,7 @@ func OPENSSL_version_major_Available() bool {
 var _mkcgo_OPENSSL_version_major uintptr
 
 func OPENSSL_version_major() uint32 {
-	r0, _, _ := syscallN(_mkcgo_OPENSSL_version_major)
+	r0, _ := syscallN(0, _mkcgo_OPENSSL_version_major)
 	return uint32(r0)
 }
 
@@ -2076,7 +1837,7 @@ func OPENSSL_version_minor_Available() bool {
 var _mkcgo_OPENSSL_version_minor uintptr
 
 func OPENSSL_version_minor() uint32 {
-	r0, _, _ := syscallN(_mkcgo_OPENSSL_version_minor)
+	r0, _ := syscallN(0, _mkcgo_OPENSSL_version_minor)
 	return uint32(r0)
 }
 
@@ -2087,111 +1848,97 @@ func OPENSSL_version_patch_Available() bool {
 var _mkcgo_OPENSSL_version_patch uintptr
 
 func OPENSSL_version_patch() uint32 {
-	r0, _, _ := syscallN(_mkcgo_OPENSSL_version_patch)
+	r0, _ := syscallN(0, _mkcgo_OPENSSL_version_patch)
 	return uint32(r0)
 }
 
 var _mkcgo_OSSL_PARAM_BLD_free uintptr
 
 func OSSL_PARAM_BLD_free(bld OSSL_PARAM_BLD_PTR) {
-	syscallN(_mkcgo_OSSL_PARAM_BLD_free, uintptr(bld))
+	syscallN(0, _mkcgo_OSSL_PARAM_BLD_free, uintptr(bld))
 	runtime.KeepAlive(bld)
 }
 
 var _mkcgo_OSSL_PARAM_BLD_new uintptr
 
 func OSSL_PARAM_BLD_new() (OSSL_PARAM_BLD_PTR, error) {
-	r0, _, _ := syscallN(_mkcgo_OSSL_PARAM_BLD_new)
-	if OSSL_PARAM_BLD_PTR(r0) == nil {
-		return nil, newMkcgoErr("OSSL_PARAM_BLD_new", nil)
-	}
-	return OSSL_PARAM_BLD_PTR(r0), nil
+	var _err errState
+	r0, _ := syscallN(1, _mkcgo_OSSL_PARAM_BLD_new, uintptr(unsafe.Pointer(&_err)))
+	return OSSL_PARAM_BLD_PTR(r0), newMkcgoErr("OSSL_PARAM_BLD_new", &_err)
 }
 
 var _mkcgo_OSSL_PARAM_BLD_push_BN uintptr
 
 func OSSL_PARAM_BLD_push_BN(bld OSSL_PARAM_BLD_PTR, key *byte, bn BIGNUM_PTR) (int32, error) {
-	r0, _, _ := syscallN(_mkcgo_OSSL_PARAM_BLD_push_BN, uintptr(bld), uintptr(unsafe.Pointer(key)), uintptr(bn))
+	var _err errState
+	r0, _ := syscallN(3, _mkcgo_OSSL_PARAM_BLD_push_BN, uintptr(bld), uintptr(unsafe.Pointer(key)), uintptr(bn), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(bld)
 	runtime.KeepAlive(key)
 	runtime.KeepAlive(bn)
-	if int32(r0) <= 0 {
-		return 0, newMkcgoErr("OSSL_PARAM_BLD_push_BN", nil)
-	}
-	return int32(r0), nil
+	return int32(r0), newMkcgoErr("OSSL_PARAM_BLD_push_BN", &_err)
 }
 
 var _mkcgo_OSSL_PARAM_BLD_push_int32 uintptr
 
 func OSSL_PARAM_BLD_push_int32(bld OSSL_PARAM_BLD_PTR, key *byte, num int32) (int32, error) {
-	r0, _, _ := syscallN(_mkcgo_OSSL_PARAM_BLD_push_int32, uintptr(bld), uintptr(unsafe.Pointer(key)), uintptr(num))
+	var _err errState
+	r0, _ := syscallN(3, _mkcgo_OSSL_PARAM_BLD_push_int32, uintptr(bld), uintptr(unsafe.Pointer(key)), uintptr(num), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(bld)
 	runtime.KeepAlive(key)
-	if int32(r0) <= 0 {
-		return 0, newMkcgoErr("OSSL_PARAM_BLD_push_int32", nil)
-	}
-	return int32(r0), nil
+	return int32(r0), newMkcgoErr("OSSL_PARAM_BLD_push_int32", &_err)
 }
 
 var _mkcgo_OSSL_PARAM_BLD_push_octet_string uintptr
 
 func OSSL_PARAM_BLD_push_octet_string(bld OSSL_PARAM_BLD_PTR, key *byte, buf unsafe.Pointer, bsize int) (int32, error) {
-	r0, _, _ := syscallN(_mkcgo_OSSL_PARAM_BLD_push_octet_string, uintptr(bld), uintptr(unsafe.Pointer(key)), uintptr(buf), uintptr(bsize))
+	var _err errState
+	r0, _ := syscallN(3, _mkcgo_OSSL_PARAM_BLD_push_octet_string, uintptr(bld), uintptr(unsafe.Pointer(key)), uintptr(buf), uintptr(bsize), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(bld)
 	runtime.KeepAlive(key)
-	if int32(r0) <= 0 {
-		return 0, newMkcgoErr("OSSL_PARAM_BLD_push_octet_string", nil)
-	}
-	return int32(r0), nil
+	return int32(r0), newMkcgoErr("OSSL_PARAM_BLD_push_octet_string", &_err)
 }
 
 var _mkcgo_OSSL_PARAM_BLD_push_utf8_string uintptr
 
 func OSSL_PARAM_BLD_push_utf8_string(bld OSSL_PARAM_BLD_PTR, key *byte, buf *byte, bsize int) (int32, error) {
-	r0, _, _ := syscallN(_mkcgo_OSSL_PARAM_BLD_push_utf8_string, uintptr(bld), uintptr(unsafe.Pointer(key)), uintptr(unsafe.Pointer(buf)), uintptr(bsize))
+	var _err errState
+	r0, _ := syscallN(3, _mkcgo_OSSL_PARAM_BLD_push_utf8_string, uintptr(bld), uintptr(unsafe.Pointer(key)), uintptr(unsafe.Pointer(buf)), uintptr(bsize), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(bld)
 	runtime.KeepAlive(key)
 	runtime.KeepAlive(buf)
-	if int32(r0) <= 0 {
-		return 0, newMkcgoErr("OSSL_PARAM_BLD_push_utf8_string", nil)
-	}
-	return int32(r0), nil
+	return int32(r0), newMkcgoErr("OSSL_PARAM_BLD_push_utf8_string", &_err)
 }
 
 var _mkcgo_OSSL_PARAM_BLD_to_param uintptr
 
 func OSSL_PARAM_BLD_to_param(bld OSSL_PARAM_BLD_PTR) (OSSL_PARAM_PTR, error) {
-	r0, _, _ := syscallN(_mkcgo_OSSL_PARAM_BLD_to_param, uintptr(bld))
+	var _err errState
+	r0, _ := syscallN(1, _mkcgo_OSSL_PARAM_BLD_to_param, uintptr(bld), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(bld)
-	if OSSL_PARAM_PTR(r0) == nil {
-		return nil, newMkcgoErr("OSSL_PARAM_BLD_to_param", nil)
-	}
-	return OSSL_PARAM_PTR(r0), nil
+	return OSSL_PARAM_PTR(r0), newMkcgoErr("OSSL_PARAM_BLD_to_param", &_err)
 }
 
 var _mkcgo_OSSL_PARAM_free uintptr
 
 func OSSL_PARAM_free(p OSSL_PARAM_PTR) {
-	syscallN(_mkcgo_OSSL_PARAM_free, uintptr(p))
+	syscallN(0, _mkcgo_OSSL_PARAM_free, uintptr(p))
 	runtime.KeepAlive(p)
 }
 
 var _mkcgo_OSSL_PARAM_locate_const uintptr
 
 func OSSL_PARAM_locate_const(p OSSL_PARAM_PTR, key *byte) (OSSL_PARAM_PTR, error) {
-	r0, _, _ := syscallN(_mkcgo_OSSL_PARAM_locate_const, uintptr(p), uintptr(unsafe.Pointer(key)))
+	var _err errState
+	r0, _ := syscallN(1, _mkcgo_OSSL_PARAM_locate_const, uintptr(p), uintptr(unsafe.Pointer(key)), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(p)
 	runtime.KeepAlive(key)
-	if OSSL_PARAM_PTR(r0) == nil {
-		return nil, newMkcgoErr("OSSL_PARAM_locate_const", nil)
-	}
-	return OSSL_PARAM_PTR(r0), nil
+	return OSSL_PARAM_PTR(r0), newMkcgoErr("OSSL_PARAM_locate_const", &_err)
 }
 
 var _mkcgo_OSSL_PROVIDER_available uintptr
 
 func OSSL_PROVIDER_available(libctx OSSL_LIB_CTX_PTR, name *byte) int32 {
-	r0, _, _ := syscallN(_mkcgo_OSSL_PROVIDER_available, uintptr(libctx), uintptr(unsafe.Pointer(name)))
+	r0, _ := syscallN(0, _mkcgo_OSSL_PROVIDER_available, uintptr(libctx), uintptr(unsafe.Pointer(name)))
 	runtime.KeepAlive(libctx)
 	runtime.KeepAlive(name)
 	return int32(r0)
@@ -2200,7 +1947,7 @@ func OSSL_PROVIDER_available(libctx OSSL_LIB_CTX_PTR, name *byte) int32 {
 var _mkcgo_OSSL_PROVIDER_get0_name uintptr
 
 func OSSL_PROVIDER_get0_name(prov OSSL_PROVIDER_PTR) *byte {
-	r0, _, _ := syscallN(_mkcgo_OSSL_PROVIDER_get0_name, uintptr(prov))
+	r0, _ := syscallN(0, _mkcgo_OSSL_PROVIDER_get0_name, uintptr(prov))
 	runtime.KeepAlive(prov)
 	return (*byte)(unsafe.Pointer(r0))
 }
@@ -2208,19 +1955,17 @@ func OSSL_PROVIDER_get0_name(prov OSSL_PROVIDER_PTR) *byte {
 var _mkcgo_OSSL_PROVIDER_try_load uintptr
 
 func OSSL_PROVIDER_try_load(libctx OSSL_LIB_CTX_PTR, name *byte, retain_fallbacks int32) (OSSL_PROVIDER_PTR, error) {
-	r0, _, _ := syscallN(_mkcgo_OSSL_PROVIDER_try_load, uintptr(libctx), uintptr(unsafe.Pointer(name)), uintptr(retain_fallbacks))
+	var _err errState
+	r0, _ := syscallN(1, _mkcgo_OSSL_PROVIDER_try_load, uintptr(libctx), uintptr(unsafe.Pointer(name)), uintptr(retain_fallbacks), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(libctx)
 	runtime.KeepAlive(name)
-	if OSSL_PROVIDER_PTR(r0) == nil {
-		return nil, newMkcgoErr("OSSL_PROVIDER_try_load", nil)
-	}
-	return OSSL_PROVIDER_PTR(r0), nil
+	return OSSL_PROVIDER_PTR(r0), newMkcgoErr("OSSL_PROVIDER_try_load", &_err)
 }
 
 var _mkcgo_OpenSSL_version uintptr
 
 func OpenSSL_version(__type int32) *byte {
-	r0, _, _ := syscallN(_mkcgo_OpenSSL_version, uintptr(__type))
+	r0, _ := syscallN(0, _mkcgo_OpenSSL_version, uintptr(__type))
 	return (*byte)(unsafe.Pointer(r0))
 }
 
@@ -2231,46 +1976,42 @@ func OpenSSL_version_num_Available() bool {
 var _mkcgo_OpenSSL_version_num uintptr
 
 func OpenSSL_version_num() uint64 {
-	r0, _, _ := syscallN(_mkcgo_OpenSSL_version_num)
+	r0, _ := syscallN(0, _mkcgo_OpenSSL_version_num)
 	return uint64(r0)
 }
 
 var _mkcgo_PKCS5_PBKDF2_HMAC uintptr
 
 func PKCS5_PBKDF2_HMAC(pass *byte, passlen int32, salt *byte, saltlen int32, iter int32, digest EVP_MD_PTR, keylen int32, out *byte) (int32, error) {
-	r0, _, _ := syscallN(_mkcgo_PKCS5_PBKDF2_HMAC, uintptr(unsafe.Pointer(pass)), uintptr(passlen), uintptr(unsafe.Pointer(salt)), uintptr(saltlen), uintptr(iter), uintptr(digest), uintptr(keylen), uintptr(unsafe.Pointer(out)))
+	var _err errState
+	r0, _ := syscallN(3, _mkcgo_PKCS5_PBKDF2_HMAC, uintptr(unsafe.Pointer(pass)), uintptr(passlen), uintptr(unsafe.Pointer(salt)), uintptr(saltlen), uintptr(iter), uintptr(digest), uintptr(keylen), uintptr(unsafe.Pointer(out)), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(pass)
 	runtime.KeepAlive(salt)
 	runtime.KeepAlive(digest)
 	runtime.KeepAlive(out)
-	if int32(r0) <= 0 {
-		return 0, newMkcgoErr("PKCS5_PBKDF2_HMAC", nil)
-	}
-	return int32(r0), nil
+	return int32(r0), newMkcgoErr("PKCS5_PBKDF2_HMAC", &_err)
 }
 
 var _mkcgo_RAND_bytes uintptr
 
 func RAND_bytes(arg0 *byte, arg1 int32) (int32, error) {
-	r0, _, _ := syscallN(_mkcgo_RAND_bytes, uintptr(unsafe.Pointer(arg0)), uintptr(arg1))
+	var _err errState
+	r0, _ := syscallN(3, _mkcgo_RAND_bytes, uintptr(unsafe.Pointer(arg0)), uintptr(arg1), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(arg0)
-	if int32(r0) <= 0 {
-		return 0, newMkcgoErr("RAND_bytes", nil)
-	}
-	return int32(r0), nil
+	return int32(r0), newMkcgoErr("RAND_bytes", &_err)
 }
 
 var _mkcgo_RSA_free uintptr
 
 func RSA_free(arg0 RSA_PTR) {
-	syscallN(_mkcgo_RSA_free, uintptr(arg0))
+	syscallN(0, _mkcgo_RSA_free, uintptr(arg0))
 	runtime.KeepAlive(arg0)
 }
 
 var _mkcgo_RSA_get0_crt_params uintptr
 
 func RSA_get0_crt_params(r RSA_PTR, dmp1 *BIGNUM_PTR, dmq1 *BIGNUM_PTR, iqmp *BIGNUM_PTR) {
-	syscallN(_mkcgo_RSA_get0_crt_params, uintptr(r), uintptr(unsafe.Pointer(dmp1)), uintptr(unsafe.Pointer(dmq1)), uintptr(unsafe.Pointer(iqmp)))
+	syscallN(0, _mkcgo_RSA_get0_crt_params, uintptr(r), uintptr(unsafe.Pointer(dmp1)), uintptr(unsafe.Pointer(dmq1)), uintptr(unsafe.Pointer(iqmp)))
 	runtime.KeepAlive(r)
 	runtime.KeepAlive(dmp1)
 	runtime.KeepAlive(dmq1)
@@ -2280,7 +2021,7 @@ func RSA_get0_crt_params(r RSA_PTR, dmp1 *BIGNUM_PTR, dmq1 *BIGNUM_PTR, iqmp *BI
 var _mkcgo_RSA_get0_factors uintptr
 
 func RSA_get0_factors(rsa RSA_PTR, p *BIGNUM_PTR, q *BIGNUM_PTR) {
-	syscallN(_mkcgo_RSA_get0_factors, uintptr(rsa), uintptr(unsafe.Pointer(p)), uintptr(unsafe.Pointer(q)))
+	syscallN(0, _mkcgo_RSA_get0_factors, uintptr(rsa), uintptr(unsafe.Pointer(p)), uintptr(unsafe.Pointer(q)))
 	runtime.KeepAlive(rsa)
 	runtime.KeepAlive(p)
 	runtime.KeepAlive(q)
@@ -2289,7 +2030,7 @@ func RSA_get0_factors(rsa RSA_PTR, p *BIGNUM_PTR, q *BIGNUM_PTR) {
 var _mkcgo_RSA_get0_key uintptr
 
 func RSA_get0_key(rsa RSA_PTR, n *BIGNUM_PTR, e *BIGNUM_PTR, d *BIGNUM_PTR) {
-	syscallN(_mkcgo_RSA_get0_key, uintptr(rsa), uintptr(unsafe.Pointer(n)), uintptr(unsafe.Pointer(e)), uintptr(unsafe.Pointer(d)))
+	syscallN(0, _mkcgo_RSA_get0_key, uintptr(rsa), uintptr(unsafe.Pointer(n)), uintptr(unsafe.Pointer(e)), uintptr(unsafe.Pointer(d)))
 	runtime.KeepAlive(rsa)
 	runtime.KeepAlive(n)
 	runtime.KeepAlive(e)
@@ -2299,52 +2040,65 @@ func RSA_get0_key(rsa RSA_PTR, n *BIGNUM_PTR, e *BIGNUM_PTR, d *BIGNUM_PTR) {
 var _mkcgo_RSA_new uintptr
 
 func RSA_new() (RSA_PTR, error) {
-	r0, _, _ := syscallN(_mkcgo_RSA_new)
-	if RSA_PTR(r0) == nil {
-		return nil, newMkcgoErr("RSA_new", nil)
-	}
-	return RSA_PTR(r0), nil
+	var _err errState
+	r0, _ := syscallN(1, _mkcgo_RSA_new, uintptr(unsafe.Pointer(&_err)))
+	return RSA_PTR(r0), newMkcgoErr("RSA_new", &_err)
 }
 
 var _mkcgo_RSA_set0_crt_params uintptr
 
 func RSA_set0_crt_params(rsa RSA_PTR, dmp1 BIGNUM_PTR, dmp2 BIGNUM_PTR, iqmp BIGNUM_PTR) (int32, error) {
-	r0, _, _ := syscallN(_mkcgo_RSA_set0_crt_params, uintptr(rsa), uintptr(dmp1), uintptr(dmp2), uintptr(iqmp))
+	var _err errState
+	r0, _ := syscallN(3, _mkcgo_RSA_set0_crt_params, uintptr(rsa), uintptr(dmp1), uintptr(dmp2), uintptr(iqmp), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(rsa)
 	runtime.KeepAlive(dmp1)
 	runtime.KeepAlive(dmp2)
 	runtime.KeepAlive(iqmp)
-	if int32(r0) <= 0 {
-		return 0, newMkcgoErr("RSA_set0_crt_params", nil)
-	}
-	return int32(r0), nil
+	return int32(r0), newMkcgoErr("RSA_set0_crt_params", &_err)
 }
 
 var _mkcgo_RSA_set0_factors uintptr
 
 func RSA_set0_factors(rsa RSA_PTR, p BIGNUM_PTR, q BIGNUM_PTR) (int32, error) {
-	r0, _, _ := syscallN(_mkcgo_RSA_set0_factors, uintptr(rsa), uintptr(p), uintptr(q))
+	var _err errState
+	r0, _ := syscallN(3, _mkcgo_RSA_set0_factors, uintptr(rsa), uintptr(p), uintptr(q), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(rsa)
 	runtime.KeepAlive(p)
 	runtime.KeepAlive(q)
-	if int32(r0) <= 0 {
-		return 0, newMkcgoErr("RSA_set0_factors", nil)
-	}
-	return int32(r0), nil
+	return int32(r0), newMkcgoErr("RSA_set0_factors", &_err)
 }
 
 var _mkcgo_RSA_set0_key uintptr
 
 func RSA_set0_key(r RSA_PTR, n BIGNUM_PTR, e BIGNUM_PTR, d BIGNUM_PTR) (int32, error) {
-	r0, _, _ := syscallN(_mkcgo_RSA_set0_key, uintptr(r), uintptr(n), uintptr(e), uintptr(d))
+	var _err errState
+	r0, _ := syscallN(3, _mkcgo_RSA_set0_key, uintptr(r), uintptr(n), uintptr(e), uintptr(d), uintptr(unsafe.Pointer(&_err)))
 	runtime.KeepAlive(r)
 	runtime.KeepAlive(n)
 	runtime.KeepAlive(e)
 	runtime.KeepAlive(d)
-	if int32(r0) <= 0 {
-		return 0, newMkcgoErr("RSA_set0_key", nil)
+	return int32(r0), newMkcgoErr("RSA_set0_key", &_err)
+}
+
+//go:nosplit
+func _mkcgo_error_check(errType, r1, args, n uintptr) {
+	var hasError bool
+	switch errType {
+	case 1:
+		hasError = r1 == 0
+	case 2:
+		hasError = int32(r1) == -1
+	case 3:
+		hasError = int32(r1) <= 0
+	case 4:
+		hasError = int64(r1) <= 0
+	default:
+		panic("invalid error check type")
 	}
-	return int32(r0), nil
+	if hasError {
+		errPtr := (*errState)(unsafe.Pointer(*(*uintptr)(unsafe.Pointer(args + unsafe.Sizeof(uintptr(0))*n))))
+		retrieveErrorState(errPtr)
+	}
 }
 
 func MkcgoLoad_(handle unsafe.Pointer) {
@@ -2368,6 +2122,7 @@ func MkcgoLoad_(handle unsafe.Pointer) {
 	_mkcgo_EC_POINT_point2oct = dlsym(handle, "EC_POINT_point2oct\x00", false)
 	_mkcgo_ERR_clear_error = dlsym(handle, "ERR_clear_error\x00", false)
 	_mkcgo_ERR_error_string_n = dlsym(handle, "ERR_error_string_n\x00", false)
+	_mkcgo_ERR_get_error = dlsym(handle, "ERR_get_error\x00", false)
 	_mkcgo_EVP_CIPHER_CTX_ctrl = dlsym(handle, "EVP_CIPHER_CTX_ctrl\x00", false)
 	_mkcgo_EVP_CIPHER_CTX_free = dlsym(handle, "EVP_CIPHER_CTX_free\x00", false)
 	_mkcgo_EVP_CIPHER_CTX_new = dlsym(handle, "EVP_CIPHER_CTX_new\x00", false)
@@ -2470,6 +2225,7 @@ func MkcgoUnload_() {
 	_mkcgo_EC_POINT_point2oct = 0
 	_mkcgo_ERR_clear_error = 0
 	_mkcgo_ERR_error_string_n = 0
+	_mkcgo_ERR_get_error = 0
 	_mkcgo_EVP_CIPHER_CTX_ctrl = 0
 	_mkcgo_EVP_CIPHER_CTX_free = 0
 	_mkcgo_EVP_CIPHER_CTX_new = 0
