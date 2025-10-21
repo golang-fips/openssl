@@ -46,6 +46,13 @@ func syscallNSystemStack(libcArgs *libcCallInfo) {
 var syscallNSystemStack_trampoline byte
 var syscallNSystemStackABIInternal = uintptr(unsafe.Pointer(&syscallNSystemStack_trampoline))
 
+// syscallN performs a syscall with the given function and arguments.
+//
+// All its parameters and return values must be uintptr in order
+// for the Go compiler to automatically set the //go:uintptrkeepalive
+// directive (which we can't set manually here).
+// See https://github.com/golang/go/blob/9a5a1202f4c4d5a7048b149b65c3e5b82a2de9aa/src/cmd/compile/internal/escape/call.go#L275.
+//
 //go:nosplit
 func syscallN(errType uintptr, fn uintptr, args ...uintptr) (r1, r2 uintptr) {
 	libcArgs := libcCallInfo{

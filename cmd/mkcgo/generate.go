@@ -720,6 +720,10 @@ func generateGoNocgo(src *mkcgo.Source, w io.Writer) {
 	fmt.Fprintf(w, "\t\"unsafe\"\n")
 	fmt.Fprintf(w, ")\n\n")
 
+	// Ensure there is at least one reference to runtime package
+	// to avoid "imported and not used" error.
+	fmt.Fprintf(w, "var _ = runtime.GOOS\n\n")
+
 	// Generate cgo_import_dynamic directives for extern variables
 	for _, ext := range src.Externs {
 		extName := ext.Name
@@ -1048,20 +1052,6 @@ func generateNocgoFn(typePtrs map[string]bool, src *mkcgo.Source, fn *mkcgo.Func
 	generateNocgoFnBody(src, fn, errorType, !needsSpecialHandling, w)
 	if needsSpecialHandling {
 		fmt.Fprintf(w, "\t}\n")
-	}
-
-	for _, param := range fn.Params {
-		// Skip void parameters
-		if param.Type == "void" {
-			continue
-		}
-
-		// Convert C types to Go types for nocgo mode
-		goType, _ := cTypeToGo(param.Type, false)
-		_, isPtr := typePtrs[goType]
-		if isPtr || strings.HasPrefix(goType, "*") {
-			fmt.Fprintf(w, "\truntime.KeepAlive(%s)\n", param.Name)
-		}
 	}
 
 	// Generate return statement - only include error for functions that need error wrappers

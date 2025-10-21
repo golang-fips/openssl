@@ -9,6 +9,8 @@ import (
 	"unsafe"
 )
 
+var _ = runtime.GOOS
+
 //go:cgo_import_dynamic _mkcgo_dlclose dlclose ""
 //go:cgo_import_dynamic _mkcgo_dlerror dlerror ""
 //go:cgo_import_dynamic _mkcgo_dlopen dlopen ""
@@ -32,7 +34,6 @@ var _mkcgo_dlopen_trampoline_addr uintptr
 
 func Dlopen(path *byte, flags int32) unsafe.Pointer {
 	r0, _ := syscallN(0, _mkcgo_dlopen_trampoline_addr, uintptr(unsafe.Pointer(path)), uintptr(flags))
-	runtime.KeepAlive(path)
 	return unsafe.Pointer(r0)
 }
 
@@ -40,6 +41,5 @@ var _mkcgo_dlsym_trampoline_addr uintptr
 
 func Dlsym(handle unsafe.Pointer, symbol *byte) unsafe.Pointer {
 	r0, _ := syscallN(0, _mkcgo_dlsym_trampoline_addr, uintptr(handle), uintptr(unsafe.Pointer(symbol)))
-	runtime.KeepAlive(symbol)
 	return unsafe.Pointer(r0)
 }
