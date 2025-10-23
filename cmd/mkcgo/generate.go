@@ -1250,9 +1250,9 @@ func macosDarwinArm64Params(src *mkcgo.Source, fn *mkcgo.Func, w io.Writer) bool
 		goType, _ := cTypeToGo(param.Type, false)
 		if fn.Slice.Ptr != "" && fn.Slice.Ptr == param.Name {
 			// Slice parameter
-			fmt.Fprintf(w, ", uintptr(unsafe.Pointer(unsafe.SliceData(%s)))", param.Name)
+			fmt.Fprintf(w, "uintptr(unsafe.Pointer(unsafe.SliceData(%s)))", param.Name)
 		} else if fn.Slice.Len != "" && fn.Slice.Len == param.Name {
-			fmt.Fprintf(w, ", uintptr(len(%s))", fn.Slice.Ptr)
+			fmt.Fprintf(w, "uintptr(len(%s))", fn.Slice.Ptr)
 		} else if strings.HasPrefix(goType, "*") {
 			goParam = fmt.Sprintf("uintptr(unsafe.Pointer(%s))", param.Name)
 		} else {
