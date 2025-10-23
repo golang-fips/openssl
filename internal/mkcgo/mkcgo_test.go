@@ -177,17 +177,17 @@ func TestFuncString(t *testing.T) {
 			name: "Function with attributes",
 			function: &mkcgo.Func{Name: "TestFunc", Ret: "void", Params: []*mkcgo.Param{{Type: "int", Name: "param1"}},
 				Attrs: mkcgo.Attrs{
-					Tags:             []mkcgo.TagAttr{{Tag: "tag1"}, {Tag: "tag2", Name: "name"}},
-					Optional:         true,
-					NoError:          true,
-					ErrCond:          "error_condition",
-					NoEscape:         true,
-					NoCallback:       true,
-					NoCheckPtrParams: []string{"param1"},
-					Framework:        mkcgo.Framework{Name: "CoreFoundation", Version: "A"},
+					Tags:       []mkcgo.TagAttr{{Tag: "tag1"}, {Tag: "tag2", Name: "name"}},
+					Optional:   true,
+					NoError:    true,
+					ErrCond:    "error_condition",
+					NoEscape:   true,
+					NoCallback: true,
+					Framework:  mkcgo.Framework{Name: "CoreFoundation", Version: "A"},
+					Slice:      mkcgo.Slice{Ptr: "a", Len: "b"},
 				},
 			},
-			want: "void TestFunc(int param1) [{tag1 } {tag2 name}], optional, noerror, errcond(error_condition), noescape, nocallback, nocheckptr(param1), framework(CoreFoundation, A)",
+			want: "void TestFunc(int param1) [{tag1 } {tag2 name}], optional, noerror, errcond(error_condition), noescape, nocallback, framework(CoreFoundation, A), slice(a, b)",
 		},
 	}
 
@@ -253,7 +253,7 @@ enum {
 		}, {
 			content: `
 void F0(void) __attribute__((tag("t0"),noerror,tag("t1","tn0")));
-int F1(int p1) __attribute__((errcond("ec0"),  noescape,    nocallback, nocheckptr(p1)));
+int F1(int p1) __attribute__((errcond("ec0"),  noescape,    nocallback));
 int * F2(int **p1, void  * p2);
 int *F3(int p1, void***) __attribute__((optional));
 unsigned   long F4(int func, int type, ...);
@@ -262,7 +262,7 @@ void F6() __attribute__(());`,
 			want: &mkcgo.Source{
 				Funcs: []*mkcgo.Func{
 					{Name: "F0", Ret: "void", Params: []*mkcgo.Param{{"void", ""}}, Attrs: mkcgo.Attrs{Tags: []mkcgo.TagAttr{{Tag: "t0"}, {Tag: "t1", Name: "tn0"}}, NoError: true}},
-					{Name: "F1", Ret: "int", Params: []*mkcgo.Param{{"int", "p1"}}, Attrs: mkcgo.Attrs{ErrCond: "ec0", NoEscape: true, NoCallback: true, NoCheckPtrParams: []string{"p1"}}},
+					{Name: "F1", Ret: "int", Params: []*mkcgo.Param{{"int", "p1"}}, Attrs: mkcgo.Attrs{ErrCond: "ec0", NoEscape: true, NoCallback: true}},
 					{Name: "F2", Ret: "int*", Params: []*mkcgo.Param{{"int**", "p1"}, {"void*", "p2"}}},
 					{Name: "F3", Ret: "int*", Params: []*mkcgo.Param{{"int", "p1"}, {"void***", ""}}, Attrs: mkcgo.Attrs{Optional: true}},
 					{Name: "F4", Ret: "unsigned long", Params: []*mkcgo.Param{{"int", "__func"}, {"int", "__type"}, {"...", ""}}},
@@ -372,6 +372,16 @@ void E2(void);
 void F1(void) __attribute__((framework("t1")));
 `,
 			want: `can't extract function attributes: error parsing attribute framework: requires 2 arguments`,
+		}, {
+			content: `
+void F1(void * p, int l) __attribute__((slice));
+`,
+			want: `can't extract function attributes: error parsing attribute slice: requires 1 or 2 arguments`,
+		}, {
+			content: `
+void F1(void * p, int l, int m) __attribute__((slice("p", "l", "m")));
+`,
+			want: `can't extract function attributes: error parsing attribute slice: requires 1 or 2 arguments`,
 		},
 	}
 	for i, tt := range tests {

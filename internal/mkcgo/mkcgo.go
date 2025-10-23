@@ -53,18 +53,24 @@ type Framework struct {
 	Version string
 }
 
+// Slice describes a Go slice parameter.
+type Slice struct {
+	Ptr string
+	Len string
+}
+
 // Attrs contains attributes of a C symbol.
 type Attrs struct {
-	Tags             []TagAttr
-	VariadicTarget   string
-	Optional         bool
-	NoError          bool
-	ErrCond          string
-	NoEscape         bool
-	NoCallback       bool
-	NoCheckPtrParams []string
-	Framework        Framework
-	Static           bool
+	Tags           []TagAttr
+	VariadicTarget string
+	Optional       bool
+	NoError        bool
+	ErrCond        string
+	NoEscape       bool
+	NoCallback     bool
+	Framework      Framework
+	Static         bool
+	Slice          Slice
 }
 
 func (attrs *Attrs) String() string {
@@ -94,21 +100,20 @@ func (attrs *Attrs) String() string {
 	if attrs.NoCallback {
 		bld.WriteString(", nocallback")
 	}
-	if len(attrs.NoCheckPtrParams) != 0 {
-		bld.WriteString(", nocheckptr(")
-		for i, p := range attrs.NoCheckPtrParams {
-			if i > 0 {
-				bld.WriteString(", ")
-			}
-			bld.WriteString(p)
-		}
-		bld.WriteByte(')')
-	}
 	if len(attrs.Framework.Name) != 0 {
 		bld.WriteString(", framework(")
 		bld.WriteString(attrs.Framework.Name)
 		bld.WriteString(", ")
 		bld.WriteString(attrs.Framework.Version)
+		bld.WriteByte(')')
+	}
+	if attrs.Slice.Ptr != "" {
+		bld.WriteString(", slice(")
+		bld.WriteString(attrs.Slice.Ptr)
+		if attrs.Slice.Len != "" {
+			bld.WriteString(", ")
+			bld.WriteString(attrs.Slice.Len)
+		}
 		bld.WriteByte(')')
 	}
 	return strings.TrimPrefix(bld.String(), ", ")
@@ -273,14 +278,6 @@ var attributes = [...]attribute{
 		},
 	},
 	{
-		name:        "nocheckptr",
-		description: "The parameter will be hidden from the Go compiler.",
-		handle: func(opts *Attrs, s ...string) error {
-			opts.NoCheckPtrParams = append(opts.NoCheckPtrParams, s[0])
-			return nil
-		},
-	},
-	{
 		name:        "static",
 		description: "Use static cgo import for this symbol.",
 		handle: func(opts *Attrs, s ...string) error {
@@ -296,6 +293,20 @@ var attributes = [...]attribute{
 				return errors.New("requires 2 arguments")
 			}
 			opts.Framework = Framework{Name: s[0], Version: s[1]}
+			return nil
+		},
+	},
+	{
+		name:        "slice",
+		description: "The parameter corresponds to a Go slice.",
+		handle: func(opts *Attrs, s ...string) error {
+			if len(s) == 0 || len(s) > 2 {
+				return errors.New("requires 1 or 2 arguments")
+			}
+			opts.Slice = Slice{Ptr: s[0]}
+			if len(s) == 2 {
+				opts.Slice.Len = s[1]
+			}
 			return nil
 		},
 	},

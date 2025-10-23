@@ -232,12 +232,6 @@ func baseNeverEmpty(b []byte) *byte {
 	return unsafe.SliceData(b)
 }
 
-// pbaseNeverEmpty returns the address of the underlying array in b.
-// If b has zero length, it returns a pointer to a zero byte.
-func pbaseNeverEmpty(b []byte) unsafe.Pointer {
-	return unsafe.Pointer(baseNeverEmpty(b))
-}
-
 // pbase returns the address of the underlying array in b,
 // being careful not to panic when b has zero length.
 func pbase(b []byte) unsafe.Pointer {

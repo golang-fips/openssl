@@ -164,14 +164,14 @@ int _mkcgo_EVP_CipherUpdate(_EVP_CIPHER_CTX_PTR, unsigned char*, int*, const uns
 int _mkcgo_EVP_DecryptFinal_ex(_EVP_CIPHER_CTX_PTR, unsigned char*, int*, mkcgo_err_state *);
 int _mkcgo_EVP_DecryptInit_ex(_EVP_CIPHER_CTX_PTR, const _EVP_CIPHER_PTR, _ENGINE_PTR, const unsigned char*, const unsigned char*, mkcgo_err_state *);
 int _mkcgo_EVP_DecryptUpdate(_EVP_CIPHER_CTX_PTR, unsigned char*, int*, const unsigned char*, int, mkcgo_err_state *);
-int _mkcgo_EVP_Digest(const void*, size_t, unsigned char*, unsigned int*, const _EVP_MD_PTR, _ENGINE_PTR, mkcgo_err_state *);
+int _mkcgo_EVP_Digest(const unsigned char*, size_t, unsigned char*, unsigned int*, const _EVP_MD_PTR, _ENGINE_PTR, mkcgo_err_state *);
 int _mkcgo_EVP_DigestFinal_ex(_EVP_MD_CTX_PTR, unsigned char*, unsigned int*, mkcgo_err_state *);
 int _mkcgo_EVP_DigestInit(_EVP_MD_CTX_PTR, const _EVP_MD_PTR, mkcgo_err_state *);
 int _mkcgo_EVP_DigestInit_ex(_EVP_MD_CTX_PTR, const _EVP_MD_PTR, _ENGINE_PTR, mkcgo_err_state *);
 int _mkcgo_EVP_DigestSign(_EVP_MD_CTX_PTR, unsigned char*, size_t*, const unsigned char*, size_t, mkcgo_err_state *);
 int _mkcgo_EVP_DigestSignFinal(_EVP_MD_CTX_PTR, unsigned char*, size_t*, mkcgo_err_state *);
 int _mkcgo_EVP_DigestSignInit(_EVP_MD_CTX_PTR, _EVP_PKEY_CTX_PTR*, const _EVP_MD_PTR, _ENGINE_PTR, _EVP_PKEY_PTR, mkcgo_err_state *);
-int _mkcgo_EVP_DigestUpdate(_EVP_MD_CTX_PTR, const void*, size_t, mkcgo_err_state *);
+int _mkcgo_EVP_DigestUpdate(_EVP_MD_CTX_PTR, const unsigned char*, size_t, mkcgo_err_state *);
 int _mkcgo_EVP_DigestVerify(_EVP_MD_CTX_PTR, const unsigned char*, size_t, const unsigned char*, size_t, mkcgo_err_state *);
 int _mkcgo_EVP_DigestVerifyFinal(_EVP_MD_CTX_PTR, const unsigned char*, size_t, mkcgo_err_state *);
 int _mkcgo_EVP_DigestVerifyInit(_EVP_MD_CTX_PTR, _EVP_PKEY_CTX_PTR*, const _EVP_MD_PTR, _ENGINE_PTR, _EVP_PKEY_PTR, mkcgo_err_state *);

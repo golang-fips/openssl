@@ -437,9 +437,9 @@ func EVP_DecryptUpdate(ctx EVP_CIPHER_CTX_PTR, out *byte, outl *int32, in *byte,
 
 var _mkcgo_EVP_Digest uintptr
 
-func EVP_Digest(data unsafe.Pointer, count int, md *byte, size *uint32, __type EVP_MD_PTR, impl ENGINE_PTR) (int32, error) {
+func EVP_Digest(data []byte, md *byte, size *uint32, __type EVP_MD_PTR, impl ENGINE_PTR) (int32, error) {
 	var _err errState
-	r0, _ := syscallN(3, _mkcgo_EVP_Digest, uintptr(data), uintptr(count), uintptr(unsafe.Pointer(md)), uintptr(unsafe.Pointer(size)), uintptr(__type), uintptr(impl), uintptr(unsafe.Pointer(&_err)))
+	r0, _ := syscallN(3, _mkcgo_EVP_Digest, uintptr(unsafe.Pointer(unsafe.SliceData(data))), uintptr(len(data)), uintptr(unsafe.Pointer(md)), uintptr(unsafe.Pointer(size)), uintptr(__type), uintptr(impl), uintptr(unsafe.Pointer(&_err)))
 	return int32(r0), newMkcgoErr("EVP_Digest", &_err)
 }
 
@@ -493,9 +493,9 @@ func EVP_DigestSignInit(ctx EVP_MD_CTX_PTR, pctx *EVP_PKEY_CTX_PTR, __type EVP_M
 
 var _mkcgo_EVP_DigestUpdate uintptr
 
-func EVP_DigestUpdate(ctx EVP_MD_CTX_PTR, d unsafe.Pointer, cnt int) (int32, error) {
+func EVP_DigestUpdate(ctx EVP_MD_CTX_PTR, d []byte) (int32, error) {
 	var _err errState
-	r0, _ := syscallN(3, _mkcgo_EVP_DigestUpdate, uintptr(ctx), uintptr(d), uintptr(cnt), uintptr(unsafe.Pointer(&_err)))
+	r0, _ := syscallN(3, _mkcgo_EVP_DigestUpdate, uintptr(ctx), uintptr(unsafe.Pointer(unsafe.SliceData(d))), uintptr(len(d)), uintptr(unsafe.Pointer(&_err)))
 	return int32(r0), newMkcgoErr("EVP_DigestUpdate", &_err)
 }
 

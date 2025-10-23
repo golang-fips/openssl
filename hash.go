@@ -34,7 +34,7 @@ const (
 const maxHashSize = 64
 
 func hashOneShot(ch crypto.Hash, p []byte, sum []byte) bool {
-	_, err := ossl.EVP_Digest(pbaseNeverEmpty(p), len(p), base(sum), nil, loadHash(ch).md, nil)
+	_, err := ossl.EVP_Digest(p, base(sum), nil, loadHash(ch).md, nil)
 	return err == nil
 }
 
@@ -298,7 +298,7 @@ func (h *evpHash) Write(p []byte) (int, error) {
 		return 0, nil
 	}
 	h.init()
-	if _, err := ossl.EVP_DigestUpdate(h.ctx, pbase(p), len(p)); err != nil {
+	if _, err := ossl.EVP_DigestUpdate(h.ctx, p); err != nil {
 		panic(err)
 	}
 	runtime.KeepAlive(h)
@@ -310,7 +310,7 @@ func (h *evpHash) WriteString(s string) (int, error) {
 		return 0, nil
 	}
 	h.init()
-	if _, err := ossl.EVP_DigestUpdate(h.ctx, unsafe.Pointer(unsafe.StringData(s)), len(s)); err != nil {
+	if _, err := ossl.EVP_DigestUpdate(h.ctx, unsafe.Slice(unsafe.StringData(s), len(s))); err != nil {
 		panic(err)
 	}
 	runtime.KeepAlive(h)
@@ -319,7 +319,7 @@ func (h *evpHash) WriteString(s string) (int, error) {
 
 func (h *evpHash) WriteByte(c byte) error {
 	h.init()
-	if _, err := ossl.EVP_DigestUpdate(h.ctx, unsafe.Pointer(&c), 1); err != nil {
+	if _, err := ossl.EVP_DigestUpdate(h.ctx, unsafe.Slice(&c, 1)); err != nil {
 		panic(err)
 	}
 	runtime.KeepAlive(h)
