@@ -550,7 +550,7 @@ func fnToGoParams(fn *mkcgo.Func) string {
 			if typ == "unsafe.Pointer" {
 				typ = "byte"
 			}
-			typ = "[]" + strings.TrimRight(typ, "*")
+			typ = "[]" + strings.TrimLeft(typ, "*")
 		}
 		return p.Name + " " + typ
 	}, ", ")
