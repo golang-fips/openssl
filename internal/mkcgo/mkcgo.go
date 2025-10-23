@@ -70,7 +70,27 @@ type Attrs struct {
 	NoCallback     bool
 	Framework      Framework
 	Static         bool
-	Slice          Slice
+	Slice          []Slice
+}
+
+func (attrs *Attrs) SliceFromPtr(name string) (Slice, bool) {
+	idx := slices.IndexFunc(attrs.Slice, func(s Slice) bool {
+		return s.Ptr == name
+	})
+	if idx == -1 {
+		return Slice{}, false
+	}
+	return attrs.Slice[idx], true
+}
+
+func (attrs *Attrs) SliceFromLen(name string) (Slice, bool) {
+	idx := slices.IndexFunc(attrs.Slice, func(s Slice) bool {
+		return s.Len == name
+	})
+	if idx == -1 {
+		return Slice{}, false
+	}
+	return attrs.Slice[idx], true
 }
 
 func (attrs *Attrs) String() string {
@@ -107,14 +127,16 @@ func (attrs *Attrs) String() string {
 		bld.WriteString(attrs.Framework.Version)
 		bld.WriteByte(')')
 	}
-	if attrs.Slice.Ptr != "" {
-		bld.WriteString(", slice(")
-		bld.WriteString(attrs.Slice.Ptr)
-		if attrs.Slice.Len != "" {
-			bld.WriteString(", ")
-			bld.WriteString(attrs.Slice.Len)
+	for _, slice := range attrs.Slice {
+		if slice.Ptr != "" {
+			bld.WriteString(", slice(")
+			bld.WriteString(slice.Ptr)
+			if slice.Len != "" {
+				bld.WriteString(", ")
+				bld.WriteString(slice.Len)
+			}
+			bld.WriteByte(')')
 		}
-		bld.WriteByte(')')
 	}
 	return strings.TrimPrefix(bld.String(), ", ")
 }
@@ -303,10 +325,11 @@ var attributes = [...]attribute{
 			if len(s) == 0 || len(s) > 2 {
 				return errors.New("requires 1 or 2 arguments")
 			}
-			opts.Slice = Slice{Ptr: s[0]}
+			slice := Slice{Ptr: s[0]}
 			if len(s) == 2 {
-				opts.Slice.Len = s[1]
+				slice.Len = s[1]
 			}
+			opts.Slice = append(opts.Slice, slice)
 			return nil
 		},
 	},

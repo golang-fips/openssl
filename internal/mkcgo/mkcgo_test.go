@@ -184,7 +184,7 @@ func TestFuncString(t *testing.T) {
 					NoEscape:   true,
 					NoCallback: true,
 					Framework:  mkcgo.Framework{Name: "CoreFoundation", Version: "A"},
-					Slice:      mkcgo.Slice{Ptr: "a", Len: "b"},
+					Slice:      []mkcgo.Slice{{Ptr: "a", Len: "b"}},
 				},
 			},
 			want: "void TestFunc(int param1) [{tag1 } {tag2 name}], optional, noerror, errcond(error_condition), noescape, nocallback, framework(CoreFoundation, A), slice(a, b)",

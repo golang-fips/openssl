@@ -541,12 +541,12 @@ func isVoid(typ string) bool {
 // fnToGoParams returns source code for function f parameters.
 func fnToGoParams(fn *mkcgo.Func) string {
 	return join(fn.Params, func(_ int, p *mkcgo.Param) string {
-		if fn.Slice.Len != "" && fn.Slice.Len == p.Name {
+		if _, ok := fn.SliceFromLen(p.Name); ok {
 			// Skip length parameter for slice.
 			return ""
 		}
 		typ, _ := cTypeToGo(p.Type, false)
-		if fn.Slice.Ptr != "" && fn.Slice.Ptr == p.Name {
+		if _, ok := fn.SliceFromPtr(p.Name); ok {
 			if typ == "unsafe.Pointer" {
 				typ = "byte"
 			}
@@ -564,10 +564,10 @@ func fnToGoArgs(fn *mkcgo.Func) string {
 		if goType == "" {
 			return ""
 		}
-		if fn.Slice.Len != "" && fn.Slice.Len == p.Name {
-			arg = "len(" + fn.Slice.Ptr + ")"
+		if slice, ok := fn.SliceFromLen(p.Name); ok {
+			arg = "len(" + slice.Ptr + ")"
 			needCast = true
-		} else if fn.Slice.Ptr != "" && fn.Slice.Ptr == p.Name {
+		} else if _, ok := fn.SliceFromPtr(p.Name); ok {
 			arg = "unsafe.SliceData(" + arg + ")"
 			if goType == "unsafe.Pointer" {
 				goType = "*C.uchar"
@@ -592,7 +592,7 @@ func fnToCArgs(fn *mkcgo.Func, addType, addName bool) string {
 		}
 		var s string
 		if addType {
-			if fn.Slice.Ptr != "" && fn.Slice.Ptr == p.Name {
+			if _, ok := fn.SliceFromPtr(p.Name); ok {
 				// Use unsigned char* for slice pointer,
 				// else cgoCheckPointer may complain.
 				s = strings.ReplaceAll(p.Type, "void", "unsigned char")
@@ -996,7 +996,7 @@ func generateNocgoFn(typePtrs map[string]bool, src *mkcgo.Source, fn *mkcgo.Func
 		if param.Type == "void" {
 			continue
 		}
-		if fn.Slice.Len != "" && fn.Slice.Len == param.Name {
+		if _, ok := fn.SliceFromLen(param.Name); ok {
 			// Skip length parameter for slice.
 			continue
 		}
@@ -1006,7 +1006,7 @@ func generateNocgoFn(typePtrs map[string]bool, src *mkcgo.Source, fn *mkcgo.Func
 
 		// Convert C types to Go types for nocgo mode
 		goType, _ := cTypeToGo(param.Type, false)
-		if fn.Slice.Ptr != "" && fn.Slice.Ptr == param.Name {
+		if _, ok := fn.SliceFromPtr(param.Name); ok {
 			// Slice parameter
 			if goType == "unsafe.Pointer" {
 				goType = "byte"
@@ -1123,11 +1123,11 @@ func generateNocgoFnBody(src *mkcgo.Source, fn *mkcgo.Func, errorType int, newR0
 		// Convert parameter to uintptr, handling different types correctly
 		goType, _ := cTypeToGo(param.Type, false)
 
-		if fn.Slice.Ptr != "" && fn.Slice.Ptr == param.Name {
+		if _, ok := fn.SliceFromPtr(param.Name); ok {
 			// Slice parameter
 			fmt.Fprintf(w, ", uintptr(unsafe.Pointer(unsafe.SliceData(%s)))", param.Name)
-		} else if fn.Slice.Len != "" && fn.Slice.Len == param.Name {
-			fmt.Fprintf(w, ", uintptr(len(%s))", fn.Slice.Ptr)
+		} else if slice, ok := fn.SliceFromLen(param.Name); ok {
+			fmt.Fprintf(w, ", uintptr(len(%s))", slice.Ptr)
 		} else if strings.HasPrefix(goType, "*") {
 			// Pointer types need to go through unsafe.Pointer
 			fmt.Fprintf(w, ", uintptr(unsafe.Pointer(%s))", param.Name)
@@ -1248,11 +1248,11 @@ func macosDarwinArm64Params(src *mkcgo.Source, fn *mkcgo.Func, w io.Writer) bool
 		}
 		var goParam string
 		goType, _ := cTypeToGo(param.Type, false)
-		if fn.Slice.Ptr != "" && fn.Slice.Ptr == param.Name {
+		if _, ok := fn.SliceFromPtr(param.Name); ok {
 			// Slice parameter
 			goParam = fmt.Sprintf("uintptr(unsafe.Pointer(unsafe.SliceData(%s)))", param.Name)
-		} else if fn.Slice.Len != "" && fn.Slice.Len == param.Name {
-			goParam = fmt.Sprintf("uintptr(len(%s))", fn.Slice.Ptr)
+		} else if slice, ok := fn.SliceFromLen(param.Name); ok {
+			goParam = fmt.Sprintf("uintptr(len(%s))", slice.Ptr)
 		} else if strings.HasPrefix(goType, "*") {
 			goParam = fmt.Sprintf("uintptr(unsafe.Pointer(%s))", param.Name)
 		} else {
