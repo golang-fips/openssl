@@ -1011,7 +1011,7 @@ func generateNocgoFn(typePtrs map[string]bool, src *mkcgo.Source, fn *mkcgo.Func
 			if goType == "unsafe.Pointer" {
 				goType = "byte"
 			}
-			goType = "[]" + strings.TrimRight(goType, "*")
+			goType = "[]" + strings.TrimLeft(goType, "*")
 		}
 
 		fmt.Fprintf(w, "%s %s", param.Name, goType)
