@@ -40,8 +40,12 @@ func generateGoCgo(src *mkcgo.Source, w io.Writer) {
 	fmt.Fprintf(w, "/*\n")
 	fmt.Fprintf(w, "#cgo CFLAGS: -Wno-attributes\n")
 	if dynload() {
-		fmt.Fprintf(w, "#cgo unix LDFLAGS: -ldl\n\n")
+		fmt.Fprintf(w, "#cgo unix LDFLAGS: -ldl\n")
 	}
+	for _, framework := range frameworkNames(src) {
+		fmt.Fprintf(w, "#cgo darwin LDFLAGS: -framework %s\n", framework)
+	}
+	fmt.Fprintf(w, "\n")
 	if *includeHeader != "" {
 		fmt.Fprintf(w, "#include \"%s\"\n", *includeHeader)
 	}
@@ -51,7 +55,14 @@ func generateGoCgo(src *mkcgo.Source, w io.Writer) {
 	fmt.Fprintf(w, "import \"unsafe\"\n\n")
 
 	// Generate Externs for C extern variables.
-	generateGoExterns(src.Externs, w)
+	//
+	// The Go internal linker doesn't know how to link extern variables
+	// when building with `CGO_ENABLED=1`, so for now generate them using
+	// the nocgo method, which define them in a way that is more friendly
+	// to the Go linker.
+	// TODO: use generateGoExterns once the Go linker supports extern variables.
+	//generateGoExterns(src.Externs, w)
+	generateNocgoExterns(src.Externs, w)
 
 	// Generate type aliases for all
 	generateGoAliases(src.Funcs, src.Externs, src.Enums, w)
@@ -703,6 +714,23 @@ func goSymName(name string) string {
 	return strings.ToUpper(name[:1]) + name[1:]
 }
 
+func frameworkNames(src *mkcgo.Source) []string {
+	frameworkSet := make(map[string]struct{})
+	for _, fn := range src.Funcs {
+		if fn.Framework.Name != "" {
+			frameworkSet[fn.Framework.Name] = struct{}{}
+		}
+	}
+	for _, ext := range src.Externs {
+		if ext.Framework.Name != "" {
+			frameworkSet[ext.Framework.Name] = struct{}{}
+		}
+	}
+	frameworks := slices.Collect(maps.Keys(frameworkSet))
+	slices.Sort(frameworks)
+	return frameworks
+}
+
 // getFrameworkPath returns the absolute framework path.
 func getFrameworkPath(dylib mkcgo.Framework) string {
 	if dylib.Name == "" && dylib.Version == "" {
@@ -856,6 +884,10 @@ func generateNocgoExterns(externs []*mkcgo.Extern, w io.Writer) {
 	if len(externs) == 0 {
 		return
 	}
+
+	// TODO: simplify how extern variables are generated once
+	// the Go internal linker knows how to properly link them
+	// without requiring address functions.
 
 	// First, generate pointer variables for extern symbols
 	fmt.Fprintf(w, "var (\n")
