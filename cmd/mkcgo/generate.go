@@ -62,7 +62,7 @@ func generateGoCgo(src *mkcgo.Source, w io.Writer) {
 	// to the Go linker.
 	// TODO: use generateGoExterns once the Go linker supports extern variables.
 	//generateGoExterns(src.Externs, w)
-	generateNocgoExterns(src.Externs, w)
+	generateNocgoExterns(src, w)
 
 	// Generate type aliases for all
 	generateGoAliases(src.Funcs, src.Externs, src.Enums, w)
@@ -762,23 +762,6 @@ func generateGoNocgo(src *mkcgo.Source, w io.Writer) {
 	// to avoid "imported and not used" error.
 	fmt.Fprintf(w, "var _ = runtime.GOOS\n\n")
 
-	// Generate cgo_import_dynamic directives for extern variables
-	for _, ext := range src.Externs {
-		extName := ext.Name
-		if ext.Static {
-			localName := extName
-			if !strings.HasPrefix(extName, "go_") {
-				localName = "go_" + extName
-			}
-			fmt.Fprintf(w, "//go:linkname %s %s\n", localName, localName)
-			continue
-		}
-		frameworkPath := getFrameworkPath(ext.Framework)
-		fmt.Fprintf(w, "//go:cgo_import_dynamic _mkcgo_%s %s \"%s\"\n", extName, extName, frameworkPath)
-		fmt.Fprintf(w, "//go:linkname _mkcgo_%s _mkcgo_%s\n", extName, extName)
-	}
-	fmt.Fprintf(w, "\n")
-
 	// Generate cgo_import_dynamic directives for each function
 	for _, fn := range src.Funcs {
 		// Skip base variadic functions unless they are targets for wrapper functions
@@ -827,7 +810,7 @@ func generateGoNocgo(src *mkcgo.Source, w io.Writer) {
 	generateNocgoEnumsTypes(src.Enums, w)
 
 	// Generate extern variables
-	generateNocgoExterns(src.Externs, w)
+	generateNocgoExterns(src, w)
 
 	// Generate trampoline address variables and wrapper functions
 	typePtrs := make(map[string]bool, len(src.TypeDefs))
@@ -880,8 +863,8 @@ func generateNocgoEnumsTypes(enums []*mkcgo.Enum, w io.Writer) {
 }
 
 // generateNocgoExterns generates Go extern variables for nocgo mode.
-func generateNocgoExterns(externs []*mkcgo.Extern, w io.Writer) {
-	if len(externs) == 0 {
+func generateNocgoExterns(src *mkcgo.Source, w io.Writer) {
+	if len(src.Externs) == 0 {
 		return
 	}
 
@@ -889,15 +872,36 @@ func generateNocgoExterns(externs []*mkcgo.Extern, w io.Writer) {
 	// the Go internal linker knows how to properly link them
 	// without requiring address functions.
 
+	// Generate cgo_import_dynamic directives for extern variables
+	for _, ext := range src.Externs {
+		frameworkPath := getFrameworkPath(ext.Framework)
+		fmt.Fprintf(w, "//go:cgo_import_dynamic _mkcgo_%s %s \"%s\"\n", ext.Name, ext.Name, frameworkPath)
+	}
+	fmt.Fprintf(w, "\n")
+
+	// Generate linkname directives for extern variables
+	for _, ext := range src.Externs {
+		if ext.Static {
+			localName := ext.Name
+			if !strings.HasPrefix(ext.Name, "go_") {
+				localName = "go_" + ext.Name
+			}
+			fmt.Fprintf(w, "//go:linkname %s %s\n", localName, localName)
+			continue
+		}
+		fmt.Fprintf(w, "//go:linkname _mkcgo_%s _mkcgo_%s\n", ext.Name, ext.Name)
+	}
+	fmt.Fprintf(w, "\n")
+
 	// First, generate pointer variables for extern symbols
 	fmt.Fprintf(w, "var (\n")
-	for _, ext := range externs {
+	for _, ext := range src.Externs {
 		goType, _ := cTypeToGo(ext.Type, false)
 		fmt.Fprintf(w, "\t_mkcgo_%s %s\n", ext.Name, goType)
 	}
 	fmt.Fprintf(w, ")\n\n")
 
-	for _, ext := range externs {
+	for _, ext := range src.Externs {
 		goType, _ := cTypeToGo(ext.Type, false)
 		fmt.Fprintf(w, "//go:noinline\n")
 		fmt.Fprintf(w, "func _mkcgo_addr_%s() *%s { return &_mkcgo_%s }\n", ext.Name, goType, ext.Name)
@@ -905,7 +909,7 @@ func generateNocgoExterns(externs []*mkcgo.Extern, w io.Writer) {
 
 	// Then, generate the actual variables that dereference the pointers
 	fmt.Fprintf(w, "var (\n")
-	for _, ext := range externs {
+	for _, ext := range src.Externs {
 		// Convert extern names to Go variable names
 		goName := goSymName(ext.Name)
 		goType, _ := cTypeToGo(ext.Type, false)
