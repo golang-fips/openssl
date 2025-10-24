@@ -762,47 +762,6 @@ func generateGoNocgo(src *mkcgo.Source, w io.Writer) {
 	// to avoid "imported and not used" error.
 	fmt.Fprintf(w, "var _ = runtime.GOOS\n\n")
 
-	// Generate cgo_import_dynamic directives for each function
-	for _, fn := range src.Funcs {
-		// Skip base variadic functions unless they are targets for wrapper functions
-		// Variadic wrapper functions don't need their own imports since they call the variadic target
-		if fn.Attrs.VariadicTarget != "" {
-			continue
-		}
-		if fn.Static {
-			localName := fn.Name
-			if !strings.HasPrefix(localName, "go_") {
-				localName = "go_" + localName
-			}
-			fmt.Fprintf(w, "//go:linkname %s %s\n", localName, localName)
-		} else {
-			if dynamic() {
-				fmt.Fprintf(w, "//go:cgo_import_dynamic _mkcgo_%s %s \"%s\"\n", fn.Name, fn.Name, getFrameworkPath(fn.Framework))
-			}
-		}
-	}
-	fmt.Fprintf(w, "\n")
-
-	// For functions that were statically imported, declare a byte variable
-	// and pointer matching the local import name (e.g., "go_MD5"). This is needed so
-	// the generated nocgo code can reference the symbol address when using
-	// static imports.
-	for _, fn := range src.Funcs {
-		if !fnCalledFromGo(fn) {
-			continue
-		}
-		if !fn.Static {
-			continue
-		}
-		localName := fn.Name
-		if !strings.HasPrefix(localName, "go_") {
-			localName = "go_" + localName
-		}
-		// Use byte + pointer pattern for all functions
-		fmt.Fprintf(w, "var %s byte\n", localName)
-	}
-	fmt.Fprintf(w, "\n")
-
 	// Generate all type aliases
 	generateNocgoAliases(src.TypeDefs, w)
 
@@ -812,18 +771,8 @@ func generateGoNocgo(src *mkcgo.Source, w io.Writer) {
 	// Generate extern variables
 	generateNocgoExterns(src, w)
 
-	// Generate trampoline address variables and wrapper functions
-	typePtrs := make(map[string]bool, len(src.TypeDefs))
-	for _, def := range src.TypeDefs {
-		if !strings.ContainsRune(def.Type, '*') {
-			continue
-		}
-		typ, _ := cTypeToGo(def.Name, false)
-		typePtrs[typ] = true
-	}
-	for _, fn := range src.Funcs {
-		generateNocgoFn(typePtrs, src, fn, w)
-	}
+	// Generate function wrappers
+	generateNocgoFns(src, w)
 
 	generateNoCgoErrorCheck(w)
 
@@ -998,6 +947,69 @@ func fnErrorType(src *mkcgo.Source, typePtrs map[string]bool, fn *mkcgo.Func) in
 		return addCheck("int64(r1) <= 0")
 	}
 	panic("unsupported return type size for error checking")
+}
+
+// generateNocgoFns generates Go function wrappers for nocgo mode.
+func generateNocgoFns(src *mkcgo.Source, w io.Writer) {
+	if len(src.Funcs) == 0 {
+		return
+	}
+
+	// Generate cgo_import_dynamic directives for each function
+	for _, fn := range src.Funcs {
+		// Skip base variadic functions unless they are targets for wrapper functions
+		// Variadic wrapper functions don't need their own imports since they call the variadic target
+		if fn.Attrs.VariadicTarget != "" {
+			continue
+		}
+		if fn.Static {
+			localName := fn.Name
+			if !strings.HasPrefix(localName, "go_") {
+				localName = "go_" + localName
+			}
+			fmt.Fprintf(w, "//go:linkname %s %s\n", localName, localName)
+		} else {
+			if dynamic() {
+				fmt.Fprintf(w, "//go:cgo_import_dynamic _mkcgo_%s %s \"%s\"\n", fn.Name, fn.Name, getFrameworkPath(fn.Framework))
+			}
+		}
+	}
+	fmt.Fprintf(w, "\n")
+
+	// For functions that were statically imported, declare a byte variable
+	// and pointer matching the local import name (e.g., "go_MD5"). This is needed so
+	// the generated nocgo code can reference the symbol address when using
+	// static imports.
+	for _, fn := range src.Funcs {
+		if !fnCalledFromGo(fn) {
+			continue
+		}
+		if !fn.Static {
+			continue
+		}
+		localName := fn.Name
+		if !strings.HasPrefix(localName, "go_") {
+			localName = "go_" + localName
+		}
+		// Use byte + pointer pattern for all functions
+		fmt.Fprintf(w, "var %s byte\n", localName)
+	}
+	fmt.Fprintf(w, "\n")
+
+	// Generate trampoline address variables and wrapper functions
+	typePtrs := make(map[string]bool, len(src.TypeDefs))
+	for _, def := range src.TypeDefs {
+		if !strings.ContainsRune(def.Type, '*') {
+			continue
+		}
+		typ, _ := cTypeToGo(def.Name, false)
+		typePtrs[typ] = true
+	}
+
+	// Generate function wrappers.
+	for _, fn := range src.Funcs {
+		generateNocgoFn(typePtrs, src, fn, w)
+	}
 }
 
 // generateNocgoFn generates Go function wrapper for nocgo mode.
