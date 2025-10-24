@@ -803,12 +803,17 @@ func generateNocgoAliases(typedefs []*mkcgo.TypeDef, w io.Writer) {
 
 // generateNocgoEnumsTypes generates Go enum types for nocgo mode.
 func generateNocgoEnumsTypes(enums []*mkcgo.Enum, w io.Writer) {
+	if len(enums) == 0 {
+		return
+	}
+
 	for _, enum := range enums {
 		if enum.Type != "" {
 			// Generate the type alias
-			fmt.Fprintf(w, "type %s int32\n\n", enum.Type)
+			fmt.Fprintf(w, "type %s int32\n", enum.Type)
 		}
 	}
+	fmt.Fprintf(w, "\n")
 }
 
 // generateNocgoExterns generates Go extern variables for nocgo mode.
