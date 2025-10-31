@@ -3,7 +3,6 @@
 package openssl
 
 import (
-	"crypto/rand"
 	"errors"
 	"sync"
 	"unsafe"
@@ -73,7 +72,7 @@ type DecapsulationKeyMLKEM768 [seedSizeMLKEM]byte
 // the default crypto/rand source. The decapsulation key must be kept secret.
 func GenerateKeyMLKEM768() (DecapsulationKeyMLKEM768, error) {
 	var dk DecapsulationKeyMLKEM768
-	_, err := rand.Read(dk[:])
+	_, err := RandReader.Read(dk[:])
 	if err != nil {
 		return DecapsulationKeyMLKEM768{}, err
 	}
@@ -110,28 +109,9 @@ func (dk DecapsulationKeyMLKEM768) Decapsulate(ciphertext []byte) (sharedKey []b
 // EncapsulationKey returns the public encapsulation key necessary to produce
 // ciphertexts.
 func (dk DecapsulationKeyMLKEM768) EncapsulationKey() EncapsulationKeyMLKEM768 {
-	pkey, err := createMLKEMPrivateKey(ossl.NID_ML_KEM_768, dk[:])
-	if err != nil {
-		panic(err)
-	}
-
-	defer ossl.EVP_PKEY_free(pkey)
-
-	// Extract public key bytes
-	var pubBytes *byte
-	pubLen, err := ossl.EVP_PKEY_get1_encoded_public_key(pkey, &pubBytes)
-	if err != nil {
-		panic(err)
-	}
-	defer cryptoFree(unsafe.Pointer(pubBytes))
-
-	if pubLen != encapsulationKeySizeMLKEM768 {
-		panic(errors.New("mlkem: invalid encapsulation key size"))
-	}
-
-	// Create the EncapsulationKey with the EVP_PKEY and the key data
+	ekBytes := extractEncapsulationKeyBytes(ossl.NID_ML_KEM_768, dk[:], encapsulationKeySizeMLKEM768)
 	var ek EncapsulationKeyMLKEM768
-	copy(ek[:], unsafe.Slice(pubBytes, pubLen))
+	copy(ek[:], ekBytes)
 	return ek
 }
 
@@ -238,7 +218,7 @@ type DecapsulationKeyMLKEM1024 [seedSizeMLKEM]byte
 // the default crypto/rand source. The decapsulation key must be kept secret.
 func GenerateKeyMLKEM1024() (DecapsulationKeyMLKEM1024, error) {
 	var dk DecapsulationKeyMLKEM1024
-	_, err := rand.Read(dk[:])
+	_, err := RandReader.Read(dk[:])
 	if err != nil {
 		return DecapsulationKeyMLKEM1024{}, err
 	}
@@ -275,28 +255,9 @@ func (dk DecapsulationKeyMLKEM1024) Decapsulate(ciphertext []byte) (sharedKey []
 // EncapsulationKey returns the public encapsulation key necessary to produce
 // ciphertexts.
 func (dk DecapsulationKeyMLKEM1024) EncapsulationKey() EncapsulationKeyMLKEM1024 {
-	pkey, err := createMLKEMPrivateKey(ossl.NID_ML_KEM_1024, dk[:])
-	if err != nil {
-		panic(err)
-	}
-
-	defer ossl.EVP_PKEY_free(pkey)
-
-	// Extract public key
-	var pubBytes *byte
-	pubLen, err := ossl.EVP_PKEY_get1_encoded_public_key(pkey, &pubBytes)
-	if err != nil {
-		panic(err)
-	}
-	defer cryptoFree(unsafe.Pointer(pubBytes))
-
-	if pubLen != encapsulationKeySizeMLKEM1024 {
-		panic(errors.New("mlkem: invalid encapsulation key size"))
-	}
-
-	// Create the EncapsulationKey with the EVP_PKEY and the key data
+	ekBytes := extractEncapsulationKeyBytes(ossl.NID_ML_KEM_1024, dk[:], encapsulationKeySizeMLKEM1024)
 	var ek EncapsulationKeyMLKEM1024
-	copy(ek[:], unsafe.Slice(pubBytes, pubLen))
+	copy(ek[:], ekBytes)
 	return ek
 }
 
@@ -371,4 +332,30 @@ func createMLKEMPublicKey(id int32, pubKeyBytes []byte) (ossl.EVP_PKEY_PTR, erro
 	defer ossl.OSSL_PARAM_free(params)
 
 	return newEvpFromParams(id, ossl.EVP_PKEY_PUBLIC_KEY, params)
+}
+
+// extractEncapsulationKeyBytes extracts the encapsulation key bytes from a decapsulation key.
+func extractEncapsulationKeyBytes(id int32, seed []byte, expectedSize int) []byte {
+	pkey, err := createMLKEMPrivateKey(id, seed)
+	if err != nil {
+		panic(err)
+	}
+	defer ossl.EVP_PKEY_free(pkey)
+
+	// Extract public key bytes
+	var pubBytes *byte
+	pubLen, err := ossl.EVP_PKEY_get1_encoded_public_key(pkey, &pubBytes)
+	if err != nil {
+		panic(err)
+	}
+	defer cryptoFree(unsafe.Pointer(pubBytes))
+
+	if pubLen != expectedSize {
+		panic(errors.New("mlkem: invalid encapsulation key size"))
+	}
+
+	// Copy the bytes before pubBytes is freed
+	result := make([]byte, pubLen)
+	copy(result, unsafe.Slice(pubBytes, pubLen))
+	return result
 }
