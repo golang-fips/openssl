@@ -629,6 +629,8 @@ void __mkcgo_unload_init_1() {
 
 void __mkcgo_load_init_3(void* handle) {
 	__mkcgo__dlsym(ERR_clear_error)
+	__mkcgo__dlsym(ERR_error_string_n)
+	__mkcgo__dlsym(ERR_get_error_all)
 	__mkcgo__dlsym(EVP_MD_fetch)
 	__mkcgo__dlsym(EVP_MD_free)
 	__mkcgo__dlsym(EVP_MD_get0_provider)
@@ -637,6 +639,8 @@ void __mkcgo_load_init_3(void* handle) {
 
 void __mkcgo_unload_init_3() {
 	_g_ERR_clear_error = NULL;
+	_g_ERR_error_string_n = NULL;
+	_g_ERR_get_error_all = NULL;
 	_g_EVP_MD_fetch = NULL;
 	_g_EVP_MD_free = NULL;
 	_g_EVP_MD_get0_provider = NULL;

@@ -2127,6 +2127,8 @@ func MkcgoUnload_init_1() {
 
 func MkcgoLoad_init_3(handle unsafe.Pointer) {
 	_mkcgo_ERR_clear_error = dlsym(handle, "ERR_clear_error\x00", false)
+	_mkcgo_ERR_error_string_n = dlsym(handle, "ERR_error_string_n\x00", false)
+	_mkcgo_ERR_get_error_all = dlsym(handle, "ERR_get_error_all\x00", false)
 	_mkcgo_EVP_MD_fetch = dlsym(handle, "EVP_MD_fetch\x00", false)
 	_mkcgo_EVP_MD_free = dlsym(handle, "EVP_MD_free\x00", false)
 	_mkcgo_EVP_MD_get0_provider = dlsym(handle, "EVP_MD_get0_provider\x00", false)
@@ -2135,6 +2137,8 @@ func MkcgoLoad_init_3(handle unsafe.Pointer) {
 
 func MkcgoUnload_init_3() {
 	_mkcgo_ERR_clear_error = 0
+	_mkcgo_ERR_error_string_n = 0
+	_mkcgo_ERR_get_error_all = 0
 	_mkcgo_EVP_MD_fetch = 0
 	_mkcgo_EVP_MD_free = 0
 	_mkcgo_EVP_MD_get0_provider = 0
