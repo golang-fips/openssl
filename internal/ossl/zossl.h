@@ -28,6 +28,7 @@ typedef void* _EVP_MAC_CTX_PTR;
 typedef void* _OSSL_PARAM_BLD_PTR;
 typedef void* _OSSL_PARAM_PTR;
 typedef void* _EVP_SIGNATURE_PTR;
+typedef void* _EVP_KEYMGMT_PTR;
 typedef void* _DSA_PTR;
 typedef void* _EVP_KDF_PTR;
 typedef void* _EVP_KDF_CTX_PTR;
@@ -67,6 +68,8 @@ enum {
 	_NID_secp224r1 = 713,
 	_NID_secp384r1 = 715,
 	_NID_secp521r1 = 716,
+	_NID_ML_KEM_768 = 1455,
+	_NID_ML_KEM_1024 = 1456,
 	_RSA_PKCS1_PADDING = 1,
 	_RSA_NO_PADDING = 3,
 	_RSA_PKCS1_OAEP_PADDING = 4,
@@ -185,6 +188,8 @@ int _mkcgo_EVP_KDF_CTX_set_params(_EVP_KDF_CTX_PTR, const _OSSL_PARAM_PTR, mkcgo
 int _mkcgo_EVP_KDF_derive(_EVP_KDF_CTX_PTR, unsigned char*, size_t, const _OSSL_PARAM_PTR, mkcgo_err_state *);
 _EVP_KDF_PTR _mkcgo_EVP_KDF_fetch(_OSSL_LIB_CTX_PTR, const char*, const char*, mkcgo_err_state *);
 void _mkcgo_EVP_KDF_free(_EVP_KDF_PTR);
+_EVP_KEYMGMT_PTR _mkcgo_EVP_KEYMGMT_fetch(_OSSL_LIB_CTX_PTR, const char*, const char*, mkcgo_err_state *);
+void _mkcgo_EVP_KEYMGMT_free(_EVP_KEYMGMT_PTR);
 _EVP_MAC_CTX_PTR _mkcgo_EVP_MAC_CTX_dup(const _EVP_MAC_CTX_PTR, mkcgo_err_state *);
 void _mkcgo_EVP_MAC_CTX_free(_EVP_MAC_CTX_PTR);
 _EVP_MAC_CTX_PTR _mkcgo_EVP_MAC_CTX_new(_EVP_MAC_PTR, mkcgo_err_state *);
@@ -221,13 +226,18 @@ int _mkcgo_EVP_PKEY_CTX_set_hkdf_md(_EVP_PKEY_CTX_PTR, const _EVP_MD_PTR, mkcgo_
 int _mkcgo_EVP_PKEY_CTX_set_hkdf_mode(_EVP_PKEY_CTX_PTR, int, mkcgo_err_state *);
 _EVP_PKEY_PTR _mkcgo_EVP_PKEY_Q_keygen_EC(_OSSL_LIB_CTX_PTR, const char*, const char*, const char*, mkcgo_err_state *);
 _EVP_PKEY_PTR _mkcgo_EVP_PKEY_Q_keygen_ED25519(_OSSL_LIB_CTX_PTR, const char*, const char*, mkcgo_err_state *);
+_EVP_PKEY_PTR _mkcgo_EVP_PKEY_Q_keygen_MLKEM(_OSSL_LIB_CTX_PTR, const char*, const char*, mkcgo_err_state *);
 _EVP_PKEY_PTR _mkcgo_EVP_PKEY_Q_keygen_RSA(_OSSL_LIB_CTX_PTR, const char*, const char*, size_t, mkcgo_err_state *);
 int _mkcgo_EVP_PKEY_assign(_EVP_PKEY_PTR, int, void*, mkcgo_err_state *);
+int _mkcgo_EVP_PKEY_decapsulate(_EVP_PKEY_CTX_PTR, unsigned char*, size_t*, const unsigned char*, size_t, mkcgo_err_state *);
+int _mkcgo_EVP_PKEY_decapsulate_init(_EVP_PKEY_CTX_PTR, const _OSSL_PARAM_PTR, mkcgo_err_state *);
 int _mkcgo_EVP_PKEY_decrypt(_EVP_PKEY_CTX_PTR, unsigned char*, size_t*, const unsigned char*, size_t, mkcgo_err_state *);
 int _mkcgo_EVP_PKEY_decrypt_init(_EVP_PKEY_CTX_PTR, mkcgo_err_state *);
 int _mkcgo_EVP_PKEY_derive(_EVP_PKEY_CTX_PTR, unsigned char*, size_t*, mkcgo_err_state *);
 int _mkcgo_EVP_PKEY_derive_init(_EVP_PKEY_CTX_PTR, mkcgo_err_state *);
 int _mkcgo_EVP_PKEY_derive_set_peer(_EVP_PKEY_CTX_PTR, _EVP_PKEY_PTR, mkcgo_err_state *);
+int _mkcgo_EVP_PKEY_encapsulate(_EVP_PKEY_CTX_PTR, unsigned char*, size_t*, unsigned char*, size_t*, mkcgo_err_state *);
+int _mkcgo_EVP_PKEY_encapsulate_init(_EVP_PKEY_CTX_PTR, const _OSSL_PARAM_PTR, mkcgo_err_state *);
 int _mkcgo_EVP_PKEY_encrypt(_EVP_PKEY_CTX_PTR, unsigned char*, size_t*, const unsigned char*, size_t, mkcgo_err_state *);
 int _mkcgo_EVP_PKEY_encrypt_init(_EVP_PKEY_CTX_PTR, mkcgo_err_state *);
 void _mkcgo_EVP_PKEY_free(_EVP_PKEY_PTR);

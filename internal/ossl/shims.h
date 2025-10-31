@@ -71,6 +71,9 @@ enum {
 	_NID_secp384r1        = 715,
 	_NID_secp521r1        = 716,
 
+	_NID_ML_KEM_768 = 1455,
+	_NID_ML_KEM_1024 = 1456,
+
 	_RSA_PKCS1_PADDING                 = 1,
 	_RSA_NO_PADDING                    = 3,
 	_RSA_PKCS1_OAEP_PADDING            = 4,
@@ -114,6 +117,7 @@ typedef void* _EVP_MAC_CTX_PTR;
 typedef void* _OSSL_PARAM_BLD_PTR;
 typedef void* _OSSL_PARAM_PTR;
 typedef void* _EVP_SIGNATURE_PTR;
+typedef void* _EVP_KEYMGMT_PTR;
 typedef void* _DSA_PTR;
 typedef void* _EVP_KDF_PTR;
 typedef void* _EVP_KDF_CTX_PTR;
@@ -297,6 +301,7 @@ _EVP_PKEY_PTR EVP_PKEY_Q_keygen(_OSSL_LIB_CTX_PTR ctx, const char *propq, const 
 _EVP_PKEY_PTR EVP_PKEY_Q_keygen_RSA(_OSSL_LIB_CTX_PTR ctx, const char *propq, const char *type, size_t arg1) __attribute__((tag("3"),variadic("EVP_PKEY_Q_keygen")));
 _EVP_PKEY_PTR EVP_PKEY_Q_keygen_EC(_OSSL_LIB_CTX_PTR ctx, const char *propq, const char *type, const char *arg1) __attribute__((tag("3"),variadic("EVP_PKEY_Q_keygen")));
 _EVP_PKEY_PTR EVP_PKEY_Q_keygen_ED25519(_OSSL_LIB_CTX_PTR ctx, const char *propq, const char *type) __attribute__((tag("3"),variadic("EVP_PKEY_Q_keygen")));
+_EVP_PKEY_PTR EVP_PKEY_Q_keygen_MLKEM(_OSSL_LIB_CTX_PTR ctx, const char *propq, const char *type) __attribute__((tag("3"),variadic("EVP_PKEY_Q_keygen")));
 
 _EVP_PKEY_CTX_PTR EVP_PKEY_CTX_new(_EVP_PKEY_PTR arg0, _ENGINE_PTR arg1);
 _EVP_PKEY_CTX_PTR EVP_PKEY_CTX_new_id(int id, _ENGINE_PTR e);
@@ -396,5 +401,13 @@ int PKCS5_PBKDF2_HMAC(const char *pass, int passlen, const unsigned char *salt, 
 
 // OBJ API
 const char *OBJ_nid2sn(int n) __attribute__((noerror));
+
+// EVP KEM API for ML-KEM (OpenSSL 3.x)
+_EVP_KEYMGMT_PTR EVP_KEYMGMT_fetch(_OSSL_LIB_CTX_PTR libctx, const char *algorithm, const char *properties) __attribute__((tag("3")));
+void EVP_KEYMGMT_free(_EVP_KEYMGMT_PTR keymgmt) __attribute__((tag("3")));
+int EVP_PKEY_encapsulate_init(_EVP_PKEY_CTX_PTR ctx, const _OSSL_PARAM_PTR params) __attribute__((tag("3")));
+int EVP_PKEY_encapsulate(_EVP_PKEY_CTX_PTR ctx, unsigned char *wrappedkey, size_t *wrappedkeylen, unsigned char *genkey, size_t *genkeylen) __attribute__((tag("3")));
+int EVP_PKEY_decapsulate_init(_EVP_PKEY_CTX_PTR ctx, const _OSSL_PARAM_PTR params) __attribute__((tag("3")));
+int EVP_PKEY_decapsulate(_EVP_PKEY_CTX_PTR ctx, unsigned char *genkey, size_t *genkeylen, const unsigned char *wrappedkey, size_t wrappedkeylen) __attribute__((tag("3")));
 
 #endif // _GO_OSSL_SHIMS_H

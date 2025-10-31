@@ -36,6 +36,8 @@ const (
 	NID_secp224r1                       = 713
 	NID_secp384r1                       = 715
 	NID_secp521r1                       = 716
+	NID_ML_KEM_768                      = 1455
+	NID_ML_KEM_1024                     = 1456
 	RSA_PKCS1_PADDING                   = 1
 	RSA_NO_PADDING                      = 3
 	RSA_PKCS1_OAEP_PADDING              = 4
