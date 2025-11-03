@@ -433,7 +433,7 @@ func TestIssue71943(t *testing.T) {
 	}
 }
 
-func TestHashAllocations(t *testing.T) {
+func TestHashOneShotAllocations(t *testing.T) {
 	if Asan() {
 		t.Skip("skipping allocations test with sanitizers")
 	}
@@ -455,7 +455,7 @@ func TestHashAllocations(t *testing.T) {
 	}
 }
 
-func TestHashStructAllocations(t *testing.T) {
+func TestHashAllocations(t *testing.T) {
 	if Asan() {
 		t.Skip("skipping allocations test with sanitizers")
 	}
@@ -477,6 +477,32 @@ func TestHashStructAllocations(t *testing.T) {
 		sha224Hash.Sum(sum[:0])
 		sha256Hash.Sum(sum[:0])
 		sha512Hash.Sum(sum[:0])
+
+		sha1Hash.Reset()
+		sha224Hash.Reset()
+		sha256Hash.Reset()
+		sha512Hash.Reset()
+	}))
+	want := 4
+	if compareCurrentVersion("go1.24") >= 0 {
+		// The go1.24 compiler is able to optimize the allocation away.
+		// See cgo_go124.go for more information.
+		want = 0
+	}
+	if n > want {
+		t.Errorf("allocs = %d, want %d", n, want)
+	}
+}
+
+func TestHashNewAllocations(t *testing.T) {
+	if Asan() {
+		t.Skip("skipping allocations test with sanitizers")
+	}
+	n := int(testing.AllocsPerRun(10, func() {
+		sha1Hash := openssl.NewSHA1()
+		sha224Hash := openssl.NewSHA1()
+		sha256Hash := openssl.NewSHA256()
+		sha512Hash := openssl.NewSHA512()
 
 		sha1Hash.Reset()
 		sha224Hash.Reset()

@@ -84,7 +84,12 @@ type hashAlgorithm struct {
 }
 
 // loadHash converts a crypto.Hash to a EVP_MD.
-func loadHash(ch crypto.Hash) *hashAlgorithm {
+func loadHash(ch crypto.Hash, must bool) (h *hashAlgorithm) {
+	defer func() {
+		if h == nil && must {
+			panic("openssl: unsupported hash function: " + strconv.Itoa(int(ch)))
+		}
+	}()
 	if v, ok := cacheMD.Load(ch); ok {
 		return v.(*hashAlgorithm)
 	}
@@ -332,7 +337,7 @@ func setupEVP(withKey withKeyFunc, padding int32,
 			}
 		}
 	case ossl.RSA_PKCS1_PSS_PADDING:
-		alg := loadHash(ch)
+		alg := loadHash(ch, false)
 		if alg == nil {
 			return nil, errors.New("crypto/rsa: unsupported hash function")
 		}
@@ -352,7 +357,7 @@ func setupEVP(withKey withKeyFunc, padding int32,
 	case ossl.RSA_PKCS1_PADDING:
 		if ch != 0 {
 			// We support unhashed messages.
-			alg := loadHash(ch)
+			alg := loadHash(ch, false)
 			if alg == nil {
 				return nil, errors.New("crypto/rsa: unsupported hash function")
 			}
@@ -461,7 +466,7 @@ func evpVerify(withKey withKeyFunc, padding int32, saltLen int32, h crypto.Hash,
 }
 
 func evpHashSign(withKey withKeyFunc, h crypto.Hash, msg []byte) ([]byte, error) {
-	alg := loadHash(h)
+	alg := loadHash(h, false)
 	if alg == nil {
 		return nil, errors.New("unsupported hash function: " + strconv.Itoa(int(h)))
 	}
@@ -496,7 +501,7 @@ func evpHashSign(withKey withKeyFunc, h crypto.Hash, msg []byte) ([]byte, error)
 }
 
 func evpHashVerify(withKey withKeyFunc, h crypto.Hash, msg, sig []byte) error {
-	alg := loadHash(h)
+	alg := loadHash(h, false)
 	if alg == nil {
 		return errors.New("unsupported hash function: " + strconv.Itoa(int(h)))
 	}

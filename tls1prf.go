@@ -35,7 +35,7 @@ func TLS1PRF(result, secret, label, seed []byte, fh func() hash.Hash) error {
 		// that the caller wants to use TLS 1.0/1.1 PRF.
 		// OpenSSL detects this case by checking if the hash
 		// function is MD5SHA1.
-		md = loadHash(crypto.MD5SHA1).md
+		md = loadHash(crypto.MD5SHA1, false).md
 	} else {
 		h, err := hashFuncHash(fh)
 		if err != nil {

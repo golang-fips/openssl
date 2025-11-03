@@ -34,7 +34,7 @@ const (
 const maxHashSize = 64
 
 func hashOneShot(ch crypto.Hash, p []byte, sum []byte) bool {
-	_, err := ossl.EVP_Digest(p, base(sum), nil, loadHash(ch).md, nil)
+	_, err := ossl.EVP_Digest(p, base(sum), nil, loadHash(ch, true).md, nil)
 	return err == nil
 }
 
@@ -109,7 +109,7 @@ func SupportsHash(h crypto.Hash) bool {
 	if v, ok := cacheHashSupported.Load(h); ok {
 		return v.(bool)
 	}
-	alg := loadHash(h)
+	alg := loadHash(h, false)
 	if alg == nil {
 		cacheHashSupported.Store(h, false)
 		return false
@@ -237,17 +237,12 @@ type evpHash struct {
 }
 
 func newEvpHash(ch crypto.Hash) *evpHash {
-	alg := loadHash(ch)
-	if alg == nil {
-		panic("openssl: unsupported hash function: " + strconv.Itoa(int(ch)))
-	}
-	h := &evpHash{alg: alg}
 	// Don't call init() yet, it would be wasteful
 	// if the caller only wants to know the hash type. This
 	// is a common pattern in this package, as some functions
 	// accept a `func() hash.Hash` parameter and call it just
 	// to know the hash type.
-	return h
+	return &evpHash{alg: loadHash(ch, true)}
 }
 
 func (h *evpHash) finalize() {
@@ -382,7 +377,7 @@ func (e errMarshallUnsupported) Unwrap() error {
 }
 
 func (d *evpHash) MarshalBinary() ([]byte, error) {
-	if !d.alg.marshallable {
+	if d.alg == nil || !d.alg.marshallable {
 		return nil, errMarshallUnsupported{}
 	}
 	buf := make([]byte, 0, d.alg.marshalledSize)
@@ -391,7 +386,7 @@ func (d *evpHash) MarshalBinary() ([]byte, error) {
 
 func (d *evpHash) AppendBinary(buf []byte) ([]byte, error) {
 	defer runtime.KeepAlive(d)
-	if !d.alg.marshallable {
+	if d.alg == nil || !d.alg.marshallable {
 		return nil, errMarshallUnsupported{}
 	}
 	d.init()
@@ -408,7 +403,7 @@ func (d *evpHash) AppendBinary(buf []byte) ([]byte, error) {
 func (d *evpHash) UnmarshalBinary(b []byte) error {
 	defer runtime.KeepAlive(d)
 	d.init()
-	if !d.alg.marshallable {
+	if d.alg == nil || !d.alg.marshallable {
 		return errMarshallUnsupported{}
 	}
 	if len(b) < len(d.alg.magic) || string(b[:len(d.alg.magic)]) != d.alg.magic {
