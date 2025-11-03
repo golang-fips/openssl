@@ -31,6 +31,8 @@ typedef void* _EVP_SIGNATURE_PTR;
 typedef void* _DSA_PTR;
 typedef void* _EVP_KDF_PTR;
 typedef void* _EVP_KDF_CTX_PTR;
+typedef void* _BIO_METHOD_PTR;
+typedef void* _BIO_PTR;
 typedef int point_conversion_form_t;
 
 enum {
@@ -110,6 +112,11 @@ int _mkcgo_available_OPENSSL_version_minor();
 int _mkcgo_available_OPENSSL_version_patch();
 int _mkcgo_available_OpenSSL_version_num();
 
+size_t _mkcgo_BIO_ctrl_pending(_BIO_PTR, mkcgo_err_state *);
+int _mkcgo_BIO_free(_BIO_PTR, mkcgo_err_state *);
+_BIO_PTR _mkcgo_BIO_new(const _BIO_METHOD_PTR, mkcgo_err_state *);
+int _mkcgo_BIO_read(_BIO_PTR, unsigned char*, int, mkcgo_err_state *);
+_BIO_METHOD_PTR _mkcgo_BIO_s_mem(void);
 _BIGNUM_PTR _mkcgo_BN_bin2bn(const unsigned char*, int, _BIGNUM_PTR, mkcgo_err_state *);
 int _mkcgo_BN_bn2binpad(const _BIGNUM_PTR, unsigned char*, int, mkcgo_err_state *);
 int _mkcgo_BN_bn2lebinpad(const _BIGNUM_PTR, unsigned char*, int, mkcgo_err_state *);
@@ -151,6 +158,8 @@ void _mkcgo_ERR_error_string_n(unsigned long, char*, size_t);
 unsigned long _mkcgo_ERR_get_error(void);
 unsigned long _mkcgo_ERR_get_error_all(const char**, int*, const char**, const char**, int*);
 unsigned long _mkcgo_ERR_get_error_line(const char**, int*);
+unsigned long _mkcgo_ERR_peek_error(void);
+void _mkcgo_ERR_print_errors(_BIO_PTR);
 int _mkcgo_EVP_CIPHER_CTX_ctrl(_EVP_CIPHER_CTX_PTR, int, int, void*, mkcgo_err_state *);
 void _mkcgo_EVP_CIPHER_CTX_free(_EVP_CIPHER_CTX_PTR);
 _EVP_CIPHER_CTX_PTR _mkcgo_EVP_CIPHER_CTX_new(mkcgo_err_state *);

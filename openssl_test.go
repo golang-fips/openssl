@@ -1,6 +1,7 @@
 package openssl_test
 
 import (
+	"cmp"
 	"fmt"
 	"go/version"
 	"os"
@@ -11,6 +12,7 @@ import (
 	"time"
 
 	"github.com/golang-fips/openssl/v2"
+	"github.com/golang-fips/openssl/v2/internal/ossl"
 )
 
 // sink is used to prevent the compiler from optimizing out the allocations.
@@ -36,12 +38,13 @@ func getVersion() string {
 			versions = []string{"libcrypto-3", "libcrypto-1_1", "libeay32"}
 		}
 	}
-	for _, v = range versions {
-		if runtime.GOOS == "windows" {
+	for _, v := range versions {
+		switch runtime.GOOS {
+		case "windows":
 			v += ".dll"
-		} else if runtime.GOOS == "darwin" {
+		case "darwin":
 			v = "libcrypto." + v + ".dylib"
-		} else {
+		default:
 			v = "libcrypto.so." + v
 		}
 		if ok, _ := openssl.CheckVersion(v); ok {
@@ -71,7 +74,58 @@ func TestMain(m *testing.M) {
 		// Sleep a bit to let the finalizers run.
 		time.Sleep(10 * time.Millisecond)
 	}
+	if !testErrorStack() {
+		status = cmp.Or(status, 1)
+	}
 	os.Exit(status)
+}
+
+// testErrorStack checks that the OpenSSL error queue is empty
+// on all threads. It returns true if the error queue is empty.
+// If not, it prints the error stacks and returns false.
+func testErrorStack() bool {
+	var wg sync.WaitGroup
+	var stack string
+	var mu sync.Mutex
+	for range runtime.GOMAXPROCS(0) {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			// Lock the OS thread to increase the chance of each
+			// goroutine running on a different thread.
+			runtime.LockOSThread()
+			defer runtime.UnlockOSThread()
+			if ossl.ERR_peek_error() != 0 {
+				mu.Lock()
+				defer mu.Unlock()
+				stack += errorStack()
+			}
+		}()
+	}
+	wg.Wait()
+	if stack != "" {
+		fmt.Printf("OpenSSL error queue not empty at exit:\n%s", stack)
+	}
+	return stack == ""
+}
+
+func errorStack() string {
+	// BIO operations using BIO_s_mem should not fail.
+	bio, err := ossl.BIO_new(ossl.BIO_s_mem())
+	if err != nil {
+		panic(err)
+	}
+	defer ossl.BIO_free(bio)
+	ossl.ERR_print_errors(bio)
+	n, err := ossl.BIO_ctrl_pending(bio)
+	if err != nil {
+		panic(err)
+	}
+	buf := make([]byte, n)
+	if _, err = ossl.BIO_read(bio, buf); err != nil {
+		panic(err)
+	}
+	return string(buf)
 }
 
 func TestCheckVersion(t *testing.T) {

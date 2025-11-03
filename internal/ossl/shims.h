@@ -9,6 +9,7 @@
 #include <stdint.h> // uint64_t
 
 // The following includes are used by the checkheader tool.
+// #include <openssl/bio.h>
 // #include <openssl/crypto.h>
 // #include <openssl/evp.h>
 // #include <openssl/ec.h>
@@ -117,6 +118,8 @@ typedef void* _EVP_SIGNATURE_PTR;
 typedef void* _DSA_PTR;
 typedef void* _EVP_KDF_PTR;
 typedef void* _EVP_KDF_CTX_PTR;
+typedef void* _BIO_METHOD_PTR;
+typedef void* _BIO_PTR;
 typedef int point_conversion_form_t;
 
 // Tags used by mkcgo to determine which OpenSSL version each function is available in:
@@ -130,12 +133,21 @@ typedef int point_conversion_form_t;
 // directives, not every function that is merely expected to meet
 // the noescape/nocallback criteria.
 
+// BIO API
+_BIO_METHOD_PTR BIO_s_mem(void) __attribute__((noerror));
+_BIO_PTR BIO_new(const _BIO_METHOD_PTR type);
+int BIO_free(_BIO_PTR a);
+int BIO_read(_BIO_PTR b, void *data, int dlen) __attribute__((slice(data,dlen),noescape,nocallback));
+size_t BIO_ctrl_pending(_BIO_PTR b);
+
 // ERR API
 unsigned long ERR_get_error(void) __attribute__((noerror));
-void ERR_error_string_n(unsigned long e, char *buf, size_t len) __attribute__((tag(""),tag("init_3"),noerror));
+unsigned long ERR_peek_error(void) __attribute__((noerror));
+void ERR_error_string_n(unsigned long e, char *buf, size_t len) __attribute__((tag(""),tag("init_3")));
 void ERR_clear_error(void) __attribute__((tag(""),tag("init_3")));
 unsigned long ERR_get_error_line(const char **file, int *line) __attribute__((tag("legacy_1"),noerror));
 unsigned long ERR_get_error_all(const char **file, int *line, const char **func, const char **data, int *flags) __attribute__((tag("3"),tag("init_3"),noerror));
+void ERR_print_errors(_BIO_PTR bp);
 
 // OPENSSL API
 const char *OpenSSL_version(int type) __attribute__((noerror));

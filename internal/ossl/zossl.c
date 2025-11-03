@@ -13,6 +13,11 @@
 #include <dlfcn.h>
 #endif
 
+size_t (*_g_BIO_ctrl_pending)(_BIO_PTR);
+int (*_g_BIO_free)(_BIO_PTR);
+_BIO_PTR (*_g_BIO_new)(const _BIO_METHOD_PTR);
+int (*_g_BIO_read)(_BIO_PTR, unsigned char*, int);
+_BIO_METHOD_PTR (*_g_BIO_s_mem)(void);
 _BIGNUM_PTR (*_g_BN_bin2bn)(const unsigned char*, int, _BIGNUM_PTR);
 int (*_g_BN_bn2binpad)(const _BIGNUM_PTR, unsigned char*, int);
 int (*_g_BN_bn2lebinpad)(const _BIGNUM_PTR, unsigned char*, int);
@@ -54,6 +59,8 @@ void (*_g_ERR_error_string_n)(unsigned long, char*, size_t);
 unsigned long (*_g_ERR_get_error)(void);
 unsigned long (*_g_ERR_get_error_all)(const char**, int*, const char**, const char**, int*);
 unsigned long (*_g_ERR_get_error_line)(const char**, int*);
+unsigned long (*_g_ERR_peek_error)(void);
+void (*_g_ERR_print_errors)(_BIO_PTR);
 int (*_g_EVP_CIPHER_CTX_ctrl)(_EVP_CIPHER_CTX_PTR, int, int, void*);
 void (*_g_EVP_CIPHER_CTX_free)(_EVP_CIPHER_CTX_PTR);
 _EVP_CIPHER_CTX_PTR (*_g_EVP_CIPHER_CTX_new)(void);
@@ -246,6 +253,11 @@ int (*_g_RSA_set0_key)(_RSA_PTR, _BIGNUM_PTR, _BIGNUM_PTR, _BIGNUM_PTR);
 	}
 
 void __mkcgo_load_(void* handle) {
+	__mkcgo__dlsym(BIO_ctrl_pending)
+	__mkcgo__dlsym(BIO_free)
+	__mkcgo__dlsym(BIO_new)
+	__mkcgo__dlsym(BIO_read)
+	__mkcgo__dlsym(BIO_s_mem)
 	__mkcgo__dlsym(BN_bin2bn)
 	__mkcgo__dlsym(BN_bn2binpad)
 	__mkcgo__dlsym(BN_bn2lebinpad)
@@ -267,6 +279,8 @@ void __mkcgo_load_(void* handle) {
 	__mkcgo__dlsym(ERR_clear_error)
 	__mkcgo__dlsym(ERR_error_string_n)
 	__mkcgo__dlsym(ERR_get_error)
+	__mkcgo__dlsym(ERR_peek_error)
+	__mkcgo__dlsym(ERR_print_errors)
 	__mkcgo__dlsym(EVP_CIPHER_CTX_ctrl)
 	__mkcgo__dlsym(EVP_CIPHER_CTX_free)
 	__mkcgo__dlsym(EVP_CIPHER_CTX_new)
@@ -349,6 +363,11 @@ void __mkcgo_load_(void* handle) {
 }
 
 void __mkcgo_unload_() {
+	_g_BIO_ctrl_pending = NULL;
+	_g_BIO_free = NULL;
+	_g_BIO_new = NULL;
+	_g_BIO_read = NULL;
+	_g_BIO_s_mem = NULL;
 	_g_BN_bin2bn = NULL;
 	_g_BN_bn2binpad = NULL;
 	_g_BN_bn2lebinpad = NULL;
@@ -370,6 +389,8 @@ void __mkcgo_unload_() {
 	_g_ERR_clear_error = NULL;
 	_g_ERR_error_string_n = NULL;
 	_g_ERR_get_error = NULL;
+	_g_ERR_peek_error = NULL;
+	_g_ERR_print_errors = NULL;
 	_g_EVP_CIPHER_CTX_ctrl = NULL;
 	_g_EVP_CIPHER_CTX_free = NULL;
 	_g_EVP_CIPHER_CTX_new = NULL;
@@ -755,6 +776,34 @@ void __mkcgo_unload_version() {
 	_g_OpenSSL_version_num = NULL;
 }
 
+size_t _mkcgo_BIO_ctrl_pending(_BIO_PTR _arg0, mkcgo_err_state *_err_state) {
+	size_t _ret = _g_BIO_ctrl_pending(_arg0);
+	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
+	return _ret;
+}
+
+int _mkcgo_BIO_free(_BIO_PTR _arg0, mkcgo_err_state *_err_state) {
+	int _ret = _g_BIO_free(_arg0);
+	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
+	return _ret;
+}
+
+_BIO_PTR _mkcgo_BIO_new(const _BIO_METHOD_PTR _arg0, mkcgo_err_state *_err_state) {
+	_BIO_PTR _ret = _g_BIO_new(_arg0);
+	if (_ret == NULL) *_err_state = mkcgo_err_retrieve();
+	return _ret;
+}
+
+int _mkcgo_BIO_read(_BIO_PTR _arg0, unsigned char* _arg1, int _arg2, mkcgo_err_state *_err_state) {
+	int _ret = _g_BIO_read(_arg0, _arg1, _arg2);
+	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
+	return _ret;
+}
+
+_BIO_METHOD_PTR _mkcgo_BIO_s_mem(void) {
+	return _g_BIO_s_mem();
+}
+
 _BIGNUM_PTR _mkcgo_BN_bin2bn(const unsigned char* _arg0, int _arg1, _BIGNUM_PTR _arg2, mkcgo_err_state *_err_state) {
 	_BIGNUM_PTR _ret = _g_BN_bin2bn(_arg0, _arg1, _arg2);
 	if (_ret == NULL) *_err_state = mkcgo_err_retrieve();
@@ -961,6 +1010,14 @@ unsigned long _mkcgo_ERR_get_error_all(const char** _arg0, int* _arg1, const cha
 
 unsigned long _mkcgo_ERR_get_error_line(const char** _arg0, int* _arg1) {
 	return _g_ERR_get_error_line(_arg0, _arg1);
+}
+
+unsigned long _mkcgo_ERR_peek_error(void) {
+	return _g_ERR_peek_error();
+}
+
+void _mkcgo_ERR_print_errors(_BIO_PTR _arg0) {
+	_g_ERR_print_errors(_arg0);
 }
 
 int _mkcgo_EVP_CIPHER_CTX_ctrl(_EVP_CIPHER_CTX_PTR _arg0, int _arg1, int _arg2, void* _arg3, mkcgo_err_state *_err_state) {

@@ -12,6 +12,8 @@ import "C"
 import "unsafe"
 
 type BIGNUM_PTR = C._BIGNUM_PTR
+type BIO_METHOD_PTR = C._BIO_METHOD_PTR
+type BIO_PTR = C._BIO_PTR
 type BN_CTX_PTR = C._BN_CTX_PTR
 type DSA_PTR = C._DSA_PTR
 type EC_GROUP_PTR = C._EC_GROUP_PTR
@@ -98,6 +100,34 @@ func MkcgoUnload_version() {
 func mkcgoNoEscape(p *C.mkcgo_err_state) *C.mkcgo_err_state {
 	x := uintptr(unsafe.Pointer(p))
 	return (*C.mkcgo_err_state)(unsafe.Pointer(x ^ 0))
+}
+
+func BIO_ctrl_pending(b BIO_PTR) (int, error) {
+	var _err C.mkcgo_err_state
+	_ret := C._mkcgo_BIO_ctrl_pending(b, mkcgoNoEscape(&_err))
+	return int(_ret), newMkcgoErr("BIO_ctrl_pending", _err)
+}
+
+func BIO_free(a BIO_PTR) (int32, error) {
+	var _err C.mkcgo_err_state
+	_ret := C._mkcgo_BIO_free(a, mkcgoNoEscape(&_err))
+	return int32(_ret), newMkcgoErr("BIO_free", _err)
+}
+
+func BIO_new(__type BIO_METHOD_PTR) (BIO_PTR, error) {
+	var _err C.mkcgo_err_state
+	_ret := C._mkcgo_BIO_new(__type, mkcgoNoEscape(&_err))
+	return _ret, newMkcgoErr("BIO_new", _err)
+}
+
+func BIO_read(b BIO_PTR, data []byte) (int32, error) {
+	var _err C.mkcgo_err_state
+	_ret := C._mkcgo_BIO_read(b, (*C.uchar)(unsafe.Pointer(unsafe.SliceData(data))), C.int(len(data)), mkcgoNoEscape(&_err))
+	return int32(_ret), newMkcgoErr("BIO_read", _err)
+}
+
+func BIO_s_mem() BIO_METHOD_PTR {
+	return C._mkcgo_BIO_s_mem()
 }
 
 func BN_bin2bn(arg0 *byte, arg1 int32, arg2 BIGNUM_PTR) (BIGNUM_PTR, error) {
@@ -306,6 +336,14 @@ func ERR_get_error_all(file **byte, line *int32, __func **byte, data **byte, fla
 
 func ERR_get_error_line(file **byte, line *int32) uint64 {
 	return uint64(C._mkcgo_ERR_get_error_line((**C.char)(unsafe.Pointer(file)), (*C.int)(unsafe.Pointer(line))))
+}
+
+func ERR_peek_error() uint64 {
+	return uint64(C._mkcgo_ERR_peek_error())
+}
+
+func ERR_print_errors(bp BIO_PTR) {
+	C._mkcgo_ERR_print_errors(bp)
 }
 
 func EVP_CIPHER_CTX_ctrl(ctx EVP_CIPHER_CTX_PTR, __type int32, arg int32, ptr unsafe.Pointer) (int32, error) {

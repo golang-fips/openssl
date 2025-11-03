@@ -5,6 +5,8 @@
 package ossl
 
 /*
+#cgo noescape _mkcgo_BIO_read
+#cgo nocallback _mkcgo_BIO_read
 #cgo noescape _mkcgo_EVP_CipherUpdate
 #cgo nocallback _mkcgo_EVP_CipherUpdate
 #cgo noescape _mkcgo_EVP_DecryptFinal_ex
