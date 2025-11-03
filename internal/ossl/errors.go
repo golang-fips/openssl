@@ -7,9 +7,7 @@ import (
 	"unsafe"
 )
 
-// newMkcgoErr creates a new error from the OpenSSL error queue for the nocgo version.
-// The errst parameter is present for API compatibility with the CGO implementation,
-// but is intentionally ignored in nocgo mode; errors are always retrieved directly from OpenSSL.
+// newMkcgoErr constructs an error from the given message and OpenSSL error state.
 func newMkcgoErr(msg string, state uintptr) error {
 	if state == 0 {
 		// No error
