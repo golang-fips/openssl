@@ -233,7 +233,7 @@ func TestErrorAllocs(t *testing.T) {
 	n := testing.AllocsPerRun(10, func() {
 		openssl.GenerateKeyRSA(1)
 	})
-	max := 15
+	max := 2
 	if int(n) > max {
 		t.Fatalf("Expected less than max allocations, got %d", int(n))
 	}
