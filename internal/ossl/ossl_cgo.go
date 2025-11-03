@@ -9,7 +9,7 @@ package ossl
 // It is written in C because Sum() tend to be in the hot path,
 // and doing one cgo call instead of two is a significant performance win.
 static inline int
-go_hash_sum(const _EVP_MD_CTX_PTR ctx, _EVP_MD_CTX_PTR ctx2, unsigned char *out, mkcgo_err_state *_err_state)
+go_hash_sum(const _EVP_MD_CTX_PTR ctx, _EVP_MD_CTX_PTR ctx2, unsigned char *out, uintptr_t *_err_state)
 {
 	if (_mkcgo_EVP_MD_CTX_copy(ctx2, ctx, _err_state) != 1)
 		return -1;
@@ -24,7 +24,7 @@ import (
 )
 
 func HashSum(ctx1, ctx2 EVP_MD_CTX_PTR, out []byte) error {
-	var errst C.mkcgo_err_state
+	var errst C.uintptr_t
 	if code := C.go_hash_sum(ctx1, ctx2, (*C.uchar)(unsafe.SliceData(out)), mkcgoNoEscape(&errst)); code != 1 {
 		msg := "go_hash_sum"
 		switch code {
@@ -33,7 +33,7 @@ func HashSum(ctx1, ctx2 EVP_MD_CTX_PTR, out []byte) error {
 		case -2:
 			msg = "EVP_DigestFinal_ex"
 		}
-		return newMkcgoErr(msg, errst)
+		return newMkcgoErr(msg, uintptr(errst))
 	}
 	return nil
 }
