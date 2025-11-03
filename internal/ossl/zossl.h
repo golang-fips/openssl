@@ -116,7 +116,7 @@ size_t _mkcgo_BIO_ctrl_pending(_BIO_PTR, mkcgo_err_state *);
 int _mkcgo_BIO_free(_BIO_PTR, mkcgo_err_state *);
 _BIO_PTR _mkcgo_BIO_new(const _BIO_METHOD_PTR, mkcgo_err_state *);
 int _mkcgo_BIO_read(_BIO_PTR, unsigned char*, int, mkcgo_err_state *);
-_BIO_METHOD_PTR _mkcgo_BIO_s_mem(void);
+const _BIO_METHOD_PTR _mkcgo_BIO_s_mem(void);
 _BIGNUM_PTR _mkcgo_BN_bin2bn(const unsigned char*, int, _BIGNUM_PTR, mkcgo_err_state *);
 int _mkcgo_BN_bn2binpad(const _BIGNUM_PTR, unsigned char*, int, mkcgo_err_state *);
 int _mkcgo_BN_bn2lebinpad(const _BIGNUM_PTR, unsigned char*, int, mkcgo_err_state *);

@@ -134,7 +134,7 @@ typedef int point_conversion_form_t;
 // the noescape/nocallback criteria.
 
 // BIO API
-_BIO_METHOD_PTR BIO_s_mem(void) __attribute__((noerror));
+const _BIO_METHOD_PTR BIO_s_mem(void) __attribute__((noerror));
 _BIO_PTR BIO_new(const _BIO_METHOD_PTR type);
 int BIO_free(_BIO_PTR a);
 int BIO_read(_BIO_PTR b, void *data, int dlen) __attribute__((slice(data,dlen),noescape,nocallback));

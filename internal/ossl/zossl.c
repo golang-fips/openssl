@@ -17,7 +17,7 @@ size_t (*_g_BIO_ctrl_pending)(_BIO_PTR);
 int (*_g_BIO_free)(_BIO_PTR);
 _BIO_PTR (*_g_BIO_new)(const _BIO_METHOD_PTR);
 int (*_g_BIO_read)(_BIO_PTR, unsigned char*, int);
-_BIO_METHOD_PTR (*_g_BIO_s_mem)(void);
+const _BIO_METHOD_PTR (*_g_BIO_s_mem)(void);
 _BIGNUM_PTR (*_g_BN_bin2bn)(const unsigned char*, int, _BIGNUM_PTR);
 int (*_g_BN_bn2binpad)(const _BIGNUM_PTR, unsigned char*, int);
 int (*_g_BN_bn2lebinpad)(const _BIGNUM_PTR, unsigned char*, int);
@@ -800,7 +800,7 @@ int _mkcgo_BIO_read(_BIO_PTR _arg0, unsigned char* _arg1, int _arg2, mkcgo_err_s
 	return _ret;
 }
 
-_BIO_METHOD_PTR _mkcgo_BIO_s_mem(void) {
+const _BIO_METHOD_PTR _mkcgo_BIO_s_mem(void) {
 	return _g_BIO_s_mem();
 }
 
