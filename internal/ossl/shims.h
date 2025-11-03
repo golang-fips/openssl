@@ -91,6 +91,8 @@ enum {
 
 	_OSSL_PARAM_INTEGER = 1,
 	_OSSL_PARAM_OCTET_STRING = 5,
+
+	BIO_CTRL_INFO = 3,
 };
 
 typedef void* _OPENSSL_INIT_SETTINGS_PTR;
@@ -134,20 +136,14 @@ typedef int point_conversion_form_t;
 // the noescape/nocallback criteria.
 
 // BIO API
-const _BIO_METHOD_PTR BIO_s_mem(void) __attribute__((noerror));
-_BIO_PTR BIO_new(const _BIO_METHOD_PTR type);
-int BIO_free(_BIO_PTR a);
-int BIO_read(_BIO_PTR b, void *data, int dlen) __attribute__((slice(data,dlen),noescape,nocallback));
-size_t BIO_ctrl_pending(_BIO_PTR b);
+const _BIO_METHOD_PTR BIO_s_mem(void) __attribute__((tag(""),tag("init_3"),noerror));
+_BIO_PTR BIO_new(const _BIO_METHOD_PTR type) __attribute__((tag(""),tag("init_3")));
+int BIO_free(_BIO_PTR a) __attribute__((tag(""),tag("init_3"),noerror));
+long BIO_ctrl(_BIO_PTR bp, int cmd, long larg, void *parg) __attribute__((tag(""),tag("init_3"),noerror,noescape,nocallback));
 
 // ERR API
-unsigned long ERR_get_error(void) __attribute__((noerror));
 unsigned long ERR_peek_error(void) __attribute__((noerror));
-void ERR_error_string_n(unsigned long e, char *buf, size_t len) __attribute__((tag(""),tag("init_3")));
-void ERR_clear_error(void) __attribute__((tag(""),tag("init_3")));
-unsigned long ERR_get_error_line(const char **file, int *line) __attribute__((tag("legacy_1"),noerror));
-unsigned long ERR_get_error_all(const char **file, int *line, const char **func, const char **data, int *flags) __attribute__((tag("3"),tag("init_3"),noerror));
-void ERR_print_errors(_BIO_PTR bp);
+void ERR_print_errors(_BIO_PTR bp) __attribute__((tag(""),tag("init_3")));
 
 // OPENSSL API
 const char *OpenSSL_version(int type) __attribute__((noerror));

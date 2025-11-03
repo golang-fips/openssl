@@ -83,9 +83,9 @@ func generateGoCgo(src *mkcgo.Source, w io.Writer) {
 	// error state pointer from the Go garbage collector.
 	// An instance of https://github.com/golang/go/blob/d704ef76068eb7da15520b08dc7df98f45f85ffa/src/runtime/stubs.go#L194-L201
 	fmt.Fprintf(w, "//go:nosplit\n")
-	fmt.Fprintf(w, "func %s(p *C.%s) *C.%s {\n", mkcgoNoEscape, mkcgoErrState, mkcgoErrState)
+	fmt.Fprintf(w, "func %s(p *C.uintptr_t) *C.uintptr_t {\n", mkcgoNoEscape)
 	fmt.Fprintf(w, "\tx := uintptr(unsafe.Pointer(p))\n")
-	fmt.Fprintf(w, "\treturn (*C.%s)(unsafe.Pointer(x ^ 0))\n", mkcgoErrState)
+	fmt.Fprintf(w, "\treturn (*C.uintptr_t)(unsafe.Pointer(x ^ 0))\n")
 	fmt.Fprintf(w, "}\n\n")
 
 	// Generate function wrappers.
@@ -248,9 +248,7 @@ func generateCHeader(src *mkcgo.Source, w io.Writer) {
 	}
 
 	// Custom types
-	fmt.Fprintf(w, "typedef void* %s;\n", mkcgoErrState)
-	fmt.Fprintf(w, "%s mkcgo_err_retrieve();\n", mkcgoErrState)
-	fmt.Fprintf(w, "void mkcgo_err_free(%s);\n", mkcgoErrState)
+	fmt.Fprintf(w, "uintptr_t mkcgo_err_retrieve();\n")
 
 	if dynload() {
 		// Add forward declarations for loader functions.
@@ -398,7 +396,7 @@ func generateGoFn(fn *mkcgo.Func, w io.Writer) {
 		fmt.Fprintf(w, "}\n\n")
 		return
 	}
-	fmt.Fprintf(w, "\tvar _err C.%s\n", mkcgoErrState)
+	fmt.Fprintf(w, "\tvar _err C.uintptr_t\n")
 	fmt.Fprintf(w, "\t_ret := C.%s(", fnCName(fn))
 	args := fnToGoArgs(fn)
 	if len(args) > 0 {
@@ -416,7 +414,7 @@ func generateGoFn(fn *mkcgo.Func, w io.Writer) {
 	} else {
 		fmt.Fprintf(w, "_ret")
 	}
-	fmt.Fprintf(w, ", newMkcgoErr(%q, _err)\n", fn.Name)
+	fmt.Fprintf(w, ", newMkcgoErr(%q, uintptr(_err))\n", fn.Name)
 	fmt.Fprintf(w, "}\n\n")
 }
 
@@ -639,12 +637,11 @@ func join(ps []*mkcgo.Param, fn func(int, *mkcgo.Param) string, sep string) stri
 }
 
 const mkcgoNoEscape = "mkcgoNoEscape"
-const mkcgoErrState = "mkcgo_err_state"
 
 // fnCErrWrapperParams returns source code for C parameters for function f
 // with the error state added as the last parameter.
 func fnCErrWrapperParams(fn *mkcgo.Func, addName bool) string {
-	errArg := mkcgoErrState + " *"
+	errArg := "uintptr_t *"
 	if addName {
 		errArg += "_err_state"
 	}
@@ -911,8 +908,7 @@ func generateNoCgoErrorCheck(w io.Writer) {
 	fmt.Fprintf(w, "\t\tpanic(\"invalid error check type\")\n")
 	fmt.Fprintf(w, "\t}\n")
 	fmt.Fprintf(w, "\tif hasError {\n")
-	fmt.Fprintf(w, "\t\terrPtr := (*errState)(unsafe.Pointer(*(*uintptr)(unsafe.Pointer(args + unsafe.Sizeof(uintptr(0))*n))))\n")
-	fmt.Fprintf(w, "\t\tretrieveErrorState(errPtr)\n")
+	fmt.Fprintf(w, "\t\t**(**uintptr)(unsafe.Pointer(args + unsafe.Sizeof(uintptr(0))*n)) = retrieveErrorState()\n")
 	fmt.Fprintf(w, "\t}\n")
 	fmt.Fprintf(w, "}\n\n")
 }
@@ -1093,7 +1089,7 @@ func generateNocgoFn(typePtrs map[string]bool, src *mkcgo.Source, fn *mkcgo.Func
 
 	errorType := fnErrorType(src, typePtrs, fn)
 	if errorType != 0 {
-		fmt.Fprintf(w, "\tvar _err errState\n")
+		fmt.Fprintf(w, "\tvar _err uintptr\n")
 	}
 	if needsSpecialHandling {
 		fmt.Fprintf(w, "\tvar r0 uintptr\n")
@@ -1130,9 +1126,9 @@ func generateNocgoFn(typePtrs map[string]bool, src *mkcgo.Source, fn *mkcgo.Func
 		if fnNeedErrWrapper(fn) {
 			if strings.HasPrefix(goRetType, "*") {
 				// Pointer return types need to go through unsafe.Pointer
-				fmt.Fprintf(w, "\treturn (%s)(unsafe.Pointer(r0)), newMkcgoErr(\"%s\", &_err)\n", goRetType, fn.Name)
+				fmt.Fprintf(w, "\treturn (%s)(unsafe.Pointer(r0)), newMkcgoErr(\"%s\", _err)\n", goRetType, fn.Name)
 			} else {
-				fmt.Fprintf(w, "\treturn %s(r0), newMkcgoErr(\"%s\", &_err)\n", goRetType, fn.Name)
+				fmt.Fprintf(w, "\treturn %s(r0), newMkcgoErr(\"%s\", _err)\n", goRetType, fn.Name)
 			}
 		} else {
 			if strings.HasPrefix(goRetType, "*") {

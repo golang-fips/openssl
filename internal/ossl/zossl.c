@@ -13,10 +13,9 @@
 #include <dlfcn.h>
 #endif
 
-size_t (*_g_BIO_ctrl_pending)(_BIO_PTR);
+long (*_g_BIO_ctrl)(_BIO_PTR, int, long, void*);
 int (*_g_BIO_free)(_BIO_PTR);
 _BIO_PTR (*_g_BIO_new)(const _BIO_METHOD_PTR);
-int (*_g_BIO_read)(_BIO_PTR, unsigned char*, int);
 const _BIO_METHOD_PTR (*_g_BIO_s_mem)(void);
 _BIGNUM_PTR (*_g_BN_bin2bn)(const unsigned char*, int, _BIGNUM_PTR);
 int (*_g_BN_bn2binpad)(const _BIGNUM_PTR, unsigned char*, int);
@@ -54,11 +53,6 @@ _EC_POINT_PTR (*_g_EC_POINT_new)(const _EC_GROUP_PTR);
 int (*_g_EC_POINT_oct2point)(const _EC_GROUP_PTR, _EC_POINT_PTR, const unsigned char*, size_t, _BN_CTX_PTR);
 size_t (*_g_EC_POINT_point2oct)(const _EC_GROUP_PTR, const _EC_POINT_PTR, point_conversion_form_t, unsigned char*, size_t, _BN_CTX_PTR);
 int (*_g_EC_POINT_set_affine_coordinates)(const _EC_GROUP_PTR, _EC_POINT_PTR, const _BIGNUM_PTR, const _BIGNUM_PTR, _BN_CTX_PTR);
-void (*_g_ERR_clear_error)(void);
-void (*_g_ERR_error_string_n)(unsigned long, char*, size_t);
-unsigned long (*_g_ERR_get_error)(void);
-unsigned long (*_g_ERR_get_error_all)(const char**, int*, const char**, const char**, int*);
-unsigned long (*_g_ERR_get_error_line)(const char**, int*);
 unsigned long (*_g_ERR_peek_error)(void);
 void (*_g_ERR_print_errors)(_BIO_PTR);
 int (*_g_EVP_CIPHER_CTX_ctrl)(_EVP_CIPHER_CTX_PTR, int, int, void*);
@@ -253,10 +247,9 @@ int (*_g_RSA_set0_key)(_RSA_PTR, _BIGNUM_PTR, _BIGNUM_PTR, _BIGNUM_PTR);
 	}
 
 void __mkcgo_load_(void* handle) {
-	__mkcgo__dlsym(BIO_ctrl_pending)
+	__mkcgo__dlsym(BIO_ctrl)
 	__mkcgo__dlsym(BIO_free)
 	__mkcgo__dlsym(BIO_new)
-	__mkcgo__dlsym(BIO_read)
 	__mkcgo__dlsym(BIO_s_mem)
 	__mkcgo__dlsym(BN_bin2bn)
 	__mkcgo__dlsym(BN_bn2binpad)
@@ -276,9 +269,6 @@ void __mkcgo_load_(void* handle) {
 	__mkcgo__dlsym(EC_POINT_new)
 	__mkcgo__dlsym(EC_POINT_oct2point)
 	__mkcgo__dlsym(EC_POINT_point2oct)
-	__mkcgo__dlsym(ERR_clear_error)
-	__mkcgo__dlsym(ERR_error_string_n)
-	__mkcgo__dlsym(ERR_get_error)
 	__mkcgo__dlsym(ERR_peek_error)
 	__mkcgo__dlsym(ERR_print_errors)
 	__mkcgo__dlsym(EVP_CIPHER_CTX_ctrl)
@@ -363,10 +353,9 @@ void __mkcgo_load_(void* handle) {
 }
 
 void __mkcgo_unload_() {
-	_g_BIO_ctrl_pending = NULL;
+	_g_BIO_ctrl = NULL;
 	_g_BIO_free = NULL;
 	_g_BIO_new = NULL;
-	_g_BIO_read = NULL;
 	_g_BIO_s_mem = NULL;
 	_g_BN_bin2bn = NULL;
 	_g_BN_bn2binpad = NULL;
@@ -386,9 +375,6 @@ void __mkcgo_unload_() {
 	_g_EC_POINT_new = NULL;
 	_g_EC_POINT_oct2point = NULL;
 	_g_EC_POINT_point2oct = NULL;
-	_g_ERR_clear_error = NULL;
-	_g_ERR_error_string_n = NULL;
-	_g_ERR_get_error = NULL;
 	_g_ERR_peek_error = NULL;
 	_g_ERR_print_errors = NULL;
 	_g_EVP_CIPHER_CTX_ctrl = NULL;
@@ -504,7 +490,6 @@ void __mkcgo_unload_111() {
 
 void __mkcgo_load_3(void* handle) {
 	__mkcgo__dlsym(EC_POINT_set_affine_coordinates)
-	__mkcgo__dlsym(ERR_get_error_all)
 	__mkcgo__dlsym(EVP_CIPHER_fetch)
 	__mkcgo__dlsym(EVP_CIPHER_get0_name)
 	__mkcgo__dlsym(EVP_CIPHER_get_block_size)
@@ -572,7 +557,6 @@ void __mkcgo_load_3(void* handle) {
 
 void __mkcgo_unload_3() {
 	_g_EC_POINT_set_affine_coordinates = NULL;
-	_g_ERR_get_error_all = NULL;
 	_g_EVP_CIPHER_fetch = NULL;
 	_g_EVP_CIPHER_get0_name = NULL;
 	_g_EVP_CIPHER_get_block_size = NULL;
@@ -649,9 +633,11 @@ void __mkcgo_unload_init_1() {
 }
 
 void __mkcgo_load_init_3(void* handle) {
-	__mkcgo__dlsym(ERR_clear_error)
-	__mkcgo__dlsym(ERR_error_string_n)
-	__mkcgo__dlsym(ERR_get_error_all)
+	__mkcgo__dlsym(BIO_ctrl)
+	__mkcgo__dlsym(BIO_free)
+	__mkcgo__dlsym(BIO_new)
+	__mkcgo__dlsym(BIO_s_mem)
+	__mkcgo__dlsym(ERR_print_errors)
 	__mkcgo__dlsym(EVP_MD_fetch)
 	__mkcgo__dlsym(EVP_MD_free)
 	__mkcgo__dlsym(EVP_MD_get0_provider)
@@ -659,9 +645,11 @@ void __mkcgo_load_init_3(void* handle) {
 }
 
 void __mkcgo_unload_init_3() {
-	_g_ERR_clear_error = NULL;
-	_g_ERR_error_string_n = NULL;
-	_g_ERR_get_error_all = NULL;
+	_g_BIO_ctrl = NULL;
+	_g_BIO_free = NULL;
+	_g_BIO_new = NULL;
+	_g_BIO_s_mem = NULL;
+	_g_ERR_print_errors = NULL;
 	_g_EVP_MD_fetch = NULL;
 	_g_EVP_MD_free = NULL;
 	_g_EVP_MD_get0_provider = NULL;
@@ -686,7 +674,6 @@ void __mkcgo_load_legacy_1(void* handle) {
 	__mkcgo__dlsym(EC_KEY_set_public_key)
 	__mkcgo__dlsym(EC_KEY_set_public_key_affine_coordinates)
 	__mkcgo__dlsym(EC_POINT_get_affine_coordinates_GFp)
-	__mkcgo__dlsym(ERR_get_error_line)
 	__mkcgo__dlsym2(EVP_CIPHER_get_block_size, EVP_CIPHER_block_size)
 	__mkcgo__dlsym2(EVP_MD_get_block_size, EVP_MD_block_size)
 	__mkcgo__dlsym2(EVP_MD_get_size, EVP_MD_size)
@@ -733,7 +720,6 @@ void __mkcgo_unload_legacy_1() {
 	_g_EC_KEY_set_public_key = NULL;
 	_g_EC_KEY_set_public_key_affine_coordinates = NULL;
 	_g_EC_POINT_get_affine_coordinates_GFp = NULL;
-	_g_ERR_get_error_line = NULL;
 	_g_EVP_CIPHER_get_block_size = NULL;
 	_g_EVP_MD_get_block_size = NULL;
 	_g_EVP_MD_get_size = NULL;
@@ -776,27 +762,17 @@ void __mkcgo_unload_version() {
 	_g_OpenSSL_version_num = NULL;
 }
 
-size_t _mkcgo_BIO_ctrl_pending(_BIO_PTR _arg0, mkcgo_err_state *_err_state) {
-	size_t _ret = _g_BIO_ctrl_pending(_arg0);
-	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
-	return _ret;
+long _mkcgo_BIO_ctrl(_BIO_PTR _arg0, int _arg1, long _arg2, void* _arg3) {
+	return _g_BIO_ctrl(_arg0, _arg1, _arg2, _arg3);
 }
 
-int _mkcgo_BIO_free(_BIO_PTR _arg0, mkcgo_err_state *_err_state) {
-	int _ret = _g_BIO_free(_arg0);
-	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
-	return _ret;
+int _mkcgo_BIO_free(_BIO_PTR _arg0) {
+	return _g_BIO_free(_arg0);
 }
 
-_BIO_PTR _mkcgo_BIO_new(const _BIO_METHOD_PTR _arg0, mkcgo_err_state *_err_state) {
+_BIO_PTR _mkcgo_BIO_new(const _BIO_METHOD_PTR _arg0, uintptr_t *_err_state) {
 	_BIO_PTR _ret = _g_BIO_new(_arg0);
 	if (_ret == NULL) *_err_state = mkcgo_err_retrieve();
-	return _ret;
-}
-
-int _mkcgo_BIO_read(_BIO_PTR _arg0, unsigned char* _arg1, int _arg2, mkcgo_err_state *_err_state) {
-	int _ret = _g_BIO_read(_arg0, _arg1, _arg2);
-	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
 	return _ret;
 }
 
@@ -804,19 +780,19 @@ const _BIO_METHOD_PTR _mkcgo_BIO_s_mem(void) {
 	return _g_BIO_s_mem();
 }
 
-_BIGNUM_PTR _mkcgo_BN_bin2bn(const unsigned char* _arg0, int _arg1, _BIGNUM_PTR _arg2, mkcgo_err_state *_err_state) {
+_BIGNUM_PTR _mkcgo_BN_bin2bn(const unsigned char* _arg0, int _arg1, _BIGNUM_PTR _arg2, uintptr_t *_err_state) {
 	_BIGNUM_PTR _ret = _g_BN_bin2bn(_arg0, _arg1, _arg2);
 	if (_ret == NULL) *_err_state = mkcgo_err_retrieve();
 	return _ret;
 }
 
-int _mkcgo_BN_bn2binpad(const _BIGNUM_PTR _arg0, unsigned char* _arg1, int _arg2, mkcgo_err_state *_err_state) {
+int _mkcgo_BN_bn2binpad(const _BIGNUM_PTR _arg0, unsigned char* _arg1, int _arg2, uintptr_t *_err_state) {
 	int _ret = _g_BN_bn2binpad(_arg0, _arg1, _arg2);
 	if (_ret == -1) *_err_state = mkcgo_err_retrieve();
 	return _ret;
 }
 
-int _mkcgo_BN_bn2lebinpad(const _BIGNUM_PTR _arg0, unsigned char* _arg1, int _arg2, mkcgo_err_state *_err_state) {
+int _mkcgo_BN_bn2lebinpad(const _BIGNUM_PTR _arg0, unsigned char* _arg1, int _arg2, uintptr_t *_err_state) {
 	int _ret = _g_BN_bn2lebinpad(_arg0, _arg1, _arg2);
 	if (_ret == -1) *_err_state = mkcgo_err_retrieve();
 	return _ret;
@@ -834,13 +810,13 @@ void _mkcgo_BN_free(_BIGNUM_PTR _arg0) {
 	_g_BN_free(_arg0);
 }
 
-_BIGNUM_PTR _mkcgo_BN_lebin2bn(const unsigned char* _arg0, int _arg1, _BIGNUM_PTR _arg2, mkcgo_err_state *_err_state) {
+_BIGNUM_PTR _mkcgo_BN_lebin2bn(const unsigned char* _arg0, int _arg1, _BIGNUM_PTR _arg2, uintptr_t *_err_state) {
 	_BIGNUM_PTR _ret = _g_BN_lebin2bn(_arg0, _arg1, _arg2);
 	if (_ret == NULL) *_err_state = mkcgo_err_retrieve();
 	return _ret;
 }
 
-_BIGNUM_PTR _mkcgo_BN_new(mkcgo_err_state *_err_state) {
+_BIGNUM_PTR _mkcgo_BN_new(uintptr_t *_err_state) {
 	_BIGNUM_PTR _ret = _g_BN_new();
 	if (_ret == NULL) *_err_state = mkcgo_err_retrieve();
 	return _ret;
@@ -854,7 +830,7 @@ void _mkcgo_CRYPTO_free(void* _arg0, const char* _arg1, int _arg2) {
 	_g_CRYPTO_free(_arg0, _arg1, _arg2);
 }
 
-void* _mkcgo_CRYPTO_malloc(size_t _arg0, const char* _arg1, int _arg2, mkcgo_err_state *_err_state) {
+void* _mkcgo_CRYPTO_malloc(size_t _arg0, const char* _arg1, int _arg2, uintptr_t *_err_state) {
 	void* _ret = _g_CRYPTO_malloc(_arg0, _arg1, _arg2);
 	if (_ret == NULL) *_err_state = mkcgo_err_retrieve();
 	return _ret;
@@ -864,7 +840,7 @@ void _mkcgo_DSA_free(_DSA_PTR _arg0) {
 	_g_DSA_free(_arg0);
 }
 
-int _mkcgo_DSA_generate_key(_DSA_PTR _arg0, mkcgo_err_state *_err_state) {
+int _mkcgo_DSA_generate_key(_DSA_PTR _arg0, uintptr_t *_err_state) {
 	int _ret = _g_DSA_generate_key(_arg0);
 	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
 	return _ret;
@@ -878,19 +854,19 @@ void _mkcgo_DSA_get0_pqg(const _DSA_PTR _arg0, const _BIGNUM_PTR* _arg1, const _
 	_g_DSA_get0_pqg(_arg0, _arg1, _arg2, _arg3);
 }
 
-_DSA_PTR _mkcgo_DSA_new(mkcgo_err_state *_err_state) {
+_DSA_PTR _mkcgo_DSA_new(uintptr_t *_err_state) {
 	_DSA_PTR _ret = _g_DSA_new();
 	if (_ret == NULL) *_err_state = mkcgo_err_retrieve();
 	return _ret;
 }
 
-int _mkcgo_DSA_set0_key(_DSA_PTR _arg0, _BIGNUM_PTR _arg1, _BIGNUM_PTR _arg2, mkcgo_err_state *_err_state) {
+int _mkcgo_DSA_set0_key(_DSA_PTR _arg0, _BIGNUM_PTR _arg1, _BIGNUM_PTR _arg2, uintptr_t *_err_state) {
 	int _ret = _g_DSA_set0_key(_arg0, _arg1, _arg2);
 	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
 	return _ret;
 }
 
-int _mkcgo_DSA_set0_pqg(_DSA_PTR _arg0, _BIGNUM_PTR _arg1, _BIGNUM_PTR _arg2, _BIGNUM_PTR _arg3, mkcgo_err_state *_err_state) {
+int _mkcgo_DSA_set0_pqg(_DSA_PTR _arg0, _BIGNUM_PTR _arg1, _BIGNUM_PTR _arg2, _BIGNUM_PTR _arg3, uintptr_t *_err_state) {
 	int _ret = _g_DSA_set0_pqg(_arg0, _arg1, _arg2, _arg3);
 	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
 	return _ret;
@@ -900,13 +876,13 @@ void _mkcgo_EC_GROUP_free(_EC_GROUP_PTR _arg0) {
 	_g_EC_GROUP_free(_arg0);
 }
 
-_EC_GROUP_PTR _mkcgo_EC_GROUP_new_by_curve_name(int _arg0, mkcgo_err_state *_err_state) {
+_EC_GROUP_PTR _mkcgo_EC_GROUP_new_by_curve_name(int _arg0, uintptr_t *_err_state) {
 	_EC_GROUP_PTR _ret = _g_EC_GROUP_new_by_curve_name(_arg0);
 	if (_ret == NULL) *_err_state = mkcgo_err_retrieve();
 	return _ret;
 }
 
-int _mkcgo_EC_KEY_check_key(const _EC_KEY_PTR _arg0, mkcgo_err_state *_err_state) {
+int _mkcgo_EC_KEY_check_key(const _EC_KEY_PTR _arg0, uintptr_t *_err_state) {
 	int _ret = _g_EC_KEY_check_key(_arg0);
 	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
 	return _ret;
@@ -928,25 +904,25 @@ const _EC_POINT_PTR _mkcgo_EC_KEY_get0_public_key(const _EC_KEY_PTR _arg0) {
 	return _g_EC_KEY_get0_public_key(_arg0);
 }
 
-_EC_KEY_PTR _mkcgo_EC_KEY_new_by_curve_name(int _arg0, mkcgo_err_state *_err_state) {
+_EC_KEY_PTR _mkcgo_EC_KEY_new_by_curve_name(int _arg0, uintptr_t *_err_state) {
 	_EC_KEY_PTR _ret = _g_EC_KEY_new_by_curve_name(_arg0);
 	if (_ret == NULL) *_err_state = mkcgo_err_retrieve();
 	return _ret;
 }
 
-int _mkcgo_EC_KEY_set_private_key(_EC_KEY_PTR _arg0, const _BIGNUM_PTR _arg1, mkcgo_err_state *_err_state) {
+int _mkcgo_EC_KEY_set_private_key(_EC_KEY_PTR _arg0, const _BIGNUM_PTR _arg1, uintptr_t *_err_state) {
 	int _ret = _g_EC_KEY_set_private_key(_arg0, _arg1);
 	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
 	return _ret;
 }
 
-int _mkcgo_EC_KEY_set_public_key(_EC_KEY_PTR _arg0, const _EC_POINT_PTR _arg1, mkcgo_err_state *_err_state) {
+int _mkcgo_EC_KEY_set_public_key(_EC_KEY_PTR _arg0, const _EC_POINT_PTR _arg1, uintptr_t *_err_state) {
 	int _ret = _g_EC_KEY_set_public_key(_arg0, _arg1);
 	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
 	return _ret;
 }
 
-int _mkcgo_EC_KEY_set_public_key_affine_coordinates(_EC_KEY_PTR _arg0, _BIGNUM_PTR _arg1, _BIGNUM_PTR _arg2, mkcgo_err_state *_err_state) {
+int _mkcgo_EC_KEY_set_public_key_affine_coordinates(_EC_KEY_PTR _arg0, _BIGNUM_PTR _arg1, _BIGNUM_PTR _arg2, uintptr_t *_err_state) {
 	int _ret = _g_EC_KEY_set_public_key_affine_coordinates(_arg0, _arg1, _arg2);
 	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
 	return _ret;
@@ -956,60 +932,40 @@ void _mkcgo_EC_POINT_free(_EC_POINT_PTR _arg0) {
 	_g_EC_POINT_free(_arg0);
 }
 
-int _mkcgo_EC_POINT_get_affine_coordinates_GFp(const _EC_GROUP_PTR _arg0, const _EC_POINT_PTR _arg1, _BIGNUM_PTR _arg2, _BIGNUM_PTR _arg3, _BN_CTX_PTR _arg4, mkcgo_err_state *_err_state) {
+int _mkcgo_EC_POINT_get_affine_coordinates_GFp(const _EC_GROUP_PTR _arg0, const _EC_POINT_PTR _arg1, _BIGNUM_PTR _arg2, _BIGNUM_PTR _arg3, _BN_CTX_PTR _arg4, uintptr_t *_err_state) {
 	int _ret = _g_EC_POINT_get_affine_coordinates_GFp(_arg0, _arg1, _arg2, _arg3, _arg4);
 	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
 	return _ret;
 }
 
-int _mkcgo_EC_POINT_mul(const _EC_GROUP_PTR _arg0, _EC_POINT_PTR _arg1, const _BIGNUM_PTR _arg2, const _EC_POINT_PTR _arg3, const _BIGNUM_PTR _arg4, _BN_CTX_PTR _arg5, mkcgo_err_state *_err_state) {
+int _mkcgo_EC_POINT_mul(const _EC_GROUP_PTR _arg0, _EC_POINT_PTR _arg1, const _BIGNUM_PTR _arg2, const _EC_POINT_PTR _arg3, const _BIGNUM_PTR _arg4, _BN_CTX_PTR _arg5, uintptr_t *_err_state) {
 	int _ret = _g_EC_POINT_mul(_arg0, _arg1, _arg2, _arg3, _arg4, _arg5);
 	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
 	return _ret;
 }
 
-_EC_POINT_PTR _mkcgo_EC_POINT_new(const _EC_GROUP_PTR _arg0, mkcgo_err_state *_err_state) {
+_EC_POINT_PTR _mkcgo_EC_POINT_new(const _EC_GROUP_PTR _arg0, uintptr_t *_err_state) {
 	_EC_POINT_PTR _ret = _g_EC_POINT_new(_arg0);
 	if (_ret == NULL) *_err_state = mkcgo_err_retrieve();
 	return _ret;
 }
 
-int _mkcgo_EC_POINT_oct2point(const _EC_GROUP_PTR _arg0, _EC_POINT_PTR _arg1, const unsigned char* _arg2, size_t _arg3, _BN_CTX_PTR _arg4, mkcgo_err_state *_err_state) {
+int _mkcgo_EC_POINT_oct2point(const _EC_GROUP_PTR _arg0, _EC_POINT_PTR _arg1, const unsigned char* _arg2, size_t _arg3, _BN_CTX_PTR _arg4, uintptr_t *_err_state) {
 	int _ret = _g_EC_POINT_oct2point(_arg0, _arg1, _arg2, _arg3, _arg4);
 	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
 	return _ret;
 }
 
-size_t _mkcgo_EC_POINT_point2oct(const _EC_GROUP_PTR _arg0, const _EC_POINT_PTR _arg1, point_conversion_form_t _arg2, unsigned char* _arg3, size_t _arg4, _BN_CTX_PTR _arg5, mkcgo_err_state *_err_state) {
+size_t _mkcgo_EC_POINT_point2oct(const _EC_GROUP_PTR _arg0, const _EC_POINT_PTR _arg1, point_conversion_form_t _arg2, unsigned char* _arg3, size_t _arg4, _BN_CTX_PTR _arg5, uintptr_t *_err_state) {
 	size_t _ret = _g_EC_POINT_point2oct(_arg0, _arg1, _arg2, _arg3, _arg4, _arg5);
 	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
 	return _ret;
 }
 
-int _mkcgo_EC_POINT_set_affine_coordinates(const _EC_GROUP_PTR _arg0, _EC_POINT_PTR _arg1, const _BIGNUM_PTR _arg2, const _BIGNUM_PTR _arg3, _BN_CTX_PTR _arg4, mkcgo_err_state *_err_state) {
+int _mkcgo_EC_POINT_set_affine_coordinates(const _EC_GROUP_PTR _arg0, _EC_POINT_PTR _arg1, const _BIGNUM_PTR _arg2, const _BIGNUM_PTR _arg3, _BN_CTX_PTR _arg4, uintptr_t *_err_state) {
 	int _ret = _g_EC_POINT_set_affine_coordinates(_arg0, _arg1, _arg2, _arg3, _arg4);
 	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
 	return _ret;
-}
-
-void _mkcgo_ERR_clear_error(void) {
-	_g_ERR_clear_error();
-}
-
-void _mkcgo_ERR_error_string_n(unsigned long _arg0, char* _arg1, size_t _arg2) {
-	_g_ERR_error_string_n(_arg0, _arg1, _arg2);
-}
-
-unsigned long _mkcgo_ERR_get_error(void) {
-	return _g_ERR_get_error();
-}
-
-unsigned long _mkcgo_ERR_get_error_all(const char** _arg0, int* _arg1, const char** _arg2, const char** _arg3, int* _arg4) {
-	return _g_ERR_get_error_all(_arg0, _arg1, _arg2, _arg3, _arg4);
-}
-
-unsigned long _mkcgo_ERR_get_error_line(const char** _arg0, int* _arg1) {
-	return _g_ERR_get_error_line(_arg0, _arg1);
 }
 
 unsigned long _mkcgo_ERR_peek_error(void) {
@@ -1020,7 +976,7 @@ void _mkcgo_ERR_print_errors(_BIO_PTR _arg0) {
 	_g_ERR_print_errors(_arg0);
 }
 
-int _mkcgo_EVP_CIPHER_CTX_ctrl(_EVP_CIPHER_CTX_PTR _arg0, int _arg1, int _arg2, void* _arg3, mkcgo_err_state *_err_state) {
+int _mkcgo_EVP_CIPHER_CTX_ctrl(_EVP_CIPHER_CTX_PTR _arg0, int _arg1, int _arg2, void* _arg3, uintptr_t *_err_state) {
 	int _ret = _g_EVP_CIPHER_CTX_ctrl(_arg0, _arg1, _arg2, _arg3);
 	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
 	return _ret;
@@ -1030,25 +986,25 @@ void _mkcgo_EVP_CIPHER_CTX_free(_EVP_CIPHER_CTX_PTR _arg0) {
 	_g_EVP_CIPHER_CTX_free(_arg0);
 }
 
-_EVP_CIPHER_CTX_PTR _mkcgo_EVP_CIPHER_CTX_new(mkcgo_err_state *_err_state) {
+_EVP_CIPHER_CTX_PTR _mkcgo_EVP_CIPHER_CTX_new(uintptr_t *_err_state) {
 	_EVP_CIPHER_CTX_PTR _ret = _g_EVP_CIPHER_CTX_new();
 	if (_ret == NULL) *_err_state = mkcgo_err_retrieve();
 	return _ret;
 }
 
-int _mkcgo_EVP_CIPHER_CTX_set_key_length(_EVP_CIPHER_CTX_PTR _arg0, int _arg1, mkcgo_err_state *_err_state) {
+int _mkcgo_EVP_CIPHER_CTX_set_key_length(_EVP_CIPHER_CTX_PTR _arg0, int _arg1, uintptr_t *_err_state) {
 	int _ret = _g_EVP_CIPHER_CTX_set_key_length(_arg0, _arg1);
 	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
 	return _ret;
 }
 
-int _mkcgo_EVP_CIPHER_CTX_set_padding(_EVP_CIPHER_CTX_PTR _arg0, int _arg1, mkcgo_err_state *_err_state) {
+int _mkcgo_EVP_CIPHER_CTX_set_padding(_EVP_CIPHER_CTX_PTR _arg0, int _arg1, uintptr_t *_err_state) {
 	int _ret = _g_EVP_CIPHER_CTX_set_padding(_arg0, _arg1);
 	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
 	return _ret;
 }
 
-_EVP_CIPHER_PTR _mkcgo_EVP_CIPHER_fetch(_OSSL_LIB_CTX_PTR _arg0, const char* _arg1, const char* _arg2, mkcgo_err_state *_err_state) {
+_EVP_CIPHER_PTR _mkcgo_EVP_CIPHER_fetch(_OSSL_LIB_CTX_PTR _arg0, const char* _arg1, const char* _arg2, uintptr_t *_err_state) {
 	_EVP_CIPHER_PTR _ret = _g_EVP_CIPHER_fetch(_arg0, _arg1, _arg2);
 	if (_ret == NULL) *_err_state = mkcgo_err_retrieve();
 	return _ret;
@@ -1062,115 +1018,115 @@ int _mkcgo_EVP_CIPHER_get_block_size(const _EVP_CIPHER_PTR _arg0) {
 	return _g_EVP_CIPHER_get_block_size(_arg0);
 }
 
-int _mkcgo_EVP_CipherInit_ex(_EVP_CIPHER_CTX_PTR _arg0, const _EVP_CIPHER_PTR _arg1, _ENGINE_PTR _arg2, const unsigned char* _arg3, const unsigned char* _arg4, int _arg5, mkcgo_err_state *_err_state) {
+int _mkcgo_EVP_CipherInit_ex(_EVP_CIPHER_CTX_PTR _arg0, const _EVP_CIPHER_PTR _arg1, _ENGINE_PTR _arg2, const unsigned char* _arg3, const unsigned char* _arg4, int _arg5, uintptr_t *_err_state) {
 	int _ret = _g_EVP_CipherInit_ex(_arg0, _arg1, _arg2, _arg3, _arg4, _arg5);
 	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
 	return _ret;
 }
 
-int _mkcgo_EVP_CipherUpdate(_EVP_CIPHER_CTX_PTR _arg0, unsigned char* _arg1, int* _arg2, const unsigned char* _arg3, int _arg4, mkcgo_err_state *_err_state) {
+int _mkcgo_EVP_CipherUpdate(_EVP_CIPHER_CTX_PTR _arg0, unsigned char* _arg1, int* _arg2, const unsigned char* _arg3, int _arg4, uintptr_t *_err_state) {
 	int _ret = _g_EVP_CipherUpdate(_arg0, _arg1, _arg2, _arg3, _arg4);
 	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
 	return _ret;
 }
 
-int _mkcgo_EVP_DecryptFinal_ex(_EVP_CIPHER_CTX_PTR _arg0, unsigned char* _arg1, int* _arg2, mkcgo_err_state *_err_state) {
+int _mkcgo_EVP_DecryptFinal_ex(_EVP_CIPHER_CTX_PTR _arg0, unsigned char* _arg1, int* _arg2, uintptr_t *_err_state) {
 	int _ret = _g_EVP_DecryptFinal_ex(_arg0, _arg1, _arg2);
 	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
 	return _ret;
 }
 
-int _mkcgo_EVP_DecryptInit_ex(_EVP_CIPHER_CTX_PTR _arg0, const _EVP_CIPHER_PTR _arg1, _ENGINE_PTR _arg2, const unsigned char* _arg3, const unsigned char* _arg4, mkcgo_err_state *_err_state) {
+int _mkcgo_EVP_DecryptInit_ex(_EVP_CIPHER_CTX_PTR _arg0, const _EVP_CIPHER_PTR _arg1, _ENGINE_PTR _arg2, const unsigned char* _arg3, const unsigned char* _arg4, uintptr_t *_err_state) {
 	int _ret = _g_EVP_DecryptInit_ex(_arg0, _arg1, _arg2, _arg3, _arg4);
 	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
 	return _ret;
 }
 
-int _mkcgo_EVP_DecryptUpdate(_EVP_CIPHER_CTX_PTR _arg0, unsigned char* _arg1, int* _arg2, const unsigned char* _arg3, int _arg4, mkcgo_err_state *_err_state) {
+int _mkcgo_EVP_DecryptUpdate(_EVP_CIPHER_CTX_PTR _arg0, unsigned char* _arg1, int* _arg2, const unsigned char* _arg3, int _arg4, uintptr_t *_err_state) {
 	int _ret = _g_EVP_DecryptUpdate(_arg0, _arg1, _arg2, _arg3, _arg4);
 	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
 	return _ret;
 }
 
-int _mkcgo_EVP_Digest(const unsigned char* _arg0, size_t _arg1, unsigned char* _arg2, unsigned int* _arg3, const _EVP_MD_PTR _arg4, _ENGINE_PTR _arg5, mkcgo_err_state *_err_state) {
+int _mkcgo_EVP_Digest(const unsigned char* _arg0, size_t _arg1, unsigned char* _arg2, unsigned int* _arg3, const _EVP_MD_PTR _arg4, _ENGINE_PTR _arg5, uintptr_t *_err_state) {
 	int _ret = _g_EVP_Digest(_arg0, _arg1, _arg2, _arg3, _arg4, _arg5);
 	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
 	return _ret;
 }
 
-int _mkcgo_EVP_DigestFinal_ex(_EVP_MD_CTX_PTR _arg0, unsigned char* _arg1, unsigned int* _arg2, mkcgo_err_state *_err_state) {
+int _mkcgo_EVP_DigestFinal_ex(_EVP_MD_CTX_PTR _arg0, unsigned char* _arg1, unsigned int* _arg2, uintptr_t *_err_state) {
 	int _ret = _g_EVP_DigestFinal_ex(_arg0, _arg1, _arg2);
 	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
 	return _ret;
 }
 
-int _mkcgo_EVP_DigestInit(_EVP_MD_CTX_PTR _arg0, const _EVP_MD_PTR _arg1, mkcgo_err_state *_err_state) {
+int _mkcgo_EVP_DigestInit(_EVP_MD_CTX_PTR _arg0, const _EVP_MD_PTR _arg1, uintptr_t *_err_state) {
 	int _ret = _g_EVP_DigestInit(_arg0, _arg1);
 	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
 	return _ret;
 }
 
-int _mkcgo_EVP_DigestInit_ex(_EVP_MD_CTX_PTR _arg0, const _EVP_MD_PTR _arg1, _ENGINE_PTR _arg2, mkcgo_err_state *_err_state) {
+int _mkcgo_EVP_DigestInit_ex(_EVP_MD_CTX_PTR _arg0, const _EVP_MD_PTR _arg1, _ENGINE_PTR _arg2, uintptr_t *_err_state) {
 	int _ret = _g_EVP_DigestInit_ex(_arg0, _arg1, _arg2);
 	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
 	return _ret;
 }
 
-int _mkcgo_EVP_DigestSign(_EVP_MD_CTX_PTR _arg0, unsigned char* _arg1, size_t* _arg2, const unsigned char* _arg3, size_t _arg4, mkcgo_err_state *_err_state) {
+int _mkcgo_EVP_DigestSign(_EVP_MD_CTX_PTR _arg0, unsigned char* _arg1, size_t* _arg2, const unsigned char* _arg3, size_t _arg4, uintptr_t *_err_state) {
 	int _ret = _g_EVP_DigestSign(_arg0, _arg1, _arg2, _arg3, _arg4);
 	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
 	return _ret;
 }
 
-int _mkcgo_EVP_DigestSignFinal(_EVP_MD_CTX_PTR _arg0, unsigned char* _arg1, size_t* _arg2, mkcgo_err_state *_err_state) {
+int _mkcgo_EVP_DigestSignFinal(_EVP_MD_CTX_PTR _arg0, unsigned char* _arg1, size_t* _arg2, uintptr_t *_err_state) {
 	int _ret = _g_EVP_DigestSignFinal(_arg0, _arg1, _arg2);
 	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
 	return _ret;
 }
 
-int _mkcgo_EVP_DigestSignInit(_EVP_MD_CTX_PTR _arg0, _EVP_PKEY_CTX_PTR* _arg1, const _EVP_MD_PTR _arg2, _ENGINE_PTR _arg3, _EVP_PKEY_PTR _arg4, mkcgo_err_state *_err_state) {
+int _mkcgo_EVP_DigestSignInit(_EVP_MD_CTX_PTR _arg0, _EVP_PKEY_CTX_PTR* _arg1, const _EVP_MD_PTR _arg2, _ENGINE_PTR _arg3, _EVP_PKEY_PTR _arg4, uintptr_t *_err_state) {
 	int _ret = _g_EVP_DigestSignInit(_arg0, _arg1, _arg2, _arg3, _arg4);
 	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
 	return _ret;
 }
 
-int _mkcgo_EVP_DigestUpdate(_EVP_MD_CTX_PTR _arg0, const unsigned char* _arg1, size_t _arg2, mkcgo_err_state *_err_state) {
+int _mkcgo_EVP_DigestUpdate(_EVP_MD_CTX_PTR _arg0, const unsigned char* _arg1, size_t _arg2, uintptr_t *_err_state) {
 	int _ret = _g_EVP_DigestUpdate(_arg0, _arg1, _arg2);
 	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
 	return _ret;
 }
 
-int _mkcgo_EVP_DigestVerify(_EVP_MD_CTX_PTR _arg0, const unsigned char* _arg1, size_t _arg2, const unsigned char* _arg3, size_t _arg4, mkcgo_err_state *_err_state) {
+int _mkcgo_EVP_DigestVerify(_EVP_MD_CTX_PTR _arg0, const unsigned char* _arg1, size_t _arg2, const unsigned char* _arg3, size_t _arg4, uintptr_t *_err_state) {
 	int _ret = _g_EVP_DigestVerify(_arg0, _arg1, _arg2, _arg3, _arg4);
 	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
 	return _ret;
 }
 
-int _mkcgo_EVP_DigestVerifyFinal(_EVP_MD_CTX_PTR _arg0, const unsigned char* _arg1, size_t _arg2, mkcgo_err_state *_err_state) {
+int _mkcgo_EVP_DigestVerifyFinal(_EVP_MD_CTX_PTR _arg0, const unsigned char* _arg1, size_t _arg2, uintptr_t *_err_state) {
 	int _ret = _g_EVP_DigestVerifyFinal(_arg0, _arg1, _arg2);
 	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
 	return _ret;
 }
 
-int _mkcgo_EVP_DigestVerifyInit(_EVP_MD_CTX_PTR _arg0, _EVP_PKEY_CTX_PTR* _arg1, const _EVP_MD_PTR _arg2, _ENGINE_PTR _arg3, _EVP_PKEY_PTR _arg4, mkcgo_err_state *_err_state) {
+int _mkcgo_EVP_DigestVerifyInit(_EVP_MD_CTX_PTR _arg0, _EVP_PKEY_CTX_PTR* _arg1, const _EVP_MD_PTR _arg2, _ENGINE_PTR _arg3, _EVP_PKEY_PTR _arg4, uintptr_t *_err_state) {
 	int _ret = _g_EVP_DigestVerifyInit(_arg0, _arg1, _arg2, _arg3, _arg4);
 	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
 	return _ret;
 }
 
-int _mkcgo_EVP_EncryptFinal_ex(_EVP_CIPHER_CTX_PTR _arg0, unsigned char* _arg1, int* _arg2, mkcgo_err_state *_err_state) {
+int _mkcgo_EVP_EncryptFinal_ex(_EVP_CIPHER_CTX_PTR _arg0, unsigned char* _arg1, int* _arg2, uintptr_t *_err_state) {
 	int _ret = _g_EVP_EncryptFinal_ex(_arg0, _arg1, _arg2);
 	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
 	return _ret;
 }
 
-int _mkcgo_EVP_EncryptInit_ex(_EVP_CIPHER_CTX_PTR _arg0, const _EVP_CIPHER_PTR _arg1, _ENGINE_PTR _arg2, const unsigned char* _arg3, const unsigned char* _arg4, mkcgo_err_state *_err_state) {
+int _mkcgo_EVP_EncryptInit_ex(_EVP_CIPHER_CTX_PTR _arg0, const _EVP_CIPHER_PTR _arg1, _ENGINE_PTR _arg2, const unsigned char* _arg3, const unsigned char* _arg4, uintptr_t *_err_state) {
 	int _ret = _g_EVP_EncryptInit_ex(_arg0, _arg1, _arg2, _arg3, _arg4);
 	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
 	return _ret;
 }
 
-int _mkcgo_EVP_EncryptUpdate(_EVP_CIPHER_CTX_PTR _arg0, unsigned char* _arg1, int* _arg2, const unsigned char* _arg3, int _arg4, mkcgo_err_state *_err_state) {
+int _mkcgo_EVP_EncryptUpdate(_EVP_CIPHER_CTX_PTR _arg0, unsigned char* _arg1, int* _arg2, const unsigned char* _arg3, int _arg4, uintptr_t *_err_state) {
 	int _ret = _g_EVP_EncryptUpdate(_arg0, _arg1, _arg2, _arg3, _arg4);
 	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
 	return _ret;
@@ -1180,31 +1136,31 @@ void _mkcgo_EVP_KDF_CTX_free(_EVP_KDF_CTX_PTR _arg0) {
 	_g_EVP_KDF_CTX_free(_arg0);
 }
 
-size_t _mkcgo_EVP_KDF_CTX_get_kdf_size(_EVP_KDF_CTX_PTR _arg0, mkcgo_err_state *_err_state) {
+size_t _mkcgo_EVP_KDF_CTX_get_kdf_size(_EVP_KDF_CTX_PTR _arg0, uintptr_t *_err_state) {
 	size_t _ret = _g_EVP_KDF_CTX_get_kdf_size(_arg0);
 	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
 	return _ret;
 }
 
-_EVP_KDF_CTX_PTR _mkcgo_EVP_KDF_CTX_new(_EVP_KDF_PTR _arg0, mkcgo_err_state *_err_state) {
+_EVP_KDF_CTX_PTR _mkcgo_EVP_KDF_CTX_new(_EVP_KDF_PTR _arg0, uintptr_t *_err_state) {
 	_EVP_KDF_CTX_PTR _ret = _g_EVP_KDF_CTX_new(_arg0);
 	if (_ret == NULL) *_err_state = mkcgo_err_retrieve();
 	return _ret;
 }
 
-int _mkcgo_EVP_KDF_CTX_set_params(_EVP_KDF_CTX_PTR _arg0, const _OSSL_PARAM_PTR _arg1, mkcgo_err_state *_err_state) {
+int _mkcgo_EVP_KDF_CTX_set_params(_EVP_KDF_CTX_PTR _arg0, const _OSSL_PARAM_PTR _arg1, uintptr_t *_err_state) {
 	int _ret = _g_EVP_KDF_CTX_set_params(_arg0, _arg1);
 	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
 	return _ret;
 }
 
-int _mkcgo_EVP_KDF_derive(_EVP_KDF_CTX_PTR _arg0, unsigned char* _arg1, size_t _arg2, const _OSSL_PARAM_PTR _arg3, mkcgo_err_state *_err_state) {
+int _mkcgo_EVP_KDF_derive(_EVP_KDF_CTX_PTR _arg0, unsigned char* _arg1, size_t _arg2, const _OSSL_PARAM_PTR _arg3, uintptr_t *_err_state) {
 	int _ret = _g_EVP_KDF_derive(_arg0, _arg1, _arg2, _arg3);
 	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
 	return _ret;
 }
 
-_EVP_KDF_PTR _mkcgo_EVP_KDF_fetch(_OSSL_LIB_CTX_PTR _arg0, const char* _arg1, const char* _arg2, mkcgo_err_state *_err_state) {
+_EVP_KDF_PTR _mkcgo_EVP_KDF_fetch(_OSSL_LIB_CTX_PTR _arg0, const char* _arg1, const char* _arg2, uintptr_t *_err_state) {
 	_EVP_KDF_PTR _ret = _g_EVP_KDF_fetch(_arg0, _arg1, _arg2);
 	if (_ret == NULL) *_err_state = mkcgo_err_retrieve();
 	return _ret;
@@ -1214,7 +1170,7 @@ void _mkcgo_EVP_KDF_free(_EVP_KDF_PTR _arg0) {
 	_g_EVP_KDF_free(_arg0);
 }
 
-_EVP_MAC_CTX_PTR _mkcgo_EVP_MAC_CTX_dup(const _EVP_MAC_CTX_PTR _arg0, mkcgo_err_state *_err_state) {
+_EVP_MAC_CTX_PTR _mkcgo_EVP_MAC_CTX_dup(const _EVP_MAC_CTX_PTR _arg0, uintptr_t *_err_state) {
 	_EVP_MAC_CTX_PTR _ret = _g_EVP_MAC_CTX_dup(_arg0);
 	if (_ret == NULL) *_err_state = mkcgo_err_retrieve();
 	return _ret;
@@ -1224,49 +1180,49 @@ void _mkcgo_EVP_MAC_CTX_free(_EVP_MAC_CTX_PTR _arg0) {
 	_g_EVP_MAC_CTX_free(_arg0);
 }
 
-_EVP_MAC_CTX_PTR _mkcgo_EVP_MAC_CTX_new(_EVP_MAC_PTR _arg0, mkcgo_err_state *_err_state) {
+_EVP_MAC_CTX_PTR _mkcgo_EVP_MAC_CTX_new(_EVP_MAC_PTR _arg0, uintptr_t *_err_state) {
 	_EVP_MAC_CTX_PTR _ret = _g_EVP_MAC_CTX_new(_arg0);
 	if (_ret == NULL) *_err_state = mkcgo_err_retrieve();
 	return _ret;
 }
 
-int _mkcgo_EVP_MAC_CTX_set_params(_EVP_MAC_CTX_PTR _arg0, const _OSSL_PARAM_PTR _arg1, mkcgo_err_state *_err_state) {
+int _mkcgo_EVP_MAC_CTX_set_params(_EVP_MAC_CTX_PTR _arg0, const _OSSL_PARAM_PTR _arg1, uintptr_t *_err_state) {
 	int _ret = _g_EVP_MAC_CTX_set_params(_arg0, _arg1);
 	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
 	return _ret;
 }
 
-_EVP_MAC_PTR _mkcgo_EVP_MAC_fetch(_OSSL_LIB_CTX_PTR _arg0, const char* _arg1, const char* _arg2, mkcgo_err_state *_err_state) {
+_EVP_MAC_PTR _mkcgo_EVP_MAC_fetch(_OSSL_LIB_CTX_PTR _arg0, const char* _arg1, const char* _arg2, uintptr_t *_err_state) {
 	_EVP_MAC_PTR _ret = _g_EVP_MAC_fetch(_arg0, _arg1, _arg2);
 	if (_ret == NULL) *_err_state = mkcgo_err_retrieve();
 	return _ret;
 }
 
-int _mkcgo_EVP_MAC_final(_EVP_MAC_CTX_PTR _arg0, unsigned char* _arg1, size_t* _arg2, size_t _arg3, mkcgo_err_state *_err_state) {
+int _mkcgo_EVP_MAC_final(_EVP_MAC_CTX_PTR _arg0, unsigned char* _arg1, size_t* _arg2, size_t _arg3, uintptr_t *_err_state) {
 	int _ret = _g_EVP_MAC_final(_arg0, _arg1, _arg2, _arg3);
 	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
 	return _ret;
 }
 
-int _mkcgo_EVP_MAC_init(_EVP_MAC_CTX_PTR _arg0, const unsigned char* _arg1, size_t _arg2, const _OSSL_PARAM_PTR _arg3, mkcgo_err_state *_err_state) {
+int _mkcgo_EVP_MAC_init(_EVP_MAC_CTX_PTR _arg0, const unsigned char* _arg1, size_t _arg2, const _OSSL_PARAM_PTR _arg3, uintptr_t *_err_state) {
 	int _ret = _g_EVP_MAC_init(_arg0, _arg1, _arg2, _arg3);
 	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
 	return _ret;
 }
 
-int _mkcgo_EVP_MAC_update(_EVP_MAC_CTX_PTR _arg0, const unsigned char* _arg1, size_t _arg2, mkcgo_err_state *_err_state) {
+int _mkcgo_EVP_MAC_update(_EVP_MAC_CTX_PTR _arg0, const unsigned char* _arg1, size_t _arg2, uintptr_t *_err_state) {
 	int _ret = _g_EVP_MAC_update(_arg0, _arg1, _arg2);
 	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
 	return _ret;
 }
 
-int _mkcgo_EVP_MD_CTX_copy(_EVP_MD_CTX_PTR _arg0, const _EVP_MD_CTX_PTR _arg1, mkcgo_err_state *_err_state) {
+int _mkcgo_EVP_MD_CTX_copy(_EVP_MD_CTX_PTR _arg0, const _EVP_MD_CTX_PTR _arg1, uintptr_t *_err_state) {
 	int _ret = _g_EVP_MD_CTX_copy(_arg0, _arg1);
 	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
 	return _ret;
 }
 
-int _mkcgo_EVP_MD_CTX_copy_ex(_EVP_MD_CTX_PTR _arg0, const _EVP_MD_CTX_PTR _arg1, mkcgo_err_state *_err_state) {
+int _mkcgo_EVP_MD_CTX_copy_ex(_EVP_MD_CTX_PTR _arg0, const _EVP_MD_CTX_PTR _arg1, uintptr_t *_err_state) {
 	int _ret = _g_EVP_MD_CTX_copy_ex(_arg0, _arg1);
 	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
 	return _ret;
@@ -1276,37 +1232,37 @@ void _mkcgo_EVP_MD_CTX_free(_EVP_MD_CTX_PTR _arg0) {
 	_g_EVP_MD_CTX_free(_arg0);
 }
 
-int _mkcgo_EVP_MD_CTX_get_params(_EVP_MD_CTX_PTR _arg0, _OSSL_PARAM_PTR _arg1, mkcgo_err_state *_err_state) {
+int _mkcgo_EVP_MD_CTX_get_params(_EVP_MD_CTX_PTR _arg0, _OSSL_PARAM_PTR _arg1, uintptr_t *_err_state) {
 	int _ret = _g_EVP_MD_CTX_get_params(_arg0, _arg1);
 	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
 	return _ret;
 }
 
-const _OSSL_PARAM_PTR _mkcgo_EVP_MD_CTX_gettable_params(_EVP_MD_CTX_PTR _arg0, mkcgo_err_state *_err_state) {
+const _OSSL_PARAM_PTR _mkcgo_EVP_MD_CTX_gettable_params(_EVP_MD_CTX_PTR _arg0, uintptr_t *_err_state) {
 	const _OSSL_PARAM_PTR _ret = _g_EVP_MD_CTX_gettable_params(_arg0);
 	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
 	return _ret;
 }
 
-_EVP_MD_CTX_PTR _mkcgo_EVP_MD_CTX_new(mkcgo_err_state *_err_state) {
+_EVP_MD_CTX_PTR _mkcgo_EVP_MD_CTX_new(uintptr_t *_err_state) {
 	_EVP_MD_CTX_PTR _ret = _g_EVP_MD_CTX_new();
 	if (_ret == NULL) *_err_state = mkcgo_err_retrieve();
 	return _ret;
 }
 
-int _mkcgo_EVP_MD_CTX_set_params(_EVP_MD_CTX_PTR _arg0, const _OSSL_PARAM_PTR _arg1, mkcgo_err_state *_err_state) {
+int _mkcgo_EVP_MD_CTX_set_params(_EVP_MD_CTX_PTR _arg0, const _OSSL_PARAM_PTR _arg1, uintptr_t *_err_state) {
 	int _ret = _g_EVP_MD_CTX_set_params(_arg0, _arg1);
 	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
 	return _ret;
 }
 
-const _OSSL_PARAM_PTR _mkcgo_EVP_MD_CTX_settable_params(_EVP_MD_CTX_PTR _arg0, mkcgo_err_state *_err_state) {
+const _OSSL_PARAM_PTR _mkcgo_EVP_MD_CTX_settable_params(_EVP_MD_CTX_PTR _arg0, uintptr_t *_err_state) {
 	const _OSSL_PARAM_PTR _ret = _g_EVP_MD_CTX_settable_params(_arg0);
 	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
 	return _ret;
 }
 
-_EVP_MD_PTR _mkcgo_EVP_MD_fetch(_OSSL_LIB_CTX_PTR _arg0, const char* _arg1, const char* _arg2, mkcgo_err_state *_err_state) {
+_EVP_MD_PTR _mkcgo_EVP_MD_fetch(_OSSL_LIB_CTX_PTR _arg0, const char* _arg1, const char* _arg2, uintptr_t *_err_state) {
 	_EVP_MD_PTR _ret = _g_EVP_MD_fetch(_arg0, _arg1, _arg2);
 	if (_ret == NULL) *_err_state = mkcgo_err_retrieve();
 	return _ret;
@@ -1336,13 +1292,13 @@ int _mkcgo_EVP_MD_get_type(const _EVP_MD_PTR _arg0) {
 	return _g_EVP_MD_get_type(_arg0);
 }
 
-int _mkcgo_EVP_PKEY_CTX_add1_hkdf_info(_EVP_PKEY_CTX_PTR _arg0, const unsigned char* _arg1, int _arg2, mkcgo_err_state *_err_state) {
+int _mkcgo_EVP_PKEY_CTX_add1_hkdf_info(_EVP_PKEY_CTX_PTR _arg0, const unsigned char* _arg1, int _arg2, uintptr_t *_err_state) {
 	int _ret = _g_EVP_PKEY_CTX_add1_hkdf_info(_arg0, _arg1, _arg2);
 	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
 	return _ret;
 }
 
-int _mkcgo_EVP_PKEY_CTX_ctrl(_EVP_PKEY_CTX_PTR _arg0, int _arg1, int _arg2, int _arg3, int _arg4, void* _arg5, mkcgo_err_state *_err_state) {
+int _mkcgo_EVP_PKEY_CTX_ctrl(_EVP_PKEY_CTX_PTR _arg0, int _arg1, int _arg2, int _arg3, int _arg4, void* _arg5, uintptr_t *_err_state) {
 	int _ret = _g_EVP_PKEY_CTX_ctrl(_arg0, _arg1, _arg2, _arg3, _arg4, _arg5);
 	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
 	return _ret;
@@ -1352,115 +1308,115 @@ void _mkcgo_EVP_PKEY_CTX_free(_EVP_PKEY_CTX_PTR _arg0) {
 	_g_EVP_PKEY_CTX_free(_arg0);
 }
 
-_EVP_PKEY_CTX_PTR _mkcgo_EVP_PKEY_CTX_new(_EVP_PKEY_PTR _arg0, _ENGINE_PTR _arg1, mkcgo_err_state *_err_state) {
+_EVP_PKEY_CTX_PTR _mkcgo_EVP_PKEY_CTX_new(_EVP_PKEY_PTR _arg0, _ENGINE_PTR _arg1, uintptr_t *_err_state) {
 	_EVP_PKEY_CTX_PTR _ret = _g_EVP_PKEY_CTX_new(_arg0, _arg1);
 	if (_ret == NULL) *_err_state = mkcgo_err_retrieve();
 	return _ret;
 }
 
-_EVP_PKEY_CTX_PTR _mkcgo_EVP_PKEY_CTX_new_from_pkey(_OSSL_LIB_CTX_PTR _arg0, _EVP_PKEY_PTR _arg1, const char* _arg2, mkcgo_err_state *_err_state) {
+_EVP_PKEY_CTX_PTR _mkcgo_EVP_PKEY_CTX_new_from_pkey(_OSSL_LIB_CTX_PTR _arg0, _EVP_PKEY_PTR _arg1, const char* _arg2, uintptr_t *_err_state) {
 	_EVP_PKEY_CTX_PTR _ret = _g_EVP_PKEY_CTX_new_from_pkey(_arg0, _arg1, _arg2);
 	if (_ret == NULL) *_err_state = mkcgo_err_retrieve();
 	return _ret;
 }
 
-_EVP_PKEY_CTX_PTR _mkcgo_EVP_PKEY_CTX_new_id(int _arg0, _ENGINE_PTR _arg1, mkcgo_err_state *_err_state) {
+_EVP_PKEY_CTX_PTR _mkcgo_EVP_PKEY_CTX_new_id(int _arg0, _ENGINE_PTR _arg1, uintptr_t *_err_state) {
 	_EVP_PKEY_CTX_PTR _ret = _g_EVP_PKEY_CTX_new_id(_arg0, _arg1);
 	if (_ret == NULL) *_err_state = mkcgo_err_retrieve();
 	return _ret;
 }
 
-int _mkcgo_EVP_PKEY_CTX_set0_rsa_oaep_label(_EVP_PKEY_CTX_PTR _arg0, void* _arg1, int _arg2, mkcgo_err_state *_err_state) {
+int _mkcgo_EVP_PKEY_CTX_set0_rsa_oaep_label(_EVP_PKEY_CTX_PTR _arg0, void* _arg1, int _arg2, uintptr_t *_err_state) {
 	int _ret = _g_EVP_PKEY_CTX_set0_rsa_oaep_label(_arg0, _arg1, _arg2);
 	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
 	return _ret;
 }
 
-int _mkcgo_EVP_PKEY_CTX_set1_hkdf_key(_EVP_PKEY_CTX_PTR _arg0, const unsigned char* _arg1, int _arg2, mkcgo_err_state *_err_state) {
+int _mkcgo_EVP_PKEY_CTX_set1_hkdf_key(_EVP_PKEY_CTX_PTR _arg0, const unsigned char* _arg1, int _arg2, uintptr_t *_err_state) {
 	int _ret = _g_EVP_PKEY_CTX_set1_hkdf_key(_arg0, _arg1, _arg2);
 	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
 	return _ret;
 }
 
-int _mkcgo_EVP_PKEY_CTX_set1_hkdf_salt(_EVP_PKEY_CTX_PTR _arg0, const unsigned char* _arg1, int _arg2, mkcgo_err_state *_err_state) {
+int _mkcgo_EVP_PKEY_CTX_set1_hkdf_salt(_EVP_PKEY_CTX_PTR _arg0, const unsigned char* _arg1, int _arg2, uintptr_t *_err_state) {
 	int _ret = _g_EVP_PKEY_CTX_set1_hkdf_salt(_arg0, _arg1, _arg2);
 	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
 	return _ret;
 }
 
-int _mkcgo_EVP_PKEY_CTX_set_hkdf_md(_EVP_PKEY_CTX_PTR _arg0, const _EVP_MD_PTR _arg1, mkcgo_err_state *_err_state) {
+int _mkcgo_EVP_PKEY_CTX_set_hkdf_md(_EVP_PKEY_CTX_PTR _arg0, const _EVP_MD_PTR _arg1, uintptr_t *_err_state) {
 	int _ret = _g_EVP_PKEY_CTX_set_hkdf_md(_arg0, _arg1);
 	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
 	return _ret;
 }
 
-int _mkcgo_EVP_PKEY_CTX_set_hkdf_mode(_EVP_PKEY_CTX_PTR _arg0, int _arg1, mkcgo_err_state *_err_state) {
+int _mkcgo_EVP_PKEY_CTX_set_hkdf_mode(_EVP_PKEY_CTX_PTR _arg0, int _arg1, uintptr_t *_err_state) {
 	int _ret = _g_EVP_PKEY_CTX_set_hkdf_mode(_arg0, _arg1);
 	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
 	return _ret;
 }
 
-_EVP_PKEY_PTR _mkcgo_EVP_PKEY_Q_keygen_EC(_OSSL_LIB_CTX_PTR _arg0, const char* _arg1, const char* _arg2, const char* _arg3, mkcgo_err_state *_err_state) {
+_EVP_PKEY_PTR _mkcgo_EVP_PKEY_Q_keygen_EC(_OSSL_LIB_CTX_PTR _arg0, const char* _arg1, const char* _arg2, const char* _arg3, uintptr_t *_err_state) {
 	_EVP_PKEY_PTR _ret = _g_EVP_PKEY_Q_keygen(_arg0, _arg1, _arg2, _arg3);
 	if (_ret == NULL) *_err_state = mkcgo_err_retrieve();
 	return _ret;
 }
 
-_EVP_PKEY_PTR _mkcgo_EVP_PKEY_Q_keygen_ED25519(_OSSL_LIB_CTX_PTR _arg0, const char* _arg1, const char* _arg2, mkcgo_err_state *_err_state) {
+_EVP_PKEY_PTR _mkcgo_EVP_PKEY_Q_keygen_ED25519(_OSSL_LIB_CTX_PTR _arg0, const char* _arg1, const char* _arg2, uintptr_t *_err_state) {
 	_EVP_PKEY_PTR _ret = _g_EVP_PKEY_Q_keygen(_arg0, _arg1, _arg2);
 	if (_ret == NULL) *_err_state = mkcgo_err_retrieve();
 	return _ret;
 }
 
-_EVP_PKEY_PTR _mkcgo_EVP_PKEY_Q_keygen_RSA(_OSSL_LIB_CTX_PTR _arg0, const char* _arg1, const char* _arg2, size_t _arg3, mkcgo_err_state *_err_state) {
+_EVP_PKEY_PTR _mkcgo_EVP_PKEY_Q_keygen_RSA(_OSSL_LIB_CTX_PTR _arg0, const char* _arg1, const char* _arg2, size_t _arg3, uintptr_t *_err_state) {
 	_EVP_PKEY_PTR _ret = _g_EVP_PKEY_Q_keygen(_arg0, _arg1, _arg2, _arg3);
 	if (_ret == NULL) *_err_state = mkcgo_err_retrieve();
 	return _ret;
 }
 
-int _mkcgo_EVP_PKEY_assign(_EVP_PKEY_PTR _arg0, int _arg1, void* _arg2, mkcgo_err_state *_err_state) {
+int _mkcgo_EVP_PKEY_assign(_EVP_PKEY_PTR _arg0, int _arg1, void* _arg2, uintptr_t *_err_state) {
 	int _ret = _g_EVP_PKEY_assign(_arg0, _arg1, _arg2);
 	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
 	return _ret;
 }
 
-int _mkcgo_EVP_PKEY_decrypt(_EVP_PKEY_CTX_PTR _arg0, unsigned char* _arg1, size_t* _arg2, const unsigned char* _arg3, size_t _arg4, mkcgo_err_state *_err_state) {
+int _mkcgo_EVP_PKEY_decrypt(_EVP_PKEY_CTX_PTR _arg0, unsigned char* _arg1, size_t* _arg2, const unsigned char* _arg3, size_t _arg4, uintptr_t *_err_state) {
 	int _ret = _g_EVP_PKEY_decrypt(_arg0, _arg1, _arg2, _arg3, _arg4);
 	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
 	return _ret;
 }
 
-int _mkcgo_EVP_PKEY_decrypt_init(_EVP_PKEY_CTX_PTR _arg0, mkcgo_err_state *_err_state) {
+int _mkcgo_EVP_PKEY_decrypt_init(_EVP_PKEY_CTX_PTR _arg0, uintptr_t *_err_state) {
 	int _ret = _g_EVP_PKEY_decrypt_init(_arg0);
 	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
 	return _ret;
 }
 
-int _mkcgo_EVP_PKEY_derive(_EVP_PKEY_CTX_PTR _arg0, unsigned char* _arg1, size_t* _arg2, mkcgo_err_state *_err_state) {
+int _mkcgo_EVP_PKEY_derive(_EVP_PKEY_CTX_PTR _arg0, unsigned char* _arg1, size_t* _arg2, uintptr_t *_err_state) {
 	int _ret = _g_EVP_PKEY_derive(_arg0, _arg1, _arg2);
 	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
 	return _ret;
 }
 
-int _mkcgo_EVP_PKEY_derive_init(_EVP_PKEY_CTX_PTR _arg0, mkcgo_err_state *_err_state) {
+int _mkcgo_EVP_PKEY_derive_init(_EVP_PKEY_CTX_PTR _arg0, uintptr_t *_err_state) {
 	int _ret = _g_EVP_PKEY_derive_init(_arg0);
 	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
 	return _ret;
 }
 
-int _mkcgo_EVP_PKEY_derive_set_peer(_EVP_PKEY_CTX_PTR _arg0, _EVP_PKEY_PTR _arg1, mkcgo_err_state *_err_state) {
+int _mkcgo_EVP_PKEY_derive_set_peer(_EVP_PKEY_CTX_PTR _arg0, _EVP_PKEY_PTR _arg1, uintptr_t *_err_state) {
 	int _ret = _g_EVP_PKEY_derive_set_peer(_arg0, _arg1);
 	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
 	return _ret;
 }
 
-int _mkcgo_EVP_PKEY_encrypt(_EVP_PKEY_CTX_PTR _arg0, unsigned char* _arg1, size_t* _arg2, const unsigned char* _arg3, size_t _arg4, mkcgo_err_state *_err_state) {
+int _mkcgo_EVP_PKEY_encrypt(_EVP_PKEY_CTX_PTR _arg0, unsigned char* _arg1, size_t* _arg2, const unsigned char* _arg3, size_t _arg4, uintptr_t *_err_state) {
 	int _ret = _g_EVP_PKEY_encrypt(_arg0, _arg1, _arg2, _arg3, _arg4);
 	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
 	return _ret;
 }
 
-int _mkcgo_EVP_PKEY_encrypt_init(_EVP_PKEY_CTX_PTR _arg0, mkcgo_err_state *_err_state) {
+int _mkcgo_EVP_PKEY_encrypt_init(_EVP_PKEY_CTX_PTR _arg0, uintptr_t *_err_state) {
 	int _ret = _g_EVP_PKEY_encrypt_init(_arg0);
 	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
 	return _ret;
@@ -1470,169 +1426,169 @@ void _mkcgo_EVP_PKEY_free(_EVP_PKEY_PTR _arg0) {
 	_g_EVP_PKEY_free(_arg0);
 }
 
-int _mkcgo_EVP_PKEY_fromdata(_EVP_PKEY_CTX_PTR _arg0, _EVP_PKEY_PTR* _arg1, int _arg2, _OSSL_PARAM_PTR _arg3, mkcgo_err_state *_err_state) {
+int _mkcgo_EVP_PKEY_fromdata(_EVP_PKEY_CTX_PTR _arg0, _EVP_PKEY_PTR* _arg1, int _arg2, _OSSL_PARAM_PTR _arg3, uintptr_t *_err_state) {
 	int _ret = _g_EVP_PKEY_fromdata(_arg0, _arg1, _arg2, _arg3);
 	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
 	return _ret;
 }
 
-int _mkcgo_EVP_PKEY_fromdata_init(_EVP_PKEY_CTX_PTR _arg0, mkcgo_err_state *_err_state) {
+int _mkcgo_EVP_PKEY_fromdata_init(_EVP_PKEY_CTX_PTR _arg0, uintptr_t *_err_state) {
 	int _ret = _g_EVP_PKEY_fromdata_init(_arg0);
 	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
 	return _ret;
 }
 
-_DSA_PTR _mkcgo_EVP_PKEY_get0_DSA(_EVP_PKEY_PTR _arg0, mkcgo_err_state *_err_state) {
+_DSA_PTR _mkcgo_EVP_PKEY_get0_DSA(_EVP_PKEY_PTR _arg0, uintptr_t *_err_state) {
 	_DSA_PTR _ret = _g_EVP_PKEY_get0_DSA(_arg0);
 	if (_ret == NULL) *_err_state = mkcgo_err_retrieve();
 	return _ret;
 }
 
-_EC_KEY_PTR _mkcgo_EVP_PKEY_get0_EC_KEY(_EVP_PKEY_PTR _arg0, mkcgo_err_state *_err_state) {
+_EC_KEY_PTR _mkcgo_EVP_PKEY_get0_EC_KEY(_EVP_PKEY_PTR _arg0, uintptr_t *_err_state) {
 	_EC_KEY_PTR _ret = _g_EVP_PKEY_get0_EC_KEY(_arg0);
 	if (_ret == NULL) *_err_state = mkcgo_err_retrieve();
 	return _ret;
 }
 
-_RSA_PTR _mkcgo_EVP_PKEY_get1_RSA(_EVP_PKEY_PTR _arg0, mkcgo_err_state *_err_state) {
+_RSA_PTR _mkcgo_EVP_PKEY_get1_RSA(_EVP_PKEY_PTR _arg0, uintptr_t *_err_state) {
 	_RSA_PTR _ret = _g_EVP_PKEY_get1_RSA(_arg0);
 	if (_ret == NULL) *_err_state = mkcgo_err_retrieve();
 	return _ret;
 }
 
-size_t _mkcgo_EVP_PKEY_get1_encoded_public_key(_EVP_PKEY_PTR _arg0, unsigned char** _arg1, mkcgo_err_state *_err_state) {
+size_t _mkcgo_EVP_PKEY_get1_encoded_public_key(_EVP_PKEY_PTR _arg0, unsigned char** _arg1, uintptr_t *_err_state) {
 	size_t _ret = _g_EVP_PKEY_get1_encoded_public_key(_arg0, _arg1);
 	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
 	return _ret;
 }
 
-int _mkcgo_EVP_PKEY_get_bits(const _EVP_PKEY_PTR _arg0, mkcgo_err_state *_err_state) {
+int _mkcgo_EVP_PKEY_get_bits(const _EVP_PKEY_PTR _arg0, uintptr_t *_err_state) {
 	int _ret = _g_EVP_PKEY_get_bits(_arg0);
 	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
 	return _ret;
 }
 
-int _mkcgo_EVP_PKEY_get_bn_param(const _EVP_PKEY_PTR _arg0, const char* _arg1, _BIGNUM_PTR* _arg2, mkcgo_err_state *_err_state) {
+int _mkcgo_EVP_PKEY_get_bn_param(const _EVP_PKEY_PTR _arg0, const char* _arg1, _BIGNUM_PTR* _arg2, uintptr_t *_err_state) {
 	int _ret = _g_EVP_PKEY_get_bn_param(_arg0, _arg1, _arg2);
 	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
 	return _ret;
 }
 
-int _mkcgo_EVP_PKEY_get_raw_private_key(const _EVP_PKEY_PTR _arg0, unsigned char* _arg1, size_t* _arg2, mkcgo_err_state *_err_state) {
+int _mkcgo_EVP_PKEY_get_raw_private_key(const _EVP_PKEY_PTR _arg0, unsigned char* _arg1, size_t* _arg2, uintptr_t *_err_state) {
 	int _ret = _g_EVP_PKEY_get_raw_private_key(_arg0, _arg1, _arg2);
 	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
 	return _ret;
 }
 
-int _mkcgo_EVP_PKEY_get_raw_public_key(const _EVP_PKEY_PTR _arg0, unsigned char* _arg1, size_t* _arg2, mkcgo_err_state *_err_state) {
+int _mkcgo_EVP_PKEY_get_raw_public_key(const _EVP_PKEY_PTR _arg0, unsigned char* _arg1, size_t* _arg2, uintptr_t *_err_state) {
 	int _ret = _g_EVP_PKEY_get_raw_public_key(_arg0, _arg1, _arg2);
 	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
 	return _ret;
 }
 
-int _mkcgo_EVP_PKEY_get_size(const _EVP_PKEY_PTR _arg0, mkcgo_err_state *_err_state) {
+int _mkcgo_EVP_PKEY_get_size(const _EVP_PKEY_PTR _arg0, uintptr_t *_err_state) {
 	int _ret = _g_EVP_PKEY_get_size(_arg0);
 	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
 	return _ret;
 }
 
-int _mkcgo_EVP_PKEY_keygen(_EVP_PKEY_CTX_PTR _arg0, _EVP_PKEY_PTR* _arg1, mkcgo_err_state *_err_state) {
+int _mkcgo_EVP_PKEY_keygen(_EVP_PKEY_CTX_PTR _arg0, _EVP_PKEY_PTR* _arg1, uintptr_t *_err_state) {
 	int _ret = _g_EVP_PKEY_keygen(_arg0, _arg1);
 	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
 	return _ret;
 }
 
-int _mkcgo_EVP_PKEY_keygen_init(_EVP_PKEY_CTX_PTR _arg0, mkcgo_err_state *_err_state) {
+int _mkcgo_EVP_PKEY_keygen_init(_EVP_PKEY_CTX_PTR _arg0, uintptr_t *_err_state) {
 	int _ret = _g_EVP_PKEY_keygen_init(_arg0);
 	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
 	return _ret;
 }
 
-_EVP_PKEY_PTR _mkcgo_EVP_PKEY_new(mkcgo_err_state *_err_state) {
+_EVP_PKEY_PTR _mkcgo_EVP_PKEY_new(uintptr_t *_err_state) {
 	_EVP_PKEY_PTR _ret = _g_EVP_PKEY_new();
 	if (_ret == NULL) *_err_state = mkcgo_err_retrieve();
 	return _ret;
 }
 
-_EVP_PKEY_PTR _mkcgo_EVP_PKEY_new_raw_private_key(int _arg0, _ENGINE_PTR _arg1, const unsigned char* _arg2, size_t _arg3, mkcgo_err_state *_err_state) {
+_EVP_PKEY_PTR _mkcgo_EVP_PKEY_new_raw_private_key(int _arg0, _ENGINE_PTR _arg1, const unsigned char* _arg2, size_t _arg3, uintptr_t *_err_state) {
 	_EVP_PKEY_PTR _ret = _g_EVP_PKEY_new_raw_private_key(_arg0, _arg1, _arg2, _arg3);
 	if (_ret == NULL) *_err_state = mkcgo_err_retrieve();
 	return _ret;
 }
 
-_EVP_PKEY_PTR _mkcgo_EVP_PKEY_new_raw_public_key(int _arg0, _ENGINE_PTR _arg1, const unsigned char* _arg2, size_t _arg3, mkcgo_err_state *_err_state) {
+_EVP_PKEY_PTR _mkcgo_EVP_PKEY_new_raw_public_key(int _arg0, _ENGINE_PTR _arg1, const unsigned char* _arg2, size_t _arg3, uintptr_t *_err_state) {
 	_EVP_PKEY_PTR _ret = _g_EVP_PKEY_new_raw_public_key(_arg0, _arg1, _arg2, _arg3);
 	if (_ret == NULL) *_err_state = mkcgo_err_retrieve();
 	return _ret;
 }
 
-int _mkcgo_EVP_PKEY_paramgen(_EVP_PKEY_CTX_PTR _arg0, _EVP_PKEY_PTR* _arg1, mkcgo_err_state *_err_state) {
+int _mkcgo_EVP_PKEY_paramgen(_EVP_PKEY_CTX_PTR _arg0, _EVP_PKEY_PTR* _arg1, uintptr_t *_err_state) {
 	int _ret = _g_EVP_PKEY_paramgen(_arg0, _arg1);
 	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
 	return _ret;
 }
 
-int _mkcgo_EVP_PKEY_paramgen_init(_EVP_PKEY_CTX_PTR _arg0, mkcgo_err_state *_err_state) {
+int _mkcgo_EVP_PKEY_paramgen_init(_EVP_PKEY_CTX_PTR _arg0, uintptr_t *_err_state) {
 	int _ret = _g_EVP_PKEY_paramgen_init(_arg0);
 	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
 	return _ret;
 }
 
-int _mkcgo_EVP_PKEY_private_check(_EVP_PKEY_CTX_PTR _arg0, mkcgo_err_state *_err_state) {
+int _mkcgo_EVP_PKEY_private_check(_EVP_PKEY_CTX_PTR _arg0, uintptr_t *_err_state) {
 	int _ret = _g_EVP_PKEY_private_check(_arg0);
 	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
 	return _ret;
 }
 
-int _mkcgo_EVP_PKEY_public_check_quick(_EVP_PKEY_CTX_PTR _arg0, mkcgo_err_state *_err_state) {
+int _mkcgo_EVP_PKEY_public_check_quick(_EVP_PKEY_CTX_PTR _arg0, uintptr_t *_err_state) {
 	int _ret = _g_EVP_PKEY_public_check_quick(_arg0);
 	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
 	return _ret;
 }
 
-int _mkcgo_EVP_PKEY_set1_EC_KEY(_EVP_PKEY_PTR _arg0, _EC_KEY_PTR _arg1, mkcgo_err_state *_err_state) {
+int _mkcgo_EVP_PKEY_set1_EC_KEY(_EVP_PKEY_PTR _arg0, _EC_KEY_PTR _arg1, uintptr_t *_err_state) {
 	int _ret = _g_EVP_PKEY_set1_EC_KEY(_arg0, _arg1);
 	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
 	return _ret;
 }
 
-int _mkcgo_EVP_PKEY_set1_encoded_public_key(_EVP_PKEY_PTR _arg0, const unsigned char* _arg1, size_t _arg2, mkcgo_err_state *_err_state) {
+int _mkcgo_EVP_PKEY_set1_encoded_public_key(_EVP_PKEY_PTR _arg0, const unsigned char* _arg1, size_t _arg2, uintptr_t *_err_state) {
 	int _ret = _g_EVP_PKEY_set1_encoded_public_key(_arg0, _arg1, _arg2);
 	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
 	return _ret;
 }
 
-int _mkcgo_EVP_PKEY_sign(_EVP_PKEY_CTX_PTR _arg0, unsigned char* _arg1, size_t* _arg2, const unsigned char* _arg3, size_t _arg4, mkcgo_err_state *_err_state) {
+int _mkcgo_EVP_PKEY_sign(_EVP_PKEY_CTX_PTR _arg0, unsigned char* _arg1, size_t* _arg2, const unsigned char* _arg3, size_t _arg4, uintptr_t *_err_state) {
 	int _ret = _g_EVP_PKEY_sign(_arg0, _arg1, _arg2, _arg3, _arg4);
 	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
 	return _ret;
 }
 
-int _mkcgo_EVP_PKEY_sign_init(_EVP_PKEY_CTX_PTR _arg0, mkcgo_err_state *_err_state) {
+int _mkcgo_EVP_PKEY_sign_init(_EVP_PKEY_CTX_PTR _arg0, uintptr_t *_err_state) {
 	int _ret = _g_EVP_PKEY_sign_init(_arg0);
 	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
 	return _ret;
 }
 
-int _mkcgo_EVP_PKEY_up_ref(_EVP_PKEY_PTR _arg0, mkcgo_err_state *_err_state) {
+int _mkcgo_EVP_PKEY_up_ref(_EVP_PKEY_PTR _arg0, uintptr_t *_err_state) {
 	int _ret = _g_EVP_PKEY_up_ref(_arg0);
 	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
 	return _ret;
 }
 
-int _mkcgo_EVP_PKEY_verify(_EVP_PKEY_CTX_PTR _arg0, const unsigned char* _arg1, size_t _arg2, const unsigned char* _arg3, size_t _arg4, mkcgo_err_state *_err_state) {
+int _mkcgo_EVP_PKEY_verify(_EVP_PKEY_CTX_PTR _arg0, const unsigned char* _arg1, size_t _arg2, const unsigned char* _arg3, size_t _arg4, uintptr_t *_err_state) {
 	int _ret = _g_EVP_PKEY_verify(_arg0, _arg1, _arg2, _arg3, _arg4);
 	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
 	return _ret;
 }
 
-int _mkcgo_EVP_PKEY_verify_init(_EVP_PKEY_CTX_PTR _arg0, mkcgo_err_state *_err_state) {
+int _mkcgo_EVP_PKEY_verify_init(_EVP_PKEY_CTX_PTR _arg0, uintptr_t *_err_state) {
 	int _ret = _g_EVP_PKEY_verify_init(_arg0);
 	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
 	return _ret;
 }
 
-_EVP_SIGNATURE_PTR _mkcgo_EVP_SIGNATURE_fetch(_OSSL_LIB_CTX_PTR _arg0, const char* _arg1, const char* _arg2, mkcgo_err_state *_err_state) {
+_EVP_SIGNATURE_PTR _mkcgo_EVP_SIGNATURE_fetch(_OSSL_LIB_CTX_PTR _arg0, const char* _arg1, const char* _arg2, uintptr_t *_err_state) {
 	_EVP_SIGNATURE_PTR _ret = _g_EVP_SIGNATURE_fetch(_arg0, _arg1, _arg2);
 	if (_ret == NULL) *_err_state = mkcgo_err_retrieve();
 	return _ret;
@@ -1690,7 +1646,7 @@ const _EVP_CIPHER_PTR _mkcgo_EVP_aes_256_gcm(void) {
 	return _g_EVP_aes_256_gcm();
 }
 
-int _mkcgo_EVP_default_properties_enable_fips(_OSSL_LIB_CTX_PTR _arg0, int _arg1, mkcgo_err_state *_err_state) {
+int _mkcgo_EVP_default_properties_enable_fips(_OSSL_LIB_CTX_PTR _arg0, int _arg1, uintptr_t *_err_state) {
 	int _ret = _g_EVP_default_properties_enable_fips(_arg0, _arg1);
 	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
 	return _ret;
@@ -1784,13 +1740,13 @@ int _mkcgo_FIPS_mode(void) {
 	return _g_FIPS_mode();
 }
 
-int _mkcgo_FIPS_mode_set(int _arg0, mkcgo_err_state *_err_state) {
+int _mkcgo_FIPS_mode_set(int _arg0, uintptr_t *_err_state) {
 	int _ret = _g_FIPS_mode_set(_arg0);
 	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
 	return _ret;
 }
 
-int _mkcgo_HMAC_CTX_copy(_HMAC_CTX_PTR _arg0, _HMAC_CTX_PTR _arg1, mkcgo_err_state *_err_state) {
+int _mkcgo_HMAC_CTX_copy(_HMAC_CTX_PTR _arg0, _HMAC_CTX_PTR _arg1, uintptr_t *_err_state) {
 	int _ret = _g_HMAC_CTX_copy(_arg0, _arg1);
 	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
 	return _ret;
@@ -1800,25 +1756,25 @@ void _mkcgo_HMAC_CTX_free(_HMAC_CTX_PTR _arg0) {
 	_g_HMAC_CTX_free(_arg0);
 }
 
-_HMAC_CTX_PTR _mkcgo_HMAC_CTX_new(mkcgo_err_state *_err_state) {
+_HMAC_CTX_PTR _mkcgo_HMAC_CTX_new(uintptr_t *_err_state) {
 	_HMAC_CTX_PTR _ret = _g_HMAC_CTX_new();
 	if (_ret == NULL) *_err_state = mkcgo_err_retrieve();
 	return _ret;
 }
 
-int _mkcgo_HMAC_Final(_HMAC_CTX_PTR _arg0, unsigned char* _arg1, unsigned int* _arg2, mkcgo_err_state *_err_state) {
+int _mkcgo_HMAC_Final(_HMAC_CTX_PTR _arg0, unsigned char* _arg1, unsigned int* _arg2, uintptr_t *_err_state) {
 	int _ret = _g_HMAC_Final(_arg0, _arg1, _arg2);
 	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
 	return _ret;
 }
 
-int _mkcgo_HMAC_Init_ex(_HMAC_CTX_PTR _arg0, const void* _arg1, int _arg2, const _EVP_MD_PTR _arg3, _ENGINE_PTR _arg4, mkcgo_err_state *_err_state) {
+int _mkcgo_HMAC_Init_ex(_HMAC_CTX_PTR _arg0, const void* _arg1, int _arg2, const _EVP_MD_PTR _arg3, _ENGINE_PTR _arg4, uintptr_t *_err_state) {
 	int _ret = _g_HMAC_Init_ex(_arg0, _arg1, _arg2, _arg3, _arg4);
 	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
 	return _ret;
 }
 
-int _mkcgo_HMAC_Update(_HMAC_CTX_PTR _arg0, const unsigned char* _arg1, size_t _arg2, mkcgo_err_state *_err_state) {
+int _mkcgo_HMAC_Update(_HMAC_CTX_PTR _arg0, const unsigned char* _arg1, size_t _arg2, uintptr_t *_err_state) {
 	int _ret = _g_HMAC_Update(_arg0, _arg1, _arg2);
 	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
 	return _ret;
@@ -1832,7 +1788,7 @@ void _mkcgo_OPENSSL_init(void) {
 	_g_OPENSSL_init();
 }
 
-int _mkcgo_OPENSSL_init_crypto(uint64_t _arg0, const _OPENSSL_INIT_SETTINGS_PTR _arg1, mkcgo_err_state *_err_state) {
+int _mkcgo_OPENSSL_init_crypto(uint64_t _arg0, const _OPENSSL_INIT_SETTINGS_PTR _arg1, uintptr_t *_err_state) {
 	int _ret = _g_OPENSSL_init_crypto(_arg0, _arg1);
 	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
 	return _ret;
@@ -1866,37 +1822,37 @@ void _mkcgo_OSSL_PARAM_BLD_free(_OSSL_PARAM_BLD_PTR _arg0) {
 	_g_OSSL_PARAM_BLD_free(_arg0);
 }
 
-_OSSL_PARAM_BLD_PTR _mkcgo_OSSL_PARAM_BLD_new(mkcgo_err_state *_err_state) {
+_OSSL_PARAM_BLD_PTR _mkcgo_OSSL_PARAM_BLD_new(uintptr_t *_err_state) {
 	_OSSL_PARAM_BLD_PTR _ret = _g_OSSL_PARAM_BLD_new();
 	if (_ret == NULL) *_err_state = mkcgo_err_retrieve();
 	return _ret;
 }
 
-int _mkcgo_OSSL_PARAM_BLD_push_BN(_OSSL_PARAM_BLD_PTR _arg0, const char* _arg1, const _BIGNUM_PTR _arg2, mkcgo_err_state *_err_state) {
+int _mkcgo_OSSL_PARAM_BLD_push_BN(_OSSL_PARAM_BLD_PTR _arg0, const char* _arg1, const _BIGNUM_PTR _arg2, uintptr_t *_err_state) {
 	int _ret = _g_OSSL_PARAM_BLD_push_BN(_arg0, _arg1, _arg2);
 	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
 	return _ret;
 }
 
-int _mkcgo_OSSL_PARAM_BLD_push_int32(_OSSL_PARAM_BLD_PTR _arg0, const char* _arg1, int32_t _arg2, mkcgo_err_state *_err_state) {
+int _mkcgo_OSSL_PARAM_BLD_push_int32(_OSSL_PARAM_BLD_PTR _arg0, const char* _arg1, int32_t _arg2, uintptr_t *_err_state) {
 	int _ret = _g_OSSL_PARAM_BLD_push_int32(_arg0, _arg1, _arg2);
 	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
 	return _ret;
 }
 
-int _mkcgo_OSSL_PARAM_BLD_push_octet_string(_OSSL_PARAM_BLD_PTR _arg0, const char* _arg1, const void* _arg2, size_t _arg3, mkcgo_err_state *_err_state) {
+int _mkcgo_OSSL_PARAM_BLD_push_octet_string(_OSSL_PARAM_BLD_PTR _arg0, const char* _arg1, const void* _arg2, size_t _arg3, uintptr_t *_err_state) {
 	int _ret = _g_OSSL_PARAM_BLD_push_octet_string(_arg0, _arg1, _arg2, _arg3);
 	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
 	return _ret;
 }
 
-int _mkcgo_OSSL_PARAM_BLD_push_utf8_string(_OSSL_PARAM_BLD_PTR _arg0, const char* _arg1, const char* _arg2, size_t _arg3, mkcgo_err_state *_err_state) {
+int _mkcgo_OSSL_PARAM_BLD_push_utf8_string(_OSSL_PARAM_BLD_PTR _arg0, const char* _arg1, const char* _arg2, size_t _arg3, uintptr_t *_err_state) {
 	int _ret = _g_OSSL_PARAM_BLD_push_utf8_string(_arg0, _arg1, _arg2, _arg3);
 	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
 	return _ret;
 }
 
-_OSSL_PARAM_PTR _mkcgo_OSSL_PARAM_BLD_to_param(_OSSL_PARAM_BLD_PTR _arg0, mkcgo_err_state *_err_state) {
+_OSSL_PARAM_PTR _mkcgo_OSSL_PARAM_BLD_to_param(_OSSL_PARAM_BLD_PTR _arg0, uintptr_t *_err_state) {
 	_OSSL_PARAM_PTR _ret = _g_OSSL_PARAM_BLD_to_param(_arg0);
 	if (_ret == NULL) *_err_state = mkcgo_err_retrieve();
 	return _ret;
@@ -1906,7 +1862,7 @@ void _mkcgo_OSSL_PARAM_free(_OSSL_PARAM_PTR _arg0) {
 	_g_OSSL_PARAM_free(_arg0);
 }
 
-const _OSSL_PARAM_PTR _mkcgo_OSSL_PARAM_locate_const(const _OSSL_PARAM_PTR _arg0, const char* _arg1, mkcgo_err_state *_err_state) {
+const _OSSL_PARAM_PTR _mkcgo_OSSL_PARAM_locate_const(const _OSSL_PARAM_PTR _arg0, const char* _arg1, uintptr_t *_err_state) {
 	const _OSSL_PARAM_PTR _ret = _g_OSSL_PARAM_locate_const(_arg0, _arg1);
 	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
 	return _ret;
@@ -1920,7 +1876,7 @@ const char* _mkcgo_OSSL_PROVIDER_get0_name(const _OSSL_PROVIDER_PTR _arg0) {
 	return _g_OSSL_PROVIDER_get0_name(_arg0);
 }
 
-_OSSL_PROVIDER_PTR _mkcgo_OSSL_PROVIDER_try_load(_OSSL_LIB_CTX_PTR _arg0, const char* _arg1, int _arg2, mkcgo_err_state *_err_state) {
+_OSSL_PROVIDER_PTR _mkcgo_OSSL_PROVIDER_try_load(_OSSL_LIB_CTX_PTR _arg0, const char* _arg1, int _arg2, uintptr_t *_err_state) {
 	_OSSL_PROVIDER_PTR _ret = _g_OSSL_PROVIDER_try_load(_arg0, _arg1, _arg2);
 	if (_ret == NULL) *_err_state = mkcgo_err_retrieve();
 	return _ret;
@@ -1938,13 +1894,13 @@ unsigned long _mkcgo_OpenSSL_version_num(void) {
 	return _g_OpenSSL_version_num();
 }
 
-int _mkcgo_PKCS5_PBKDF2_HMAC(const char* _arg0, int _arg1, const unsigned char* _arg2, int _arg3, int _arg4, const _EVP_MD_PTR _arg5, int _arg6, unsigned char* _arg7, mkcgo_err_state *_err_state) {
+int _mkcgo_PKCS5_PBKDF2_HMAC(const char* _arg0, int _arg1, const unsigned char* _arg2, int _arg3, int _arg4, const _EVP_MD_PTR _arg5, int _arg6, unsigned char* _arg7, uintptr_t *_err_state) {
 	int _ret = _g_PKCS5_PBKDF2_HMAC(_arg0, _arg1, _arg2, _arg3, _arg4, _arg5, _arg6, _arg7);
 	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
 	return _ret;
 }
 
-int _mkcgo_RAND_bytes(unsigned char* _arg0, int _arg1, mkcgo_err_state *_err_state) {
+int _mkcgo_RAND_bytes(unsigned char* _arg0, int _arg1, uintptr_t *_err_state) {
 	int _ret = _g_RAND_bytes(_arg0, _arg1);
 	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
 	return _ret;
@@ -1966,25 +1922,25 @@ void _mkcgo_RSA_get0_key(const _RSA_PTR _arg0, const _BIGNUM_PTR* _arg1, const _
 	_g_RSA_get0_key(_arg0, _arg1, _arg2, _arg3);
 }
 
-_RSA_PTR _mkcgo_RSA_new(mkcgo_err_state *_err_state) {
+_RSA_PTR _mkcgo_RSA_new(uintptr_t *_err_state) {
 	_RSA_PTR _ret = _g_RSA_new();
 	if (_ret == NULL) *_err_state = mkcgo_err_retrieve();
 	return _ret;
 }
 
-int _mkcgo_RSA_set0_crt_params(_RSA_PTR _arg0, _BIGNUM_PTR _arg1, _BIGNUM_PTR _arg2, _BIGNUM_PTR _arg3, mkcgo_err_state *_err_state) {
+int _mkcgo_RSA_set0_crt_params(_RSA_PTR _arg0, _BIGNUM_PTR _arg1, _BIGNUM_PTR _arg2, _BIGNUM_PTR _arg3, uintptr_t *_err_state) {
 	int _ret = _g_RSA_set0_crt_params(_arg0, _arg1, _arg2, _arg3);
 	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
 	return _ret;
 }
 
-int _mkcgo_RSA_set0_factors(_RSA_PTR _arg0, _BIGNUM_PTR _arg1, _BIGNUM_PTR _arg2, mkcgo_err_state *_err_state) {
+int _mkcgo_RSA_set0_factors(_RSA_PTR _arg0, _BIGNUM_PTR _arg1, _BIGNUM_PTR _arg2, uintptr_t *_err_state) {
 	int _ret = _g_RSA_set0_factors(_arg0, _arg1, _arg2);
 	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
 	return _ret;
 }
 
-int _mkcgo_RSA_set0_key(_RSA_PTR _arg0, _BIGNUM_PTR _arg1, _BIGNUM_PTR _arg2, _BIGNUM_PTR _arg3, mkcgo_err_state *_err_state) {
+int _mkcgo_RSA_set0_key(_RSA_PTR _arg0, _BIGNUM_PTR _arg1, _BIGNUM_PTR _arg2, _BIGNUM_PTR _arg3, uintptr_t *_err_state) {
 	int _ret = _g_RSA_set0_key(_arg0, _arg1, _arg2, _arg3);
 	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
 	return _ret;

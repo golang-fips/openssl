@@ -54,4 +54,5 @@ const (
 	EVP_PKEY_CTRL_DSA_PARAMGEN_Q_BITS   = 0x1002
 	OSSL_PARAM_INTEGER                  = 1
 	OSSL_PARAM_OCTET_STRING             = 5
+	BIO_CTRL_INFO                       = 3
 )

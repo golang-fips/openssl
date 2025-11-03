@@ -192,7 +192,6 @@ func SetFIPS(enable bool) error {
 			// Try to load the built-in provider associated with the given mode.
 			if p, _ := ossl.OSSL_PROVIDER_try_load(nil, provName.ptr(), 1); p == nil {
 				// The built-in provider was not loaded successfully, we can't enable FIPS mode.
-				ossl.ERR_clear_error()
 				return errors.New("openssl: FIPS mode not supported by any provider")
 			}
 		}
@@ -208,7 +207,6 @@ func SetFIPS(enable bool) error {
 func sha256Provider(props cString) ossl.OSSL_PROVIDER_PTR {
 	md, _ := ossl.EVP_MD_fetch(nil, _DigestNameSHA2_256.ptr(), props.ptr())
 	if md == nil {
-		ossl.ERR_clear_error()
 		return nil
 	}
 	defer ossl.EVP_MD_free(md)

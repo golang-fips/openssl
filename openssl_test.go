@@ -10,6 +10,7 @@ import (
 	"sync"
 	"testing"
 	"time"
+	"unsafe"
 
 	"github.com/golang-fips/openssl/v2"
 	"github.com/golang-fips/openssl/v2/internal/ossl"
@@ -117,14 +118,10 @@ func errorStack() string {
 	}
 	defer ossl.BIO_free(bio)
 	ossl.ERR_print_errors(bio)
-	n, err := ossl.BIO_ctrl_pending(bio)
-	if err != nil {
-		panic(err)
-	}
+	var data *byte
+	n := ossl.BIO_ctrl(bio, ossl.BIO_CTRL_INFO, 0, unsafe.Pointer(&data))
 	buf := make([]byte, n)
-	if _, err = ossl.BIO_read(bio, buf); err != nil {
-		panic(err)
-	}
+	copy(buf, unsafe.Slice(data, n))
 	return string(buf)
 }
 
