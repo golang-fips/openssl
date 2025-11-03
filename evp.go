@@ -239,6 +239,10 @@ func generateEVPPKey(id, bits int32, curve string) (ossl.EVP_PKEY_PTR, error) {
 			pkey, err = ossl.EVP_PKEY_Q_keygen_EC(nil, nil, _KeyTypeEC.ptr(), ossl.OBJ_nid2sn(curveNID(curve)))
 		case ossl.EVP_PKEY_ED25519:
 			pkey, err = ossl.EVP_PKEY_Q_keygen_ED25519(nil, nil, _KeyTypeED25519.ptr())
+		case ossl.EVP_PKEY_MLKEM_768:
+			pkey, err = ossl.EVP_PKEY_Q_keygen_MLKEM(nil, nil, _KeyTypeMLKEM768.ptr())
+		case ossl.EVP_PKEY_MLKEM_1024:
+			pkey, err = ossl.EVP_PKEY_Q_keygen_MLKEM(nil, nil, _KeyTypeMLKEM1024.ptr())
 		default:
 			panic("unsupported key type '" + strconv.Itoa(int(id)) + "'")
 		}

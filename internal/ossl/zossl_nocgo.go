@@ -1075,6 +1075,14 @@ func EVP_PKEY_get_bn_param(pkey EVP_PKEY_PTR, key_name *byte, bn *BIGNUM_PTR) (i
 	return int32(r0), newMkcgoErr("EVP_PKEY_get_bn_param", &_err)
 }
 
+var _mkcgo_EVP_PKEY_get_octet_string_param uintptr
+
+func EVP_PKEY_get_octet_string_param(pkey EVP_PKEY_PTR, key_name *byte, buf *byte, buf_len int, out_len *int) (int32, error) {
+	var _err errState
+	r0, _ := syscallN(3, _mkcgo_EVP_PKEY_get_octet_string_param, uintptr(pkey), uintptr(unsafe.Pointer(key_name)), uintptr(unsafe.Pointer(buf)), uintptr(buf_len), uintptr(unsafe.Pointer(out_len)), uintptr(unsafe.Pointer(&_err)))
+	return int32(r0), newMkcgoErr("EVP_PKEY_get_octet_string_param", &_err)
+}
+
 var _mkcgo_EVP_PKEY_get_raw_private_key uintptr
 
 func EVP_PKEY_get_raw_private_key(pkey EVP_PKEY_PTR, priv *byte, len *int) (int32, error) {
@@ -2083,6 +2091,7 @@ func MkcgoLoad_3(handle unsafe.Pointer) {
 	_mkcgo_EVP_PKEY_get1_encoded_public_key = dlsym(handle, "EVP_PKEY_get1_encoded_public_key\x00", false)
 	_mkcgo_EVP_PKEY_get_bits = dlsym(handle, "EVP_PKEY_get_bits\x00", false)
 	_mkcgo_EVP_PKEY_get_bn_param = dlsym(handle, "EVP_PKEY_get_bn_param\x00", false)
+	_mkcgo_EVP_PKEY_get_octet_string_param = dlsym(handle, "EVP_PKEY_get_octet_string_param\x00", false)
 	_mkcgo_EVP_PKEY_get_size = dlsym(handle, "EVP_PKEY_get_size\x00", false)
 	_mkcgo_EVP_PKEY_private_check = dlsym(handle, "EVP_PKEY_private_check\x00", false)
 	_mkcgo_EVP_PKEY_public_check_quick = dlsym(handle, "EVP_PKEY_public_check_quick\x00", false)
@@ -2157,6 +2166,7 @@ func MkcgoUnload_3() {
 	_mkcgo_EVP_PKEY_get1_encoded_public_key = 0
 	_mkcgo_EVP_PKEY_get_bits = 0
 	_mkcgo_EVP_PKEY_get_bn_param = 0
+	_mkcgo_EVP_PKEY_get_octet_string_param = 0
 	_mkcgo_EVP_PKEY_get_size = 0
 	_mkcgo_EVP_PKEY_private_check = 0
 	_mkcgo_EVP_PKEY_public_check_quick = 0

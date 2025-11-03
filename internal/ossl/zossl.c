@@ -146,6 +146,7 @@ _RSA_PTR (*_g_EVP_PKEY_get1_RSA)(_EVP_PKEY_PTR);
 size_t (*_g_EVP_PKEY_get1_encoded_public_key)(_EVP_PKEY_PTR, unsigned char**);
 int (*_g_EVP_PKEY_get_bits)(const _EVP_PKEY_PTR);
 int (*_g_EVP_PKEY_get_bn_param)(const _EVP_PKEY_PTR, const char*, _BIGNUM_PTR*);
+int (*_g_EVP_PKEY_get_octet_string_param)(const _EVP_PKEY_PTR, const char*, unsigned char*, size_t, size_t*);
 int (*_g_EVP_PKEY_get_raw_private_key)(const _EVP_PKEY_PTR, unsigned char*, size_t*);
 int (*_g_EVP_PKEY_get_raw_public_key)(const _EVP_PKEY_PTR, unsigned char*, size_t*);
 int (*_g_EVP_PKEY_get_size)(const _EVP_PKEY_PTR);
@@ -538,6 +539,7 @@ void __mkcgo_load_3(void* handle) {
 	__mkcgo__dlsym(EVP_PKEY_get1_encoded_public_key)
 	__mkcgo__dlsym(EVP_PKEY_get_bits)
 	__mkcgo__dlsym(EVP_PKEY_get_bn_param)
+	__mkcgo__dlsym(EVP_PKEY_get_octet_string_param)
 	__mkcgo__dlsym(EVP_PKEY_get_size)
 	__mkcgo__dlsym(EVP_PKEY_private_check)
 	__mkcgo__dlsym(EVP_PKEY_public_check_quick)
@@ -612,6 +614,7 @@ void __mkcgo_unload_3() {
 	_g_EVP_PKEY_get1_encoded_public_key = NULL;
 	_g_EVP_PKEY_get_bits = NULL;
 	_g_EVP_PKEY_get_bn_param = NULL;
+	_g_EVP_PKEY_get_octet_string_param = NULL;
 	_g_EVP_PKEY_get_size = NULL;
 	_g_EVP_PKEY_private_check = NULL;
 	_g_EVP_PKEY_public_check_quick = NULL;
@@ -1511,6 +1514,12 @@ int _mkcgo_EVP_PKEY_get_bits(const _EVP_PKEY_PTR _arg0, mkcgo_err_state *_err_st
 
 int _mkcgo_EVP_PKEY_get_bn_param(const _EVP_PKEY_PTR _arg0, const char* _arg1, _BIGNUM_PTR* _arg2, mkcgo_err_state *_err_state) {
 	int _ret = _g_EVP_PKEY_get_bn_param(_arg0, _arg1, _arg2);
+	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
+	return _ret;
+}
+
+int _mkcgo_EVP_PKEY_get_octet_string_param(const _EVP_PKEY_PTR _arg0, const char* _arg1, unsigned char* _arg2, size_t _arg3, size_t* _arg4, mkcgo_err_state *_err_state) {
+	int _ret = _g_EVP_PKEY_get_octet_string_param(_arg0, _arg1, _arg2, _arg3, _arg4);
 	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
 	return _ret;
 }

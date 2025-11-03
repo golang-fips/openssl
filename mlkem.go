@@ -72,8 +72,7 @@ type DecapsulationKeyMLKEM768 [seedSizeMLKEM]byte
 // the default crypto/rand source. The decapsulation key must be kept secret.
 func GenerateKeyMLKEM768() (DecapsulationKeyMLKEM768, error) {
 	var dk DecapsulationKeyMLKEM768
-	_, err := RandReader.Read(dk[:])
-	if err != nil {
+	if err := generateMLKEMSeed(ossl.EVP_PKEY_MLKEM_768, dk[:]); err != nil {
 		return DecapsulationKeyMLKEM768{}, err
 	}
 	return dk, nil
@@ -218,8 +217,7 @@ type DecapsulationKeyMLKEM1024 [seedSizeMLKEM]byte
 // the default crypto/rand source. The decapsulation key must be kept secret.
 func GenerateKeyMLKEM1024() (DecapsulationKeyMLKEM1024, error) {
 	var dk DecapsulationKeyMLKEM1024
-	_, err := RandReader.Read(dk[:])
-	if err != nil {
+	if err := generateMLKEMSeed(ossl.EVP_PKEY_MLKEM_1024, dk[:]); err != nil {
 		return DecapsulationKeyMLKEM1024{}, err
 	}
 	return dk, nil
@@ -291,6 +289,18 @@ func (ek EncapsulationKeyMLKEM1024) Encapsulate() (sharedKey, ciphertext []byte)
 }
 
 // Helper functions
+
+// generateMLKEMSeed generates a new ML-KEM seed by creating a key and extracting its seed parameter.
+func generateMLKEMSeed(keyType int32, seed []byte) error {
+	pkey, err := generateEVPPKey(keyType, 0, "")
+	if err != nil {
+		return err
+	}
+	defer ossl.EVP_PKEY_free(pkey)
+
+	_, err = ossl.EVP_PKEY_get_octet_string_param(pkey, _OSSL_PKEY_PARAM_ML_KEM_SEED.ptr(), base(seed), seedSizeMLKEM, nil)
+	return err
+}
 
 // createMLKEMPrivateKey creates an ML-KEM private key from a seed
 func createMLKEMPrivateKey(id int32, seed []byte) (ossl.EVP_PKEY_PTR, error) {

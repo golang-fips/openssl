@@ -847,6 +847,12 @@ func EVP_PKEY_get_bn_param(pkey EVP_PKEY_PTR, key_name *byte, bn *BIGNUM_PTR) (i
 	return int32(_ret), newMkcgoErr("EVP_PKEY_get_bn_param", _err)
 }
 
+func EVP_PKEY_get_octet_string_param(pkey EVP_PKEY_PTR, key_name *byte, buf *byte, buf_len int, out_len *int) (int32, error) {
+	var _err C.mkcgo_err_state
+	_ret := C._mkcgo_EVP_PKEY_get_octet_string_param(pkey, (*C.char)(unsafe.Pointer(key_name)), (*C.uchar)(unsafe.Pointer(buf)), C.size_t(buf_len), (*C.size_t)(unsafe.Pointer(out_len)), mkcgoNoEscape(&_err))
+	return int32(_ret), newMkcgoErr("EVP_PKEY_get_octet_string_param", _err)
+}
+
 func EVP_PKEY_get_raw_private_key(pkey EVP_PKEY_PTR, priv *byte, len *int) (int32, error) {
 	var _err C.mkcgo_err_state
 	_ret := C._mkcgo_EVP_PKEY_get_raw_private_key(pkey, (*C.uchar)(unsafe.Pointer(priv)), (*C.size_t)(unsafe.Pointer(len)), mkcgoNoEscape(&_err))

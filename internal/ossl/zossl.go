@@ -17,6 +17,8 @@ const (
 	EVP_PKEY_HKDF                       = 1036
 	EVP_PKEY_ED25519                    = 1087
 	EVP_PKEY_DSA                        = 116
+	EVP_PKEY_MLKEM_768                  = 1455
+	EVP_PKEY_MLKEM_1024                 = 1456
 	EVP_PKEY_OP_DERIVE                  = (1 << 10)
 	EVP_MAX_MD_SIZE                     = 64
 	EVP_PKEY_PUBLIC_KEY                 = 0x86

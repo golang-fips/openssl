@@ -46,6 +46,8 @@ enum {
 	_EVP_PKEY_HKDF        = 1036,
 	_EVP_PKEY_ED25519     = 1087,
 	_EVP_PKEY_DSA         = 116,
+    _EVP_PKEY_MLKEM_768  = 1455,
+    _EVP_PKEY_MLKEM_1024 = 1456,
 	_EVP_PKEY_OP_DERIVE = (1 << 10), // this value differs between OpenSSL 1 and 3, but we only use it in 1
 	_EVP_MAX_MD_SIZE    = 64,
 
@@ -273,6 +275,7 @@ _DSA_PTR EVP_PKEY_get0_DSA(_EVP_PKEY_PTR pkey) __attribute__((tag("legacy_1")));
 int EVP_PKEY_set1_encoded_public_key(_EVP_PKEY_PTR pkey, const unsigned char *pub, size_t publen) __attribute__((tag("3")));
 size_t EVP_PKEY_get1_encoded_public_key(_EVP_PKEY_PTR pkey, unsigned char **ppub) __attribute__((tag("3")));
 int EVP_PKEY_get_bn_param(const _EVP_PKEY_PTR pkey, const char *key_name, _BIGNUM_PTR *bn) __attribute__((tag("3")));
+int EVP_PKEY_get_octet_string_param(const _EVP_PKEY_PTR pkey, const char *key_name, unsigned char *buf, size_t buf_len, size_t *out_len) __attribute__((tag("3")));
 int EVP_PKEY_up_ref(_EVP_PKEY_PTR key) __attribute__((tag("3")));
 int EVP_PKEY_set1_EC_KEY(_EVP_PKEY_PTR pkey, _EC_KEY_PTR key) __attribute__((tag("legacy_1")));
 int EVP_PKEY_CTX_set0_rsa_oaep_label(_EVP_PKEY_CTX_PTR ctx, void *label, int len) __attribute__((tag("3")));

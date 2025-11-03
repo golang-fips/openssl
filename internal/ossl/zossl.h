@@ -49,6 +49,8 @@ enum {
 	_EVP_PKEY_HKDF = 1036,
 	_EVP_PKEY_ED25519 = 1087,
 	_EVP_PKEY_DSA = 116,
+	_EVP_PKEY_MLKEM_768 = 1455,
+	_EVP_PKEY_MLKEM_1024 = 1456,
 	_EVP_PKEY_OP_DERIVE = (1 << 10),
 	_EVP_MAX_MD_SIZE = 64,
 	_EVP_PKEY_PUBLIC_KEY = 0x86,
@@ -249,6 +251,7 @@ _RSA_PTR _mkcgo_EVP_PKEY_get1_RSA(_EVP_PKEY_PTR, mkcgo_err_state *);
 size_t _mkcgo_EVP_PKEY_get1_encoded_public_key(_EVP_PKEY_PTR, unsigned char**, mkcgo_err_state *);
 int _mkcgo_EVP_PKEY_get_bits(const _EVP_PKEY_PTR, mkcgo_err_state *);
 int _mkcgo_EVP_PKEY_get_bn_param(const _EVP_PKEY_PTR, const char*, _BIGNUM_PTR*, mkcgo_err_state *);
+int _mkcgo_EVP_PKEY_get_octet_string_param(const _EVP_PKEY_PTR, const char*, unsigned char*, size_t, size_t*, mkcgo_err_state *);
 int _mkcgo_EVP_PKEY_get_raw_private_key(const _EVP_PKEY_PTR, unsigned char*, size_t*, mkcgo_err_state *);
 int _mkcgo_EVP_PKEY_get_raw_public_key(const _EVP_PKEY_PTR, unsigned char*, size_t*, mkcgo_err_state *);
 int _mkcgo_EVP_PKEY_get_size(const _EVP_PKEY_PTR, mkcgo_err_state *);
