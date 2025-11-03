@@ -462,7 +462,7 @@ func TestHashAllocations(t *testing.T) {
 	msg := []byte("testing")
 
 	sha1Hash := openssl.NewSHA1()
-	sha224Hash := openssl.NewSHA1()
+	sha224Hash := openssl.NewSHA224()
 	sha256Hash := openssl.NewSHA256()
 	sha512Hash := openssl.NewSHA512()
 
@@ -495,12 +495,12 @@ func TestHashAllocations(t *testing.T) {
 }
 
 func TestHashNewAllocations(t *testing.T) {
-	if Asan() {
+	if Asan() || OptimizationOff() {
 		t.Skip("skipping allocations test with sanitizers")
 	}
 	n := int(testing.AllocsPerRun(10, func() {
 		sha1Hash := openssl.NewSHA1()
-		sha224Hash := openssl.NewSHA1()
+		sha224Hash := openssl.NewSHA224()
 		sha256Hash := openssl.NewSHA256()
 		sha512Hash := openssl.NewSHA512()
 
