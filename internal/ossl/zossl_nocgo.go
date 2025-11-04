@@ -449,17 +449,17 @@ func EVP_DecryptUpdate(ctx EVP_CIPHER_CTX_PTR, out *byte, outl *int32, in *byte,
 
 var _mkcgo_EVP_Digest uintptr
 
-func EVP_Digest(data []byte, md *byte, size *uint32, __type EVP_MD_PTR, impl ENGINE_PTR) (int32, error) {
+func EVP_Digest(data []byte, md []byte, size *uint32, __type EVP_MD_PTR, impl ENGINE_PTR) (int32, error) {
 	var _err uintptr
-	r0, _ := syscallN(3, _mkcgo_EVP_Digest, uintptr(unsafe.Pointer(unsafe.SliceData(data))), uintptr(len(data)), uintptr(unsafe.Pointer(md)), uintptr(unsafe.Pointer(size)), uintptr(__type), uintptr(impl), uintptr(unsafe.Pointer(&_err)))
+	r0, _ := syscallN(3, _mkcgo_EVP_Digest, uintptr(unsafe.Pointer(unsafe.SliceData(data))), uintptr(len(data)), uintptr(unsafe.Pointer(unsafe.SliceData(md))), uintptr(unsafe.Pointer(size)), uintptr(__type), uintptr(impl), uintptr(unsafe.Pointer(&_err)))
 	return int32(r0), newMkcgoErr("EVP_Digest", _err)
 }
 
 var _mkcgo_EVP_DigestFinal_ex uintptr
 
-func EVP_DigestFinal_ex(ctx EVP_MD_CTX_PTR, md *byte, s *uint32) (int32, error) {
+func EVP_DigestFinal_ex(ctx EVP_MD_CTX_PTR, md []byte, s *uint32) (int32, error) {
 	var _err uintptr
-	r0, _ := syscallN(3, _mkcgo_EVP_DigestFinal_ex, uintptr(ctx), uintptr(unsafe.Pointer(md)), uintptr(unsafe.Pointer(s)), uintptr(unsafe.Pointer(&_err)))
+	r0, _ := syscallN(3, _mkcgo_EVP_DigestFinal_ex, uintptr(ctx), uintptr(unsafe.Pointer(unsafe.SliceData(md))), uintptr(unsafe.Pointer(s)), uintptr(unsafe.Pointer(&_err)))
 	return int32(r0), newMkcgoErr("EVP_DigestFinal_ex", _err)
 }
 
@@ -685,14 +685,6 @@ func EVP_MAC_update(ctx EVP_MAC_CTX_PTR, data *byte, datalen int) (int32, error)
 	var _err uintptr
 	r0, _ := syscallN(3, _mkcgo_EVP_MAC_update, uintptr(ctx), uintptr(unsafe.Pointer(data)), uintptr(datalen), uintptr(unsafe.Pointer(&_err)))
 	return int32(r0), newMkcgoErr("EVP_MAC_update", _err)
-}
-
-var _mkcgo_EVP_MD_CTX_copy uintptr
-
-func EVP_MD_CTX_copy(out EVP_MD_CTX_PTR, in EVP_MD_CTX_PTR) (int32, error) {
-	var _err uintptr
-	r0, _ := syscallN(3, _mkcgo_EVP_MD_CTX_copy, uintptr(out), uintptr(in), uintptr(unsafe.Pointer(&_err)))
-	return int32(r0), newMkcgoErr("EVP_MD_CTX_copy", _err)
 }
 
 var _mkcgo_EVP_MD_CTX_copy_ex uintptr
@@ -1861,7 +1853,6 @@ func MkcgoLoad_(handle unsafe.Pointer) {
 	_mkcgo_EVP_EncryptFinal_ex = dlsym(handle, "EVP_EncryptFinal_ex\x00", false)
 	_mkcgo_EVP_EncryptInit_ex = dlsym(handle, "EVP_EncryptInit_ex\x00", false)
 	_mkcgo_EVP_EncryptUpdate = dlsym(handle, "EVP_EncryptUpdate\x00", false)
-	_mkcgo_EVP_MD_CTX_copy = dlsym(handle, "EVP_MD_CTX_copy\x00", false)
 	_mkcgo_EVP_MD_CTX_copy_ex = dlsym(handle, "EVP_MD_CTX_copy_ex\x00", false)
 	_mkcgo_EVP_MD_CTX_free = dlsym(handle, "EVP_MD_CTX_free\x00", false)
 	_mkcgo_EVP_MD_CTX_new = dlsym(handle, "EVP_MD_CTX_new\x00", false)
@@ -1967,7 +1958,6 @@ func MkcgoUnload_() {
 	_mkcgo_EVP_EncryptFinal_ex = 0
 	_mkcgo_EVP_EncryptInit_ex = 0
 	_mkcgo_EVP_EncryptUpdate = 0
-	_mkcgo_EVP_MD_CTX_copy = 0
 	_mkcgo_EVP_MD_CTX_copy_ex = 0
 	_mkcgo_EVP_MD_CTX_free = 0
 	_mkcgo_EVP_MD_CTX_new = 0

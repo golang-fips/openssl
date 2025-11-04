@@ -99,7 +99,6 @@ _EVP_MAC_PTR (*_g_EVP_MAC_fetch)(_OSSL_LIB_CTX_PTR, const char*, const char*);
 int (*_g_EVP_MAC_final)(_EVP_MAC_CTX_PTR, unsigned char*, size_t*, size_t);
 int (*_g_EVP_MAC_init)(_EVP_MAC_CTX_PTR, const unsigned char*, size_t, const _OSSL_PARAM_PTR);
 int (*_g_EVP_MAC_update)(_EVP_MAC_CTX_PTR, const unsigned char*, size_t);
-int (*_g_EVP_MD_CTX_copy)(_EVP_MD_CTX_PTR, const _EVP_MD_CTX_PTR);
 int (*_g_EVP_MD_CTX_copy_ex)(_EVP_MD_CTX_PTR, const _EVP_MD_CTX_PTR);
 void (*_g_EVP_MD_CTX_free)(_EVP_MD_CTX_PTR);
 int (*_g_EVP_MD_CTX_get_params)(_EVP_MD_CTX_PTR, _OSSL_PARAM_PTR);
@@ -300,7 +299,6 @@ void __mkcgo_load_(void* handle) {
 	__mkcgo__dlsym(EVP_EncryptFinal_ex)
 	__mkcgo__dlsym(EVP_EncryptInit_ex)
 	__mkcgo__dlsym(EVP_EncryptUpdate)
-	__mkcgo__dlsym(EVP_MD_CTX_copy)
 	__mkcgo__dlsym(EVP_MD_CTX_copy_ex)
 	__mkcgo__dlsym(EVP_MD_CTX_free)
 	__mkcgo__dlsym(EVP_MD_CTX_new)
@@ -406,7 +404,6 @@ void __mkcgo_unload_() {
 	_g_EVP_EncryptFinal_ex = NULL;
 	_g_EVP_EncryptInit_ex = NULL;
 	_g_EVP_EncryptUpdate = NULL;
-	_g_EVP_MD_CTX_copy = NULL;
 	_g_EVP_MD_CTX_copy_ex = NULL;
 	_g_EVP_MD_CTX_free = NULL;
 	_g_EVP_MD_CTX_new = NULL;
@@ -1243,12 +1240,6 @@ int _mkcgo_EVP_MAC_init(_EVP_MAC_CTX_PTR _arg0, const unsigned char* _arg1, size
 
 int _mkcgo_EVP_MAC_update(_EVP_MAC_CTX_PTR _arg0, const unsigned char* _arg1, size_t _arg2, uintptr_t *_err_state) {
 	int _ret = _g_EVP_MAC_update(_arg0, _arg1, _arg2);
-	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
-	return _ret;
-}
-
-int _mkcgo_EVP_MD_CTX_copy(_EVP_MD_CTX_PTR _arg0, const _EVP_MD_CTX_PTR _arg1, uintptr_t *_err_state) {
-	int _ret = _g_EVP_MD_CTX_copy(_arg0, _arg1);
 	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
 	return _ret;
 }

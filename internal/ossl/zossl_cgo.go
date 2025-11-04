@@ -389,15 +389,15 @@ func EVP_DecryptUpdate(ctx EVP_CIPHER_CTX_PTR, out *byte, outl *int32, in *byte,
 	return int32(_ret), newMkcgoErr("EVP_DecryptUpdate", uintptr(_err))
 }
 
-func EVP_Digest(data []byte, md *byte, size *uint32, __type EVP_MD_PTR, impl ENGINE_PTR) (int32, error) {
+func EVP_Digest(data []byte, md []byte, size *uint32, __type EVP_MD_PTR, impl ENGINE_PTR) (int32, error) {
 	var _err C.uintptr_t
-	_ret := C._mkcgo_EVP_Digest((*C.uchar)(unsafe.Pointer(unsafe.SliceData(data))), C.size_t(len(data)), (*C.uchar)(unsafe.Pointer(md)), (*C.uint)(unsafe.Pointer(size)), __type, impl, mkcgoNoEscape(&_err))
+	_ret := C._mkcgo_EVP_Digest((*C.uchar)(unsafe.Pointer(unsafe.SliceData(data))), C.size_t(len(data)), (*C.uchar)(unsafe.Pointer(unsafe.SliceData(md))), (*C.uint)(unsafe.Pointer(size)), __type, impl, mkcgoNoEscape(&_err))
 	return int32(_ret), newMkcgoErr("EVP_Digest", uintptr(_err))
 }
 
-func EVP_DigestFinal_ex(ctx EVP_MD_CTX_PTR, md *byte, s *uint32) (int32, error) {
+func EVP_DigestFinal_ex(ctx EVP_MD_CTX_PTR, md []byte, s *uint32) (int32, error) {
 	var _err C.uintptr_t
-	_ret := C._mkcgo_EVP_DigestFinal_ex(ctx, (*C.uchar)(unsafe.Pointer(md)), (*C.uint)(unsafe.Pointer(s)), mkcgoNoEscape(&_err))
+	_ret := C._mkcgo_EVP_DigestFinal_ex(ctx, (*C.uchar)(unsafe.Pointer(unsafe.SliceData(md))), (*C.uint)(unsafe.Pointer(s)), mkcgoNoEscape(&_err))
 	return int32(_ret), newMkcgoErr("EVP_DigestFinal_ex", uintptr(_err))
 }
 
@@ -565,12 +565,6 @@ func EVP_MAC_update(ctx EVP_MAC_CTX_PTR, data *byte, datalen int) (int32, error)
 	var _err C.uintptr_t
 	_ret := C._mkcgo_EVP_MAC_update(ctx, (*C.uchar)(unsafe.Pointer(data)), C.size_t(datalen), mkcgoNoEscape(&_err))
 	return int32(_ret), newMkcgoErr("EVP_MAC_update", uintptr(_err))
-}
-
-func EVP_MD_CTX_copy(out EVP_MD_CTX_PTR, in EVP_MD_CTX_PTR) (int32, error) {
-	var _err C.uintptr_t
-	_ret := C._mkcgo_EVP_MD_CTX_copy(out, in, mkcgoNoEscape(&_err))
-	return int32(_ret), newMkcgoErr("EVP_MD_CTX_copy", uintptr(_err))
 }
 
 func EVP_MD_CTX_copy_ex(out EVP_MD_CTX_PTR, in EVP_MD_CTX_PTR) (int32, error) {

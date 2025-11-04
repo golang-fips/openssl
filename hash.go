@@ -34,7 +34,7 @@ const (
 const maxHashSize = 64
 
 func hashOneShot(ch crypto.Hash, p []byte, sum []byte) bool {
-	_, err := ossl.EVP_Digest(p, base(sum), nil, loadHash(ch, true).md, nil)
+	_, err := ossl.EVP_Digest(p, sum, nil, loadHash(ch, true).md, nil)
 	return err == nil
 }
 

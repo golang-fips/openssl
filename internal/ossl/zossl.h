@@ -202,7 +202,6 @@ _EVP_MAC_PTR _mkcgo_EVP_MAC_fetch(_OSSL_LIB_CTX_PTR, const char*, const char*, u
 int _mkcgo_EVP_MAC_final(_EVP_MAC_CTX_PTR, unsigned char*, size_t*, size_t, uintptr_t *);
 int _mkcgo_EVP_MAC_init(_EVP_MAC_CTX_PTR, const unsigned char*, size_t, const _OSSL_PARAM_PTR, uintptr_t *);
 int _mkcgo_EVP_MAC_update(_EVP_MAC_CTX_PTR, const unsigned char*, size_t, uintptr_t *);
-int _mkcgo_EVP_MD_CTX_copy(_EVP_MD_CTX_PTR, const _EVP_MD_CTX_PTR, uintptr_t *);
 int _mkcgo_EVP_MD_CTX_copy_ex(_EVP_MD_CTX_PTR, const _EVP_MD_CTX_PTR, uintptr_t *);
 void _mkcgo_EVP_MD_CTX_free(_EVP_MD_CTX_PTR);
 int _mkcgo_EVP_MD_CTX_get_params(_EVP_MD_CTX_PTR, _OSSL_PARAM_PTR, uintptr_t *);
