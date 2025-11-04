@@ -2,8 +2,6 @@
 
 package ossl
 
-import "unsafe"
-
 // HashSum copies ctx1 into ctx2 and calls EVP_DigestFinal_ex using ctx2.
 // This is necessary because Go hash.Hash mandates that Sum has no effect
 // on the underlying stream. In particular it is OK to Sum, then Write more,
@@ -21,7 +19,7 @@ func HashSum(ctx1, ctx2 EVP_MD_CTX_PTR, out []byte) error {
 	}
 
 	// Finalize the hash using ctx2
-	code, err = EVP_DigestFinal_ex(ctx2, (*byte)(unsafe.SliceData(out)), nil)
+	code, err = EVP_DigestFinal_ex(ctx2, out, nil)
 	if err != nil {
 		return err
 	}
