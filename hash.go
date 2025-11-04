@@ -127,28 +127,28 @@ func SupportsHash(h crypto.Hash) bool {
 	return supported
 }
 
-func SHA3_224(p []byte) (sum [28]byte) {
+func SumSHA3_224(p []byte) (sum [28]byte) {
 	if !hashOneShot(crypto.SHA3_224, p, sum[:]) {
 		panic("openssl: SHA3_224 failed")
 	}
 	return
 }
 
-func SHA3_256(p []byte) (sum [32]byte) {
+func SumSHA3_256(p []byte) (sum [32]byte) {
 	if !hashOneShot(crypto.SHA3_256, p, sum[:]) {
 		panic("openssl: SHA3_256 failed")
 	}
 	return
 }
 
-func SHA3_384(p []byte) (sum [48]byte) {
+func SumSHA3_384(p []byte) (sum [48]byte) {
 	if !hashOneShot(crypto.SHA3_384, p, sum[:]) {
 		panic("openssl: SHA3_384 failed")
 	}
 	return
 }
 
-func SHA3_512(p []byte) (sum [64]byte) {
+func SumSHA3_512(p []byte) (sum [64]byte) {
 	if !hashOneShot(crypto.SHA3_512, p, sum[:]) {
 		panic("openssl: SHA3_512 failed")
 	}
@@ -204,26 +204,34 @@ func NewSHA512_256() hash.Hash {
 
 // NewSHA3_224 returns a new SHA3-224 hash.
 func NewSHA3_224() hash.Hash {
-	return newEvpHash(crypto.SHA3_224)
+	return &DigestSHA3{newEvpHash(crypto.SHA3_224)}
 }
 
-// NewSHA3_256 returns a new SHA3-256 hash.
-func NewSHA3_256() hash.Hash {
-	return newEvpHash(crypto.SHA3_256)
+// NewSHA3_256 creates a new SHA3-256 hash.
+func NewSHA3_256() *DigestSHA3 {
+	return &DigestSHA3{newEvpHash(crypto.SHA3_256)}
 }
 
-// NewSHA3_384 returns a new SHA3-384 hash.
-func NewSHA3_384() hash.Hash {
-	return newEvpHash(crypto.SHA3_384)
+// NewSHA3_384 creates a new SHA3-384 hash.
+func NewSHA3_384() *DigestSHA3 {
+	return &DigestSHA3{newEvpHash(crypto.SHA3_384)}
 }
 
-// NewSHA3_512 returns a new SHA3-512 hash.
-func NewSHA3_512() hash.Hash {
-	return newEvpHash(crypto.SHA3_512)
+// NewSHA3_512 creates a new SHA3-512 hash.
+func NewSHA3_512() *DigestSHA3 {
+	return &DigestSHA3{newEvpHash(crypto.SHA3_512)}
 }
 
 var _ hash.Hash = (*evpHash)(nil)
 var _ HashCloner = (*evpHash)(nil)
+
+// DigestSHA3 wraps an evpHash for SHA3 algorithms.
+type DigestSHA3 struct {
+	*evpHash
+}
+
+var _ hash.Hash = (*DigestSHA3)(nil)
+var _ HashCloner = (*DigestSHA3)(nil)
 
 // evpHash implements generic hash methods.
 type evpHash struct {
