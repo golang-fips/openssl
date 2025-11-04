@@ -55,11 +55,11 @@ jobs:
         CGO_ENABLED: 0
         GOFLAGS: -tags=goexperiment.ms_nocgo_opensslcrypto
     - name: Run Test CGO disabled and optimizations off
-      run: go test -shuffle=on -count 10 -gcflags=all="-N -l" -tags noopt -v ./...
+      run: go test -shuffle=on -count 10 -gcflags=all="-N -l" -v ./...
       env:
         GO_OPENSSL_VERSION_OVERRIDE: ${{ matrix.openssl-version }}
         CGO_ENABLED: 0
-        GOFLAGS: -tags=goexperiment.ms_nocgo_opensslcrypto
+        GOFLAGS: -tags=goexperiment.ms_nocgo_opensslcrypto,noopt
     - name: Run Test with address sanitizer
       if: ${{ runner.arch == 'X64' }} # arm64 thread sanitizer is flaky, unrelated to this codebase
       run: |
