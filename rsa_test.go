@@ -387,7 +387,7 @@ func fromBase36(base36 string) *big.Int {
 	return i
 }
 
-func BenchmarkEncryptRSAPKCS1(b *testing.B) {
+func BenchmarkEncryptRSA(b *testing.B) {
 	b.StopTimer()
 	// Public key length should be at least of 2048 bits, else OpenSSL will report an error when running in FIPS mode.
 	n := fromBase36("14314132931241006650998084889274020608918049032671858325988396851334124245188214251956198731333464217832226406088020736932173064754214329009979944037640912127943488972644697423190955557435910767690712778463524983667852819010259499695177313115447116110358524558307947613422897787329221478860907963827160223559690523660574329011927531289655711860504630573766609239332569210831325633840174683944553667352219670930408593321661375473885147973879086994006440025257225431977751512374815915392249179976902953721486040787792801849818254465486633791826766873076617116727073077821584676715609985777563958286637185868165868520557")
@@ -396,12 +396,22 @@ func BenchmarkEncryptRSAPKCS1(b *testing.B) {
 		b.Fatal(err)
 	}
 	b.StartTimer()
-	b.ReportAllocs()
-	for i := 0; i < b.N; i++ {
-		if _, err := openssl.EncryptRSAPKCS1(test2048PubKey, []byte("testing")); err != nil {
-			b.Fatal(err)
+	b.Run("PKCS1", func(b *testing.B) {
+		b.ReportAllocs()
+		for i := 0; i < b.N; i++ {
+			if _, err := openssl.EncryptRSAPKCS1(test2048PubKey, []byte("testing")); err != nil {
+				b.Fatal(err)
+			}
 		}
-	}
+	})
+	b.Run("OAEP", func(b *testing.B) {
+		b.ReportAllocs()
+		for i := 0; i < b.N; i++ {
+			if _, err := openssl.EncryptRSAOAEP(openssl.NewSHA256(), nil, test2048PubKey, []byte("testing"), nil); err != nil {
+				b.Fatal(err)
+			}
+		}
+	})
 }
 
 func BenchmarkGenerateKeyRSA(b *testing.B) {
