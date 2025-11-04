@@ -203,7 +203,7 @@ func NewSHA512_256() hash.Hash {
 }
 
 // NewSHA3_224 returns a new SHA3-224 hash.
-func NewSHA3_224() hash.Hash {
+func NewSHA3_224() *DigestSHA3 {
 	return &DigestSHA3{newEvpHash(crypto.SHA3_224)}
 }
 
