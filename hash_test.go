@@ -520,39 +520,53 @@ func TestHashNewAllocations(t *testing.T) {
 	}
 }
 
-func BenchmarkSHA256(b *testing.B) {
-	b.StopTimer()
-	h := openssl.NewSHA256()
-	sum := make([]byte, h.Size())
-	size := 8
-	buf := make([]byte, size)
-	b.StartTimer()
-	b.SetBytes(int64(size))
-	b.ReportAllocs()
-	for i := 0; i < b.N; i++ {
-		h.Reset()
-		h.Write(buf)
-		h.Sum(sum[:0])
-	}
-}
-
-func BenchmarkSHA256OneShot(b *testing.B) {
-	b.StopTimer()
-	size := 8
-	buf := make([]byte, size)
-	b.StartTimer()
-	b.SetBytes(int64(size))
-	b.ReportAllocs()
-	for i := 0; i < b.N; i++ {
-		openssl.SHA256(buf)
-	}
-}
-
 func BenchmarkNewSHA256(b *testing.B) {
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
 		openssl.NewSHA256()
 	}
+}
+
+func BenchmarkHash8Bytes(b *testing.B) {
+	benchmarkSize(b, 8)
+}
+
+func BenchmarkHash1K(b *testing.B) {
+	benchmarkSize(b, 1024)
+}
+
+func BenchmarkHash8K(b *testing.B) {
+	benchmarkSize(b, 8192)
+}
+
+func BenchmarkHash256K(b *testing.B) {
+	benchmarkSize(b, 256*1024)
+}
+
+func BenchmarkHash1M(b *testing.B) {
+	benchmarkSize(b, 1024*1024)
+}
+
+func benchmarkSize(b *testing.B, size int) {
+	var bench = openssl.NewSHA256()
+	buf := make([]byte, size)
+	sum := make([]byte, bench.Size())
+	b.Run("New", func(b *testing.B) {
+		b.ReportAllocs()
+		b.SetBytes(int64(size))
+		for i := 0; i < b.N; i++ {
+			bench.Reset()
+			bench.Write(buf)
+			bench.Sum(sum[:0])
+		}
+	})
+	b.Run("Sum256", func(b *testing.B) {
+		b.ReportAllocs()
+		b.SetBytes(int64(size))
+		for i := 0; i < b.N; i++ {
+			openssl.SHA256(buf)
+		}
+	})
 }
 
 // stubHash is a hash.Hash implementation that does nothing.

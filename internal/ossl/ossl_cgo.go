@@ -11,7 +11,7 @@ package ossl
 static inline int
 go_hash_sum(const _EVP_MD_CTX_PTR ctx, _EVP_MD_CTX_PTR ctx2, unsigned char *out, uintptr_t *_err_state)
 {
-	if (_mkcgo_EVP_MD_CTX_copy(ctx2, ctx, _err_state) != 1)
+	if (_mkcgo_EVP_MD_CTX_copy_ex(ctx2, ctx, _err_state) != 1)
 		return -1;
 	if (_mkcgo_EVP_DigestFinal_ex(ctx2, out, NULL, _err_state) <= 0)
 		return -2;
@@ -29,7 +29,7 @@ func HashSum(ctx1, ctx2 EVP_MD_CTX_PTR, out []byte) error {
 		msg := "go_hash_sum"
 		switch code {
 		case -1:
-			msg = "EVP_MD_CTX_copy"
+			msg = "EVP_MD_CTX_copy_ex"
 		case -2:
 			msg = "EVP_DigestFinal_ex"
 		}
