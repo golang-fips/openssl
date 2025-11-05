@@ -373,7 +373,7 @@ func (h *evpHash) Sum(in []byte) []byte {
 		}
 		return out
 	}
-	// Slow path: copy h.ctx into h.ctx2 and calls EVP_DigestFinal_ex using h.ctx2.
+	// Slow path: copy h.ctx into h.ctx2 and call EVP_DigestFinal_ex using h.ctx2.
 	// This is necessary because Go hash.Hash mandates that Sum has no effect
 	// on the underlying stream. In particular it is OK to Sum, then Write more,
 	// then Sum again, and the second Sum acts as if the first didn't happen.
