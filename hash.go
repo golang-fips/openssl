@@ -235,7 +235,7 @@ const hashBufSize = 256
 type Hash struct {
 	alg *hashAlgorithm
 	ctx ossl.EVP_MD_CTX_PTR
-	// ctx2 is used in evpHash.sum to avoid changing
+	// ctx2 is used in Hash.Sum to avoid changing
 	// the state of ctx. Having it here allows reusing the
 	// same allocated object multiple times.
 	ctx2 ossl.EVP_MD_CTX_PTR
@@ -384,7 +384,7 @@ func (h *Hash) Sum(in []byte) []byte {
 	return out
 }
 
-// Clone returns a new evpHash object that is a deep clone of itself.
+// Clone returns a new Hash object that is a deep clone of itself.
 // The duplicate object contains all state and data contained in the
 // original object at the point of duplication.
 func (h *Hash) Clone() (HashCloner, error) {
