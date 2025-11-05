@@ -203,23 +203,23 @@ func NewSHA512_256() hash.Hash {
 }
 
 // NewSHA3_224 returns a new SHA3-224 hash.
-func NewSHA3_224() *DigestSHA3 {
-	return &DigestSHA3{newEvpHash(crypto.SHA3_224)}
+func NewSHA3_224() DigestSHA3 {
+	return DigestSHA3{newEvpHash(crypto.SHA3_224)}
 }
 
 // NewSHA3_256 creates a new SHA3-256 hash.
-func NewSHA3_256() *DigestSHA3 {
-	return &DigestSHA3{newEvpHash(crypto.SHA3_256)}
+func NewSHA3_256() DigestSHA3 {
+	return DigestSHA3{newEvpHash(crypto.SHA3_256)}
 }
 
 // NewSHA3_384 creates a new SHA3-384 hash.
-func NewSHA3_384() *DigestSHA3 {
-	return &DigestSHA3{newEvpHash(crypto.SHA3_384)}
+func NewSHA3_384() DigestSHA3 {
+	return DigestSHA3{newEvpHash(crypto.SHA3_384)}
 }
 
 // NewSHA3_512 creates a new SHA3-512 hash.
-func NewSHA3_512() *DigestSHA3 {
-	return &DigestSHA3{newEvpHash(crypto.SHA3_512)}
+func NewSHA3_512() DigestSHA3 {
+	return DigestSHA3{newEvpHash(crypto.SHA3_512)}
 }
 
 var _ hash.Hash = (*evpHash)(nil)
@@ -230,8 +230,8 @@ type DigestSHA3 struct {
 	*evpHash
 }
 
-var _ hash.Hash = (*DigestSHA3)(nil)
-var _ HashCloner = (*DigestSHA3)(nil)
+var _ hash.Hash = DigestSHA3{}
+var _ HashCloner = DigestSHA3{}
 
 // hashBufSize is the size of the buffer used for hashing.
 // 256 bytes is a reasonable compromise for general purpose use,
