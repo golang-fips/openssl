@@ -241,6 +241,15 @@ type evpHash struct {
 	// the state of ctx. Having it here allows reusing the
 	// same allocated object multiple times.
 	ctx2 ossl.EVP_MD_CTX_PTR
+
+	// buf is a buffer for data not yet written to ctx.
+	// It is used to reduce calls into OpenSSL for small writes.
+	// The buffer size is a trade-off between memory usage and
+	// number of calls into OpenSSL. 256 bytes is a reasonable
+	// compromise for general purpose use, and the evpHash
+	// size is still similar to the upstream sha512 hash object.
+	buf  [256]byte
+	nbuf int
 }
 
 func newEvpHash(ch crypto.Hash) *evpHash {
@@ -282,9 +291,47 @@ func (h *evpHash) init() {
 	runtime.SetFinalizer(h, (*evpHash).finalize)
 }
 
+func (h *evpHash) write(p []byte) int {
+	if len(p) == 0 {
+		return 0
+	}
+	if h.nbuf > 0 && h.nbuf+len(p) > len(h.buf) {
+		// We have buffered data and adding p would exceed the buffer,
+		// flush the buffer first.
+		h.flush()
+	}
+	if len(p) > len(h.buf) {
+		// p is larger than the buffer, write it directly.
+		h.init()
+		if _, err := ossl.EVP_DigestUpdate(h.ctx, p); err != nil {
+			panic(err)
+		}
+	} else {
+		// Otherwise, buffer it
+		h.nbuf += copy(h.buf[h.nbuf:], p)
+		// If buffer is now full, flush it
+		if h.nbuf == len(h.buf) {
+			h.flush()
+		}
+	}
+	runtime.KeepAlive(h)
+	return len(p)
+}
+
+func (h *evpHash) flush() {
+	h.init()
+	if h.nbuf > 0 {
+		if _, err := ossl.EVP_DigestUpdate(h.ctx, h.buf[:h.nbuf]); err != nil {
+			panic(err)
+		}
+		h.nbuf = 0
+	}
+}
+
 func (h *evpHash) Reset() {
+	h.nbuf = 0
 	if h.ctx == nil {
-		// The hash is not initialized yet, no need to reset.
+		// The hash is not initialized yet, no need to reset ctx.
 		return
 	}
 	// There is no need to reset h.ctx2 because it is always reset after
@@ -296,35 +343,15 @@ func (h *evpHash) Reset() {
 }
 
 func (h *evpHash) Write(p []byte) (int, error) {
-	if len(p) == 0 {
-		return 0, nil
-	}
-	h.init()
-	if _, err := ossl.EVP_DigestUpdate(h.ctx, p); err != nil {
-		panic(err)
-	}
-	runtime.KeepAlive(h)
-	return len(p), nil
+	return h.write(p), nil
 }
 
 func (h *evpHash) WriteString(s string) (int, error) {
-	if len(s) == 0 {
-		return 0, nil
-	}
-	h.init()
-	if _, err := ossl.EVP_DigestUpdate(h.ctx, unsafe.Slice(unsafe.StringData(s), len(s))); err != nil {
-		panic(err)
-	}
-	runtime.KeepAlive(h)
-	return len(s), nil
+	return h.write(unsafe.Slice(unsafe.StringData(s), len(s))), nil
 }
 
 func (h *evpHash) WriteByte(c byte) error {
-	h.init()
-	if _, err := ossl.EVP_DigestUpdate(h.ctx, unsafe.Slice(&c, 1)); err != nil {
-		panic(err)
-	}
-	runtime.KeepAlive(h)
+	h.write(unsafe.Slice(&c, 1))
 	return nil
 }
 
@@ -337,9 +364,29 @@ func (h *evpHash) BlockSize() int {
 }
 
 func (h *evpHash) Sum(in []byte) []byte {
-	h.init()
 	out := append(in, make([]byte, h.Size(), maxHashSize)...)
-	if err := ossl.HashSum(h.ctx, h.ctx2, out[len(in):]); err != nil {
+	if h.ctx == nil {
+		// Fast path: if ctx hasn't been initialized, all data is in the buffer
+		// and we can use the one-shot EVP_Digest function.
+		if _, err := ossl.EVP_Digest(h.buf[:h.nbuf], out[len(in):], nil, h.alg.md, nil); err != nil {
+			panic(err)
+		}
+		return out
+	}
+	// Slow path: copy h.ctx into h.ctx2 and calls EVP_DigestFinal_ex using h.ctx2.
+	// This is necessary because Go hash.Hash mandates that Sum has no effect
+	// on the underlying stream. In particular it is OK to Sum, then Write more,
+	// then Sum again, and the second Sum acts as if the first didn't happen.
+	if _, err := ossl.EVP_MD_CTX_copy_ex(h.ctx2, h.ctx); err != nil {
+		panic(err)
+	}
+	if h.nbuf > 0 {
+		// If we have buffered data, update ctx2 with it
+		if _, err := ossl.EVP_DigestUpdate(h.ctx2, h.buf[:h.nbuf]); err != nil {
+			panic(err)
+		}
+	}
+	if _, err := ossl.EVP_DigestFinal_ex(h.ctx2, out[len(in):], nil); err != nil {
 		panic(err)
 	}
 	runtime.KeepAlive(h)
@@ -350,7 +397,8 @@ func (h *evpHash) Sum(in []byte) []byte {
 // The duplicate object contains all state and data contained in the
 // original object at the point of duplication.
 func (h *evpHash) Clone() (HashCloner, error) {
-	h2 := &evpHash{alg: h.alg}
+	h2 := &evpHash{alg: h.alg, nbuf: h.nbuf}
+	copy(h2.buf[:h.nbuf], h.buf[:h.nbuf])
 	if h.ctx != nil {
 		var err error
 		h2.ctx, err = ossl.EVP_MD_CTX_new()
@@ -395,7 +443,7 @@ func (d *evpHash) AppendBinary(buf []byte) ([]byte, error) {
 	if d.alg == nil || !d.alg.marshallable {
 		return nil, errMarshallUnsupported{}
 	}
-	d.init()
+	d.flush()
 	switch d.alg.provider {
 	case providerOSSLDefault, providerOSSLFIPS:
 		return osslHashAppendBinary(d.ctx, d.alg.ch, d.alg.magic, buf)
@@ -408,7 +456,7 @@ func (d *evpHash) AppendBinary(buf []byte) ([]byte, error) {
 
 func (d *evpHash) UnmarshalBinary(b []byte) error {
 	defer runtime.KeepAlive(d)
-	d.init()
+	d.flush()
 	if d.alg == nil || !d.alg.marshallable {
 		return errMarshallUnsupported{}
 	}

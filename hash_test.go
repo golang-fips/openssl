@@ -560,6 +560,21 @@ func benchmarkSize(b *testing.B, size int) {
 			bench.Sum(sum[:0])
 		}
 	})
+	b.Run("NewSteps", func(b *testing.B) {
+		b.ReportAllocs()
+		b.SetBytes(int64(size))
+		step := size / 8
+		if step == 0 {
+			step = 1
+		}
+		for i := 0; i < b.N; i++ {
+			bench.Reset()
+			for j := 0; j < size; j += step {
+				bench.Write(buf[j : j+step])
+			}
+			bench.Sum(sum[:0])
+		}
+	})
 	b.Run("Sum256", func(b *testing.B) {
 		b.ReportAllocs()
 		b.SetBytes(int64(size))
