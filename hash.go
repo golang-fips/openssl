@@ -233,6 +233,12 @@ type DigestSHA3 struct {
 var _ hash.Hash = (*DigestSHA3)(nil)
 var _ HashCloner = (*DigestSHA3)(nil)
 
+// hashBufSize is the size of the buffer used for hashing.
+// 256 bytes is a reasonable compromise for general purpose use,
+// and the resulting evpHash size is still similar to the
+// upstream sha512 hash object.
+const hashBufSize = 256
+
 // evpHash implements generic hash methods.
 type evpHash struct {
 	alg *hashAlgorithm
@@ -245,10 +251,8 @@ type evpHash struct {
 	// buf is a buffer for data not yet written to ctx.
 	// It is used to reduce calls into OpenSSL for small writes.
 	// The buffer size is a trade-off between memory usage and
-	// number of calls into OpenSSL. 256 bytes is a reasonable
-	// compromise for general purpose use, and the evpHash
-	// size is still similar to the upstream sha512 hash object.
-	buf  [256]byte
+	// number of calls into OpenSSL.
+	buf  [hashBufSize]byte
 	nbuf int
 }
 
@@ -307,12 +311,8 @@ func (h *evpHash) write(p []byte) int {
 			panic(err)
 		}
 	} else {
-		// Otherwise, buffer it
+		// Otherwise, buffer it.
 		h.nbuf += copy(h.buf[h.nbuf:], p)
-		// If buffer is now full, flush it
-		if h.nbuf == len(h.buf) {
-			h.flush()
-		}
 	}
 	runtime.KeepAlive(h)
 	return len(p)
@@ -334,8 +334,8 @@ func (h *evpHash) Reset() {
 		// The hash is not initialized yet, no need to reset ctx.
 		return
 	}
-	// There is no need to reset h.ctx2 because it is always reset after
-	// use in evpHash.sum.
+	// There is no need to reset h.ctx2 because it is always reset in
+	// use in evpHash.Sum.
 	if _, err := ossl.EVP_DigestInit_ex(h.ctx, nil, nil); err != nil {
 		panic(err)
 	}

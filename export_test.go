@@ -25,3 +25,5 @@ var (
 	CiphertextSizeMLKEM1024       = ciphertextSizeMLKEM1024
 	EncapsulationKeySizeMLKEM1024 = encapsulationKeySizeMLKEM1024
 )
+
+var HashBufSize = hashBufSize

@@ -2,100 +2,11 @@ package openssl_test
 
 import (
 	"bytes"
-	"crypto/sha256"
 	"io"
 	"testing"
 
 	"github.com/golang-fips/openssl/v2"
 )
-
-// TestHashBuffering tests the internal buffering mechanism
-func TestHashBuffering(t *testing.T) {
-	t.Parallel()
-	tests := []struct {
-		name   string
-		writes [][]byte
-	}{
-		{
-			name:   "small-writes",
-			writes: [][]byte{[]byte("hello"), []byte(" "), []byte("world")},
-		},
-		{
-			name:   "single-byte-writes",
-			writes: [][]byte{[]byte("a"), []byte("b"), []byte("c"), []byte("d"), []byte("e")},
-		},
-		{
-			name: "buffer-boundary",
-			// Write exactly 64 bytes (buffer size) in small chunks
-			writes: [][]byte{
-				bytes.Repeat([]byte("a"), 10),
-				bytes.Repeat([]byte("b"), 10),
-				bytes.Repeat([]byte("c"), 10),
-				bytes.Repeat([]byte("d"), 10),
-				bytes.Repeat([]byte("e"), 10),
-				bytes.Repeat([]byte("f"), 10),
-				bytes.Repeat([]byte("g"), 4),
-			},
-		},
-		{
-			name: "exceed-buffer",
-			// Write more than 64 bytes
-			writes: [][]byte{
-				bytes.Repeat([]byte("a"), 50),
-				bytes.Repeat([]byte("b"), 50),
-			},
-		},
-		{
-			name: "large-single-write",
-			// Write more than buffer size in one go
-			writes: [][]byte{bytes.Repeat([]byte("x"), 128)},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			h := openssl.NewSHA256()
-			// Test that empty hash is correct
-			emptySum := h.Sum(nil)
-			wantEmpty := sha256.Sum256(nil)
-			if !bytes.Equal(emptySum, wantEmpty[:]) {
-				t.Errorf("empty hash = %s, want %s", emptySum, wantEmpty)
-			}
-
-			// Write data in chunks
-			var all []byte
-			for _, write := range tt.writes {
-				n, err := h.Write(write)
-				if err != nil {
-					t.Fatalf("Write failed: %v", err)
-				}
-				if n != len(write) {
-					t.Fatalf("Write returned %d, want %d", n, len(write))
-				}
-				all = append(all, write...)
-			}
-
-			// Get the hash
-			sum1 := h.Sum(nil)
-
-			// Reset and hash all at once to verify correctness
-			h.Reset()
-			h.Write(all)
-			sum2 := h.Sum(nil)
-
-			if !bytes.Equal(sum1, sum2) {
-				t.Errorf("buffered hash = %x, want %x", sum1, sum2)
-			}
-
-			// Verify Reset works and returns to empty state
-			h.Reset()
-			sumAfterReset := h.Sum(nil)
-			if !bytes.Equal(sumAfterReset, emptySum) {
-				t.Errorf("hash after Reset = %x, want %x", sumAfterReset, emptySum)
-			}
-		})
-	}
-}
 
 // TestHashBufferingWithClone tests that Clone properly copies buffered data
 func TestHashBufferingWithClone(t *testing.T) {
@@ -106,12 +17,12 @@ func TestHashBufferingWithClone(t *testing.T) {
 		extra []byte
 	}{
 		{
-			name:  "SHA256-buffered-clone",
+			name:  "buffered-clone",
 			data:  []byte("hello"), // Small enough to stay in buffer
 			extra: []byte(" world"),
 		},
 		{
-			name:  "SHA256-single-byte-clone",
+			name:  "single-byte-clone",
 			data:  []byte("a"),
 			extra: []byte("b"),
 		},
@@ -188,8 +99,8 @@ func TestHashBufferingFastPath(t *testing.T) {
 	// Test that small data that fits in buffer uses fast path
 	h := openssl.NewSHA256()
 
-	// Write small amount of data that fits in buffer (< 64 bytes)
-	data := []byte("small data")
+	// Write small amount of data that fits in buffer
+	data := bytes.Repeat([]byte("a"), openssl.HashBufSize-56)
 	h.Write(data)
 
 	// Sum should use fast path (EVP_Digest) since ctx is still nil
@@ -255,6 +166,44 @@ func TestHashBufferingWithAppend(t *testing.T) {
 	expectedHash := openssl.SHA256(data)
 	if !bytes.Equal(hash, expectedHash[:]) {
 		t.Errorf("appended hash = %x, want %x", hash, expectedHash)
+	}
+}
+
+// TestHashBufferingExactFill tests when a single write fills the buffer exactly
+func TestHashBufferingExactFill(t *testing.T) {
+	t.Parallel()
+	h := openssl.NewSHA256()
+
+	// First, write some data that leaves room in buffer
+	// Buffer is openssl.HashBufSize bytes, so write most of it first
+	firstWrite := bytes.Repeat([]byte("a"), openssl.HashBufSize-56)
+	h.Write(firstWrite)
+
+	// Now write exactly 56 bytes to fill buffer to openssl.HashBufSize
+	secondWrite := bytes.Repeat([]byte("b"), 56)
+	h.Write(secondWrite)
+
+	// Get hash
+	sum1 := h.Sum(nil)
+
+	// Compare with expected
+	allData := append(firstWrite, secondWrite...)
+	expected := openssl.SHA256(allData)
+
+	if !bytes.Equal(sum1, expected[:]) {
+		t.Errorf("exact fill hash = %x, want %x", sum1, expected)
+	}
+
+	// Also test writing exactly buffer size in one go
+	h2 := openssl.NewSHA256()
+	exactBufSize := bytes.Repeat([]byte("x"), openssl.HashBufSize)
+	h2.Write(exactBufSize)
+
+	sum2 := h2.Sum(nil)
+	expected2 := openssl.SHA256(exactBufSize)
+
+	if !bytes.Equal(sum2, expected2[:]) {
+		t.Errorf("exact buffer size write hash = %x, want %x", sum2, expected2)
 	}
 }
 
@@ -334,8 +283,8 @@ func TestHashBufferingLargeData(t *testing.T) {
 	t.Parallel()
 	h := openssl.NewSHA256()
 
-	// Create data larger than buffer (64 bytes)
-	largeData := bytes.Repeat([]byte("x"), 1000)
+	// Create data larger than buffer
+	largeData := bytes.Repeat([]byte("x"), openssl.HashBufSize*4)
 
 	// Write in chunks that will cause multiple buffer flushes
 	chunkSize := 10
@@ -394,8 +343,8 @@ func TestHashBufferingCloneAtBufferBoundary(t *testing.T) {
 	t.Parallel()
 	h := openssl.NewSHA256().(openssl.HashCloner)
 
-	// Write exactly 64 bytes (buffer size)
-	data := bytes.Repeat([]byte("a"), 64)
+	// Write exactly openssl.HashBufSize bytes
+	data := bytes.Repeat([]byte("a"), openssl.HashBufSize)
 	h.Write(data)
 
 	// Clone at buffer boundary
