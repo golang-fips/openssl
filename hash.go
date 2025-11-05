@@ -334,8 +334,7 @@ func (h *evpHash) Reset() {
 		// The hash is not initialized yet, no need to reset ctx.
 		return
 	}
-	// There is no need to reset h.ctx2 because it is always reset in
-	// use in evpHash.Sum.
+	// There is no need to reset h.ctx2 because it is always reset in evpHash.Sum.
 	if _, err := ossl.EVP_DigestInit_ex(h.ctx, nil, nil); err != nil {
 		panic(err)
 	}
