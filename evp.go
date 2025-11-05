@@ -42,7 +42,7 @@ func hashFuncHash(fn func() hash.Hash) (h hash.Hash, err error) {
 
 // hashToMD converts a hash.Hash implementation from this package to a GOossl.EVP_MD_PTR.
 func hashToMD(h hash.Hash) ossl.EVP_MD_PTR {
-	if h, ok := h.(*evpHash); ok {
+	if h, ok := h.(*Hash); ok {
 		return h.alg.md
 	}
 	return nil

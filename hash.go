@@ -159,79 +159,71 @@ func SumSHA3_512(p []byte) (sum [64]byte) {
 // The returned hash doesn't implement encoding.BinaryMarshaler and
 // encoding.BinaryUnmarshaler.
 func NewMD4() hash.Hash {
-	return newEvpHash(crypto.MD4)
+	return newHash(crypto.MD4)
 }
 
 // NewMD5 returns a new MD5 hash.
 func NewMD5() hash.Hash {
-	return newEvpHash(crypto.MD5)
+	return newHash(crypto.MD5)
 }
 
 // NewSHA1 returns a new SHA1 hash.
 func NewSHA1() hash.Hash {
-	return newEvpHash(crypto.SHA1)
+	return newHash(crypto.SHA1)
 }
 
 // NewSHA224 returns a new SHA224 hash.
 func NewSHA224() hash.Hash {
-	return newEvpHash(crypto.SHA224)
+	return newHash(crypto.SHA224)
 }
 
 // NewSHA256 returns a new SHA256 hash.
 func NewSHA256() hash.Hash {
-	return newEvpHash(crypto.SHA256)
+	return newHash(crypto.SHA256)
 }
 
 // NewSHA384 returns a new SHA384 hash.
 func NewSHA384() hash.Hash {
-	return newEvpHash(crypto.SHA384)
+	return newHash(crypto.SHA384)
 }
 
 // NewSHA512 returns a new SHA512 hash.
 func NewSHA512() hash.Hash {
-	return newEvpHash(crypto.SHA512)
+	return newHash(crypto.SHA512)
 }
 
 // NewSHA512_224 returns a new SHA512_224 hash.
 func NewSHA512_224() hash.Hash {
-	return newEvpHash(crypto.SHA512_224)
+	return newHash(crypto.SHA512_224)
 }
 
 // NewSHA512_256 returns a new SHA512_256 hash.
 func NewSHA512_256() hash.Hash {
-	return newEvpHash(crypto.SHA512_256)
+	return newHash(crypto.SHA512_256)
 }
 
 // NewSHA3_224 returns a new SHA3-224 hash.
-func NewSHA3_224() *DigestSHA3 {
-	return &DigestSHA3{newEvpHash(crypto.SHA3_224)}
+func NewSHA3_224() *Hash {
+	return newHash(crypto.SHA3_224)
 }
 
 // NewSHA3_256 creates a new SHA3-256 hash.
-func NewSHA3_256() *DigestSHA3 {
-	return &DigestSHA3{newEvpHash(crypto.SHA3_256)}
+func NewSHA3_256() *Hash {
+	return newHash(crypto.SHA3_256)
 }
 
 // NewSHA3_384 creates a new SHA3-384 hash.
-func NewSHA3_384() *DigestSHA3 {
-	return &DigestSHA3{newEvpHash(crypto.SHA3_384)}
+func NewSHA3_384() *Hash {
+	return newHash(crypto.SHA3_384)
 }
 
 // NewSHA3_512 creates a new SHA3-512 hash.
-func NewSHA3_512() *DigestSHA3 {
-	return &DigestSHA3{newEvpHash(crypto.SHA3_512)}
+func NewSHA3_512() *Hash {
+	return newHash(crypto.SHA3_512)
 }
 
-var _ hash.Hash = (*evpHash)(nil)
-var _ HashCloner = (*evpHash)(nil)
-
-// DigestSHA3 wraps an evpHash for SHA3 algorithms.
-type DigestSHA3 struct {
-	*evpHash
-}
-
-var _ hash.Hash = (*DigestSHA3)(nil)
-var _ HashCloner = (*DigestSHA3)(nil)
+var _ hash.Hash = (*Hash)(nil)
+var _ HashCloner = (*Hash)(nil)
 
 // hashBufSize is the size of the buffer used for hashing.
 // 256 bytes is a reasonable compromise for general purpose use,
@@ -239,8 +231,8 @@ var _ HashCloner = (*DigestSHA3)(nil)
 // upstream sha512 hash object.
 const hashBufSize = 256
 
-// evpHash implements generic hash methods.
-type evpHash struct {
+// Hash implements generic hash methods.
+type Hash struct {
 	alg *hashAlgorithm
 	ctx ossl.EVP_MD_CTX_PTR
 	// ctx2 is used in evpHash.sum to avoid changing
@@ -256,16 +248,16 @@ type evpHash struct {
 	nbuf int
 }
 
-func newEvpHash(ch crypto.Hash) *evpHash {
+func newHash(ch crypto.Hash) *Hash {
 	// Don't call init() yet, it would be wasteful
 	// if the caller only wants to know the hash type. This
 	// is a common pattern in this package, as some functions
 	// accept a `func() hash.Hash` parameter and call it just
 	// to know the hash type.
-	return &evpHash{alg: loadHash(ch, true)}
+	return &Hash{alg: loadHash(ch, true)}
 }
 
-func (h *evpHash) finalize() {
+func (h *Hash) finalize() {
 	if h.ctx != nil {
 		ossl.EVP_MD_CTX_free(h.ctx)
 	}
@@ -274,7 +266,7 @@ func (h *evpHash) finalize() {
 	}
 }
 
-func (h *evpHash) init() {
+func (h *Hash) init() {
 	if h.ctx != nil {
 		return
 	}
@@ -292,10 +284,10 @@ func (h *evpHash) init() {
 		ossl.EVP_MD_CTX_free(h.ctx)
 		panic(err)
 	}
-	runtime.SetFinalizer(h, (*evpHash).finalize)
+	runtime.SetFinalizer(h, (*Hash).finalize)
 }
 
-func (h *evpHash) write(p []byte) int {
+func (h *Hash) write(p []byte) int {
 	if len(p) == 0 {
 		return 0
 	}
@@ -318,7 +310,7 @@ func (h *evpHash) write(p []byte) int {
 	return len(p)
 }
 
-func (h *evpHash) flush() {
+func (h *Hash) flush() {
 	h.init()
 	if h.nbuf > 0 {
 		if _, err := ossl.EVP_DigestUpdate(h.ctx, h.buf[:h.nbuf]); err != nil {
@@ -328,7 +320,7 @@ func (h *evpHash) flush() {
 	}
 }
 
-func (h *evpHash) Reset() {
+func (h *Hash) Reset() {
 	h.nbuf = 0
 	if h.ctx == nil {
 		// The hash is not initialized yet, no need to reset ctx.
@@ -341,28 +333,28 @@ func (h *evpHash) Reset() {
 	runtime.KeepAlive(h)
 }
 
-func (h *evpHash) Write(p []byte) (int, error) {
+func (h *Hash) Write(p []byte) (int, error) {
 	return h.write(p), nil
 }
 
-func (h *evpHash) WriteString(s string) (int, error) {
+func (h *Hash) WriteString(s string) (int, error) {
 	return h.write(unsafe.Slice(unsafe.StringData(s), len(s))), nil
 }
 
-func (h *evpHash) WriteByte(c byte) error {
+func (h *Hash) WriteByte(c byte) error {
 	h.write(unsafe.Slice(&c, 1))
 	return nil
 }
 
-func (h *evpHash) Size() int {
+func (h *Hash) Size() int {
 	return h.alg.size
 }
 
-func (h *evpHash) BlockSize() int {
+func (h *Hash) BlockSize() int {
 	return h.alg.blockSize
 }
 
-func (h *evpHash) Sum(in []byte) []byte {
+func (h *Hash) Sum(in []byte) []byte {
 	out := append(in, make([]byte, h.Size(), maxHashSize)...)
 	if h.ctx == nil {
 		// Fast path: if ctx hasn't been initialized, all data is in the buffer
@@ -395,8 +387,8 @@ func (h *evpHash) Sum(in []byte) []byte {
 // Clone returns a new evpHash object that is a deep clone of itself.
 // The duplicate object contains all state and data contained in the
 // original object at the point of duplication.
-func (h *evpHash) Clone() (HashCloner, error) {
-	h2 := &evpHash{alg: h.alg, nbuf: h.nbuf}
+func (h *Hash) Clone() (HashCloner, error) {
+	h2 := &Hash{alg: h.alg, nbuf: h.nbuf}
 	copy(h2.buf[:h.nbuf], h.buf[:h.nbuf])
 	if h.ctx != nil {
 		var err error
@@ -413,7 +405,7 @@ func (h *evpHash) Clone() (HashCloner, error) {
 			ossl.EVP_MD_CTX_free(h2.ctx)
 			panic(err)
 		}
-		runtime.SetFinalizer(h2, (*evpHash).finalize)
+		runtime.SetFinalizer(h2, (*Hash).finalize)
 	}
 	runtime.KeepAlive(h)
 	return h2, nil
@@ -429,7 +421,7 @@ func (e errMarshallUnsupported) Unwrap() error {
 	return errors.ErrUnsupported
 }
 
-func (d *evpHash) MarshalBinary() ([]byte, error) {
+func (d *Hash) MarshalBinary() ([]byte, error) {
 	if d.alg == nil || !d.alg.marshallable {
 		return nil, errMarshallUnsupported{}
 	}
@@ -437,7 +429,7 @@ func (d *evpHash) MarshalBinary() ([]byte, error) {
 	return d.AppendBinary(buf)
 }
 
-func (d *evpHash) AppendBinary(buf []byte) ([]byte, error) {
+func (d *Hash) AppendBinary(buf []byte) ([]byte, error) {
 	defer runtime.KeepAlive(d)
 	if d.alg == nil || !d.alg.marshallable {
 		return nil, errMarshallUnsupported{}
@@ -453,7 +445,7 @@ func (d *evpHash) AppendBinary(buf []byte) ([]byte, error) {
 	}
 }
 
-func (d *evpHash) UnmarshalBinary(b []byte) error {
+func (d *Hash) UnmarshalBinary(b []byte) error {
 	defer runtime.KeepAlive(d)
 	d.flush()
 	if d.alg == nil || !d.alg.marshallable {
