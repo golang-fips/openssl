@@ -14,6 +14,7 @@ const (
 	EVP_PKEY_RSA                        = 6
 	EVP_PKEY_EC                         = 408
 	EVP_PKEY_TLS1_PRF                   = 1021
+	EVP_PKEY_X25519                     = 1034
 	EVP_PKEY_HKDF                       = 1036
 	EVP_PKEY_ED25519                    = 1087
 	EVP_PKEY_DSA                        = 116

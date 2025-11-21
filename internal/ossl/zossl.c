@@ -1402,6 +1402,12 @@ _EVP_PKEY_PTR _mkcgo_EVP_PKEY_Q_keygen_RSA(_OSSL_LIB_CTX_PTR _arg0, const char* 
 	return _ret;
 }
 
+_EVP_PKEY_PTR _mkcgo_EVP_PKEY_Q_keygen_X25519(_OSSL_LIB_CTX_PTR _arg0, const char* _arg1, const char* _arg2, uintptr_t *_err_state) {
+	_EVP_PKEY_PTR _ret = _g_EVP_PKEY_Q_keygen(_arg0, _arg1, _arg2);
+	if (_ret == NULL) *_err_state = mkcgo_err_retrieve();
+	return _ret;
+}
+
 int _mkcgo_EVP_PKEY_assign(_EVP_PKEY_PTR _arg0, int _arg1, void* _arg2, uintptr_t *_err_state) {
 	int _ret = _g_EVP_PKEY_assign(_arg0, _arg1, _arg2);
 	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();

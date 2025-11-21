@@ -42,6 +42,7 @@ const ( //checkheader:ignore
 	_KeyTypeRSA       cString = "RSA\x00"
 	_KeyTypeEC        cString = "EC\x00"
 	_KeyTypeED25519   cString = "ED25519\x00"
+	_KeyTypeX25519    cString = "X25519\x00"
 	_KeyTypeMLKEM768  cString = "ML-KEM-768\x00"
 	_KeyTypeMLKEM1024 cString = "ML-KEM-1024\x00"
 

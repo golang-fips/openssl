@@ -48,6 +48,7 @@ enum {
 	_EVP_PKEY_RSA = 6,
 	_EVP_PKEY_EC = 408,
 	_EVP_PKEY_TLS1_PRF = 1021,
+	_EVP_PKEY_X25519 = 1034,
 	_EVP_PKEY_HKDF = 1036,
 	_EVP_PKEY_ED25519 = 1087,
 	_EVP_PKEY_DSA = 116,
@@ -231,6 +232,7 @@ _EVP_PKEY_PTR _mkcgo_EVP_PKEY_Q_keygen_EC(_OSSL_LIB_CTX_PTR, const char*, const 
 _EVP_PKEY_PTR _mkcgo_EVP_PKEY_Q_keygen_ED25519(_OSSL_LIB_CTX_PTR, const char*, const char*, uintptr_t *);
 _EVP_PKEY_PTR _mkcgo_EVP_PKEY_Q_keygen_MLKEM(_OSSL_LIB_CTX_PTR, const char*, const char*, uintptr_t *);
 _EVP_PKEY_PTR _mkcgo_EVP_PKEY_Q_keygen_RSA(_OSSL_LIB_CTX_PTR, const char*, const char*, size_t, uintptr_t *);
+_EVP_PKEY_PTR _mkcgo_EVP_PKEY_Q_keygen_X25519(_OSSL_LIB_CTX_PTR, const char*, const char*, uintptr_t *);
 int _mkcgo_EVP_PKEY_assign(_EVP_PKEY_PTR, int, void*, uintptr_t *);
 int _mkcgo_EVP_PKEY_decapsulate(_EVP_PKEY_CTX_PTR, unsigned char*, size_t*, const unsigned char*, size_t, uintptr_t *);
 int _mkcgo_EVP_PKEY_decapsulate_init(_EVP_PKEY_CTX_PTR, const _OSSL_PARAM_PTR, uintptr_t *);

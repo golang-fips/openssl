@@ -62,7 +62,7 @@ func (k *PublicKeyEd25519) finalize() {
 func (k *PublicKeyEd25519) Bytes() ([]byte, error) {
 	defer runtime.KeepAlive(k)
 	pub := make([]byte, publicKeySizeEd25519)
-	if err := extractPKEYPubEd25519(k._pkey, pub); err != nil {
+	if err := extractPKEYRawPublic(k._pkey, pub); err != nil {
 		return nil, err
 	}
 	return pub, nil
@@ -87,7 +87,7 @@ func (k *PrivateKeyEd25519) Bytes() ([]byte, error) {
 
 func (k *PrivateKeyEd25519) Public() (*PublicKeyEd25519, error) {
 	pub := make([]byte, publicKeySizeEd25519)
-	if err := extractPKEYPubEd25519(k._pkey, pub); err != nil {
+	if err := extractPKEYRawPublic(k._pkey, pub); err != nil {
 		return nil, err
 	}
 	pubk, err := NewPublicKeyEd25519(pub)
@@ -154,29 +154,11 @@ func NewPrivateKeyEd25519FromSeed(seed []byte) (*PrivateKeyEd25519, error) {
 	return priv, nil
 }
 
-func extractPKEYPubEd25519(pkey ossl.EVP_PKEY_PTR, pub []byte) error {
-	keylen := publicKeySizeEd25519
-	if _, err := ossl.EVP_PKEY_get_raw_public_key(pkey, base(pub), &keylen); err != nil {
-		return err
-	}
-	if keylen != publicKeySizeEd25519 {
-		return errors.New("ed25519: bad public key length: " + strconv.Itoa(keylen))
-	}
-	return nil
-}
-
 func extractPKEYPrivEd25519(pkey ossl.EVP_PKEY_PTR, priv []byte) error {
-	if err := extractPKEYPubEd25519(pkey, priv[seedSizeEd25519:]); err != nil {
+	if err := extractPKEYRawPublic(pkey, priv[seedSizeEd25519:]); err != nil {
 		return err
 	}
-	keylen := seedSizeEd25519
-	if _, err := ossl.EVP_PKEY_get_raw_private_key(pkey, base(priv), &keylen); err != nil {
-		return err
-	}
-	if keylen != seedSizeEd25519 {
-		return errors.New("ed25519: bad private key length: " + strconv.Itoa(keylen))
-	}
-	return nil
+	return extractPKEYRawPrivate(pkey, priv[:seedSizeEd25519])
 }
 
 // SignEd25519 signs the message with priv and returns a signature.

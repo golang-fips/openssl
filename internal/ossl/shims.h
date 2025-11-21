@@ -44,6 +44,7 @@ enum {
 	_EVP_PKEY_RSA         = 6,
 	_EVP_PKEY_EC          = 408,
 	_EVP_PKEY_TLS1_PRF    = 1021,
+	_EVP_PKEY_X25519      = 1034,
 	_EVP_PKEY_HKDF        = 1036,
 	_EVP_PKEY_ED25519     = 1087,
 	_EVP_PKEY_DSA         = 116,
@@ -311,6 +312,7 @@ _EVP_PKEY_PTR EVP_PKEY_Q_keygen(_OSSL_LIB_CTX_PTR ctx, const char *propq, const 
 _EVP_PKEY_PTR EVP_PKEY_Q_keygen_RSA(_OSSL_LIB_CTX_PTR ctx, const char *propq, const char *type, size_t arg1) __attribute__((tag("3"),variadic("EVP_PKEY_Q_keygen")));
 _EVP_PKEY_PTR EVP_PKEY_Q_keygen_EC(_OSSL_LIB_CTX_PTR ctx, const char *propq, const char *type, const char *arg1) __attribute__((tag("3"),variadic("EVP_PKEY_Q_keygen")));
 _EVP_PKEY_PTR EVP_PKEY_Q_keygen_ED25519(_OSSL_LIB_CTX_PTR ctx, const char *propq, const char *type) __attribute__((tag("3"),variadic("EVP_PKEY_Q_keygen")));
+_EVP_PKEY_PTR EVP_PKEY_Q_keygen_X25519(_OSSL_LIB_CTX_PTR ctx, const char *propq, const char *type) __attribute__((tag("3"),variadic("EVP_PKEY_Q_keygen")));
 _EVP_PKEY_PTR EVP_PKEY_Q_keygen_MLKEM(_OSSL_LIB_CTX_PTR ctx, const char *propq, const char *type) __attribute__((tag("3"),variadic("EVP_PKEY_Q_keygen")));
 
 _EVP_PKEY_CTX_PTR EVP_PKEY_CTX_new(_EVP_PKEY_PTR arg0, _ENGINE_PTR arg1);

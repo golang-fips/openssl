@@ -912,6 +912,12 @@ func EVP_PKEY_Q_keygen_RSA(ctx OSSL_LIB_CTX_PTR, propq *byte, __type *byte, arg1
 	return EVP_PKEY_PTR(r0), newMkcgoErr("EVP_PKEY_Q_keygen_RSA", _err)
 }
 
+func EVP_PKEY_Q_keygen_X25519(ctx OSSL_LIB_CTX_PTR, propq *byte, __type *byte) (EVP_PKEY_PTR, error) {
+	var _err uintptr
+	r0, _ := syscallN(1, _mkcgo_EVP_PKEY_Q_keygen, uintptr(ctx), uintptr(unsafe.Pointer(propq)), uintptr(unsafe.Pointer(__type)), uintptr(unsafe.Pointer(&_err)))
+	return EVP_PKEY_PTR(r0), newMkcgoErr("EVP_PKEY_Q_keygen_X25519", _err)
+}
+
 var _mkcgo_EVP_PKEY_assign uintptr
 
 func EVP_PKEY_assign(pkey EVP_PKEY_PTR, __type int32, key unsafe.Pointer) (int32, error) {

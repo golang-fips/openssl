@@ -11,6 +11,9 @@ import (
 	"github.com/golang-fips/openssl/v2/internal/ossl"
 )
 
+const publicKeySizeX25519 = 32
+const privateKeySizeX25519 = 32
+
 type PublicKeyECDH struct {
 	_pkey ossl.EVP_PKEY_PTR
 	bytes []byte
@@ -30,9 +33,14 @@ func (k *PrivateKeyECDH) finalize() {
 }
 
 func NewPublicKeyECDH(curve string, bytes []byte) (*PublicKeyECDH, error) {
-	if len(bytes) != 1+2*curveSize(curve) {
+	expectedLen := publicKeySizeX25519
+	if curve != "X25519" {
+		expectedLen = 1 + 2*curveSize(curve)
+	}
+	if len(bytes) != expectedLen {
 		return nil, errors.New("NewPublicKeyECDH: wrong key length")
 	}
+
 	pkey, err := newECDHPkey(curve, bytes, false)
 	if err != nil {
 		return nil, err
@@ -45,7 +53,11 @@ func NewPublicKeyECDH(curve string, bytes []byte) (*PublicKeyECDH, error) {
 func (k *PublicKeyECDH) Bytes() []byte { return k.bytes }
 
 func NewPrivateKeyECDH(curve string, bytes []byte) (*PrivateKeyECDH, error) {
-	if len(bytes) != curveSize(curve) {
+	expectedLen := privateKeySizeX25519
+	if curve != "X25519" {
+		expectedLen = curveSize(curve)
+	}
+	if len(bytes) != expectedLen {
 		return nil, errors.New("NewPrivateKeyECDH: wrong key length")
 	}
 	pkey, err := newECDHPkey(curve, bytes, true)
@@ -65,40 +77,50 @@ func (k *PrivateKeyECDH) PublicKey() (*PublicKeyECDH, error) {
 	}()
 
 	var bytes []byte
-	switch vMajor {
-	case 1:
-		var err error
-		pkey, err = ossl.EVP_PKEY_new()
-		if err != nil {
-			return nil, err
-		}
-		key := getECKey(k._pkey)
-		if _, err := ossl.EVP_PKEY_set1_EC_KEY(pkey, key); err != nil {
-			return nil, err
-		}
-		pt := ossl.EC_KEY_get0_public_key(key)
-		if pt == nil {
-			return nil, fail("missing ECDH public key")
-		}
-		group := ossl.EC_KEY_get0_group(key)
-		if bytes, err = encodeEcPoint(group, pt); err != nil {
-			return nil, err
-		}
-	case 3:
+	if k.curve == "X25519" {
 		pkey = k._pkey
 		if _, err := ossl.EVP_PKEY_up_ref(pkey); err != nil {
 			return nil, err
 		}
-
-		var cbytes *byte
-		n, err := ossl.EVP_PKEY_get1_encoded_public_key(k._pkey, &cbytes)
-		if err != nil {
+		bytes = make([]byte, publicKeySizeX25519)
+		if err := extractPKEYRawPublic(pkey, bytes); err != nil {
 			return nil, err
 		}
-		bytes = goBytes(unsafe.Pointer(cbytes), n)
-		cryptoFree(unsafe.Pointer(cbytes))
-	default:
-		panic(errUnsupportedVersion())
+	} else {
+		switch vMajor {
+		case 1:
+			var err error
+			pkey, err = ossl.EVP_PKEY_new()
+			if err != nil {
+				return nil, err
+			}
+			key := getECKey(k._pkey)
+			if _, err := ossl.EVP_PKEY_set1_EC_KEY(pkey, key); err != nil {
+				return nil, err
+			}
+			pt := ossl.EC_KEY_get0_public_key(key)
+			if pt == nil {
+				return nil, fail("missing ECDH public key")
+			}
+			group := ossl.EC_KEY_get0_group(key)
+			if bytes, err = encodeEcPoint(group, pt); err != nil {
+				return nil, err
+			}
+		case 3:
+			pkey = k._pkey
+			if _, err := ossl.EVP_PKEY_up_ref(pkey); err != nil {
+				return nil, err
+			}
+			var cbytes *byte
+			n, err := ossl.EVP_PKEY_get1_encoded_public_key(k._pkey, &cbytes)
+			if err != nil {
+				return nil, err
+			}
+			bytes = goBytes(unsafe.Pointer(cbytes), n)
+			cryptoFree(unsafe.Pointer(cbytes))
+		default:
+			panic(errUnsupportedVersion())
+		}
 	}
 	pub := &PublicKeyECDH{pkey, bytes}
 	pkey = nil
@@ -107,6 +129,13 @@ func (k *PrivateKeyECDH) PublicKey() (*PublicKeyECDH, error) {
 }
 
 func newECDHPkey(curve string, bytes []byte, isPrivate bool) (ossl.EVP_PKEY_PTR, error) {
+	if curve == "X25519" {
+		if isPrivate {
+			return ossl.EVP_PKEY_new_raw_private_key(ossl.EVP_PKEY_X25519, nil, base(bytes), len(bytes))
+		} else {
+			return ossl.EVP_PKEY_new_raw_public_key(ossl.EVP_PKEY_X25519, nil, base(bytes), len(bytes))
+		}
+	}
 	nid := curveNID(curve)
 	switch vMajor {
 	case 1:
@@ -260,7 +289,7 @@ func ECDH(priv *PrivateKeyECDH, pub *PublicKeyECDH) ([]byte, error) {
 }
 
 func GenerateKeyECDH(curve string) (*PrivateKeyECDH, []byte, error) {
-	pkey, err := generateEVPPKey(ossl.EVP_PKEY_EC, 0, curve)
+	pkey, err := generateEVPPKey(curveID(curve), 0, curve)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -270,34 +299,43 @@ func GenerateKeyECDH(curve string) (*PrivateKeyECDH, []byte, error) {
 			ossl.EVP_PKEY_free(pkey)
 		}
 	}()
-	var priv ossl.BIGNUM_PTR
-	switch vMajor {
-	case 1:
-		key := getECKey(pkey)
-		priv = ossl.EC_KEY_get0_private_key(key)
-		if priv == nil {
-			return nil, nil, fail("missing ECDH private key")
-		}
-	case 3:
-		if _, err := ossl.EVP_PKEY_get_bn_param(pkey, _OSSL_PKEY_PARAM_PRIV_KEY.ptr(), &priv); err != nil {
+	var bytes []byte
+	if curve == "X25519" {
+		bytes = make([]byte, privateKeySizeX25519)
+		keylen := len(bytes)
+		if _, err := ossl.EVP_PKEY_get_raw_private_key(pkey, base(bytes), &keylen); err != nil {
 			return nil, nil, err
 		}
-		defer ossl.BN_clear_free(priv)
-	default:
-		panic(errUnsupportedVersion())
-	}
-	// We should not leak bit length of the secret scalar in the key.
-	// For this reason, we use BN_bn2binpad instead of BN_bn2bin with fixed length.
-	// The fixed length is the order of the large prime subgroup of the curve,
-	// returned by EVP_PKEY_get_bits, which is generally the upper bound for
-	// generating a private ECDH key.
-	bits, err := ossl.EVP_PKEY_get_bits(pkey)
-	if err != nil {
-		return nil, nil, err
-	}
-	bytes := make([]byte, (bits+7)/8)
-	if err := bnToBinPad(priv, bytes); err != nil {
-		return nil, nil, err
+	} else {
+		var priv ossl.BIGNUM_PTR
+		switch vMajor {
+		case 1:
+			key := getECKey(pkey)
+			priv = ossl.EC_KEY_get0_private_key(key)
+			if priv == nil {
+				return nil, nil, fail("missing ECDH private key")
+			}
+		case 3:
+			if _, err := ossl.EVP_PKEY_get_bn_param(pkey, _OSSL_PKEY_PARAM_PRIV_KEY.ptr(), &priv); err != nil {
+				return nil, nil, err
+			}
+			defer ossl.BN_clear_free(priv)
+		default:
+			panic(errUnsupportedVersion())
+		}
+		// We should not leak bit length of the secret scalar in the key.
+		// For this reason, we use BN_bn2binpad instead of BN_bn2bin with fixed length.
+		// The fixed length is the order of the large prime subgroup of the curve,
+		// returned by EVP_PKEY_get_bits, which is generally the upper bound for
+		// generating a private ECDH key.
+		bits, err := ossl.EVP_PKEY_get_bits(pkey)
+		if err != nil {
+			return nil, nil, err
+		}
+		bytes = make([]byte, (bits+7)/8)
+		if err := bnToBinPad(priv, bytes); err != nil {
+			return nil, nil, err
+		}
 	}
 	k = &PrivateKeyECDH{pkey, curve}
 	runtime.SetFinalizer(k, (*PrivateKeyECDH).finalize)
