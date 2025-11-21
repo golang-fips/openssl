@@ -104,7 +104,7 @@ func extractPKEYRawPrivate(pkey ossl.EVP_PKEY_PTR, pub []byte) error {
 		return err
 	}
 	if keylen != len(pub) {
-		return errors.New("bad public key length: " + strconv.Itoa(keylen))
+		return errors.New("bad private key length: " + strconv.Itoa(keylen))
 	}
 	return nil
 }
