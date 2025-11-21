@@ -227,7 +227,7 @@ func generateEVPPKey(id, bits int32, curve string) (ossl.EVP_PKEY_PTR, error) {
 				return nil, err
 			}
 		}
-		if curve != "" {
+		if id == ossl.EVP_PKEY_EC && curve != "" {
 			if _, err := ossl.EVP_PKEY_CTX_ctrl(ctx, id, -1, ossl.EVP_PKEY_CTRL_EC_PARAMGEN_CURVE_NID, curveNID(curve), nil); err != nil {
 				return nil, err
 			}
