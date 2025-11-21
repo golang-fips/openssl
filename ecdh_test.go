@@ -329,7 +329,8 @@ func testX25519Failure(t *testing.T, private, public []byte) {
 	}
 	pub, err := openssl.NewPublicKeyECDH("X25519", public)
 	if err != nil {
-		t.Fatal(err)
+		// Some providers may reject the public key at import time.
+		return
 	}
 	secret, err := openssl.ECDH(priv, pub)
 	if err == nil {
