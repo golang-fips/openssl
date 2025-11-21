@@ -1881,6 +1881,7 @@ func MkcgoLoad_(handle unsafe.Pointer) {
 	_mkcgo_EVP_PKEY_paramgen_init = dlsym(handle, "EVP_PKEY_paramgen_init\x00", false)
 	_mkcgo_EVP_PKEY_sign = dlsym(handle, "EVP_PKEY_sign\x00", false)
 	_mkcgo_EVP_PKEY_sign_init = dlsym(handle, "EVP_PKEY_sign_init\x00", false)
+	_mkcgo_EVP_PKEY_up_ref = dlsym(handle, "EVP_PKEY_up_ref\x00", false)
 	_mkcgo_EVP_PKEY_verify = dlsym(handle, "EVP_PKEY_verify\x00", false)
 	_mkcgo_EVP_PKEY_verify_init = dlsym(handle, "EVP_PKEY_verify_init\x00", false)
 	_mkcgo_EVP_aes_128_cbc = dlsym(handle, "EVP_aes_128_cbc\x00", false)
@@ -1986,6 +1987,7 @@ func MkcgoUnload_() {
 	_mkcgo_EVP_PKEY_paramgen_init = 0
 	_mkcgo_EVP_PKEY_sign = 0
 	_mkcgo_EVP_PKEY_sign_init = 0
+	_mkcgo_EVP_PKEY_up_ref = 0
 	_mkcgo_EVP_PKEY_verify = 0
 	_mkcgo_EVP_PKEY_verify_init = 0
 	_mkcgo_EVP_aes_128_cbc = 0
@@ -2107,7 +2109,6 @@ func MkcgoLoad_3(handle unsafe.Pointer) {
 	_mkcgo_EVP_PKEY_private_check = dlsym(handle, "EVP_PKEY_private_check\x00", false)
 	_mkcgo_EVP_PKEY_public_check_quick = dlsym(handle, "EVP_PKEY_public_check_quick\x00", false)
 	_mkcgo_EVP_PKEY_set1_encoded_public_key = dlsym(handle, "EVP_PKEY_set1_encoded_public_key\x00", false)
-	_mkcgo_EVP_PKEY_up_ref = dlsym(handle, "EVP_PKEY_up_ref\x00", false)
 	_mkcgo_EVP_SIGNATURE_fetch = dlsym(handle, "EVP_SIGNATURE_fetch\x00", false)
 	_mkcgo_EVP_SIGNATURE_free = dlsym(handle, "EVP_SIGNATURE_free\x00", false)
 	_mkcgo_EVP_default_properties_enable_fips = dlsym(handle, "EVP_default_properties_enable_fips\x00", false)
@@ -2181,7 +2182,6 @@ func MkcgoUnload_3() {
 	_mkcgo_EVP_PKEY_private_check = 0
 	_mkcgo_EVP_PKEY_public_check_quick = 0
 	_mkcgo_EVP_PKEY_set1_encoded_public_key = 0
-	_mkcgo_EVP_PKEY_up_ref = 0
 	_mkcgo_EVP_SIGNATURE_fetch = 0
 	_mkcgo_EVP_SIGNATURE_free = 0
 	_mkcgo_EVP_default_properties_enable_fips = 0
