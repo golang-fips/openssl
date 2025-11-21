@@ -5,9 +5,30 @@ package openssl
 import (
 	"errors"
 	"strconv"
+	"sync"
 
 	"github.com/golang-fips/openssl/v2/internal/ossl"
 )
+
+func SupportsCurve(curve string) bool {
+	switch curve {
+	case "P-224", "P-256", "P-384", "P-521":
+		return true
+	case "X25519":
+		return supportsX25519()
+	default:
+		return false
+	}
+}
+
+var supportsX25519 = sync.OnceValue(func() bool {
+	ctx, _ := ossl.EVP_PKEY_CTX_new_id(ossl.EVP_PKEY_X25519, nil)
+	if ctx != nil {
+		ossl.EVP_PKEY_CTX_free(ctx)
+		return true
+	}
+	return false
+})
 
 func curveID(curve string) int32 {
 	switch curve {

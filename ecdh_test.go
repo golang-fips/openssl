@@ -14,6 +14,7 @@ func TestECDH(t *testing.T) {
 	for _, tt := range []string{"P-256", "P-384", "P-521", "X25519"} {
 		t.Run(tt, func(t *testing.T) {
 			name := tt
+			skipUnsupportedCurve(t, name)
 			aliceKey, alicPrivBytes, err := openssl.GenerateKeyECDH(name)
 			if err != nil {
 				t.Fatal(err)
@@ -121,6 +122,7 @@ var ecdhvectors = []struct {
 func TestECDHVectors(t *testing.T) {
 	for _, tt := range ecdhvectors {
 		t.Run(tt.Name, func(t *testing.T) {
+			skipUnsupportedCurve(t, tt.Name)
 			key, err := openssl.NewPrivateKeyECDH(tt.Name, hexDecode(t, tt.PrivateKey))
 			if err != nil {
 				t.Fatal(err)
@@ -285,6 +287,7 @@ var invalidECDHPublicKeys = map[string][]string{
 func TestECDHNewPrivateKeyECDH_Invalid(t *testing.T) {
 	for _, curve := range []string{"P-256", "P-384", "P-521", "X25519"} {
 		t.Run(curve, func(t *testing.T) {
+			skipUnsupportedCurve(t, curve)
 			for _, input := range invalidECDHPrivateKeys[curve] {
 				k, err := openssl.NewPrivateKeyECDH(curve, hexDecode(t, input))
 				if err == nil {
@@ -300,6 +303,7 @@ func TestECDHNewPrivateKeyECDH_Invalid(t *testing.T) {
 func TestECDHNewPublicKeyECDH_Invalid(t *testing.T) {
 	for _, curve := range []string{"P-256", "P-384", "P-521", "X25519"} {
 		t.Run(curve, func(t *testing.T) {
+			skipUnsupportedCurve(t, curve)
 			for _, input := range invalidECDHPublicKeys[curve] {
 				k, err := openssl.NewPublicKeyECDH(curve, hexDecode(t, input))
 				if err == nil {
@@ -313,6 +317,7 @@ func TestECDHNewPublicKeyECDH_Invalid(t *testing.T) {
 }
 
 func TestX25519Failure(t *testing.T) {
+	skipUnsupportedCurve(t, "X25519")
 	identity := hexDecode(t, "0000000000000000000000000000000000000000000000000000000000000000")
 	lowOrderPoint := hexDecode(t, "e0eb7a7c3b41b8ae1656e3faf19fc46ada098deb9c32b1fd866205165f49b800")
 	randomScalar := make([]byte, 32)
@@ -338,5 +343,12 @@ func testX25519Failure(t *testing.T, private, public []byte) {
 	}
 	if secret != nil {
 		t.Errorf("unexpected ECDH output: %x", secret)
+	}
+}
+
+func skipUnsupportedCurve(t *testing.T, curve string) {
+	t.Helper()
+	if !openssl.SupportsCurve(curve) {
+		t.Skipf("skipping test: curve %q is not supported", curve)
 	}
 }
