@@ -68,7 +68,7 @@ func errUnsupportedVersion() error {
 // checkMajorVersion panics if the current major version is not expected.
 func checkMajorVersion(expected int) {
 	if vMajor != expected {
-		panic("openssl: incorrect major version (" + strconv.Itoa(int(vMajor)) + "), expected " + strconv.Itoa(int(expected)))
+		panic("openssl: incorrect major version (" + strconv.Itoa(vMajor) + "), expected " + strconv.Itoa(expected))
 	}
 }
 

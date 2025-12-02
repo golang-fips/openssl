@@ -260,7 +260,8 @@ var defaultProviderAvailable = sync.OnceValue(func() bool {
 })
 
 // isProviderAvailable checks if the provider with the given name is available.
-// This function is used in export_test.go, but must be defined here as test files can't access C functions.
+// This helper is used within openssl_test.go to check provider availability for tests,
+// and must be defined here as test files can't access C functions directly.
 func isProviderAvailable(name string) bool {
 	if major, _, _ := osslsetup.Version(); major == 1 {
 		return false
