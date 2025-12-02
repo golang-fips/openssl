@@ -209,8 +209,9 @@ func ExpandHKDFOneShot(h func() hash.Hash, pseudorandomKey, info []byte, keyLeng
 		}
 		defer ossl.EVP_PKEY_CTX_free(ctx)
 		if len(out) == 0 {
-			// Nothing to do, and some engines may error on zero-length output.
-			// Call newHKDFCtx1, tought, to validate parameters.
+			// Nothing to do, so exit early.
+			// We also can't call EVP_PKEY_derive because some engines error on zero-length output.
+			// We can only exit after calling newHKDFCtx1 because we still need it to validate the parameters.
 			return out, nil
 		}
 		keylen := keyLength
@@ -224,8 +225,9 @@ func ExpandHKDFOneShot(h func() hash.Hash, pseudorandomKey, info []byte, keyLeng
 		}
 		defer ossl.EVP_KDF_CTX_free(ctx)
 		if len(out) == 0 {
-			// Nothing to do, and some providers may error on zero-length output.
-			// Call newHKDFCtx3, tought, to validate parameters.
+			// Nothing to do, so exit early.
+			// We also can't call EVP_PKEY_derive because some engines error on zero-length output.
+			// We can only exit after calling newHKDFCtx3 because we still need it to validate the parameters.
 			return out, nil
 		}
 		if _, err := ossl.EVP_KDF_derive(ctx, base(out), keyLength, nil); err != nil {
