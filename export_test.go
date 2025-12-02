@@ -13,5 +13,3 @@ var (
 )
 
 var HashBufSize = hashBufSize
-
-var Major = vMajor

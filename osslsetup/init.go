@@ -130,22 +130,23 @@ func openLibrary(file string) (handle unsafe.Pointer, close func(), err error) {
 		ossl.OPENSSL_version_minor_Available() &&
 		ossl.OPENSSL_version_patch_Available() {
 		// Likely OpenSSL 3 or later.
-		vMajor = uint(ossl.OPENSSL_version_major())
-		vMinor = uint(ossl.OPENSSL_version_minor())
-		vPatch = uint(ossl.OPENSSL_version_patch())
+		vMajor = int(ossl.OPENSSL_version_major())
+		vMinor = int(ossl.OPENSSL_version_minor())
+		vPatch = int(ossl.OPENSSL_version_patch())
 	} else if ossl.OpenSSL_version_num_Available() {
 		// Likely OpenSSL 1.
 		ver := ossl.OpenSSL_version_num()
-		vMajor = uint(ver >> 28)
-		vMinor = uint(ver >> 20 & 0xFF)
-		vPatch = uint(ver >> 12 & 0xFF)
+		vMajor = int(ver >> 28)
+		vMinor = int(ver >> 20 & 0xFF)
+		vPatch = int(ver >> 12 & 0xFF)
 	} else {
 		return handle, nil, errors.New("openssl: version not available")
 	}
 	var supported bool
-	if vMajor == 1 {
+	switch vMajor {
+	case 1:
 		supported = vMinor == 1
-	} else if vMajor == 3 {
+	case 3:
 		// OpenSSL guarantees API and ABI compatibility within the same major version since OpenSSL 3.
 		supported = true
 	}

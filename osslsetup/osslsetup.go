@@ -11,14 +11,14 @@ import (
 )
 
 var (
-	vMajor, vMinor, vPatch uint
+	vMajor, vMinor, vPatch int
 )
 
 func Version() (major, minor, patch int) {
-	return int(vMajor), int(vMinor), int(vPatch)
+	return vMajor, vMinor, vPatch
 }
 
-func utoa(n uint) string {
+func utoa(n int) string {
 	return strconv.FormatUint(uint64(n), 10)
 }
 
