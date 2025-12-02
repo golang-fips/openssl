@@ -151,7 +151,7 @@ func TestRSAEncryptDecryptOAEP_EmptyLabel(t *testing.T) {
 }
 
 func TestRSAEncryptDecryptOAEP_WithMGF1Hash(t *testing.T) {
-	if openssl.SymCryptProviderAvailable() {
+	if symCryptProviderAvailable() {
 		t.Skip("SymCrypt provider does not support MGF1 hash")
 	}
 

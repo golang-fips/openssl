@@ -1,6 +1,6 @@
 //go:build unix && !cmd_go_bootstrap && !cgo && goexperiment.ms_nocgo_opensslcrypto
 
-package openssl
+package osslsetup
 
 import (
 	"errors"
@@ -18,7 +18,7 @@ func dlopen(file string) (handle unsafe.Pointer, err error) {
 	}
 	handle = ossl.Dlopen(unsafe.StringData(file+"\x00"), int32(RTLD_LAZY|RTLD_LOCAL))
 	if handle == nil {
-		return nil, errors.New(goString(ossl.Dlerror()))
+		return nil, errors.New("openssl: can't load " + file + ": " + goString(ossl.Dlerror()))
 	}
 	return handle, nil
 }

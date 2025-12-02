@@ -166,7 +166,7 @@ func TestSetFIPS(t *testing.T) {
 	}
 
 	if fipsEnabled &&
-		openssl.DefaultProviderAvailable() {
+		defaultProviderAvailable() {
 		// Test that we can disable FIPS mode if it was enabled
 		// when the built-in provider is available.
 		err := openssl.SetFIPS(false)
@@ -174,7 +174,7 @@ func TestSetFIPS(t *testing.T) {
 			t.Fatalf("SetFIPS(false) failed: %v", err)
 		}
 	} else if !fipsEnabled &&
-		(openssl.SymCryptProviderAvailable() || openssl.FIPSProviderAvailable()) {
+		(symCryptProviderAvailable() || fipsProviderAvailable()) {
 		// Test that we can enable FIPS mode if it was disabled
 		// when the provider is known to support FIPS mode.
 		err := openssl.SetFIPS(true)
@@ -189,7 +189,7 @@ func TestSetFIPS(t *testing.T) {
 func TestFIPSCapable(t *testing.T) {
 	got := openssl.FIPSCapable()
 	want := openssl.FIPS()
-	if !want && openssl.SymCryptProviderAvailable() {
+	if !want && symCryptProviderAvailable() {
 		// The SymCrypt provider is FIPS-capable.
 		want = true
 	}
@@ -244,4 +244,25 @@ func BenchmarkError(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		openssl.GenerateKeyRSA(1)
 	}
+}
+
+var symCryptProviderAvailable = sync.OnceValue(func() bool {
+	return isProviderAvailable("symcryptprovider")
+})
+
+var fipsProviderAvailable = sync.OnceValue(func() bool {
+	return isProviderAvailable("fips")
+})
+
+var defaultProviderAvailable = sync.OnceValue(func() bool {
+	return isProviderAvailable("default")
+})
+
+// isProviderAvailable checks if the provider with the given name is available.
+// This function is used in export_test.go, but must be defined here as test files can't access C functions.
+func isProviderAvailable(name string) bool {
+	if openssl.Major == 1 {
+		return false
+	}
+	return ossl.OSSL_PROVIDER_available(nil, unsafe.StringData(name+"\x00")) == 1
 }

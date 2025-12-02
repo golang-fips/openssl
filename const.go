@@ -30,14 +30,6 @@ func (s cString) ptr() *byte {
 }
 
 const ( //checkheader:ignore
-	// Provider names
-	_ProviderNameFips    cString = "fips\x00"
-	_ProviderNameDefault cString = "default\x00"
-
-	// Property strings
-	_PropFIPSYes cString = "fips=yes\x00"
-	_PropFIPSNo  cString = "-fips\x00"
-
 	// Key types
 	_KeyTypeRSA       cString = "RSA\x00"
 	_KeyTypeEC        cString = "EC\x00"
@@ -45,9 +37,6 @@ const ( //checkheader:ignore
 	_KeyTypeX25519    cString = "X25519\x00"
 	_KeyTypeMLKEM768  cString = "ML-KEM-768\x00"
 	_KeyTypeMLKEM1024 cString = "ML-KEM-1024\x00"
-
-	// Digest Names
-	_DigestNameSHA2_256 cString = "SHA2-256\x00"
 
 	// KDF names
 	_OSSL_KDF_NAME_HKDF      cString = "HKDF\x00"

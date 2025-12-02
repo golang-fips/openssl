@@ -1,6 +1,6 @@
 //go:build !cmd_go_bootstrap
 
-package openssl
+package osslsetup
 
 import (
 	"syscall"

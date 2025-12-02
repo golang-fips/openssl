@@ -1,6 +1,6 @@
 //go:build unix && !cmd_go_bootstrap
 
-package openssl
+package osslsetup
 
 // #cgo LDFLAGS: -ldl
 // #include <stdlib.h>

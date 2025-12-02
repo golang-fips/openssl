@@ -1,20 +1,6 @@
 package openssl
 
-import "sync"
-
 var ErrOpen = errOpen
-
-var SymCryptProviderAvailable = sync.OnceValue(func() bool {
-	return isProviderAvailable("symcryptprovider")
-})
-
-var FIPSProviderAvailable = sync.OnceValue(func() bool {
-	return isProviderAvailable("fips")
-})
-
-var DefaultProviderAvailable = sync.OnceValue(func() bool {
-	return isProviderAvailable("default")
-})
 
 // MLKEM constants for testing against the stdlib
 var (
@@ -27,3 +13,5 @@ var (
 )
 
 var HashBufSize = hashBufSize
+
+var Major = vMajor
