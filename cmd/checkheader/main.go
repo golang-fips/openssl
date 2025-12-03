@@ -166,6 +166,8 @@ func generate(header string) (string, error) {
 				conds = append(conds, "OPENSSL_VERSION_NUMBER >= 0x10101000L")
 			case "3", "init_3":
 				conds = append(conds, "OPENSSL_VERSION_NUMBER >= 0x30000000L")
+			case "33":
+				conds = append(conds, "OPENSSL_VERSION_NUMBER >= 0x30300000L")
 			}
 			for _, cond := range conds {
 				fmt.Fprintf(w, "#if %s\n", cond)
