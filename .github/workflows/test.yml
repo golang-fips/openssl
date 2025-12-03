@@ -22,7 +22,7 @@ jobs:
       with:
         go-version: ${{ matrix.go-version }}
     - name: Checkout code
-      uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
+      uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
     - name: Verify go generate leaves no changes
       run: |
         go generate ./...
@@ -84,7 +84,7 @@ jobs:
       with:
         go-version: ${{ matrix.go-version }}
     - name: Checkout code
-      uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
+      uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
     - name: Run Test
       run: go test -shuffle=on -gcflags=all=-d=checkptr -count 10 -v ./...
       env:
@@ -114,7 +114,7 @@ jobs:
       with:
         go-version: ${{ matrix.go-version }}
     - name: Checkout code
-      uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
+      uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
     - name: Run Test
       run: go test -shuffle=on -gcflags=all=-d=checkptr -count 10 -v ./...
       env:
@@ -132,7 +132,7 @@ jobs:
     container: mcr.microsoft.com/oss/go/microsoft/golang:1.24-azurelinux3.0
     steps:
     - name: Checkout code
-      uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
+      uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
     - name: Run Test
       run: go test -shuffle=on -v ./...
       env:
@@ -148,7 +148,7 @@ jobs:
     container: mcr.microsoft.com/oss/go/microsoft/golang:1.24-cbl-mariner2.0
     steps:
     - name: Checkout code
-      uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
+      uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
     - name: Run Test
       run: go test -shuffle=on -v ./...
       env:
@@ -172,7 +172,7 @@ jobs:
       with:
         platforms: ${{ matrix.architecture }}
     - name: Checkout code
-      uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
+      uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
     - name: Run tests on ${{matrix.architecture}}
       run: |
         docker run --rm --platform linux/${{matrix.architecture}} \
@@ -199,6 +199,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout code
-      uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
+      uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
     - name: Run Build
       run: CGO_ENABLED=0 go build ./...
