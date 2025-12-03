@@ -1,14 +1,12 @@
-//go:build !cmd_go_bootstrap
+//go:build !cmd_go_bootstrap && (cgo || goexperiment.ms_nocgo_opensslcrypto)
 
 package openssl
 
-// #include "goopenssl.h"
-import "C"
 import (
 	"runtime"
 	"strconv"
-	"sync"
-	"unsafe"
+
+	"github.com/golang-fips/openssl/v2/internal/ossl"
 )
 
 // shakeOneShot applies the SHAKE extendable output function to data and
@@ -20,19 +18,19 @@ func shakeOneShot(secuirtyBits int, data []byte, out []byte) {
 	if alg == nil {
 		panic("openssl: unsupported SHAKE" + strconv.Itoa(secuirtyBits) + " function")
 	}
-	ctx := C.go_openssl_EVP_MD_CTX_new()
-	if ctx == nil {
-		panic(newOpenSSLError("EVP_MD_CTX_new"))
+	ctx, err := ossl.EVP_MD_CTX_new()
+	if err != nil {
+		panic(err)
 	}
-	defer C.go_openssl_EVP_MD_CTX_free(ctx)
-	if C.go_openssl_EVP_DigestInit_ex(ctx, alg.md, nil) != 1 {
-		panic(newOpenSSLError("EVP_DigestInit_ex"))
+	defer ossl.EVP_MD_CTX_free(ctx)
+	if _, err := ossl.EVP_DigestInit_ex(ctx, alg.md, nil); err != nil {
+		panic(err)
 	}
-	if C.go_openssl_EVP_DigestUpdate(ctx, unsafe.Pointer(&*addr(data)), C.size_t(len(data))) != 1 {
-		panic(newOpenSSLError("EVP_DigestUpdate"))
+	if _, err := ossl.EVP_DigestUpdate(ctx, data); err != nil {
+		panic(err)
 	}
-	if C.go_openssl_EVP_DigestFinalXOF(ctx, (*C.uchar)(unsafe.Pointer(&*addr(out))), C.size_t(len(out))) != 1 {
-		panic(newOpenSSLError("EVP_DigestFinalXOF"))
+	if _, err := ossl.EVP_DigestFinalXOF(ctx, out, len(out)); err != nil {
+		panic(err)
 	}
 }
 
@@ -73,7 +71,7 @@ func SupportsCSHAKE(securityBits int) bool {
 // SHAKE is an instance of a SHAKE extendable output function.
 type SHAKE struct {
 	alg        *shakeAlgorithm
-	ctx        C.GO_EVP_MD_CTX_PTR
+	ctx        ossl.EVP_MD_CTX_PTR
 	lastXofLen int
 }
 
@@ -116,13 +114,13 @@ func newSHAKE(securityBits int) *SHAKE {
 	if alg == nil {
 		panic("openssl: unsupported SHAKE" + strconv.Itoa(securityBits) + " function")
 	}
-	ctx := C.go_openssl_EVP_MD_CTX_new()
-	if ctx == nil {
-		panic(newOpenSSLError("EVP_MD_CTX_new"))
+	ctx, err := ossl.EVP_MD_CTX_new()
+	if err != nil {
+		panic(err)
 	}
-	if C.go_openssl_EVP_DigestInit_ex(ctx, alg.md, nil) != 1 {
-		C.go_openssl_EVP_MD_CTX_free(ctx)
-		panic(newOpenSSLError("EVP_DigestInit_ex"))
+	if _, err := ossl.EVP_DigestInit_ex(ctx, alg.md, nil); err != nil {
+		ossl.EVP_MD_CTX_free(ctx)
+		panic(err)
 	}
 	s := &SHAKE{alg: alg, ctx: ctx}
 	runtime.SetFinalizer(s, (*SHAKE).finalize)
@@ -130,7 +128,7 @@ func newSHAKE(securityBits int) *SHAKE {
 }
 
 func (s *SHAKE) finalize() {
-	C.go_openssl_EVP_MD_CTX_free(s.ctx)
+	ossl.EVP_MD_CTX_free(s.ctx)
 }
 
 // Write absorbs more data into the XOF's state.
@@ -141,8 +139,8 @@ func (s *SHAKE) Write(p []byte) (n int, err error) {
 	if len(p) == 0 {
 		return 0, nil
 	}
-	if C.go_openssl_EVP_DigestUpdate(s.ctx, unsafe.Pointer(&*addr(p)), C.size_t(len(p))) != 1 {
-		panic(newOpenSSLError("EVP_DigestUpdate"))
+	if _, err := ossl.EVP_DigestUpdate(s.ctx, p); err != nil {
+		panic(err)
 	}
 	return len(p), nil
 }
@@ -156,13 +154,13 @@ func (s *SHAKE) Read(p []byte) (n int, err error) {
 		return 0, nil
 	}
 	if len(p) != s.lastXofLen {
-		if C.go_openssl_EVP_MD_CTX_ctrl(s.ctx, C.EVP_MD_CTRL_XOF_LEN, C.int(len(p)), nil) != 1 {
-			panic(newOpenSSLError("EVP_MD_CTX_ctrl"))
+		if _, err := ossl.EVP_MD_CTX_ctrl(s.ctx, ossl.EVP_MD_CTRL_XOF_LEN, int32(len(p)), nil); err != nil {
+			panic(err)
 		}
 		s.lastXofLen = len(p)
 	}
-	if C.go_openssl_EVP_DigestSqueeze(s.ctx, (*C.uchar)(unsafe.Pointer(&*addr(p))), C.size_t(len(p))) != 1 {
-		panic(newOpenSSLError("EVP_DigestSqueeze"))
+	if _, err := ossl.EVP_DigestSqueeze(s.ctx, p); err != nil {
+		panic(err)
 	}
 	return len(p), nil
 }
@@ -170,8 +168,8 @@ func (s *SHAKE) Read(p []byte) (n int, err error) {
 // Reset resets the XOF to its initial state.
 func (s *SHAKE) Reset() {
 	defer runtime.KeepAlive(s)
-	if C.go_openssl_EVP_DigestInit_ex(s.ctx, nil, nil) != 1 {
-		panic(newOpenSSLError("EVP_DigestInit_ex"))
+	if _, err := ossl.EVP_DigestInit_ex(s.ctx, nil, nil); err != nil {
+		panic(err)
 	}
 	s.lastXofLen = 0
 }
@@ -181,11 +179,8 @@ func (s *SHAKE) BlockSize() int {
 	return s.alg.blockSize
 }
 
-// cacheSHAKE is a cache of SHAKE XOF length to GO_EVP_MD_PTR.
-var cacheSHAKE sync.Map
-
 type shakeAlgorithm struct {
-	md        C.GO_EVP_MD_PTR
+	md        ossl.EVP_MD_PTR
 	blockSize int
 }
 
@@ -198,24 +193,23 @@ func loadShake(securityBits int) (alg *shakeAlgorithm) {
 		cacheMD.Store(securityBits, alg)
 	}()
 
-	var name *C.char
+	var name cString
 	switch securityBits {
 	case 128:
-		name = C.CString("SHAKE-128")
+		name = "SHAKE-128\x00"
 	case 256:
-		name = C.CString("SHAKE-256")
+		name = "SHAKE-256\x00"
 	default:
 		return nil
 	}
-	defer C.free(unsafe.Pointer(name))
 
-	md := C.go_openssl_EVP_MD_fetch(nil, name, nil)
-	if md == nil {
+	md, err := ossl.EVP_MD_fetch(nil, name.ptr(), nil)
+	if err != nil || md == nil {
 		return nil
 	}
 
 	alg = new(shakeAlgorithm)
 	alg.md = md
-	alg.blockSize = int(C.go_openssl_EVP_MD_get_block_size(md))
+	alg.blockSize = int(ossl.EVP_MD_get_block_size(md))
 	return alg
 }

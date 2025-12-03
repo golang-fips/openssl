@@ -1,0 +1,20 @@
+//go:build !cgo && unix && goexperiment.ms_nocgo_opensslcrypto
+
+package ossl
+
+import (
+	"unsafe"
+
+	_ "github.com/golang-fips/openssl/v2/internal/fakecgo"
+)
+
+func dlsym(handle unsafe.Pointer, symbol string, optional bool) uintptr {
+	r0 := Dlsym(handle, unsafe.StringData(symbol))
+	if r0 == nil {
+		if !optional {
+			panic("cannot get required symbol " + symbol)
+		}
+		return 0
+	}
+	return uintptr(r0)
+}

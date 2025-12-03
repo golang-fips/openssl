@@ -1,14 +1,15 @@
-//go:build !cmd_go_bootstrap
+//go:build !cmd_go_bootstrap && (cgo || goexperiment.ms_nocgo_opensslcrypto)
 
 package openssl
 
-// #include "goopenssl.h"
-import "C"
 import (
 	"hash"
 	"runtime"
+	"slices"
 	"sync"
 	"unsafe"
+
+	"github.com/golang-fips/openssl/v2/internal/ossl"
 )
 
 // NewHMAC returns a new HMAC using OpenSSL.
@@ -28,7 +29,7 @@ func NewHMAC(fh func() hash.Hash, key []byte) hash.Hash {
 		// HMAC_Init will try and reuse the key from the ctx. This is
 		// not the behavior previously implemented, so as a workaround
 		// we pass an "empty" key.
-		key = make([]byte, C.GO_EVP_MAX_MD_SIZE)
+		key = make([]byte, ossl.EVP_MAX_MD_SIZE)
 	}
 
 	hmac := &opensslHMAC{
@@ -58,12 +59,12 @@ func NewHMAC(fh func() hash.Hash, key []byte) hash.Hash {
 
 // hmacCtx3 is used for OpenSSL 1.
 type hmacCtx1 struct {
-	ctx C.GO_HMAC_CTX_PTR
+	ctx ossl.HMAC_CTX_PTR
 }
 
 // hmacCtx3 is used for OpenSSL 3.
 type hmacCtx3 struct {
-	ctx C.GO_EVP_MAC_CTX_PTR
+	ctx ossl.EVP_MAC_CTX_PTR
 	key []byte // only set for OpenSSL 3.0.0, 3.0.1, and 3.0.2.
 }
 
@@ -72,87 +73,84 @@ type opensslHMAC struct {
 	ctx3      hmacCtx3
 	size      int
 	blockSize int
-	sum       []byte
+	sum       [maxHashSize]byte
 }
 
-func newHMAC1(key []byte, md C.GO_EVP_MD_PTR) hmacCtx1 {
-	ctx := hmacCtxNew()
-	if ctx == nil {
-		panic("openssl: EVP_MAC_CTX_new failed")
+func newHMAC1(key []byte, md ossl.EVP_MD_PTR) hmacCtx1 {
+	ctx, err := ossl.HMAC_CTX_new()
+	if err != nil {
+		panic(err)
 	}
-	if C.go_openssl_HMAC_Init_ex(ctx, unsafe.Pointer(&key[0]), C.int(len(key)), md, nil) == 0 {
-		panic(newOpenSSLError("HMAC_Init_ex failed"))
+	if _, err := ossl.HMAC_Init_ex(ctx, unsafe.Pointer(&key[0]), int32(len(key)), md, nil); err != nil {
+		panic(err)
 	}
 	return hmacCtx1{ctx}
 }
 
 var hmacDigestsSupported sync.Map
-var fetchHMAC3 = sync.OnceValue(func() C.GO_EVP_MAC_PTR {
-	name := C.CString("HMAC")
-	mac := C.go_openssl_EVP_MAC_fetch(nil, name, nil)
-	C.free(unsafe.Pointer(name))
-	if mac == nil {
-		panic("openssl: HMAC not supported")
+var fetchHMAC3 = sync.OnceValue(func() ossl.EVP_MAC_PTR {
+	mac, err := ossl.EVP_MAC_fetch(nil, _OSSL_MAC_NAME_HMAC.ptr(), nil)
+	if err != nil {
+		panic(err)
 	}
 	return mac
 })
 
-func buildHMAC3Params(digest *C.char) (C.GO_OSSL_PARAM_PTR, error) {
+func buildHMAC3Params(md ossl.EVP_MD_PTR) (ossl.OSSL_PARAM_PTR, error) {
 	bld, err := newParamBuilder()
 	if err != nil {
 		return nil, err
 	}
 	defer bld.finalize()
-	bld.addUTF8String(_OSSL_MAC_PARAM_DIGEST, digest, 0)
+	bld.addUTF8String(_OSSL_MAC_PARAM_DIGEST, ossl.EVP_MD_get0_name(md), 0)
 	return bld.build()
 }
 
-func isHMAC3DigestSupported(digest string) bool {
-	if v, ok := hmacDigestsSupported.Load(digest); ok {
+func isHMAC3DigestSupported(md ossl.EVP_MD_PTR) bool {
+	nid := ossl.EVP_MD_get_type(md)
+	if v, ok := hmacDigestsSupported.Load(nid); ok {
 		return v.(bool)
 	}
-	ctx := C.go_openssl_EVP_MAC_CTX_new(fetchHMAC3())
-	if ctx == nil {
-		panic(newOpenSSLError("EVP_MAC_CTX_new"))
-	}
-	defer C.go_openssl_EVP_MAC_CTX_free(ctx)
-
-	cdigest := C.CString(digest)
-	defer C.free(unsafe.Pointer(cdigest))
-	params, err := buildHMAC3Params(cdigest)
+	ctx, err := ossl.EVP_MAC_CTX_new(fetchHMAC3())
 	if err != nil {
 		panic(err)
 	}
-	defer C.go_openssl_OSSL_PARAM_free(params)
+	defer ossl.EVP_MAC_CTX_free(ctx)
 
-	supported := C.go_openssl_EVP_MAC_CTX_set_params(ctx, params) != 0
-	hmacDigestsSupported.Store(digest, supported)
+	params, err := buildHMAC3Params(md)
+	if err != nil {
+		panic(err)
+	}
+	defer ossl.OSSL_PARAM_free(params)
+
+	_, err = ossl.EVP_MAC_CTX_set_params(ctx, params)
+	supported := err == nil
+	hmacDigestsSupported.Store(nid, supported)
 	return supported
 }
 
-func newHMAC3(key []byte, md C.GO_EVP_MD_PTR) hmacCtx3 {
-	digest := C.go_openssl_EVP_MD_get0_name(md)
-	if !isHMAC3DigestSupported(C.GoString(digest)) {
+func newHMAC3(key []byte, md ossl.EVP_MD_PTR) hmacCtx3 {
+	if !isHMAC3DigestSupported(md) {
 		// The digest is not supported by the HMAC provider.
 		// Don't panic here so the Go standard library to
 		// fall back to the Go implementation.
 		// See https://github.com/golang-fips/openssl/issues/153.
 		return hmacCtx3{}
 	}
-	params, err := buildHMAC3Params(digest)
+	params, err := buildHMAC3Params(md)
 	if err != nil {
 		panic(err)
 	}
-	defer C.go_openssl_OSSL_PARAM_free(params)
+	defer ossl.OSSL_PARAM_free(params)
 
-	ctx := C.go_openssl_EVP_MAC_CTX_new(fetchHMAC3())
-	if ctx == nil {
-		panic(newOpenSSLError("EVP_MAC_CTX_new"))
+	ctx, err := ossl.EVP_MAC_CTX_new(fetchHMAC3())
+	if err != nil {
+		panic(err)
 	}
 
-	if C.go_openssl_EVP_MAC_init(ctx, base(key), C.size_t(len(key)), params) == 0 {
-		C.go_openssl_EVP_MAC_CTX_free(ctx)
-		panic(newOpenSSLError("EVP_MAC_init"))
+	if _, err := ossl.EVP_MAC_init(ctx, base(key), len(key), params); err != nil {
+		ossl.EVP_MAC_CTX_free(ctx)
+		panic(err)
 	}
 	var hkey []byte
 	if vMinor == 0 && vPatch <= 2 {
@@ -170,29 +168,26 @@ func newHMAC3(key []byte, md C.GO_EVP_MD_PTR) hmacCtx3 {
 func (h *opensslHMAC) Reset() {
 	switch vMajor {
 	case 1:
-		if C.go_openssl_HMAC_Init_ex(h.ctx1.ctx, nil, 0, nil, nil) == 0 {
-			panic(newOpenSSLError("HMAC_Init_ex failed"))
+		if _, err := ossl.HMAC_Init_ex(h.ctx1.ctx, nil, 0, nil, nil); err != nil {
+			panic(err)
 		}
 	case 3:
-		if C.go_openssl_EVP_MAC_init(h.ctx3.ctx, base(h.ctx3.key), C.size_t(len(h.ctx3.key)), nil) == 0 {
-			panic(newOpenSSLError("EVP_MAC_init failed"))
+		if _, err := ossl.EVP_MAC_init(h.ctx3.ctx, base(h.ctx3.key), len(h.ctx3.key), nil); err != nil {
+			panic(err)
 		}
 	default:
 		panic(errUnsupportedVersion())
 	}
 
 	runtime.KeepAlive(h) // Next line will keep h alive too; just making doubly sure.
-	h.sum = nil
 }
 
 func (h *opensslHMAC) finalize() {
-	switch vMajor {
-	case 1:
-		hmacCtxFree(h.ctx1.ctx)
-	case 3:
-		C.go_openssl_EVP_MAC_CTX_free(h.ctx3.ctx)
-	default:
-		panic(errUnsupportedVersion())
+	if h.ctx1.ctx != nil {
+		ossl.HMAC_CTX_free(h.ctx1.ctx)
+	}
+	if h.ctx3.ctx != nil {
+		ossl.EVP_MAC_CTX_free(h.ctx3.ctx)
 	}
 }
 
@@ -200,9 +195,9 @@ func (h *opensslHMAC) Write(p []byte) (int, error) {
 	if len(p) > 0 {
 		switch vMajor {
 		case 1:
-			C.go_openssl_HMAC_Update(h.ctx1.ctx, base(p), C.size_t(len(p)))
+			ossl.HMAC_Update(h.ctx1.ctx, base(p), len(p))
 		case 3:
-			C.go_openssl_EVP_MAC_update(h.ctx3.ctx, base(p), C.size_t(len(p)))
+			ossl.EVP_MAC_update(h.ctx3.ctx, base(p), len(p))
 		default:
 			panic(errUnsupportedVersion())
 		}
@@ -220,55 +215,68 @@ func (h *opensslHMAC) BlockSize() int {
 }
 
 func (h *opensslHMAC) Sum(in []byte) []byte {
-	if h.sum == nil {
-		size := h.Size()
-		h.sum = make([]byte, size)
-	}
 	// Make copy of context because Go hash.Hash mandates
 	// that Sum has no effect on the underlying stream.
 	// In particular it is OK to Sum, then Write more, then Sum again,
 	// and the second Sum acts as if the first didn't happen.
 	switch vMajor {
 	case 1:
-		ctx2 := hmacCtxNew()
-		if ctx2 == nil {
-			panic("openssl: HMAC_CTX_new failed")
+		ctx2, err := ossl.HMAC_CTX_new()
+		if err != nil {
+			panic(err)
 		}
-		defer hmacCtxFree(ctx2)
-		if C.go_openssl_HMAC_CTX_copy(ctx2, h.ctx1.ctx) == 0 {
-			panic("openssl: HMAC_CTX_copy failed")
+		defer ossl.HMAC_CTX_free(ctx2)
+		if _, err := ossl.HMAC_CTX_copy(ctx2, h.ctx1.ctx); err != nil {
+			panic(err)
 		}
-		C.go_openssl_HMAC_Final(ctx2, base(h.sum), nil)
+		ossl.HMAC_Final(ctx2, base(h.sum[:h.size]), nil)
 	case 3:
-		ctx2 := C.go_openssl_EVP_MAC_CTX_dup(h.ctx3.ctx)
-		if ctx2 == nil {
-			panic("openssl: EVP_MAC_CTX_dup failed")
+		ctx2, err := ossl.EVP_MAC_CTX_dup(h.ctx3.ctx)
+		if err != nil {
+			panic(err)
 		}
-		defer C.go_openssl_EVP_MAC_CTX_free(ctx2)
-		C.go_openssl_EVP_MAC_final(ctx2, base(h.sum), nil, C.size_t(len(h.sum)))
+		defer ossl.EVP_MAC_CTX_free(ctx2)
+		ossl.EVP_MAC_final(ctx2, base(h.sum[:h.size]), nil, len(h.sum))
 	default:
 		panic(errUnsupportedVersion())
 	}
-	return append(in, h.sum...)
+	return append(in, h.sum[:h.size]...)
 }
 
-func hmacCtxNew() C.GO_HMAC_CTX_PTR {
-	if vMajor == 1 && vMinor == 0 {
-		// 0x120 is the sizeof value when building against OpenSSL 1.0.2 on Ubuntu 16.04.
-		ctx := (C.GO_HMAC_CTX_PTR)(C.malloc(0x120))
-		if ctx != nil {
-			C.go_openssl_HMAC_CTX_init(ctx)
+func (h *opensslHMAC) Clone() (HashCloner, error) {
+	switch vMajor {
+	case 1:
+		ctx2, err := ossl.HMAC_CTX_new()
+		if err != nil {
+			panic(err)
 		}
-		return ctx
-	}
-	return C.go_openssl_HMAC_CTX_new()
-}
+		if _, err := ossl.HMAC_CTX_copy(ctx2, h.ctx1.ctx); err != nil {
+			ossl.HMAC_CTX_free(ctx2)
+			panic(err)
+		}
+		cl := &opensslHMAC{
+			ctx1:      hmacCtx1{ctx: ctx2},
+			size:      h.size,
+			blockSize: h.blockSize,
+		}
+		runtime.SetFinalizer(cl, (*opensslHMAC).finalize)
+		return cl, nil
 
-func hmacCtxFree(ctx C.GO_HMAC_CTX_PTR) {
-	if vMajor == 1 && vMinor == 0 {
-		C.go_openssl_HMAC_CTX_cleanup(ctx)
-		C.free(unsafe.Pointer(ctx))
-		return
+	case 3:
+		ctx2, err := ossl.EVP_MAC_CTX_dup(h.ctx3.ctx)
+		if err != nil {
+			panic(err)
+		}
+
+		cl := &opensslHMAC{
+			ctx3:      hmacCtx3{ctx: ctx2, key: slices.Clone(h.ctx3.key)},
+			size:      h.size,
+			blockSize: h.blockSize,
+		}
+		runtime.SetFinalizer(cl, (*opensslHMAC).finalize)
+		return cl, nil
+
+	default:
+		panic(errUnsupportedVersion())
 	}
-	C.go_openssl_HMAC_CTX_free(ctx)
 }

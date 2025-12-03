@@ -5,8 +5,8 @@ import (
 	"crypto/cipher"
 	"testing"
 
-	"github.com/golang-fips/openssl/v2/internal/cryptotest"
 	"github.com/golang-fips/openssl/v2"
+	"github.com/golang-fips/openssl/v2/internal/cryptotest"
 )
 
 type CryptTest struct {

@@ -1,27 +1,38 @@
 on: [push, pull_request]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 name: Test
 jobs:
   test:
     strategy:
       fail-fast: false
       matrix:
-        go-version: [1.22.x, 1.23.x]
-        openssl-version: [1.0.2, 1.1.0, 1.1.1, 3.0.1, 3.0.13, 3.1.5, 3.2.1, 3.3.0, 3.3.1]
-    runs-on: ubuntu-20.04
+        go-version: [1.24.x, 1.25.x]
+        openssl-version: [1.1.0, 1.1.1, 3.0.1, 3.0.13, 3.1.5, 3.2.1, 3.3.0, 3.3.1, 3.4.0, 3.5.0]
+        host: [ubuntu-22.04, ubuntu-24.04-arm]
+    runs-on: ${{ matrix.host }}
     steps:
     - name: Install build tools
       run: sudo apt-get install -y build-essential
     - name: Install Go
-      uses: actions/setup-go@v5
+      uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6.1.0
       with:
         go-version: ${{ matrix.go-version }}
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
+    - name: Verify go generate leaves no changes
+      run: |
+        go generate ./...
+        git diff --exit-code
     - name: Install OpenSSL
       run: sudo sh ./scripts/openssl.sh ${{ matrix.openssl-version }}
     - name: Check headers
       working-directory: ./cmd/checkheader
-      run: go run . --ossl-include /usr/local/src/openssl-${{ matrix.openssl-version }}/include -shim ../../shims.h
+      run: |
+        go run . -include /usr/local/src/openssl-${{ matrix.openssl-version }}/include -shim ../../internal/ossl/shims.h
     - name: Set OpenSSL config and prove FIPS
       run: |
         sudo cp ./scripts/openssl-3.cnf /usr/local/ssl/openssl.cnf
@@ -30,13 +41,27 @@ jobs:
       env:
         GO_OPENSSL_VERSION_OVERRIDE: ${{ matrix.openssl-version }}
     - name: Run Test
-      # Run each test 10 times so the garbage collector chimes in 
+      # Run each test 10 times so the garbage collector chimes in
       # and exercises the multiple finalizers we use.
       # This can detect use-after-free and double-free issues.
-      run: go test -gcflags=all=-d=checkptr -count 10 -v ./...
+      run: go test -shuffle=on -gcflags=all=-d=checkptr -count 10 -v ./...
       env:
         GO_OPENSSL_VERSION_OVERRIDE: ${{ matrix.openssl-version }}
+        CGO_ENABLED: 1
+    - name: Run Test CGO disabled
+      run: go test -shuffle=on -count 10 -v ./...
+      env:
+        GO_OPENSSL_VERSION_OVERRIDE: ${{ matrix.openssl-version }}
+        CGO_ENABLED: 0
+        GOFLAGS: -tags=goexperiment.ms_nocgo_opensslcrypto
+    - name: Run Test CGO disabled and optimizations off
+      run: go test -shuffle=on -count 10 -gcflags=all="-N -l" -v ./...
+      env:
+        GO_OPENSSL_VERSION_OVERRIDE: ${{ matrix.openssl-version }}
+        CGO_ENABLED: 0
+        GOFLAGS: -tags=goexperiment.ms_nocgo_opensslcrypto,noopt
     - name: Run Test with address sanitizer
+      if: ${{ runner.arch == 'X64' }} # arm64 thread sanitizer is flaky, unrelated to this codebase
       run: |
         ok=true
         for t in $(go test ./... -list=. | grep '^Test'); do
@@ -45,58 +70,118 @@ jobs:
         $ok
       env:
         GO_OPENSSL_VERSION_OVERRIDE: ${{ matrix.openssl-version }}
+
   wintest:
     runs-on: windows-2022
     strategy:
       fail-fast: false
       matrix:
-        go-version: [1.22.x, 1.23.x]
-        openssl-version: [libcrypto-1_1-x64.dll, libcrypto-3-x64.dll]
+        go-version: [1.24.x, 1.25.x]
+        openssl-version: [libcrypto-3-x64.dll]
     steps:
     - name: Install Go
-      uses: actions/setup-go@v5
+      uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6.1.0
       with:
         go-version: ${{ matrix.go-version }}
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
     - name: Run Test
-      run: go test -gcflags=all=-d=checkptr -count 10 -v ./...
+      run: go test -shuffle=on -gcflags=all=-d=checkptr -count 10 -v ./...
       env:
         GO_OPENSSL_VERSION_OVERRIDE: ${{ matrix.openssl-version }}
+        CGO_ENABLED: 1
+    - name: Run Test CGO disabled
+      run: go test -shuffle=on -count 10 -v ./...
+      env:
+        GO_OPENSSL_VERSION_OVERRIDE: ${{ matrix.openssl-version }}
+        CGO_ENABLED: 0
+        GOFLAGS: -tags=goexperiment.ms_nocgo_opensslcrypto
+
   mactest:
     strategy:
       fail-fast: false
       matrix:
-        go-version: [1.22.x, 1.23.x]
-        openssl-version: [/usr/local/opt/openssl@3/lib/libcrypto.3.dylib]
-    runs-on: macos-13
+        go-version: [1.24.x, 1.25.x]
+        host: [
+          # the non-intel macOS runners use ARM64
+          {os: macos-15-intel, openssl-version: /usr/local/opt/openssl@3/lib/libcrypto.3.dylib},
+          {os: macos-15, openssl-version: /opt/homebrew/opt/openssl@3/lib/libcrypto.3.dylib}
+        ]
+    runs-on: ${{ matrix.host.os }}
     steps:
     - name: Install Go
-      uses: actions/setup-go@v5
+      uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6.1.0
       with:
         go-version: ${{ matrix.go-version }}
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
     - name: Run Test
-      run: go test -gcflags=all=-d=checkptr -count 10 -v ./...
+      run: go test -shuffle=on -gcflags=all=-d=checkptr -count 10 -v ./...
       env:
-        GO_OPENSSL_VERSION_OVERRIDE: ${{ matrix.openssl-version }}
+        GO_OPENSSL_VERSION_OVERRIDE: ${{ matrix.host.openssl-version }}
+        CGO_ENABLED: 1
+    - name: Run Test CGO disabled
+      run: go test -shuffle=on -count 10 -v ./...
+      env:
+        GO_OPENSSL_VERSION_OVERRIDE: ${{ matrix.host.openssl-version }}
+        CGO_ENABLED: 0
+        GOFLAGS: -tags=goexperiment.ms_nocgo_opensslcrypto
+
   azurelinux:
     runs-on: ubuntu-latest
-    container: mcr.microsoft.com/oss/go/microsoft/golang:1.23-azurelinux3.0
+    container: mcr.microsoft.com/oss/go/microsoft/golang:1.24-azurelinux3.0
     steps:
     - name: Checkout code
-      uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+      uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
     - name: Run Test
-      run: go test -v ./...
+      run: go test -shuffle=on -v ./...
+      env:
+        CGO_ENABLED: 1
+    - name: Run Test CGO disabled
+      run: go test -shuffle=on -v ./...
+      env:
+        CGO_ENABLED: 0
+        GOFLAGS: -tags=goexperiment.ms_nocgo_opensslcrypto
+
   mariner2:
     runs-on: ubuntu-latest
-    container: mcr.microsoft.com/oss/go/microsoft/golang:1.23.1-3-cbl-mariner2.0
+    container: mcr.microsoft.com/oss/go/microsoft/golang:1.24-cbl-mariner2.0
     steps:
     - name: Checkout code
-      uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+      uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
     - name: Run Test
-      run: go test -v ./...
+      run: go test -shuffle=on -v ./...
+      env:
+        CGO_ENABLED: 1
+    - name: Run Test CGO disabled
+      run: go test -shuffle=on -v ./...
+      env:
+        CGO_ENABLED: 0
+        GOFLAGS: -tags=goexperiment.ms_nocgo_opensslcrypto
+
+  test-qemu:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        go-version: [1.24, 1.25]
+        architecture: [ppc64le, s390x, riscv64]
+    steps:
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130 # v3.7.0
+      with:
+        platforms: ${{ matrix.architecture }}
+    - name: Checkout code
+      uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
+    - name: Run tests on ${{matrix.architecture}}
+      run: |
+        docker run --rm --platform linux/${{matrix.architecture}} \
+          -v ${{ github.workspace }}:/workspace \
+          -w /workspace \
+          golang:${{ matrix.go-version }} \
+          bash -c "
+            go test -shuffle=on -v ./...
+          "
 
   # Verify that golang-fips/openssl builds successfully without cgo enabled.
   #
@@ -105,8 +190,8 @@ jobs:
   # reasonable. In that case, we can help by making sure the openssl package
   # builds successfully even without cgo.
   #
-  # For example, the Microsoft Go toolset fork builds this module without cgo
-  # for a cross-platform build.
+  # For example, the Microsoft build of Go compiles this module without cgo when
+  # running a cross-platform build.
   #
   # The golang-fips/openssl module can't do any crypto when built without cgo,
   # but it exports a few simple functions and types.
@@ -114,6 +199,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout code
-      uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+      uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
     - name: Run Build
       run: CGO_ENABLED=0 go build ./...

@@ -1,9 +1,7 @@
-//go:build !cmd_go_bootstrap
+//go:build !cmd_go_bootstrap && (cgo || goexperiment.ms_nocgo_opensslcrypto)
 
 package openssl
 
-// #include "goopenssl.h"
-import "C"
 import (
 	"errors"
 	"hash"
@@ -11,6 +9,8 @@ import (
 	"runtime"
 	"sync"
 	"unsafe"
+
+	"github.com/golang-fips/openssl/v2/internal/ossl"
 )
 
 // SupprtHKDF reports whether the current OpenSSL version supports HKDF.
@@ -26,53 +26,65 @@ func SupportsHKDF() bool {
 	}
 }
 
-func newHKDFCtx1(md C.GO_EVP_MD_PTR, mode C.int, secret, salt, pseudorandomKey, info []byte) (ctx C.GO_EVP_PKEY_CTX_PTR, err error) {
+// SupprtsTLS13KDF reports whether the current OpenSSL version supports TLS13-KDF.
+func SupportsTLS13KDF() bool {
+	switch vMajor {
+	case 1:
+		return false
+	case 3:
+		// TLS13-KDF is available in OpenSSL 3.0.0 and later.
+		_, err := fetchTLS13_KDF()
+		return err == nil
+	default:
+		panic(errUnsupportedVersion())
+	}
+}
+
+func newHKDFCtx1(md ossl.EVP_MD_PTR, mode int32, secret, salt, pseudorandomKey, info []byte) (ctx ossl.EVP_PKEY_CTX_PTR, err error) {
 	checkMajorVersion(1)
 
-	ctx = C.go_openssl_EVP_PKEY_CTX_new_id(C.GO_EVP_PKEY_HKDF, nil)
-	if ctx == nil {
-		return nil, newOpenSSLError("EVP_PKEY_CTX_new_id")
+	ctx, err = ossl.EVP_PKEY_CTX_new_id(ossl.EVP_PKEY_HKDF, nil)
+	if err != nil {
+		return nil, err
 	}
 	defer func() {
 		if err != nil {
-			C.go_openssl_EVP_PKEY_CTX_free(ctx)
+			ossl.EVP_PKEY_CTX_free(ctx)
 		}
 	}()
 
-	if C.go_openssl_EVP_PKEY_derive_init(ctx) != 1 {
-		return ctx, newOpenSSLError("EVP_PKEY_derive_init")
+	if _, err := ossl.EVP_PKEY_derive_init(ctx); err != nil {
+		return ctx, err
 	}
 
-	ctrlSlice := func(ctrl int, data []byte) C.int {
-		if len(data) == 0 {
-			return 1 // No data to set.
+	ctrlSlice := func(ctrl int32, data []byte) bool {
+		if err != nil {
+			return false
 		}
-		return C.go_openssl_EVP_PKEY_CTX_ctrl(ctx, -1, C.GO1_EVP_PKEY_OP_DERIVE, C.int(ctrl), C.int(len(data)), unsafe.Pointer(base(data)))
+		if len(data) == 0 {
+			return true // No data to set.
+		}
+		_, err = ossl.EVP_PKEY_CTX_ctrl(ctx, -1, ossl.EVP_PKEY_OP_DERIVE, ctrl, int32(len(data)), unsafe.Pointer(base(data)))
+		return err == nil
 	}
 
-	if C.go_openssl_EVP_PKEY_CTX_ctrl(ctx, -1, C.GO1_EVP_PKEY_OP_DERIVE, C.GO_EVP_PKEY_CTRL_HKDF_MODE, mode, nil) != 1 {
-		return ctx, newOpenSSLError("EVP_PKEY_CTX_set_hkdf_mode")
+	if _, err := ossl.EVP_PKEY_CTX_ctrl(ctx, -1, ossl.EVP_PKEY_OP_DERIVE, ossl.EVP_PKEY_CTRL_HKDF_MODE, mode, nil); err != nil {
+		return ctx, err
 	}
-	if C.go_openssl_EVP_PKEY_CTX_ctrl(ctx, -1, C.GO1_EVP_PKEY_OP_DERIVE, C.GO_EVP_PKEY_CTRL_HKDF_MD, 0, unsafe.Pointer(md)) != 1 {
-		return ctx, newOpenSSLError("EVP_PKEY_CTX_set_hkdf_md")
+	if _, err := ossl.EVP_PKEY_CTX_ctrl(ctx, -1, ossl.EVP_PKEY_OP_DERIVE, ossl.EVP_PKEY_CTRL_HKDF_MD, 0, unsafe.Pointer(md)); err != nil {
+		return ctx, err
 	}
-	if ctrlSlice(C.GO_EVP_PKEY_CTRL_HKDF_KEY, secret) != 1 {
-		return ctx, newOpenSSLError("EVP_PKEY_CTX_set1_hkdf_key")
-	}
-	if ctrlSlice(C.GO_EVP_PKEY_CTRL_HKDF_SALT, salt) != 1 {
-		return ctx, newOpenSSLError("EVP_PKEY_CTX_set1_hkdf_salt")
-	}
-	if ctrlSlice(C.GO_EVP_PKEY_CTRL_HKDF_KEY, pseudorandomKey) != 1 {
-		return ctx, newOpenSSLError("EVP_PKEY_CTX_set1_hkdf_key")
-	}
-	if ctrlSlice(C.GO_EVP_PKEY_CTRL_HKDF_INFO, info) != 1 {
-		return ctx, newOpenSSLError("EVP_PKEY_CTX_add1_hkdf_info")
+	if ctrlSlice(ossl.EVP_PKEY_CTRL_HKDF_KEY, secret) &&
+		ctrlSlice(ossl.EVP_PKEY_CTRL_HKDF_SALT, salt) &&
+		ctrlSlice(ossl.EVP_PKEY_CTRL_HKDF_KEY, pseudorandomKey) &&
+		ctrlSlice(ossl.EVP_PKEY_CTRL_HKDF_INFO, info) {
+		return ctx, err
 	}
 	return ctx, nil
 }
 
 type hkdf1 struct {
-	ctx C.GO_EVP_PKEY_CTX_PTR
+	ctx ossl.EVP_PKEY_CTX_PTR
 
 	hashLen int
 	buf     []byte
@@ -80,7 +92,7 @@ type hkdf1 struct {
 
 func (c *hkdf1) finalize() {
 	if c.ctx != nil {
-		C.go_openssl_EVP_PKEY_CTX_free(c.ctx)
+		ossl.EVP_PKEY_CTX_free(c.ctx)
 	}
 }
 
@@ -101,14 +113,22 @@ func (c *hkdf1) Read(p []byte) (int, error) {
 		return 0, errors.New("hkdf: entropy limit reached")
 	}
 	c.buf = append(c.buf, make([]byte, needLen)...)
-	outLen := C.size_t(prevLen + needLen)
-	if C.go_openssl_EVP_PKEY_derive_wrapper(c.ctx, base(c.buf), outLen).result != 1 {
-		return 0, newOpenSSLError("EVP_PKEY_derive")
+	outLen := prevLen + needLen
+	if _, err := ossl.EVP_PKEY_derive(c.ctx, base(c.buf), &outLen); err != nil {
+		return 0, err
 	}
 	n := copy(p, c.buf[prevLen:outLen])
 	return n, nil
 }
 
+// hkdfAllZerosSalt is a preallocated buffer of zeros used in ExtractHKDF().
+// The size should be kept as large as the output length of any hash algorithm
+// used with HKDF.
+var hkdfAllZerosSalt [64]byte
+
+// ExtractHDKF implements the HDKF extract step.
+// If salt is nil, then this function replaces it internally with a buffer of
+// zeros whose length equals the output length of the specified hash algorithm.
 func ExtractHKDF(h func() hash.Hash, secret, salt []byte) ([]byte, error) {
 	if !SupportsHKDF() {
 		return nil, errUnsupportedVersion()
@@ -119,31 +139,49 @@ func ExtractHKDF(h func() hash.Hash, secret, salt []byte) ([]byte, error) {
 		return nil, err
 	}
 
+	// If calling code specifies nil salt, replace it with a buffer of hashLen
+	// zeros, as specified in RFC 5896 and as OpenSSL EVP_KDF-HKDF documentation
+	// instructs. Take a slice of a preallocated buffer to avoid allocating new
+	// buffer per call, but fall back to allocating a buffer if preallocated
+	// buffer is not large enough.
+	if salt == nil {
+		hlen := h().Size()
+		if hlen > len(hkdfAllZerosSalt) {
+			salt = make([]byte, hlen)
+		} else {
+			salt = hkdfAllZerosSalt[:hlen]
+		}
+	}
+
 	switch vMajor {
 	case 1:
-		ctx, err := newHKDFCtx1(md, C.GO_EVP_KDF_HKDF_MODE_EXTRACT_ONLY, secret, salt, nil, nil)
+		ctx, err := newHKDFCtx1(md, ossl.EVP_KDF_HKDF_MODE_EXTRACT_ONLY, secret, salt, nil, nil)
 		if err != nil {
 			return nil, err
 		}
-		defer C.go_openssl_EVP_PKEY_CTX_free(ctx)
-		r := C.go_openssl_EVP_PKEY_derive_wrapper(ctx, nil, 0)
-		if r.result != 1 {
-			return nil, newOpenSSLError("EVP_PKEY_derive_init")
+		defer ossl.EVP_PKEY_CTX_free(ctx)
+		var keylen int
+		if _, err := ossl.EVP_PKEY_derive(ctx, nil, &keylen); err != nil {
+			return nil, err
 		}
-		out := make([]byte, r.keylen)
-		if C.go_openssl_EVP_PKEY_derive_wrapper(ctx, base(out), r.keylen).result != 1 {
-			return nil, newOpenSSLError("EVP_PKEY_derive")
+		out := make([]byte, keylen)
+		if _, err := ossl.EVP_PKEY_derive(ctx, base(out), &keylen); err != nil {
+			return nil, err
 		}
-		return out[:r.keylen], nil
+		return out[:keylen], nil
 	case 3:
-		ctx, err := newHKDFCtx3(md, C.GO_EVP_KDF_HKDF_MODE_EXTRACT_ONLY, secret, salt, nil, nil)
+		ctx, err := newHKDFCtx3(md, ossl.EVP_KDF_HKDF_MODE_EXTRACT_ONLY, secret, salt, nil, nil)
 		if err != nil {
 			return nil, err
 		}
-		defer C.go_openssl_EVP_KDF_CTX_free(ctx)
-		out := make([]byte, C.go_openssl_EVP_KDF_CTX_get_kdf_size(ctx))
-		if C.go_openssl_EVP_KDF_derive(ctx, base(out), C.size_t(len(out)), nil) != 1 {
-			return nil, newOpenSSLError("EVP_KDF_derive")
+		defer ossl.EVP_KDF_CTX_free(ctx)
+		size, err := ossl.EVP_KDF_CTX_get_kdf_size(ctx)
+		if err != nil {
+			return nil, err
+		}
+		out := make([]byte, size)
+		if _, err := ossl.EVP_KDF_derive(ctx, base(out), len(out), nil); err != nil {
+			return nil, err
 		}
 		return out, nil
 	default:
@@ -165,25 +203,63 @@ func ExpandHKDFOneShot(h func() hash.Hash, pseudorandomKey, info []byte, keyLeng
 	out := make([]byte, keyLength)
 	switch vMajor {
 	case 1:
-		ctx, err := newHKDFCtx1(md, C.GO_EVP_KDF_HKDF_MODE_EXPAND_ONLY, nil, nil, pseudorandomKey, info)
+		ctx, err := newHKDFCtx1(md, ossl.EVP_KDF_HKDF_MODE_EXPAND_ONLY, nil, nil, pseudorandomKey, info)
 		if err != nil {
 			return nil, err
 		}
-		defer C.go_openssl_EVP_PKEY_CTX_free(ctx)
-		if C.go_openssl_EVP_PKEY_derive_wrapper(ctx, base(out), C.size_t(keyLength)).result != 1 {
-			return nil, newOpenSSLError("EVP_PKEY_derive")
+		defer ossl.EVP_PKEY_CTX_free(ctx)
+		if len(out) == 0 {
+			// Nothing to do, so exit early.
+			// We also can't call EVP_PKEY_derive because some engines error on zero-length output.
+			// We can only exit after calling newHKDFCtx1 because we still need it to validate the parameters.
+			return out, nil
+		}
+		keylen := keyLength
+		if _, err := ossl.EVP_PKEY_derive(ctx, base(out), &keylen); err != nil {
+			return nil, err
 		}
 	case 3:
-		ctx, err := newHKDFCtx3(md, C.GO_EVP_KDF_HKDF_MODE_EXPAND_ONLY, nil, nil, pseudorandomKey, info)
+		ctx, err := newHKDFCtx3(md, ossl.EVP_KDF_HKDF_MODE_EXPAND_ONLY, nil, nil, pseudorandomKey, info)
 		if err != nil {
 			return nil, err
 		}
-		defer C.go_openssl_EVP_KDF_CTX_free(ctx)
-		if C.go_openssl_EVP_KDF_derive(ctx, base(out), C.size_t(keyLength), nil) != 1 {
-			return nil, newOpenSSLError("EVP_KDF_derive")
+		defer ossl.EVP_KDF_CTX_free(ctx)
+		if len(out) == 0 {
+			// Nothing to do, so exit early.
+			// We also can't call EVP_PKEY_derive because some engines error on zero-length output.
+			// We can only exit after calling newHKDFCtx3 because we still need it to validate the parameters.
+			return out, nil
+		}
+		if _, err := ossl.EVP_KDF_derive(ctx, base(out), keyLength, nil); err != nil {
+			return nil, err
 		}
 	default:
 		panic(errUnsupportedVersion())
+	}
+	return out, nil
+}
+
+// ExpandTLS13KDF derives a key from the given hash, key, label and context. It will use
+// "TLS13-KDF" algorithm to do so.
+func ExpandTLS13KDF(h func() hash.Hash, pseudorandomKey, label, context []byte, keyLength int) ([]byte, error) {
+	if !SupportsTLS13KDF() {
+		return nil, errUnsupportedVersion()
+	}
+
+	md, err := hashFuncToMD(h)
+	if err != nil {
+		return nil, err
+	}
+
+	out := make([]byte, keyLength)
+
+	ctx, err := newTLS13KDFExpandCtx3(md, label, context, pseudorandomKey)
+	if err != nil {
+		return nil, err
+	}
+	defer ossl.EVP_KDF_CTX_free(ctx)
+	if _, err := ossl.EVP_KDF_derive(ctx, base(out), keyLength, nil); err != nil {
+		return nil, err
 	}
 	return out, nil
 }
@@ -198,21 +274,23 @@ func ExpandHKDF(h func() hash.Hash, pseudorandomKey, info []byte) (io.Reader, er
 		return nil, err
 	}
 
+	size := int(ossl.EVP_MD_get_size(md))
+
 	switch vMajor {
 	case 1:
-		ctx, err := newHKDFCtx1(md, C.GO_EVP_KDF_HKDF_MODE_EXPAND_ONLY, nil, nil, pseudorandomKey, info)
+		ctx, err := newHKDFCtx1(md, ossl.EVP_KDF_HKDF_MODE_EXPAND_ONLY, nil, nil, pseudorandomKey, info)
 		if err != nil {
 			return nil, err
 		}
-		c := &hkdf1{ctx: ctx, hashLen: int(C.go_openssl_EVP_MD_get_size(md))}
+		c := &hkdf1{ctx: ctx, hashLen: size}
 		runtime.SetFinalizer(c, (*hkdf1).finalize)
 		return c, nil
 	case 3:
-		ctx, err := newHKDFCtx3(md, C.GO_EVP_KDF_HKDF_MODE_EXPAND_ONLY, nil, nil, pseudorandomKey, info)
+		ctx, err := newHKDFCtx3(md, ossl.EVP_KDF_HKDF_MODE_EXPAND_ONLY, nil, nil, pseudorandomKey, info)
 		if err != nil {
 			return nil, err
 		}
-		c := &hkdf3{ctx: ctx, hashLen: int(C.go_openssl_EVP_MD_get_size(md))}
+		c := &hkdf3{ctx: ctx, hashLen: size}
 		runtime.SetFinalizer(c, (*hkdf3).finalize)
 		return c, nil
 	default:
@@ -221,7 +299,7 @@ func ExpandHKDF(h func() hash.Hash, pseudorandomKey, info []byte) (io.Reader, er
 }
 
 type hkdf3 struct {
-	ctx C.GO_EVP_KDF_CTX_PTR
+	ctx ossl.EVP_KDF_CTX_PTR
 
 	hashLen int
 	buf     []byte
@@ -229,40 +307,39 @@ type hkdf3 struct {
 
 func (c *hkdf3) finalize() {
 	if c.ctx != nil {
-		C.go_openssl_EVP_KDF_CTX_free(c.ctx)
+		ossl.EVP_KDF_CTX_free(c.ctx)
 	}
 }
 
-// fetchHKDF3 fetches the HKDF algorithm.
+// fetchTLS13_KDF fetches the TLS13-KDF algorithm.
 // It is safe to call this function concurrently.
 // The returned EVP_KDF_PTR shouldn't be freed.
-var fetchHKDF3 = sync.OnceValues(func() (C.GO_EVP_KDF_PTR, error) {
+var fetchTLS13_KDF = sync.OnceValues(func() (ossl.EVP_KDF_PTR, error) {
 	checkMajorVersion(3)
 
-	name := C.CString("HKDF")
-	kdf := C.go_openssl_EVP_KDF_fetch(nil, name, nil)
-	C.free(unsafe.Pointer(name))
-	if kdf == nil {
-		return nil, newOpenSSLError("EVP_KDF_fetch")
+	kdf, err := ossl.EVP_KDF_fetch(nil, _OSSL_KDF_NAME_TLS13_KDF.ptr(), nil)
+	if err != nil {
+		return nil, err
 	}
 	return kdf, nil
 })
 
-// newHKDFCtx3 implements HKDF for OpenSSL 3 using the EVP_KDF API.
-func newHKDFCtx3(md C.GO_EVP_MD_PTR, mode C.int, secret, salt, pseudorandomKey, info []byte) (_ C.GO_EVP_KDF_CTX_PTR, err error) {
+// newTLS13KDFExpandCtx3 fetches the "TLS13-KDF" for TLS 1.3 handshakes.
+func newTLS13KDFExpandCtx3(md ossl.EVP_MD_PTR, label, context, pseudorandomKey []byte) (_ ossl.EVP_KDF_CTX_PTR, err error) {
 	checkMajorVersion(3)
 
-	kdf, err := fetchHKDF3()
+	kdf, err := fetchTLS13_KDF()
 	if err != nil {
 		return nil, err
 	}
-	ctx := C.go_openssl_EVP_KDF_CTX_new(kdf)
-	if ctx == nil {
-		return nil, newOpenSSLError("EVP_KDF_CTX_new")
+
+	ctx, err := ossl.EVP_KDF_CTX_new(kdf)
+	if err != nil {
+		return nil, err
 	}
 	defer func() {
 		if err != nil {
-			C.go_openssl_EVP_KDF_CTX_free(ctx)
+			ossl.EVP_KDF_CTX_free(ctx)
 		}
 	}()
 
@@ -270,7 +347,63 @@ func newHKDFCtx3(md C.GO_EVP_MD_PTR, mode C.int, secret, salt, pseudorandomKey, 
 	if err != nil {
 		return ctx, err
 	}
-	bld.addUTF8String(_OSSL_KDF_PARAM_DIGEST, C.go_openssl_EVP_MD_get0_name(md), 0)
+	bld.addUTF8String(_OSSL_KDF_PARAM_DIGEST, ossl.EVP_MD_get0_name(md), 0)
+	bld.addInt32(_OSSL_KDF_PARAM_MODE, int32(ossl.EVP_KDF_HKDF_MODE_EXPAND_ONLY))
+	bld.addOctetString(_OSSL_KDF_PARAM_PREFIX, []byte("tls13 "))
+	bld.addOctetString(_OSSL_KDF_PARAM_LABEL, label)
+	bld.addOctetString(_OSSL_KDF_PARAM_DATA, context)
+	if len(pseudorandomKey) > 0 {
+		bld.addOctetString(_OSSL_KDF_PARAM_KEY, pseudorandomKey)
+	}
+
+	params, err := bld.build()
+	if err != nil {
+		return ctx, err
+	}
+	defer ossl.OSSL_PARAM_free(params)
+
+	if _, err := ossl.EVP_KDF_CTX_set_params(ctx, params); err != nil {
+		return ctx, err
+	}
+	return ctx, nil
+}
+
+// fetchHKDF3 fetches the HKDF algorithm.
+// It is safe to call this function concurrently.
+// The returned EVP_KDF_PTR shouldn't be freed.
+var fetchHKDF3 = sync.OnceValues(func() (ossl.EVP_KDF_PTR, error) {
+	checkMajorVersion(3)
+
+	kdf, err := ossl.EVP_KDF_fetch(nil, _OSSL_KDF_NAME_HKDF.ptr(), nil)
+	if err != nil {
+		return nil, err
+	}
+	return kdf, nil
+})
+
+// newHKDFCtx3 implements HKDF for OpenSSL 3 using the EVP_KDF API.
+func newHKDFCtx3(md ossl.EVP_MD_PTR, mode int32, secret, salt, pseudorandomKey, info []byte) (_ ossl.EVP_KDF_CTX_PTR, err error) {
+	checkMajorVersion(3)
+
+	kdf, err := fetchHKDF3()
+	if err != nil {
+		return nil, err
+	}
+	ctx, err := ossl.EVP_KDF_CTX_new(kdf)
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		if err != nil {
+			ossl.EVP_KDF_CTX_free(ctx)
+		}
+	}()
+
+	bld, err := newParamBuilder()
+	if err != nil {
+		return ctx, err
+	}
+	bld.addUTF8String(_OSSL_KDF_PARAM_DIGEST, ossl.EVP_MD_get0_name(md), 0)
 	bld.addInt32(_OSSL_KDF_PARAM_MODE, int32(mode))
 	if len(secret) > 0 {
 		bld.addOctetString(_OSSL_KDF_PARAM_KEY, secret)
@@ -288,10 +421,10 @@ func newHKDFCtx3(md C.GO_EVP_MD_PTR, mode C.int, secret, salt, pseudorandomKey, 
 	if err != nil {
 		return ctx, err
 	}
-	defer C.go_openssl_OSSL_PARAM_free(params)
+	defer ossl.OSSL_PARAM_free(params)
 
-	if C.go_openssl_EVP_KDF_CTX_set_params(ctx, params) != 1 {
-		return ctx, newOpenSSLError("EVP_KDF_CTX_set_params")
+	if _, err := ossl.EVP_KDF_CTX_set_params(ctx, params); err != nil {
+		return ctx, err
 	}
 	return ctx, nil
 }
@@ -313,9 +446,9 @@ func (c *hkdf3) Read(p []byte) (int, error) {
 		return 0, errors.New("hkdf: entropy limit reached")
 	}
 	c.buf = append(c.buf, make([]byte, needLen)...)
-	outLen := C.size_t(prevLen + needLen)
-	if C.go_openssl_EVP_KDF_derive(c.ctx, base(c.buf), outLen, nil) != 1 {
-		return 0, newOpenSSLError("EVP_KDF_derive")
+	outLen := prevLen + needLen
+	if _, err := ossl.EVP_KDF_derive(c.ctx, base(c.buf), outLen, nil); err != nil {
+		return 0, err
 	}
 	n := copy(p, c.buf[prevLen:outLen])
 	return n, nil

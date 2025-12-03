@@ -1,9 +1,7 @@
-//go:build !cmd_go_bootstrap
+//go:build !cmd_go_bootstrap && (cgo || goexperiment.ms_nocgo_opensslcrypto)
 
 package openssl
 
-// #include "goopenssl.h"
-import "C"
 import (
 	"crypto"
 	"errors"
@@ -12,24 +10,32 @@ import (
 	"strconv"
 	"sync"
 	"unsafe"
+
+	"github.com/golang-fips/openssl/v2/internal/ossl"
+)
+
+const (
+	magicMD5     = "md5\x01"
+	magic1       = "sha\x01"
+	magic224     = "sha\x02"
+	magic256     = "sha\x03"
+	magic384     = "sha\x04"
+	magic512_224 = "sha\x05"
+	magic512_256 = "sha\x06"
+	magic512     = "sha\x07"
+
+	marshaledSizeMD5 = len(magicMD5) + 4*4 + 64 + 8  // from crypto/md5
+	marshaledSize1   = len(magic1) + 5*4 + 64 + 8    // from crypto/sha1
+	marshaledSize256 = len(magic256) + 8*4 + 64 + 8  // from crypto/sha256
+	marshaledSize512 = len(magic512) + 8*8 + 128 + 8 // from crypto/sha512
 )
 
 // maxHashSize is the size of SHA52 and SHA3_512, the largest hashes we support.
 const maxHashSize = 64
 
-// NOTE: Implementation ported from https://go-review.googlesource.com/c/go/+/404295.
-// The cgo calls in this file are arranged to avoid marking the parameters as escaping.
-// To do that, we call noescape (including via addr).
-// We must also make sure that the data pointer arguments have the form unsafe.Pointer(&...)
-// so that cgo does not annotate them with cgoCheckPointer calls. If it did that, it might look
-// beyond the byte slice and find Go pointers in unprocessed parts of a larger allocation.
-// To do both of these simultaneously, the idiom is unsafe.Pointer(&*addr(p)),
-// where addr returns the base pointer of p, substituting a non-nil pointer for nil,
-// and applying a noescape along the way.
-// This is all to preserve compatibility with the allocation behavior of the non-openssl implementations.
-
 func hashOneShot(ch crypto.Hash, p []byte, sum []byte) bool {
-	return C.go_openssl_EVP_Digest(unsafe.Pointer(&*addr(p)), C.size_t(len(p)), (*C.uchar)(unsafe.Pointer(&*addr(sum))), nil, loadHash(ch).md, nil) != 0
+	_, err := ossl.EVP_Digest(p, sum, nil, loadHash(ch, true).md, nil)
+	return err == nil
 }
 
 func MD4(p []byte) (sum [16]byte) {
@@ -103,7 +109,7 @@ func SupportsHash(h crypto.Hash) bool {
 	if v, ok := cacheHashSupported.Load(h); ok {
 		return v.(bool)
 	}
-	alg := loadHash(h)
+	alg := loadHash(h, false)
 	if alg == nil {
 		cacheHashSupported.Store(h, false)
 		return false
@@ -112,36 +118,37 @@ func SupportsHash(h crypto.Hash) bool {
 	// in a EVP_MD_CTX, e.g. MD5 in FIPS mode. We need to prove
 	// if they can be used by passing them to a EVP_MD_CTX.
 	var supported bool
-	if ctx := C.go_openssl_EVP_MD_CTX_new(); ctx != nil {
-		supported = C.go_openssl_EVP_DigestInit_ex(ctx, alg.md, nil) == 1
-		C.go_openssl_EVP_MD_CTX_free(ctx)
+	if ctx, _ := ossl.EVP_MD_CTX_new(); ctx != nil {
+		_, err := ossl.EVP_DigestInit_ex(ctx, alg.md, nil)
+		supported = err == nil
+		ossl.EVP_MD_CTX_free(ctx)
 	}
 	cacheHashSupported.Store(h, supported)
 	return supported
 }
 
-func SHA3_224(p []byte) (sum [28]byte) {
+func SumSHA3_224(p []byte) (sum [28]byte) {
 	if !hashOneShot(crypto.SHA3_224, p, sum[:]) {
 		panic("openssl: SHA3_224 failed")
 	}
 	return
 }
 
-func SHA3_256(p []byte) (sum [32]byte) {
+func SumSHA3_256(p []byte) (sum [32]byte) {
 	if !hashOneShot(crypto.SHA3_256, p, sum[:]) {
 		panic("openssl: SHA3_256 failed")
 	}
 	return
 }
 
-func SHA3_384(p []byte) (sum [48]byte) {
+func SumSHA3_384(p []byte) (sum [48]byte) {
 	if !hashOneShot(crypto.SHA3_384, p, sum[:]) {
 		panic("openssl: SHA3_384 failed")
 	}
 	return
 }
 
-func SHA3_512(p []byte) (sum [64]byte) {
+func SumSHA3_512(p []byte) (sum [64]byte) {
 	if !hashOneShot(crypto.SHA3_512, p, sum[:]) {
 		panic("openssl: SHA3_512 failed")
 	}
@@ -152,531 +159,312 @@ func SHA3_512(p []byte) (sum [64]byte) {
 // The returned hash doesn't implement encoding.BinaryMarshaler and
 // encoding.BinaryUnmarshaler.
 func NewMD4() hash.Hash {
-	return newEvpHash(crypto.MD4)
+	return newHash(crypto.MD4)
 }
 
 // NewMD5 returns a new MD5 hash.
 func NewMD5() hash.Hash {
-	return newEvpHash(crypto.MD5)
+	return newHash(crypto.MD5)
 }
 
 // NewSHA1 returns a new SHA1 hash.
 func NewSHA1() hash.Hash {
-	return newEvpHash(crypto.SHA1)
+	return newHash(crypto.SHA1)
 }
 
 // NewSHA224 returns a new SHA224 hash.
 func NewSHA224() hash.Hash {
-	return newEvpHash(crypto.SHA224)
+	return newHash(crypto.SHA224)
 }
 
 // NewSHA256 returns a new SHA256 hash.
 func NewSHA256() hash.Hash {
-	return newEvpHash(crypto.SHA256)
+	return newHash(crypto.SHA256)
 }
 
 // NewSHA384 returns a new SHA384 hash.
 func NewSHA384() hash.Hash {
-	return newEvpHash(crypto.SHA384)
+	return newHash(crypto.SHA384)
 }
 
 // NewSHA512 returns a new SHA512 hash.
 func NewSHA512() hash.Hash {
-	return newEvpHash(crypto.SHA512)
+	return newHash(crypto.SHA512)
 }
 
 // NewSHA512_224 returns a new SHA512_224 hash.
 func NewSHA512_224() hash.Hash {
-	return newEvpHash(crypto.SHA512_224)
+	return newHash(crypto.SHA512_224)
 }
 
 // NewSHA512_256 returns a new SHA512_256 hash.
 func NewSHA512_256() hash.Hash {
-	return newEvpHash(crypto.SHA512_256)
+	return newHash(crypto.SHA512_256)
 }
 
 // NewSHA3_224 returns a new SHA3-224 hash.
-func NewSHA3_224() hash.Hash {
-	return newEvpHash(crypto.SHA3_224)
+func NewSHA3_224() *Hash {
+	return newHash(crypto.SHA3_224)
 }
 
-// NewSHA3_256 returns a new SHA3-256 hash.
-func NewSHA3_256() hash.Hash {
-	return newEvpHash(crypto.SHA3_256)
+// NewSHA3_256 creates a new SHA3-256 hash.
+func NewSHA3_256() *Hash {
+	return newHash(crypto.SHA3_256)
 }
 
-// NewSHA3_384 returns a new SHA3-384 hash.
-func NewSHA3_384() hash.Hash {
-	return newEvpHash(crypto.SHA3_384)
+// NewSHA3_384 creates a new SHA3-384 hash.
+func NewSHA3_384() *Hash {
+	return newHash(crypto.SHA3_384)
 }
 
-// NewSHA3_512 returns a new SHA3-512 hash.
-func NewSHA3_512() hash.Hash {
-	return newEvpHash(crypto.SHA3_512)
+// NewSHA3_512 creates a new SHA3-512 hash.
+func NewSHA3_512() *Hash {
+	return newHash(crypto.SHA3_512)
 }
 
-// isHashMarshallable returns true if the memory layout of md
-// is known by this library and can therefore be marshalled.
-func isHashMarshallable(md C.GO_EVP_MD_PTR) bool {
-	if vMajor == 1 {
-		return true
-	}
-	prov := C.go_openssl_EVP_MD_get0_provider(md)
-	if prov == nil {
-		return false
-	}
-	cname := C.go_openssl_OSSL_PROVIDER_get0_name(prov)
-	if cname == nil {
-		return false
-	}
-	name := C.GoString(cname)
-	// We only know the memory layout of the built-in providers.
-	// See evpHash.hashState for more details.
-	marshallable := name == "default" || name == "fips"
-	return marshallable
-}
+var _ hash.Hash = (*Hash)(nil)
+var _ HashCloner = (*Hash)(nil)
 
-// cloneHash is an interface that defines a Clone method.
-//
-// hahs.CloneHash will probably be added in Go 1.25, see https://golang.org/issue/69521,
-// but we need it now.
-type cloneHash interface {
-	hash.Hash
-	// Clone returns a separate Hash instance with the same state as h.
-	Clone() hash.Hash
-}
+// hashBufSize is the size of the buffer used for hashing.
+// 256 bytes is a reasonable compromise for general purpose use,
+// and the resulting evpHash size is still similar to the
+// upstream sha512 hash object.
+const hashBufSize = 256
 
-var _ hash.Hash = (*evpHash)(nil)
-var _ cloneHash = (*evpHash)(nil)
-
-// evpHash implements generic hash methods.
-type evpHash struct {
+// Hash implements generic hash methods.
+type Hash struct {
 	alg *hashAlgorithm
-	ctx C.GO_EVP_MD_CTX_PTR
-	// ctx2 is used in evpHash.sum to avoid changing
+	ctx ossl.EVP_MD_CTX_PTR
+	// ctx2 is used in Hash.Sum to avoid changing
 	// the state of ctx. Having it here allows reusing the
 	// same allocated object multiple times.
-	ctx2 C.GO_EVP_MD_CTX_PTR
+	ctx2 ossl.EVP_MD_CTX_PTR
+
+	// buf is a buffer for data not yet written to ctx.
+	// It is used to reduce calls into OpenSSL for small writes.
+	// The buffer size is a trade-off between memory usage and
+	// number of calls into OpenSSL.
+	buf  [hashBufSize]byte
+	nbuf int
 }
 
-func newEvpHash(ch crypto.Hash) *evpHash {
-	alg := loadHash(ch)
-	if alg == nil {
-		panic("openssl: unsupported hash function: " + strconv.Itoa(int(ch)))
-	}
-	h := &evpHash{alg: alg}
+func newHash(ch crypto.Hash) *Hash {
 	// Don't call init() yet, it would be wasteful
 	// if the caller only wants to know the hash type. This
 	// is a common pattern in this package, as some functions
 	// accept a `func() hash.Hash` parameter and call it just
 	// to know the hash type.
-	return h
+	return &Hash{alg: loadHash(ch, true)}
 }
 
-func (h *evpHash) finalize() {
+func (h *Hash) finalize() {
 	if h.ctx != nil {
-		C.go_openssl_EVP_MD_CTX_free(h.ctx)
+		ossl.EVP_MD_CTX_free(h.ctx)
 	}
 	if h.ctx2 != nil {
-		C.go_openssl_EVP_MD_CTX_free(h.ctx2)
+		ossl.EVP_MD_CTX_free(h.ctx2)
 	}
 }
 
-func (h *evpHash) init() {
+func (h *Hash) init() {
 	if h.ctx != nil {
 		return
 	}
-	h.ctx = C.go_openssl_EVP_MD_CTX_new()
-	if C.go_openssl_EVP_DigestInit_ex(h.ctx, h.alg.md, nil) != 1 {
-		C.go_openssl_EVP_MD_CTX_free(h.ctx)
-		panic(newOpenSSLError("EVP_DigestInit_ex"))
+	var err error
+	h.ctx, err = ossl.EVP_MD_CTX_new()
+	if err != nil {
+		panic(err)
 	}
-	h.ctx2 = C.go_openssl_EVP_MD_CTX_new()
-	runtime.SetFinalizer(h, (*evpHash).finalize)
+	if _, err := ossl.EVP_DigestInit_ex(h.ctx, h.alg.md, nil); err != nil {
+		ossl.EVP_MD_CTX_free(h.ctx)
+		panic(err)
+	}
+	h.ctx2, err = ossl.EVP_MD_CTX_new()
+	if err != nil {
+		ossl.EVP_MD_CTX_free(h.ctx)
+		panic(err)
+	}
+	runtime.SetFinalizer(h, (*Hash).finalize)
 }
 
-func (h *evpHash) Reset() {
+func (h *Hash) write(p []byte) int {
+	if len(p) == 0 {
+		return 0
+	}
+	if h.nbuf > 0 && h.nbuf+len(p) > len(h.buf) {
+		// We have buffered data and adding p would exceed the buffer,
+		// flush the buffer first.
+		h.flush()
+	}
+	if len(p) > len(h.buf) {
+		// p is larger than the buffer, write it directly.
+		h.init()
+		if _, err := ossl.EVP_DigestUpdate(h.ctx, p); err != nil {
+			panic(err)
+		}
+	} else {
+		// Otherwise, buffer it.
+		h.nbuf += copy(h.buf[h.nbuf:], p)
+	}
+	runtime.KeepAlive(h)
+	return len(p)
+}
+
+func (h *Hash) flush() {
+	h.init()
+	if h.nbuf > 0 {
+		if _, err := ossl.EVP_DigestUpdate(h.ctx, h.buf[:h.nbuf]); err != nil {
+			panic(err)
+		}
+		h.nbuf = 0
+	}
+}
+
+func (h *Hash) Reset() {
+	h.nbuf = 0
 	if h.ctx == nil {
-		// The hash is not initialized yet, no need to reset.
+		// The hash is not initialized yet, no need to reset ctx.
 		return
 	}
-	// There is no need to reset h.ctx2 because it is always reset after
-	// use in evpHash.sum.
-	if C.go_openssl_EVP_DigestInit_ex(h.ctx, nil, nil) != 1 {
-		panic(newOpenSSLError("EVP_DigestInit_ex"))
+	// There is no need to reset h.ctx2 because it is always reset in evpHash.Sum.
+	if _, err := ossl.EVP_DigestInit_ex(h.ctx, nil, nil); err != nil {
+		panic(err)
 	}
 	runtime.KeepAlive(h)
 }
 
-func (h *evpHash) Write(p []byte) (int, error) {
-	if len(p) == 0 {
-		return 0, nil
-	}
-	h.init()
-	if C.go_openssl_EVP_DigestUpdate(h.ctx, unsafe.Pointer(&*addr(p)), C.size_t(len(p))) != 1 {
-		panic(newOpenSSLError("EVP_DigestUpdate"))
-	}
-	runtime.KeepAlive(h)
-	return len(p), nil
+func (h *Hash) Write(p []byte) (int, error) {
+	return h.write(p), nil
 }
 
-func (h *evpHash) WriteString(s string) (int, error) {
-	if len(s) == 0 {
-		return 0, nil
-	}
-	h.init()
-	if C.go_openssl_EVP_DigestUpdate(h.ctx, unsafe.Pointer(unsafe.StringData(s)), C.size_t(len(s))) == 0 {
-		panic("openssl: EVP_DigestUpdate failed")
-	}
-	runtime.KeepAlive(h)
-	return len(s), nil
+func (h *Hash) WriteString(s string) (int, error) {
+	return h.write(unsafe.Slice(unsafe.StringData(s), len(s))), nil
 }
 
-func (h *evpHash) WriteByte(c byte) error {
-	h.init()
-	if C.go_openssl_EVP_DigestUpdate(h.ctx, unsafe.Pointer(&c), 1) == 0 {
-		panic("openssl: EVP_DigestUpdate failed")
-	}
-	runtime.KeepAlive(h)
+func (h *Hash) WriteByte(c byte) error {
+	h.write(unsafe.Slice(&c, 1))
 	return nil
 }
 
-func (h *evpHash) Size() int {
+func (h *Hash) Size() int {
 	return h.alg.size
 }
 
-func (h *evpHash) BlockSize() int {
+func (h *Hash) BlockSize() int {
 	return h.alg.blockSize
 }
 
-func (h *evpHash) Sum(in []byte) []byte {
-	h.init()
-	out := make([]byte, h.Size(), maxHashSize) // explicit cap to allow stack allocation
-	if C.go_hash_sum(h.ctx, h.ctx2, base(out)) != 1 {
-		panic(newOpenSSLError("go_hash_sum"))
+func (h *Hash) Sum(in []byte) []byte {
+	out := append(in, make([]byte, h.Size(), maxHashSize)...)
+	if h.ctx == nil {
+		// Fast path: if ctx hasn't been initialized, all data is in the buffer
+		// and we can use the one-shot EVP_Digest function.
+		if _, err := ossl.EVP_Digest(h.buf[:h.nbuf], out[len(in):], nil, h.alg.md, nil); err != nil {
+			panic(err)
+		}
+		return out
+	}
+	// Slow path: copy h.ctx into h.ctx2 and call EVP_DigestFinal_ex using h.ctx2.
+	// This is necessary because Go hash.Hash mandates that Sum has no effect
+	// on the underlying stream. In particular it is OK to Sum, then Write more,
+	// then Sum again, and the second Sum acts as if the first didn't happen.
+	if _, err := ossl.EVP_MD_CTX_copy_ex(h.ctx2, h.ctx); err != nil {
+		panic(err)
+	}
+	if h.nbuf > 0 {
+		// If we have buffered data, update ctx2 with it
+		if _, err := ossl.EVP_DigestUpdate(h.ctx2, h.buf[:h.nbuf]); err != nil {
+			panic(err)
+		}
+	}
+	if _, err := ossl.EVP_DigestFinal_ex(h.ctx2, out[len(in):], nil); err != nil {
+		panic(err)
 	}
 	runtime.KeepAlive(h)
-	return append(in, out...)
+	return out
 }
 
-// Clone returns a new evpHash object that is a deep clone of itself.
+// Clone returns a new Hash object that is a deep clone of itself.
 // The duplicate object contains all state and data contained in the
 // original object at the point of duplication.
-func (h *evpHash) Clone() hash.Hash {
-	h2 := &evpHash{alg: h.alg}
+func (h *Hash) Clone() (HashCloner, error) {
+	h2 := &Hash{alg: h.alg, nbuf: h.nbuf}
+	copy(h2.buf[:h.nbuf], h.buf[:h.nbuf])
 	if h.ctx != nil {
-		h2.ctx = C.go_openssl_EVP_MD_CTX_new()
-		if h2.ctx == nil {
-			panic(newOpenSSLError("EVP_MD_CTX_new"))
+		var err error
+		h2.ctx, err = ossl.EVP_MD_CTX_new()
+		if err != nil {
+			panic(err)
 		}
-		if C.go_openssl_EVP_MD_CTX_copy_ex(h2.ctx, h.ctx) != 1 {
-			C.go_openssl_EVP_MD_CTX_free(h2.ctx)
-			panic(newOpenSSLError("EVP_MD_CTX_copy"))
+		if _, err := ossl.EVP_MD_CTX_copy_ex(h2.ctx, h.ctx); err != nil {
+			ossl.EVP_MD_CTX_free(h2.ctx)
+			panic(err)
 		}
-		h2.ctx2 = C.go_openssl_EVP_MD_CTX_new()
-		if h2.ctx2 == nil {
-			C.go_openssl_EVP_MD_CTX_free(h2.ctx)
-			panic(newOpenSSLError("EVP_MD_CTX_new"))
+		h2.ctx2, err = ossl.EVP_MD_CTX_new()
+		if err != nil {
+			ossl.EVP_MD_CTX_free(h2.ctx)
+			panic(err)
 		}
-		runtime.SetFinalizer(h2, (*evpHash).finalize)
+		runtime.SetFinalizer(h2, (*Hash).finalize)
 	}
 	runtime.KeepAlive(h)
-	return h2
+	return h2, nil
 }
 
-// hashState returns a pointer to the internal hash structure.
-//
-// The EVP_MD_CTX memory layout has changed in OpenSSL 3
-// and the property holding the internal structure is no longer md_data but algctx.
-func hashState(ctx C.GO_EVP_MD_CTX_PTR) unsafe.Pointer {
-	switch vMajor {
-	case 1:
-		// https://github.com/openssl/openssl/blob/0418e993c717a6863f206feaa40673a261de7395/crypto/evp/evp_local.h#L12.
-		type mdCtx struct {
-			_       [2]unsafe.Pointer
-			_       C.ulong
-			md_data unsafe.Pointer
-		}
-		return (*mdCtx)(unsafe.Pointer(ctx)).md_data
-	case 3:
-		// https://github.com/openssl/openssl/blob/5675a5aaf6a2e489022bcfc18330dae9263e598e/crypto/evp/evp_local.h#L16.
-		type mdCtx struct {
-			_      [3]unsafe.Pointer
-			_      C.ulong
-			_      [3]unsafe.Pointer
-			algctx unsafe.Pointer
-		}
-		return (*mdCtx)(unsafe.Pointer(ctx)).algctx
-	default:
-		panic(errUnsupportedVersion())
-	}
+type errMarshallUnsupported struct{}
+
+func (e errMarshallUnsupported) Error() string {
+	return "cryptokit: hash state is not marshallable"
 }
 
-func (d *evpHash) MarshalBinary() ([]byte, error) {
-	if !d.alg.marshallable {
-		return nil, errors.New("openssl: hash state is not marshallable")
+func (e errMarshallUnsupported) Unwrap() error {
+	return errors.ErrUnsupported
+}
+
+func (d *Hash) MarshalBinary() ([]byte, error) {
+	if d.alg == nil || !d.alg.marshallable {
+		return nil, errMarshallUnsupported{}
 	}
 	buf := make([]byte, 0, d.alg.marshalledSize)
 	return d.AppendBinary(buf)
 }
 
-func (d *evpHash) AppendBinary(buf []byte) ([]byte, error) {
+func (d *Hash) AppendBinary(buf []byte) ([]byte, error) {
 	defer runtime.KeepAlive(d)
-	d.init()
-	if !d.alg.marshallable {
-		return nil, errors.New("openssl: hash state is not marshallable")
+	if d.alg == nil || !d.alg.marshallable {
+		return nil, errMarshallUnsupported{}
 	}
-	state := hashState(d.ctx)
-	if state == nil {
-		return nil, errors.New("openssl: can't retrieve hash state")
-	}
-	var appender interface {
-		AppendBinary([]byte) ([]byte, error)
-	}
-	switch d.alg.ch {
-	case crypto.MD5:
-		appender = (*md5State)(state)
-	case crypto.SHA1:
-		appender = (*sha1State)(state)
-	case crypto.SHA224:
-		appender = (*sha256State)(state)
-	case crypto.SHA256:
-		appender = (*sha256State)(state)
-	case crypto.SHA384:
-		appender = (*sha512State)(state)
-	case crypto.SHA512:
-		appender = (*sha512State)(state)
-	case crypto.SHA512_224:
-		appender = (*sha512State)(state)
-	case crypto.SHA512_256:
-		appender = (*sha512State)(state)
+	d.flush()
+	switch d.alg.provider {
+	case providerOSSLDefault, providerOSSLFIPS:
+		return osslHashAppendBinary(d.ctx, d.alg.ch, d.alg.magic, buf)
+	case providerSymCrypt:
+		return symCryptHashAppendBinary(d.ctx, d.alg.ch, d.alg.magic, buf)
 	default:
-		panic("openssl: unsupported hash function: " + strconv.Itoa(int(d.alg.ch)))
+		panic("openssl: unknown hash provider" + strconv.Itoa(int(d.alg.provider)))
 	}
-	buf = append(buf, d.alg.magic[:]...)
-	return appender.AppendBinary(buf)
 }
 
-func (d *evpHash) UnmarshalBinary(b []byte) error {
+func (d *Hash) UnmarshalBinary(b []byte) error {
 	defer runtime.KeepAlive(d)
-	d.init()
-	if !d.alg.marshallable {
-		return errors.New("openssl: hash state is not marshallable")
+	d.flush()
+	if d.alg == nil || !d.alg.marshallable {
+		return errMarshallUnsupported{}
 	}
-	if len(b) < len(d.alg.magic) || string(b[:len(d.alg.magic)]) != string(d.alg.magic[:]) {
+	if len(b) < len(d.alg.magic) || string(b[:len(d.alg.magic)]) != d.alg.magic {
 		return errors.New("openssl: invalid hash state identifier")
 	}
 	if len(b) != d.alg.marshalledSize {
 		return errors.New("openssl: invalid hash state size")
 	}
-	state := hashState(d.ctx)
-	if state == nil {
-		return errors.New("openssl: can't retrieve hash state")
-	}
-	b = b[len(d.alg.magic):]
-	var unmarshaler interface {
-		UnmarshalBinary([]byte) error
-	}
-	switch d.alg.ch {
-	case crypto.MD5:
-		unmarshaler = (*md5State)(state)
-	case crypto.SHA1:
-		unmarshaler = (*sha1State)(state)
-	case crypto.SHA224:
-		unmarshaler = (*sha256State)(state)
-	case crypto.SHA256:
-		unmarshaler = (*sha256State)(state)
-	case crypto.SHA384:
-		unmarshaler = (*sha512State)(state)
-	case crypto.SHA512:
-		unmarshaler = (*sha512State)(state)
-	case crypto.SHA512_224:
-		unmarshaler = (*sha512State)(state)
-	case crypto.SHA512_256:
-		unmarshaler = (*sha512State)(state)
+	switch d.alg.provider {
+	case providerOSSLDefault, providerOSSLFIPS:
+		return osslHashUnmarshalBinary(d.ctx, d.alg.ch, d.alg.magic, b)
+	case providerSymCrypt:
+		return symCryptHashUnmarshalBinary(d.ctx, d.alg.ch, d.alg.magic, b)
 	default:
-		panic("openssl: unsupported hash function: " + strconv.Itoa(int(d.alg.ch)))
+		panic("openssl: unknown hash provider" + strconv.Itoa(int(d.alg.provider)))
 	}
-	return unmarshaler.UnmarshalBinary(b)
-}
-
-// md5State layout is taken from
-// https://github.com/openssl/openssl/blob/0418e993c717a6863f206feaa40673a261de7395/include/openssl/md5.h#L33.
-type md5State struct {
-	h      [4]uint32
-	nl, nh uint32
-	x      [64]byte
-	nx     uint32
-}
-
-const (
-	md5Magic         = "md5\x01"
-	md5MarshaledSize = len(md5Magic) + 4*4 + 64 + 8
-)
-
-func (d *md5State) UnmarshalBinary(b []byte) error {
-	b, d.h[0] = consumeUint32(b)
-	b, d.h[1] = consumeUint32(b)
-	b, d.h[2] = consumeUint32(b)
-	b, d.h[3] = consumeUint32(b)
-	b = b[copy(d.x[:], b):]
-	_, n := consumeUint64(b)
-	d.nl = uint32(n << 3)
-	d.nh = uint32(n >> 29)
-	d.nx = uint32(n) % 64
-	return nil
-}
-
-func (d *md5State) AppendBinary(buf []byte) ([]byte, error) {
-	buf = appendUint32(buf, d.h[0])
-	buf = appendUint32(buf, d.h[1])
-	buf = appendUint32(buf, d.h[2])
-	buf = appendUint32(buf, d.h[3])
-	buf = append(buf, d.x[:d.nx]...)
-	buf = append(buf, make([]byte, len(d.x)-int(d.nx))...)
-	buf = appendUint64(buf, uint64(d.nl)>>3|uint64(d.nh)<<29)
-	return buf, nil
-}
-
-// sha1State layout is taken from
-// https://github.com/openssl/openssl/blob/0418e993c717a6863f206feaa40673a261de7395/include/openssl/sha.h#L34.
-type sha1State struct {
-	h      [5]uint32
-	nl, nh uint32
-	x      [64]byte
-	nx     uint32
-}
-
-const (
-	sha1Magic         = "sha\x01"
-	sha1MarshaledSize = len(sha1Magic) + 5*4 + 64 + 8
-)
-
-func (d *sha1State) UnmarshalBinary(b []byte) error {
-	b, d.h[0] = consumeUint32(b)
-	b, d.h[1] = consumeUint32(b)
-	b, d.h[2] = consumeUint32(b)
-	b, d.h[3] = consumeUint32(b)
-	b, d.h[4] = consumeUint32(b)
-	b = b[copy(d.x[:], b):]
-	_, n := consumeUint64(b)
-	d.nl = uint32(n << 3)
-	d.nh = uint32(n >> 29)
-	d.nx = uint32(n) % 64
-	return nil
-}
-
-func (d *sha1State) AppendBinary(buf []byte) ([]byte, error) {
-	buf = appendUint32(buf, d.h[0])
-	buf = appendUint32(buf, d.h[1])
-	buf = appendUint32(buf, d.h[2])
-	buf = appendUint32(buf, d.h[3])
-	buf = appendUint32(buf, d.h[4])
-	buf = append(buf, d.x[:d.nx]...)
-	buf = append(buf, make([]byte, len(d.x)-int(d.nx))...)
-	buf = appendUint64(buf, uint64(d.nl)>>3|uint64(d.nh)<<29)
-	return buf, nil
-}
-
-const (
-	magic224         = "sha\x02"
-	magic256         = "sha\x03"
-	marshaledSize256 = len(magic256) + 8*4 + 64 + 8
-)
-
-// sha256State layout is taken from
-// https://github.com/openssl/openssl/blob/0418e993c717a6863f206feaa40673a261de7395/include/openssl/sha.h#L51.
-type sha256State struct {
-	h      [8]uint32
-	nl, nh uint32
-	x      [64]byte
-	nx     uint32
-}
-
-func (d *sha256State) UnmarshalBinary(b []byte) error {
-	b, d.h[0] = consumeUint32(b)
-	b, d.h[1] = consumeUint32(b)
-	b, d.h[2] = consumeUint32(b)
-	b, d.h[3] = consumeUint32(b)
-	b, d.h[4] = consumeUint32(b)
-	b, d.h[5] = consumeUint32(b)
-	b, d.h[6] = consumeUint32(b)
-	b, d.h[7] = consumeUint32(b)
-	b = b[copy(d.x[:], b):]
-	_, n := consumeUint64(b)
-	d.nl = uint32(n << 3)
-	d.nh = uint32(n >> 29)
-	d.nx = uint32(n) % 64
-	return nil
-}
-
-func (d *sha256State) AppendBinary(buf []byte) ([]byte, error) {
-	buf = appendUint32(buf, d.h[0])
-	buf = appendUint32(buf, d.h[1])
-	buf = appendUint32(buf, d.h[2])
-	buf = appendUint32(buf, d.h[3])
-	buf = appendUint32(buf, d.h[4])
-	buf = appendUint32(buf, d.h[5])
-	buf = appendUint32(buf, d.h[6])
-	buf = appendUint32(buf, d.h[7])
-	buf = append(buf, d.x[:d.nx]...)
-	buf = append(buf, make([]byte, len(d.x)-int(d.nx))...)
-	buf = appendUint64(buf, uint64(d.nl)>>3|uint64(d.nh)<<29)
-	return buf, nil
-}
-
-// sha512State layout is taken from
-// https://github.com/openssl/openssl/blob/0418e993c717a6863f206feaa40673a261de7395/include/openssl/sha.h#L95.
-type sha512State struct {
-	h      [8]uint64
-	nl, nh uint64
-	x      [128]byte
-	nx     uint32
-}
-
-const (
-	magic384         = "sha\x04"
-	magic512_224     = "sha\x05"
-	magic512_256     = "sha\x06"
-	magic512         = "sha\x07"
-	marshaledSize512 = len(magic512) + 8*8 + 128 + 8
-)
-
-func (d *sha512State) MarshalBinary() ([]byte, error) {
-	buf := make([]byte, 0, marshaledSize512)
-	return d.AppendBinary(buf)
-}
-
-func (d *sha512State) UnmarshalBinary(b []byte) error {
-	b, d.h[0] = consumeUint64(b)
-	b, d.h[1] = consumeUint64(b)
-	b, d.h[2] = consumeUint64(b)
-	b, d.h[3] = consumeUint64(b)
-	b, d.h[4] = consumeUint64(b)
-	b, d.h[5] = consumeUint64(b)
-	b, d.h[6] = consumeUint64(b)
-	b, d.h[7] = consumeUint64(b)
-	b = b[copy(d.x[:], b):]
-	_, n := consumeUint64(b)
-	d.nl = n << 3
-	d.nh = n >> 61
-	d.nx = uint32(n) % 128
-	return nil
-}
-
-func (d *sha512State) AppendBinary(buf []byte) ([]byte, error) {
-	buf = appendUint64(buf, d.h[0])
-	buf = appendUint64(buf, d.h[1])
-	buf = appendUint64(buf, d.h[2])
-	buf = appendUint64(buf, d.h[3])
-	buf = appendUint64(buf, d.h[4])
-	buf = appendUint64(buf, d.h[5])
-	buf = appendUint64(buf, d.h[6])
-	buf = appendUint64(buf, d.h[7])
-	buf = append(buf, d.x[:d.nx]...)
-	buf = append(buf, make([]byte, len(d.x)-int(d.nx))...)
-	buf = appendUint64(buf, d.nl>>3|d.nh<<61)
-	return buf, nil
 }
 
 // appendUint64 appends x into b as a big endian byte sequence.

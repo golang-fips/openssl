@@ -2,6 +2,7 @@ package openssl_test
 
 import (
 	"bytes"
+	"crypto/rand"
 	"encoding/hex"
 	"strings"
 	"testing"
@@ -10,9 +11,10 @@ import (
 )
 
 func TestECDH(t *testing.T) {
-	for _, tt := range []string{"P-256", "P-384", "P-521"} {
+	for _, tt := range []string{"P-256", "P-384", "P-521", "X25519"} {
 		t.Run(tt, func(t *testing.T) {
 			name := tt
+			skipUnsupportedCurve(t, name)
 			aliceKey, alicPrivBytes, err := openssl.GenerateKeyECDH(name)
 			if err != nil {
 				t.Fatal(err)
@@ -107,11 +109,20 @@ var ecdhvectors = []struct {
 			"01ba52c56fc8776d9e8f5db4f0cc27636d0b741bbe05400697942e80b739884a83bde99e0f6716939e632bc8986fa18dccd443a348b6c3e522497955a4f3c302f676",
 		SharedSecret: "005fc70477c3e63bc3954bd0df3ea0d1f41ee21746ed95fc5e1fdf90930d5e136672d72cc770742d1711c3c3a4c334a0ad9759436a4d3c5bf6e74b9578fac148c831",
 	},
+	// X25519 test vector from RFC 7748, Section 6.1.
+	{
+		Name:          "X25519",
+		PrivateKey:    "77076d0a7318a57d3c16c17251b26645df4c2f87ebc0992ab177fba51db92c2a",
+		PublicKey:     "8520f0098930a754748b7ddcb43ef75a0dbf3a0d26381af4eba4a98eaa9b4e6a",
+		PeerPublicKey: "de9edb7d7b7dc1b4d35b61c2ece435373f8343c85b78674dadfc7e146f882b4f",
+		SharedSecret:  "4a5d9d5ba4ce2de1728e3bf480350f25e07e21c947d19e3376f09b3c1e161742",
+	},
 }
 
 func TestECDHVectors(t *testing.T) {
 	for _, tt := range ecdhvectors {
 		t.Run(tt.Name, func(t *testing.T) {
+			skipUnsupportedCurve(t, tt.Name)
 			key, err := openssl.NewPrivateKeyECDH(tt.Name, hexDecode(t, tt.PrivateKey))
 			if err != nil {
 				t.Fatal(err)
@@ -217,6 +228,14 @@ var invalidECDHPrivateKeys = map[string][]string{
 		"11fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffa51868783bf2f966b7fcc0148f709a5d03bb5c9b8899c47aebb6fb71e91386409",
 		"03fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff4a30d0f077e5f2cd6ff980291ee134ba0776b937113388f5d76df6e3d2270c812",
 	},
+	"X25519": {
+		// X25519 only rejects bad lengths.
+		"",
+		"01",
+		"01010101010101010101010101010101010101010101010101010101010101",
+		"000101010101010101010101010101010101010101010101010101010101010101",
+		strings.Repeat("01", 200),
+	},
 }
 
 var invalidECDHPublicKeys = map[string][]string{
@@ -262,11 +281,13 @@ var invalidECDHPublicKeys = map[string][]string{
 		"0400c6858e06b70404e9cd9e3ecb662395b4429c648139053fb521f828af606b4d3dbaa14b5e77efe75928fe1dc127a2ffa8de3348b3c1856a429bf97e7e31c2e5bd66011839296a789a3bc0045c8a5fb42c7d1bd998f54449579b446817afbd17273e662c97ee72995ef42640c550b9013fad0761353c7086a272c24088be94769fd16651",
 		"04000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
 	},
+	"X25519": {},
 }
 
 func TestECDHNewPrivateKeyECDH_Invalid(t *testing.T) {
-	for _, curve := range []string{"P-256", "P-384", "P-521"} {
+	for _, curve := range []string{"P-256", "P-384", "P-521", "X25519"} {
 		t.Run(curve, func(t *testing.T) {
+			skipUnsupportedCurve(t, curve)
 			for _, input := range invalidECDHPrivateKeys[curve] {
 				k, err := openssl.NewPrivateKeyECDH(curve, hexDecode(t, input))
 				if err == nil {
@@ -280,8 +301,9 @@ func TestECDHNewPrivateKeyECDH_Invalid(t *testing.T) {
 }
 
 func TestECDHNewPublicKeyECDH_Invalid(t *testing.T) {
-	for _, curve := range []string{"P-256", "P-384", "P-521"} {
+	for _, curve := range []string{"P-256", "P-384", "P-521", "X25519"} {
 		t.Run(curve, func(t *testing.T) {
+			skipUnsupportedCurve(t, curve)
 			for _, input := range invalidECDHPublicKeys[curve] {
 				k, err := openssl.NewPublicKeyECDH(curve, hexDecode(t, input))
 				if err == nil {
@@ -291,5 +313,42 @@ func TestECDHNewPublicKeyECDH_Invalid(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestX25519Failure(t *testing.T) {
+	skipUnsupportedCurve(t, "X25519")
+	identity := hexDecode(t, "0000000000000000000000000000000000000000000000000000000000000000")
+	lowOrderPoint := hexDecode(t, "e0eb7a7c3b41b8ae1656e3faf19fc46ada098deb9c32b1fd866205165f49b800")
+	randomScalar := make([]byte, 32)
+	rand.Read(randomScalar)
+
+	t.Run("identity point", func(t *testing.T) { testX25519Failure(t, randomScalar, identity) })
+	t.Run("low order point", func(t *testing.T) { testX25519Failure(t, randomScalar, lowOrderPoint) })
+}
+
+func testX25519Failure(t *testing.T, private, public []byte) {
+	priv, err := openssl.NewPrivateKeyECDH("X25519", private)
+	if err != nil {
+		t.Fatal(err)
+	}
+	pub, err := openssl.NewPublicKeyECDH("X25519", public)
+	if err != nil {
+		// Some providers may reject the public key at import time.
+		return
+	}
+	secret, err := openssl.ECDH(priv, pub)
+	if err == nil {
+		t.Error("expected ECDH error")
+	}
+	if secret != nil {
+		t.Errorf("unexpected ECDH output: %x", secret)
+	}
+}
+
+func skipUnsupportedCurve(t *testing.T, curve string) {
+	t.Helper()
+	if !openssl.SupportsCurve(curve) {
+		t.Skipf("skipping test: curve %q is not supported", curve)
 	}
 }
