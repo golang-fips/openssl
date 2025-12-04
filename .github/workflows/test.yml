@@ -106,11 +106,19 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        image: [mcr.microsoft.com/oss/go/microsoft/golang:1.24-azurelinux3.0, mcr.microsoft.com/oss/go/microsoft/golang:1.24-cbl-mariner2.0]
+        image: [
+          mcr.microsoft.com/oss/go/microsoft/golang:1.24-azurelinux3.0,
+          mcr.microsoft.com/oss/go/microsoft/golang:1.24-cbl-mariner2.0,
+          fedora:latest,
+        ]
     runs-on: ubuntu-latest
     container: ${{ matrix.image }}
     steps:
     - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+    - name: Install required packages
+      if: startsWith(matrix.image, 'fedora')
+      run: |
+          dnf install -y golang
     - name: Run Test
       run: go test -shuffle=on -v ./...
       env:
@@ -120,17 +128,6 @@ jobs:
       env:
         CGO_ENABLED: 0
         GOFLAGS: -tags=goexperiment.ms_nocgo_opensslcrypto
-
-  fedora:
-    runs-on: ubuntu-latest
-    container: fedora:latest
-    steps:
-    - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
-    - name: Install Go
-      run: |
-          dnf install -y golang
-    - name: Run Tests
-      run: go test -shuffle=on -v ./...
 
   test-qemu:
     runs-on: ubuntu-latest
@@ -174,7 +171,7 @@ jobs:
       run: CGO_ENABLED=0 go build ./...
 
   conclusion:
-    needs: [test, ossltest, container, test-qemu, fedora, cgolessbuild]
+    needs: [test, ossltest, container, test-qemu, cgolessbuild]
     runs-on: ubuntu-latest
     if: ${{ always() }}
     steps:
