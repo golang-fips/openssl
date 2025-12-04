@@ -1,4 +1,8 @@
-on: [push, pull_request]
+on:
+  push:
+    branches:
+      - v2
+  pull_request:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -17,12 +21,10 @@ jobs:
     steps:
     - name: Install build tools
       run: sudo apt-get install -y build-essential
-    - name: Install Go
-      uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6.1.0
+    - uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6.1.0
       with:
         go-version: ${{ matrix.go-version }}
-    - name: Checkout code
-      uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
+    - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
     - name: Verify go generate leaves no changes
       run: |
         go generate ./...
@@ -71,33 +73,7 @@ jobs:
       env:
         GO_OPENSSL_VERSION_OVERRIDE: ${{ matrix.openssl-version }}
 
-  wintest:
-    runs-on: windows-2022
-    strategy:
-      fail-fast: false
-      matrix:
-        go-version: [1.24.x, 1.25.x]
-        openssl-version: [libcrypto-3-x64.dll]
-    steps:
-    - name: Install Go
-      uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6.1.0
-      with:
-        go-version: ${{ matrix.go-version }}
-    - name: Checkout code
-      uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
-    - name: Run Test
-      run: go test -shuffle=on -gcflags=all=-d=checkptr -count 10 -v ./...
-      env:
-        GO_OPENSSL_VERSION_OVERRIDE: ${{ matrix.openssl-version }}
-        CGO_ENABLED: 1
-    - name: Run Test CGO disabled
-      run: go test -shuffle=on -count 10 -v ./...
-      env:
-        GO_OPENSSL_VERSION_OVERRIDE: ${{ matrix.openssl-version }}
-        CGO_ENABLED: 0
-        GOFLAGS: -tags=goexperiment.ms_nocgo_opensslcrypto
-
-  mactest:
+  ossltest:
     strategy:
       fail-fast: false
       matrix:
@@ -105,16 +81,15 @@ jobs:
         host: [
           # the non-intel macOS runners use ARM64
           {os: macos-15-intel, openssl-version: /usr/local/opt/openssl@3/lib/libcrypto.3.dylib},
-          {os: macos-15, openssl-version: /opt/homebrew/opt/openssl@3/lib/libcrypto.3.dylib}
+          {os: macos-15, openssl-version: /opt/homebrew/opt/openssl@3/lib/libcrypto.3.dylib},
+          {os: windows-2022, openssl-version: libcrypto-3-x64.dll}
         ]
     runs-on: ${{ matrix.host.os }}
     steps:
-    - name: Install Go
-      uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6.1.0
+    - uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6.1.0
       with:
         go-version: ${{ matrix.go-version }}
-    - name: Checkout code
-      uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
+    - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
     - name: Run Test
       run: go test -shuffle=on -gcflags=all=-d=checkptr -count 10 -v ./...
       env:
@@ -127,28 +102,15 @@ jobs:
         CGO_ENABLED: 0
         GOFLAGS: -tags=goexperiment.ms_nocgo_opensslcrypto
 
-  azurelinux:
+  container:
+    strategy:
+      fail-fast: false
+      matrix:
+        image: [mcr.microsoft.com/oss/go/microsoft/golang:1.24-azurelinux3.0, mcr.microsoft.com/oss/go/microsoft/golang:1.24-cbl-mariner2.0]
     runs-on: ubuntu-latest
-    container: mcr.microsoft.com/oss/go/microsoft/golang:1.24-azurelinux3.0
+    container: ${{ matrix.image }}
     steps:
-    - name: Checkout code
-      uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
-    - name: Run Test
-      run: go test -shuffle=on -v ./...
-      env:
-        CGO_ENABLED: 1
-    - name: Run Test CGO disabled
-      run: go test -shuffle=on -v ./...
-      env:
-        CGO_ENABLED: 0
-        GOFLAGS: -tags=goexperiment.ms_nocgo_opensslcrypto
-
-  mariner2:
-    runs-on: ubuntu-latest
-    container: mcr.microsoft.com/oss/go/microsoft/golang:1.24-cbl-mariner2.0
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
+    - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
     - name: Run Test
       run: go test -shuffle=on -v ./...
       env:
@@ -167,12 +129,10 @@ jobs:
         go-version: [1.24, 1.25]
         architecture: [ppc64le, s390x, riscv64]
     steps:
-    - name: Set up QEMU
-      uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130 # v3.7.0
+    - uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130 # v3.7.0
       with:
         platforms: ${{ matrix.architecture }}
-    - name: Checkout code
-      uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
+    - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
     - name: Run tests on ${{matrix.architecture}}
       run: |
         docker run --rm --platform linux/${{matrix.architecture}} \
@@ -198,7 +158,19 @@ jobs:
   cgolessbuild:
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout code
-      uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
+    - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
     - name: Run Build
       run: CGO_ENABLED=0 go build ./...
+
+  conclusion:
+    needs: [test, ossltest, container, test-qemu, cgolessbuild]
+    runs-on: ubuntu-latest
+    if: ${{ always() }}
+    steps:
+      - name: Result
+        run: |
+          if [[ "${{ contains(needs.*.result, 'failure') }}" == "true" || "${{ contains(needs.*.result, 'cancelled') }}" == "true" ]]; then
+            echo "One or more jobs failed or were cancelled."
+            exit 1
+          fi
+          echo "All jobs passed."
