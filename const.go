@@ -38,6 +38,10 @@ const ( //checkheader:ignore
 	_KeyTypeMLKEM768  cString = "ML-KEM-768\x00"
 	_KeyTypeMLKEM1024 cString = "ML-KEM-1024\x00"
 
+	// Digest names
+	_DigestNameSHAKE128 cString = "SHAKE-128\x00"
+	_DigestNameSHAKE256 cString = "SHAKE-256\x00"
+
 	// KDF names
 	_OSSL_KDF_NAME_HKDF      cString = "HKDF\x00"
 	_OSSL_KDF_NAME_PBKDF2    cString = "PBKDF2\x00"

@@ -5,6 +5,7 @@ package openssl
 import (
 	"runtime"
 	"strconv"
+	"sync"
 
 	"github.com/golang-fips/openssl/v2/internal/ossl"
 )
@@ -38,7 +39,7 @@ func shakeOneShot(secuirtyBits int, data []byte, out []byte) {
 // returns an output of the given length in bytes.
 func SumSHAKE128(data []byte, length int) []byte {
 	out := make([]byte, length)
-	shakeOneShot(128, data, out[:])
+	shakeOneShot(128, data, out)
 	return out
 }
 
@@ -46,7 +47,7 @@ func SumSHAKE128(data []byte, length int) []byte {
 // returns an output of the given length in bytes.
 func SumSHAKE256(data []byte, length int) []byte {
 	out := make([]byte, length)
-	shakeOneShot(256, data, out[:])
+	shakeOneShot(256, data, out)
 	return out
 }
 
@@ -65,6 +66,7 @@ func SupportsSHAKE(securityBits int) bool {
 // SupportsCSHAKE returns true if the CSHAKE extendable output functions
 // with the given securityBits are supported.
 func SupportsCSHAKE(securityBits int) bool {
+	// OpenSSL tracker issue https://github.com/openssl/openssl/issues/28358
 	return false
 }
 
@@ -184,21 +186,23 @@ type shakeAlgorithm struct {
 	blockSize int
 }
 
+var cacheSHAKE sync.Map
+
 // loadShake converts a crypto.Hash to a EVP_MD.
 func loadShake(securityBits int) (alg *shakeAlgorithm) {
-	if v, ok := cacheMD.Load(securityBits); ok {
+	if v, ok := cacheSHAKE.Load(securityBits); ok {
 		return v.(*shakeAlgorithm)
 	}
 	defer func() {
-		cacheMD.Store(securityBits, alg)
+		cacheSHAKE.Store(securityBits, alg)
 	}()
 
 	var name cString
 	switch securityBits {
 	case 128:
-		name = "SHAKE-128\x00"
+		name = _DigestNameSHAKE128
 	case 256:
-		name = "SHAKE-256\x00"
+		name = _DigestNameSHAKE256
 	default:
 		return nil
 	}
