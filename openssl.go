@@ -240,7 +240,7 @@ func bnToBinPad(bn ossl.BIGNUM_PTR, to []byte) error {
 }
 
 // versionAtOrAbove returns true when
-// (vMajor, vMinor, vPatch) >= (major, minor, patch),
+// (major(), minor(), patch()) >= (vmajor, vminor, vpatch),
 // compared lexicographically.
 func versionAtOrAbove(vmajor, vminor, vpatch int) bool {
 	return major() > vmajor || (major() == vmajor && minor() > vminor) || (major() == vmajor && minor() == vminor && patch() >= vpatch)
