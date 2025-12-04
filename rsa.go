@@ -365,8 +365,8 @@ func newRSAKey3(isPriv bool, n, e, d, p, q, dp, dq, qinv BigInt) (ossl.EVP_PKEY_
 	return newEvpFromParams(ossl.EVP_PKEY_RSA, int32(selection), params)
 }
 
-// SupportsRSAPKCS1 returns true if the RSA PKCS1 v1.5 padding is supported for encryption and decryption.
-var SupportsRSAPKCS1 = sync.OnceValue(func() bool {
+// SupportsRSAPKCS1Encryption returns true if the RSA PKCS1 v1.5 padding is supported for encryption and decryption.
+var SupportsRSAPKCS1Encryption = sync.OnceValue(func() bool {
 	// Generate a temporary key to check for support.
 	// 2048 bits is a safe default that should be supported by all providers.
 	pkey, err := generateEVPPKey(ossl.EVP_PKEY_RSA, 2048, "")
