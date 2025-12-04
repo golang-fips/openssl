@@ -163,7 +163,7 @@ func (d *_OSSL_SHA512_CTX) AppendBinary(buf []byte) ([]byte, error) {
 }
 
 func getOSSLDigetsContext(ctx ossl.EVP_MD_CTX_PTR) unsafe.Pointer {
-	switch vMajor {
+	switch major() {
 	case 1:
 		// https://github.com/openssl/openssl/blob/0418e993c717a6863f206feaa40673a261de7395/crypto/evp/evp_local.h#L12.
 		type mdCtx struct {

@@ -88,7 +88,7 @@ func GenerateParametersDSA(l, n int) (DSAParameters, error) {
 
 	// Extract the domain parameters from the generated key.
 	var p, q, g ossl.BIGNUM_PTR
-	switch vMajor {
+	switch major() {
 	case 1:
 		dsa := getDSA(pkey)
 		ossl.DSA_get0_pqg(dsa, &p, &q, &g)
@@ -154,7 +154,7 @@ func GenerateKeyDSA(params DSAParameters) (x, y BigInt, err error) {
 	}
 	defer ossl.EVP_PKEY_free(pkey)
 	var bx, by ossl.BIGNUM_PTR
-	switch vMajor {
+	switch major() {
 	case 1:
 		dsa := getDSA(pkey)
 		ossl.DSA_get0_key(dsa, &by, &bx)
@@ -186,7 +186,7 @@ func VerifyDSA(pub *PublicKeyDSA, hash []byte, sig []byte) bool {
 }
 
 func newDSA(params DSAParameters, x, y BigInt) (ossl.EVP_PKEY_PTR, error) {
-	switch vMajor {
+	switch major() {
 	case 1:
 		return newDSA1(params, x, y)
 	case 3:

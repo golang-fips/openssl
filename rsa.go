@@ -22,7 +22,7 @@ func GenerateKeyRSA(bits int) (N, E, D, P, Q, Dp, Dq, Qinv BigInt, err error) {
 		return bad(err)
 	}
 	defer ossl.EVP_PKEY_free(pkey)
-	switch vMajor {
+	switch major() {
 	case 1:
 		key, err := ossl.EVP_PKEY_get1_RSA(pkey)
 		if err != nil {
@@ -78,7 +78,7 @@ type PublicKeyRSA struct {
 
 func NewPublicKeyRSA(n, e BigInt) (*PublicKeyRSA, error) {
 	var pkey ossl.EVP_PKEY_PTR
-	switch vMajor {
+	switch major() {
 	case 1:
 		key, err := ossl.RSA_new()
 		if err != nil {
@@ -136,7 +136,7 @@ type PrivateKeyRSA struct {
 
 func NewPrivateKeyRSA(n, e, d, p, q, dp, dq, qinv BigInt) (*PrivateKeyRSA, error) {
 	var pkey ossl.EVP_PKEY_PTR
-	switch vMajor {
+	switch major() {
 	case 1:
 		key, err := ossl.RSA_new()
 		if err != nil {
@@ -262,7 +262,7 @@ func saltLength(saltLen int, sign bool) (int32, error) {
 	// but the values don't fully match for rsa.PSSSaltLengthAuto (0).
 	if saltLen == 0 {
 		if sign {
-			if vMajor == 1 {
+			if major() == 1 {
 				// OpenSSL 1.x uses -2 to mean maximal size when signing where Go crypto uses 0.
 				return ossl.RSA_PSS_SALTLEN_MAX_SIGN, nil
 			}
@@ -341,7 +341,7 @@ func newRSAKey3(isPriv bool, n, e, d, p, q, dp, dq, qinv BigInt) (ossl.EVP_PKEY_
 		//
 		// In OpenSSL 3.0 and 3.1, we must also omit P and Q if any precomputed
 		// value is missing. See https://github.com/openssl/openssl/pull/22334
-		if vMinor >= 2 || allPrecomputedExists {
+		if minor() >= 2 || allPrecomputedExists {
 			bld.addBigInt(_OSSL_PKEY_PARAM_RSA_FACTOR1, p, true)
 			bld.addBigInt(_OSSL_PKEY_PARAM_RSA_FACTOR2, q, true)
 		}

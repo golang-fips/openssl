@@ -7,16 +7,11 @@ import (
 	"errors"
 	"math/bits"
 	"strconv"
+	"sync"
 	"unsafe"
 
 	"github.com/golang-fips/openssl/v2/internal/ossl"
 	"github.com/golang-fips/openssl/v2/osslsetup"
-)
-
-var (
-	// vMajor and vMinor hold the major/minor OpenSSL version.
-	// It is only populated if Init has been called.
-	vMajor, vMinor, vPatch int
 )
 
 // CheckVersion checks if the OpenSSL version can be loaded
@@ -27,7 +22,31 @@ func CheckVersion(version string) (exists, fips bool) {
 	return osslsetup.CheckVersion(version)
 }
 
-var isBigEndian bool
+var isBigEndian = sync.OnceValue(func() bool {
+	buf := [2]byte{}
+	*(*uint16)(unsafe.Pointer(&buf[0])) = uint16(0xABCD)
+
+	switch buf {
+	case [2]byte{0xCD, 0xAB}:
+		return false
+	case [2]byte{0xAB, 0xCD}:
+		return true
+	default:
+		panic("Could not determine native endianness.")
+	}
+})
+
+func major() int {
+	return osslsetup.VersionMajor()
+}
+
+func minor() int {
+	return osslsetup.VersionMinor()
+}
+
+func patch() int {
+	return osslsetup.VersionPatch()
+}
 
 // Init loads and initializes OpenSSL from the shared library at path.
 // It must be called before any other OpenSSL call, except CheckVersion.
@@ -39,21 +58,9 @@ var isBigEndian bool
 // For example, `file=libcrypto.so.1.1.1k-fips` makes Init look for the shared
 // library libcrypto.so.1.1.1k-fips.
 func Init(file string) error {
-	buf := [2]byte{}
-	*(*uint16)(unsafe.Pointer(&buf[0])) = uint16(0xABCD)
-
-	switch buf {
-	case [2]byte{0xCD, 0xAB}:
-		isBigEndian = false
-	case [2]byte{0xAB, 0xCD}:
-		isBigEndian = true
-	default:
-		panic("Could not determine native endianness.")
-	}
 	if err := osslsetup.Init(file); err != nil {
 		return err
 	}
-	vMajor, vMinor, vPatch = osslsetup.Version()
 	return nil
 }
 
@@ -62,13 +69,13 @@ func utoa(n int) string {
 }
 
 func errUnsupportedVersion() error {
-	return errors.New("openssl: OpenSSL version: " + utoa(vMajor) + "." + utoa(vMinor) + "." + utoa(vPatch))
+	return errors.New("openssl: OpenSSL version: " + utoa(major()) + "." + utoa(minor()) + "." + utoa(patch()))
 }
 
 // checkMajorVersion panics if the current major version is not expected.
 func checkMajorVersion(expected int) {
-	if vMajor != expected {
-		panic("openssl: incorrect major version (" + strconv.Itoa(vMajor) + "), expected " + strconv.Itoa(expected))
+	if major() != expected {
+		panic("openssl: incorrect major version (" + strconv.Itoa(major()) + "), expected " + strconv.Itoa(expected))
 	}
 }
 
@@ -192,7 +199,7 @@ func bigToBN(x BigInt) (ossl.BIGNUM_PTR, error) {
 	if len(x) == 0 {
 		return nil, nil
 	}
-	if isBigEndian {
+	if isBigEndian() {
 		z := make(BigInt, len(x))
 		copy(z, x)
 		z.byteSwap()
@@ -218,7 +225,7 @@ func bnToBig(bn ossl.BIGNUM_PTR) BigInt {
 	if _, err := ossl.BN_bn2lebinpad(bn, wbase(x), int32(len(x)*wordBytes)); err != nil {
 		panic(err)
 	}
-	if isBigEndian {
+	if isBigEndian() {
 		x.byteSwap()
 	}
 	return x
@@ -235,8 +242,8 @@ func bnToBinPad(bn ossl.BIGNUM_PTR, to []byte) error {
 // versionAtOrAbove returns true when
 // (vMajor, vMinor, vPatch) >= (major, minor, patch),
 // compared lexicographically.
-func versionAtOrAbove(major, minor, patch int) bool {
-	return vMajor > major || (vMajor == major && vMinor > minor) || (vMajor == major && vMinor == minor && vPatch >= patch)
+func versionAtOrAbove(vmajor, vminor, vpatch int) bool {
+	return major() > vmajor || (major() == vmajor && minor() > vminor) || (major() == vmajor && minor() == vminor && patch() >= vpatch)
 }
 
 func bigEndianUint64(b []byte) uint64 {

@@ -15,7 +15,7 @@ import (
 
 // SupprtHKDF reports whether the current OpenSSL version supports HKDF.
 func SupportsHKDF() bool {
-	switch vMajor {
+	switch major() {
 	case 1:
 		return versionAtOrAbove(1, 1, 1)
 	case 3:
@@ -28,7 +28,7 @@ func SupportsHKDF() bool {
 
 // SupprtsTLS13KDF reports whether the current OpenSSL version supports TLS13-KDF.
 func SupportsTLS13KDF() bool {
-	switch vMajor {
+	switch major() {
 	case 1:
 		return false
 	case 3:
@@ -153,7 +153,7 @@ func ExtractHKDF(h func() hash.Hash, secret, salt []byte) ([]byte, error) {
 		}
 	}
 
-	switch vMajor {
+	switch major() {
 	case 1:
 		ctx, err := newHKDFCtx1(md, ossl.EVP_KDF_HKDF_MODE_EXTRACT_ONLY, secret, salt, nil, nil)
 		if err != nil {
@@ -201,7 +201,7 @@ func ExpandHKDFOneShot(h func() hash.Hash, pseudorandomKey, info []byte, keyLeng
 	}
 
 	out := make([]byte, keyLength)
-	switch vMajor {
+	switch major() {
 	case 1:
 		ctx, err := newHKDFCtx1(md, ossl.EVP_KDF_HKDF_MODE_EXPAND_ONLY, nil, nil, pseudorandomKey, info)
 		if err != nil {
@@ -276,7 +276,7 @@ func ExpandHKDF(h func() hash.Hash, pseudorandomKey, info []byte) (io.Reader, er
 
 	size := int(ossl.EVP_MD_get_size(md))
 
-	switch vMajor {
+	switch major() {
 	case 1:
 		ctx, err := newHKDFCtx1(md, ossl.EVP_KDF_HKDF_MODE_EXPAND_ONLY, nil, nil, pseudorandomKey, info)
 		if err != nil {

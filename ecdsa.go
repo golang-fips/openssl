@@ -73,7 +73,7 @@ func GenerateKeyECDSA(curve string) (x, y, d BigInt, err error) {
 		ossl.BN_free(bx)
 		ossl.BN_free(by)
 	}()
-	switch vMajor {
+	switch major() {
 	case 1:
 		// Retrieve the internal EC_KEY, which holds the X, Y, and D coordinates.
 		key := getECKey(pkey)
@@ -149,7 +149,7 @@ func newECDSAKey(curve string, x, y, d BigInt) (ossl.EVP_PKEY_PTR, error) {
 		}
 		defer ossl.BN_clear_free(bd)
 	}
-	switch vMajor {
+	switch major() {
 	case 1:
 		return newECDSAKey1(nid, bx, by, bd)
 	case 3:

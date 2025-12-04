@@ -87,7 +87,7 @@ func (k *PrivateKeyECDH) PublicKey() (*PublicKeyECDH, error) {
 			return nil, err
 		}
 	} else {
-		switch vMajor {
+		switch major() {
 		case 1:
 			var err error
 			pkey, err = ossl.EVP_PKEY_new()
@@ -137,7 +137,7 @@ func newECDHPkey(curve string, bytes []byte, isPrivate bool) (ossl.EVP_PKEY_PTR,
 		}
 	}
 	nid := curveNID(curve)
-	switch vMajor {
+	switch major() {
 	case 1:
 		return newECDHPkey1(nid, bytes, isPrivate)
 	case 3:
@@ -308,7 +308,7 @@ func GenerateKeyECDH(curve string) (*PrivateKeyECDH, []byte, error) {
 		}
 	} else {
 		var priv ossl.BIGNUM_PTR
-		switch vMajor {
+		switch major() {
 		case 1:
 			key := getECKey(pkey)
 			priv = ossl.EC_KEY_get0_private_key(key)

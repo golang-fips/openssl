@@ -61,7 +61,7 @@ type _UINT64 [2]uint32
 
 func newUINT64(v uint64) _UINT64 {
 	var u _UINT64
-	if isBigEndian {
+	if isBigEndian() {
 		u[0], u[1] = uint32(v>>32), uint32(v)
 	} else {
 		u[0], u[1] = uint32(v), uint32(v>>32)
@@ -70,7 +70,7 @@ func newUINT64(v uint64) _UINT64 {
 }
 
 func (u *_UINT64) uint64() uint64 {
-	if isBigEndian {
+	if isBigEndian() {
 		return uint64(u[0])<<32 | (uint64(u[1]))
 	}
 	return uint64(u[0]) | (uint64(u[1]) << 32)

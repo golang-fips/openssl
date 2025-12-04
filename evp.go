@@ -162,7 +162,7 @@ func loadHash(ch crypto.Hash, must bool) (h *hashAlgorithm) {
 	hash.ch = ch
 	hash.size = int(ossl.EVP_MD_get_size(hash.md))
 	hash.blockSize = int(ossl.EVP_MD_get_block_size(hash.md))
-	if vMajor == 3 {
+	if major() == 3 {
 		// On OpenSSL 3, directly operating on a EVP_MD object
 		// not created by EVP_MD_fetch has negative performance
 		// implications, as digest operations will have
@@ -180,7 +180,7 @@ func loadHash(ch crypto.Hash, must bool) (h *hashAlgorithm) {
 		}
 	}
 
-	switch vMajor {
+	switch major() {
 	case 1:
 		hash.provider = providerOSSLDefault
 	case 3:
@@ -212,7 +212,7 @@ func generateEVPPKey(id, bits int32, curve string) (ossl.EVP_PKEY_PTR, error) {
 		return nil, fail("incorrect generateEVPPKey parameters")
 	}
 	var pkey ossl.EVP_PKEY_PTR
-	switch vMajor {
+	switch major() {
 	case 1:
 		ctx, err := ossl.EVP_PKEY_CTX_new_id(id, nil)
 		if err != nil {
@@ -332,7 +332,7 @@ func setupEVP(withKey withKeyFunc, padding int32,
 			clabel = (*byte)(cryptoMalloc(len(label)))
 			copy((*[1 << 30]byte)(unsafe.Pointer(clabel))[:len(label)], label)
 			var err error
-			if vMajor == 3 {
+			if major() == 3 {
 				_, err = ossl.EVP_PKEY_CTX_set0_rsa_oaep_label(ctx, unsafe.Pointer(clabel), int32(len(label)))
 			} else {
 				_, err = ossl.EVP_PKEY_CTX_ctrl(ctx, ossl.EVP_PKEY_RSA, -1, ossl.EVP_PKEY_CTRL_RSA_OAEP_LABEL, int32(len(label)), unsafe.Pointer(clabel))
@@ -567,7 +567,7 @@ func newEvpFromParams(id int32, selection int32, params ossl.OSSL_PARAM_PTR) (os
 	}
 	var pkey ossl.EVP_PKEY_PTR
 	if _, err := ossl.EVP_PKEY_fromdata(ctx, &pkey, selection, params); err != nil {
-		if vMajor == 3 && vMinor <= 2 {
+		if major() == 3 && minor() <= 2 {
 			// OpenSSL 3.0.1 and 3.0.2 have a bug where EVP_PKEY_fromdata
 			// does not free the internally allocated EVP_PKEY on error.
 			// See https://github.com/openssl/openssl/issues/17407.

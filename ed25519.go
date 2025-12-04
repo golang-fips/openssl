@@ -26,7 +26,7 @@ const (
 // which will probably be in 3.2.0 (https://github.com/openssl/openssl/issues/20418).
 
 var supportsEd25519 = sync.OnceValue(func() bool {
-	switch vMajor {
+	switch major() {
 	case 1:
 		if versionAtOrAbove(1, 1, 1) {
 			ctx, _ := ossl.EVP_PKEY_CTX_new_id(ossl.EVP_PKEY_ED25519, nil)

@@ -14,8 +14,16 @@ var (
 	vMajor, vMinor, vPatch int
 )
 
-func Version() (major, minor, patch int) {
-	return vMajor, vMinor, vPatch
+func VersionMajor() int {
+	return vMajor
+}
+
+func VersionMinor() int {
+	return vMinor
+}
+
+func VersionPatch() int {
+	return vPatch
 }
 
 func utoa(n int) string {

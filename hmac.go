@@ -37,7 +37,7 @@ func NewHMAC(fh func() hash.Hash, key []byte) hash.Hash {
 		blockSize: h.BlockSize(),
 	}
 
-	switch vMajor {
+	switch major() {
 	case 1:
 		ctx := newHMAC1(key, md)
 		if ctx.ctx == nil {
@@ -153,7 +153,7 @@ func newHMAC3(key []byte, md ossl.EVP_MD_PTR) hmacCtx3 {
 		panic(err)
 	}
 	var hkey []byte
-	if vMinor == 0 && vPatch <= 2 {
+	if minor() == 0 && patch() <= 2 {
 		// EVP_MAC_init only resets the ctx internal state if a key is passed
 		// when using OpenSSL 3.0.0, 3.0.1, and 3.0.2. Save a copy of the key
 		// in the context so Reset can use it later. New OpenSSL versions
@@ -166,7 +166,7 @@ func newHMAC3(key []byte, md ossl.EVP_MD_PTR) hmacCtx3 {
 }
 
 func (h *opensslHMAC) Reset() {
-	switch vMajor {
+	switch major() {
 	case 1:
 		if _, err := ossl.HMAC_Init_ex(h.ctx1.ctx, nil, 0, nil, nil); err != nil {
 			panic(err)
@@ -193,7 +193,7 @@ func (h *opensslHMAC) finalize() {
 
 func (h *opensslHMAC) Write(p []byte) (int, error) {
 	if len(p) > 0 {
-		switch vMajor {
+		switch major() {
 		case 1:
 			ossl.HMAC_Update(h.ctx1.ctx, base(p), len(p))
 		case 3:
@@ -219,7 +219,7 @@ func (h *opensslHMAC) Sum(in []byte) []byte {
 	// that Sum has no effect on the underlying stream.
 	// In particular it is OK to Sum, then Write more, then Sum again,
 	// and the second Sum acts as if the first didn't happen.
-	switch vMajor {
+	switch major() {
 	case 1:
 		ctx2, err := ossl.HMAC_CTX_new()
 		if err != nil {
@@ -244,7 +244,7 @@ func (h *opensslHMAC) Sum(in []byte) []byte {
 }
 
 func (h *opensslHMAC) Clone() (HashCloner, error) {
-	switch vMajor {
+	switch major() {
 	case 1:
 		ctx2, err := ossl.HMAC_CTX_new()
 		if err != nil {

@@ -79,7 +79,7 @@ func loadCipher(k cipherKind, mode cipherMode) (cipher ossl.EVP_CIPHER_PTR) {
 		return v.(ossl.EVP_CIPHER_PTR)
 	}
 	defer func() {
-		if cipher != nil && vMajor == 3 {
+		if cipher != nil && major() == 3 {
 			// On OpenSSL 3, directly operating on a EVP_CIPHER object
 			// not created by EVP_CIPHER has negative performance
 			// implications, as cipher operations will have

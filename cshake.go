@@ -54,7 +54,7 @@ func SumSHAKE256(data []byte, length int) []byte {
 // SupportsSHAKE returns true if the SHAKE extendable output functions
 // with the given securityBits are supported.
 func SupportsSHAKE(securityBits int) bool {
-	if vMajor == 1 || (vMajor == 3 && vMinor < 3) {
+	if major() == 1 || (major() == 3 && minor() < 3) {
 		// SHAKE MD's are supported since OpenSSL 1.1.1,
 		// but EVP_DigestSqueeze is only supported since 3.3,
 		// and we need it to implement [sha3.SHAKE].

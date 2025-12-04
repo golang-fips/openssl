@@ -13,9 +13,9 @@ import (
 )
 
 func SupportsTLS1PRF() bool {
-	switch vMajor {
+	switch major() {
 	case 1:
-		return vMinor >= 1
+		return minor() >= 1
 	case 3:
 		_, err := fetchTLS1PRF3()
 		return err == nil
@@ -47,7 +47,7 @@ func TLS1PRF(result, secret, label, seed []byte, fh func() hash.Hash) error {
 		return errors.New("unsupported hash function")
 	}
 
-	switch vMajor {
+	switch major() {
 	case 1:
 		return tls1PRF1(result, secret, label, seed, md)
 	case 3:
