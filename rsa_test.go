@@ -42,6 +42,9 @@ func testRSAEncryptDecryptPKCS1(t *testing.T, priv *openssl.PrivateKeyRSA, pub *
 }
 
 func TestRSAEncryptDecryptPKCS1(t *testing.T) {
+	if !openssl.SupportsRSAPKCS1() {
+		t.Skip("RSA PKCS1 v1.5 encryption not supported")
+	}
 	for _, size := range []int{2048, 3072} {
 		size := size
 		t.Run(strconv.Itoa(size), func(t *testing.T) {
@@ -53,6 +56,9 @@ func TestRSAEncryptDecryptPKCS1(t *testing.T) {
 }
 
 func TestRSAEncryptDecryptPKCS1_MissingPrecomputedValues(t *testing.T) {
+	if !openssl.SupportsRSAPKCS1() {
+		t.Skip("RSA PKCS1 v1.5 encryption not supported")
+	}
 	n, e, d, p, q, dp, dq, qinv, err := openssl.GenerateKeyRSA(2048)
 	if err != nil {
 		t.Fatalf("GenerateKeyRSA: %v", err)
@@ -397,6 +403,9 @@ func BenchmarkEncryptRSA(b *testing.B) {
 	}
 	b.StartTimer()
 	b.Run("PKCS1", func(b *testing.B) {
+		if !openssl.SupportsRSAPKCS1() {
+			b.Skip("RSA PKCS1 v1.5 encryption not supported")
+		}
 		b.ReportAllocs()
 		for i := 0; i < b.N; i++ {
 			if _, err := openssl.EncryptRSAPKCS1(test2048PubKey, []byte("testing")); err != nil {

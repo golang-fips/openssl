@@ -8,6 +8,7 @@ import (
 	"errors"
 	"hash"
 	"runtime"
+	"sync"
 	"unsafe"
 
 	"github.com/golang-fips/openssl/v2/internal/ossl"
@@ -363,3 +364,38 @@ func newRSAKey3(isPriv bool, n, e, d, p, q, dp, dq, qinv BigInt) (ossl.EVP_PKEY_
 	}
 	return newEvpFromParams(ossl.EVP_PKEY_RSA, int32(selection), params)
 }
+
+// SupportsRSAPKCS1 returns true if the RSA PKCS1 v1.5 padding is supported for encryption and decryption.
+var SupportsRSAPKCS1 = sync.OnceValue(func() bool {
+	// Generate a temporary key to check for support.
+	// 2048 bits is a safe default that should be supported by all providers.
+	pkey, err := generateEVPPKey(ossl.EVP_PKEY_RSA, 2048, "")
+	if err != nil {
+		return false
+	}
+	defer ossl.EVP_PKEY_free(pkey)
+
+	ctx, err := ossl.EVP_PKEY_CTX_new(pkey, nil)
+	if err != nil {
+		return false
+	}
+	defer ossl.EVP_PKEY_CTX_free(ctx)
+
+	if _, err := ossl.EVP_PKEY_encrypt_init(ctx); err != nil {
+		return false
+	}
+
+	if _, err := ossl.EVP_PKEY_CTX_ctrl(ctx, ossl.EVP_PKEY_RSA, -1, ossl.EVP_PKEY_CTRL_RSA_PADDING, ossl.RSA_PKCS1_PADDING, nil); err != nil {
+		return false
+	}
+
+	// In FIPS mode, setting the padding might succeed, but the actual encryption will fail.
+	// So we need to try to encrypt something to be sure.
+	in := []byte("test")
+	var outLen int
+	if _, err := ossl.EVP_PKEY_encrypt(ctx, nil, &outLen, &in[0], len(in)); err != nil {
+		return false
+	}
+
+	return true
+})
