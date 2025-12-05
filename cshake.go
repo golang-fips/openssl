@@ -181,6 +181,18 @@ func (s *SHAKE) BlockSize() int {
 	return s.alg.blockSize
 }
 
+func (s *SHAKE) MarshalBinary() ([]byte, error) {
+	return nil, errMarshallUnsupported{}
+}
+
+func (s *SHAKE) AppendBinary(b []byte) ([]byte, error) {
+	return nil, errMarshallUnsupported{}
+}
+
+func (s *SHAKE) UnmarshalBinary(data []byte) error {
+	return errMarshallUnsupported{}
+}
+
 type shakeAlgorithm struct {
 	md        ossl.EVP_MD_PTR
 	blockSize int
