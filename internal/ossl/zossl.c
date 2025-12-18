@@ -340,7 +340,7 @@ void __mkcgo_load_(void* handle) {
 	__mkcgo__dlsym(EVP_aes_256_ctr)
 	__mkcgo__dlsym(EVP_aes_256_ecb)
 	__mkcgo__dlsym(EVP_aes_256_gcm)
-	__mkcgo__dlsym(EVP_chacha20_poly1305)
+	__mkcgo__dlsym_nocheck(EVP_chacha20_poly1305, EVP_chacha20_poly1305)
 	__mkcgo__dlsym(EVP_des_cbc)
 	__mkcgo__dlsym(EVP_des_ecb)
 	__mkcgo__dlsym(EVP_des_ede3_cbc)
@@ -1744,6 +1744,10 @@ const _EVP_CIPHER_PTR _mkcgo_EVP_aes_256_ecb(void) {
 
 const _EVP_CIPHER_PTR _mkcgo_EVP_aes_256_gcm(void) {
 	return _g_EVP_aes_256_gcm();
+}
+
+int _mkcgo_available_EVP_chacha20_poly1305() {
+	return _g_EVP_chacha20_poly1305 != NULL;
 }
 
 const _EVP_CIPHER_PTR _mkcgo_EVP_chacha20_poly1305(void) {

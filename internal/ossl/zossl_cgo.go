@@ -1059,6 +1059,10 @@ func EVP_aes_256_gcm() EVP_CIPHER_PTR {
 	return C._mkcgo_EVP_aes_256_gcm()
 }
 
+func EVP_chacha20_poly1305_Available() bool {
+	return C._mkcgo_available_EVP_chacha20_poly1305() != 0
+}
+
 func EVP_chacha20_poly1305() EVP_CIPHER_PTR {
 	return C._mkcgo_EVP_chacha20_poly1305()
 }

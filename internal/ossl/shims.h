@@ -261,7 +261,7 @@ const _EVP_CIPHER_PTR EVP_des_cbc(void) __attribute__((noerror));
 const _EVP_CIPHER_PTR EVP_des_ede3_ecb(void) __attribute__((noerror));
 const _EVP_CIPHER_PTR EVP_des_ede3_cbc(void) __attribute__((noerror));
 const _EVP_CIPHER_PTR EVP_rc4(void) __attribute__((noerror));
-const _EVP_CIPHER_PTR EVP_chacha20_poly1305(void) __attribute__((noerror));
+const _EVP_CIPHER_PTR EVP_chacha20_poly1305(void) __attribute__((optional,noerror));
 int EVP_CIPHER_get_block_size(const _EVP_CIPHER_PTR cipher) __attribute__((tag("3"),tag("legacy_1","EVP_CIPHER_block_size"),noerror));
 
 _EVP_CIPHER_CTX_PTR EVP_CIPHER_CTX_new(void);

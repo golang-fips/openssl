@@ -142,7 +142,9 @@ func loadCipher(k cipherKind, mode cipherMode) (cipher ossl.EVP_CIPHER_PTR) {
 	case cipherRC4:
 		cipher = ossl.EVP_rc4()
 	case cipherChaCha20Poly1305:
-		cipher = ossl.EVP_chacha20_poly1305()
+		if ossl.EVP_chacha20_poly1305_Available() {
+			cipher = ossl.EVP_chacha20_poly1305()
+		}
 	}
 	return cipher
 }
