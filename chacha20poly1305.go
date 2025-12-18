@@ -75,7 +75,8 @@ func (c *chacha20poly1305) Seal(dst, nonce, plaintext, additionalData []byte) []
 	}
 	var outl int32
 	if len(additionalData) > 0 {
-		if _, err := ossl.EVP_EncryptUpdate(ctx, nil, &outl, base(additionalData), int32(len(additionalData))); err != nil {
+		var ignored int32
+		if _, err := ossl.EVP_EncryptUpdate(ctx, nil, &ignored, base(additionalData), int32(len(additionalData))); err != nil {
 			panic(err)
 		}
 	}
@@ -130,7 +131,8 @@ func (c *chacha20poly1305) Open(dst, nonce, ciphertext, additionalData []byte) (
 	}
 	var outl int32
 	if len(additionalData) > 0 {
-		if _, err := ossl.EVP_DecryptUpdate(ctx, nil, &outl, base(additionalData), int32(len(additionalData))); err != nil {
+		var ignored int32
+		if _, err := ossl.EVP_DecryptUpdate(ctx, nil, &ignored, base(additionalData), int32(len(additionalData))); err != nil {
 			return nil, err
 		}
 	}
