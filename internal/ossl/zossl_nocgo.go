@@ -1366,6 +1366,13 @@ func EVP_aes_256_gcm() EVP_CIPHER_PTR {
 	return EVP_CIPHER_PTR(r0)
 }
 
+var _mkcgo_EVP_chacha20_poly1305 uintptr
+
+func EVP_chacha20_poly1305() EVP_CIPHER_PTR {
+	r0, _ := syscallN(0, _mkcgo_EVP_chacha20_poly1305)
+	return EVP_CIPHER_PTR(r0)
+}
+
 var _mkcgo_EVP_default_properties_enable_fips uintptr
 
 func EVP_default_properties_enable_fips(libctx OSSL_LIB_CTX_PTR, enable int32) (int32, error) {
@@ -1920,6 +1927,7 @@ func MkcgoLoad_(handle unsafe.Pointer) {
 	_mkcgo_EVP_aes_256_ctr = dlsym(handle, "EVP_aes_256_ctr\x00", false)
 	_mkcgo_EVP_aes_256_ecb = dlsym(handle, "EVP_aes_256_ecb\x00", false)
 	_mkcgo_EVP_aes_256_gcm = dlsym(handle, "EVP_aes_256_gcm\x00", false)
+	_mkcgo_EVP_chacha20_poly1305 = dlsym(handle, "EVP_chacha20_poly1305\x00", false)
 	_mkcgo_EVP_des_cbc = dlsym(handle, "EVP_des_cbc\x00", false)
 	_mkcgo_EVP_des_ecb = dlsym(handle, "EVP_des_ecb\x00", false)
 	_mkcgo_EVP_des_ede3_cbc = dlsym(handle, "EVP_des_ede3_cbc\x00", false)
@@ -2026,6 +2034,7 @@ func MkcgoUnload_() {
 	_mkcgo_EVP_aes_256_ctr = 0
 	_mkcgo_EVP_aes_256_ecb = 0
 	_mkcgo_EVP_aes_256_gcm = 0
+	_mkcgo_EVP_chacha20_poly1305 = 0
 	_mkcgo_EVP_des_cbc = 0
 	_mkcgo_EVP_des_ecb = 0
 	_mkcgo_EVP_des_ede3_cbc = 0

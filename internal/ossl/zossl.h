@@ -44,6 +44,9 @@ enum {
 	_OPENSSL_INIT_LOAD_CONFIG = 0x00000040,
 	_EVP_CTRL_GCM_GET_TAG = 0x10,
 	_EVP_CTRL_GCM_SET_TAG = 0x11,
+	_EVP_CTRL_AEAD_SET_IVLEN = 0x9,
+	_EVP_CTRL_AEAD_GET_TAG = 0x10,
+	_EVP_CTRL_AEAD_SET_TAG = 0x11,
 	_EVP_PKEY_CTRL_MD = 1,
 	_EVP_PKEY_RSA = 6,
 	_EVP_PKEY_EC = 408,
@@ -294,6 +297,7 @@ const _EVP_CIPHER_PTR _mkcgo_EVP_aes_256_cbc(void);
 const _EVP_CIPHER_PTR _mkcgo_EVP_aes_256_ctr(void);
 const _EVP_CIPHER_PTR _mkcgo_EVP_aes_256_ecb(void);
 const _EVP_CIPHER_PTR _mkcgo_EVP_aes_256_gcm(void);
+const _EVP_CIPHER_PTR _mkcgo_EVP_chacha20_poly1305(void);
 int _mkcgo_EVP_default_properties_enable_fips(_OSSL_LIB_CTX_PTR, int, uintptr_t *);
 int _mkcgo_EVP_default_properties_is_fips_enabled(_OSSL_LIB_CTX_PTR);
 const _EVP_CIPHER_PTR _mkcgo_EVP_des_cbc(void);

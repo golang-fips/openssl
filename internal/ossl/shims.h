@@ -40,6 +40,9 @@ enum {
 
 	_EVP_CTRL_GCM_GET_TAG = 0x10,
 	_EVP_CTRL_GCM_SET_TAG = 0x11,
+	_EVP_CTRL_AEAD_SET_IVLEN = 0x9,
+	_EVP_CTRL_AEAD_GET_TAG = 0x10,
+	_EVP_CTRL_AEAD_SET_TAG = 0x11,
 	_EVP_PKEY_CTRL_MD     = 1,
 	_EVP_PKEY_RSA         = 6,
 	_EVP_PKEY_EC          = 408,
@@ -258,6 +261,7 @@ const _EVP_CIPHER_PTR EVP_des_cbc(void) __attribute__((noerror));
 const _EVP_CIPHER_PTR EVP_des_ede3_ecb(void) __attribute__((noerror));
 const _EVP_CIPHER_PTR EVP_des_ede3_cbc(void) __attribute__((noerror));
 const _EVP_CIPHER_PTR EVP_rc4(void) __attribute__((noerror));
+const _EVP_CIPHER_PTR EVP_chacha20_poly1305(void) __attribute__((noerror));
 int EVP_CIPHER_get_block_size(const _EVP_CIPHER_PTR cipher) __attribute__((tag("3"),tag("legacy_1","EVP_CIPHER_block_size"),noerror));
 
 _EVP_CIPHER_CTX_PTR EVP_CIPHER_CTX_new(void);

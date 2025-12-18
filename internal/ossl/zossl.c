@@ -183,6 +183,7 @@ const _EVP_CIPHER_PTR (*_g_EVP_aes_256_cbc)(void);
 const _EVP_CIPHER_PTR (*_g_EVP_aes_256_ctr)(void);
 const _EVP_CIPHER_PTR (*_g_EVP_aes_256_ecb)(void);
 const _EVP_CIPHER_PTR (*_g_EVP_aes_256_gcm)(void);
+const _EVP_CIPHER_PTR (*_g_EVP_chacha20_poly1305)(void);
 int (*_g_EVP_default_properties_enable_fips)(_OSSL_LIB_CTX_PTR, int);
 int (*_g_EVP_default_properties_is_fips_enabled)(_OSSL_LIB_CTX_PTR);
 const _EVP_CIPHER_PTR (*_g_EVP_des_cbc)(void);
@@ -339,6 +340,7 @@ void __mkcgo_load_(void* handle) {
 	__mkcgo__dlsym(EVP_aes_256_ctr)
 	__mkcgo__dlsym(EVP_aes_256_ecb)
 	__mkcgo__dlsym(EVP_aes_256_gcm)
+	__mkcgo__dlsym(EVP_chacha20_poly1305)
 	__mkcgo__dlsym(EVP_des_cbc)
 	__mkcgo__dlsym(EVP_des_ecb)
 	__mkcgo__dlsym(EVP_des_ede3_cbc)
@@ -445,6 +447,7 @@ void __mkcgo_unload_() {
 	_g_EVP_aes_256_ctr = NULL;
 	_g_EVP_aes_256_ecb = NULL;
 	_g_EVP_aes_256_gcm = NULL;
+	_g_EVP_chacha20_poly1305 = NULL;
 	_g_EVP_des_cbc = NULL;
 	_g_EVP_des_ecb = NULL;
 	_g_EVP_des_ede3_cbc = NULL;
@@ -1741,6 +1744,10 @@ const _EVP_CIPHER_PTR _mkcgo_EVP_aes_256_ecb(void) {
 
 const _EVP_CIPHER_PTR _mkcgo_EVP_aes_256_gcm(void) {
 	return _g_EVP_aes_256_gcm();
+}
+
+const _EVP_CIPHER_PTR _mkcgo_EVP_chacha20_poly1305(void) {
+	return _g_EVP_chacha20_poly1305();
 }
 
 int _mkcgo_EVP_default_properties_enable_fips(_OSSL_LIB_CTX_PTR _arg0, int _arg1, uintptr_t *_err_state) {

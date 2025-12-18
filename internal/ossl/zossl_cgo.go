@@ -1059,6 +1059,10 @@ func EVP_aes_256_gcm() EVP_CIPHER_PTR {
 	return C._mkcgo_EVP_aes_256_gcm()
 }
 
+func EVP_chacha20_poly1305() EVP_CIPHER_PTR {
+	return C._mkcgo_EVP_chacha20_poly1305()
+}
+
 func EVP_default_properties_enable_fips(libctx OSSL_LIB_CTX_PTR, enable int32) (int32, error) {
 	var _err C.uintptr_t
 	_ret := C._mkcgo_EVP_default_properties_enable_fips(libctx, C.int(enable), mkcgoNoEscape(&_err))

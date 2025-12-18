@@ -10,6 +10,9 @@ const (
 	OPENSSL_INIT_LOAD_CONFIG            = 0x00000040
 	EVP_CTRL_GCM_GET_TAG                = 0x10
 	EVP_CTRL_GCM_SET_TAG                = 0x11
+	EVP_CTRL_AEAD_SET_IVLEN             = 0x9
+	EVP_CTRL_AEAD_GET_TAG               = 0x10
+	EVP_CTRL_AEAD_SET_TAG               = 0x11
 	EVP_PKEY_CTRL_MD                    = 1
 	EVP_PKEY_RSA                        = 6
 	EVP_PKEY_EC                         = 408

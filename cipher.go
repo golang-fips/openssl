@@ -22,6 +22,7 @@ const (
 	cipherDES
 	cipherDES3
 	cipherRC4
+	cipherChaCha20Poly1305
 )
 
 func (c cipherKind) String() string {
@@ -38,6 +39,8 @@ func (c cipherKind) String() string {
 		return "DES3"
 	case cipherRC4:
 		return "RC4"
+	case cipherChaCha20Poly1305:
+		return "ChaCha20-Poly1305"
 	default:
 		panic("unknown cipher kind: " + strconv.Itoa(int(c)))
 	}
@@ -138,6 +141,8 @@ func loadCipher(k cipherKind, mode cipherMode) (cipher ossl.EVP_CIPHER_PTR) {
 		}
 	case cipherRC4:
 		cipher = ossl.EVP_rc4()
+	case cipherChaCha20Poly1305:
+		cipher = ossl.EVP_chacha20_poly1305()
 	}
 	return cipher
 }

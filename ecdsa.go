@@ -4,7 +4,6 @@ package openssl
 
 import (
 	"crypto"
-	"errors"
 	"runtime"
 
 	"github.com/golang-fips/openssl/v2/internal/ossl"
@@ -37,8 +36,6 @@ func (k *PublicKeyECDSA) withKey(f func(ossl.EVP_PKEY_PTR) error) error {
 	defer runtime.KeepAlive(k)
 	return f(k._pkey)
 }
-
-var errUnknownCurve = errors.New("openssl: unknown elliptic curve")
 
 func NewPublicKeyECDSA(curve string, x, y BigInt) (*PublicKeyECDSA, error) {
 	pkey, err := newECDSAKey(curve, x, y, nil)
