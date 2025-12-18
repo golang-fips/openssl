@@ -89,6 +89,9 @@ func TestChacha20Poly1305Vectors(t *testing.T) {
 }
 
 func TestChaCha20Poly1305Random(t *testing.T) {
+	if !openssl.SupportsChaCha20Poly1305() {
+		t.Skip("ChaCha20-Poly1305 not supported")
+	}
 	// Some random tests to verify Open(Seal) == Plaintext
 	f := func(t *testing.T, nonceSize int) {
 		for i := 0; i < 256; i++ {
@@ -209,6 +212,9 @@ func benchmarkChaCha20Poly1305Open(b *testing.B, buf []byte, nonceSize int) {
 }
 
 func BenchmarkChacha20Poly1305(b *testing.B) {
+	if !openssl.SupportsChaCha20Poly1305() {
+		b.Skip("ChaCha20-Poly1305 not supported")
+	}
 	for _, length := range []int{64, 1350, 8 * 1024} {
 		b.Run("Open-"+strconv.Itoa(length), func(b *testing.B) {
 			benchmarkChaCha20Poly1305Open(b, make([]byte, length), nonceSize)
