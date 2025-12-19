@@ -513,3 +513,94 @@ func TestRSAOAEP(t *testing.T) {
 		})
 	}
 }
+
+func TestSupportsRSAOAEP(t *testing.T) {
+	// Test only applies when SymCrypt provider is used,
+	// as we know which hashes are supported there.
+	if !symCryptProviderAvailable() {
+		t.Skip("SymCrypt provider not available")
+	}
+	for _, ch := range []crypto.Hash{
+		crypto.MD5,
+		crypto.SHA1,
+		crypto.SHA224,
+		crypto.SHA256,
+		crypto.SHA512,
+		crypto.SHA512_224,
+		crypto.SHA512_256,
+		crypto.SHA3_224,
+		crypto.SHA3_256,
+		crypto.SHA3_512,
+	} {
+		t.Run(ch.String(), func(t *testing.T) {
+			h := cryptoToHash(ch)()
+			if !openssl.SupportsRSAOAEP(h, h) {
+				t.Errorf("SupportsRSAOAEP(%v, %v) = false, want true", ch, ch)
+			}
+		})
+	}
+}
+
+func TestSupportsRSAPKCS1v15Encryption(t *testing.T) {
+	// Test only applies when SymCrypt provider is used,
+	// as we know which hashes are supported there.
+	if !symCryptProviderAvailable() {
+		t.Skip("SymCrypt provider not available")
+	}
+	if !openssl.SupportsRSAPKCS1v15Encryption() {
+		t.Errorf("SupportsRSAPKCS1v15Encryption() = false, want true")
+	}
+}
+
+func TestSupportsRSAPKCS1v15Signature(t *testing.T) {
+	// Test only applies when SymCrypt provider is used,
+	// as we know which hashes are supported there.
+	if !symCryptProviderAvailable() {
+		t.Skip("SymCrypt provider not available")
+	}
+	for _, ch := range []crypto.Hash{
+		0,
+		crypto.MD5SHA1,
+		crypto.MD5,
+		crypto.SHA1,
+		crypto.SHA224,
+		crypto.SHA256,
+		crypto.SHA512,
+		crypto.SHA512_224,
+		crypto.SHA512_256,
+		crypto.SHA3_224,
+		crypto.SHA3_256,
+		crypto.SHA3_512,
+	} {
+		t.Run(ch.String(), func(t *testing.T) {
+			if !openssl.SupportsRSAPKCS1v15Signature(ch) {
+				t.Errorf("SupportsRSAPKCS1v15Signature(%v) = false, want true", ch)
+			}
+		})
+	}
+}
+
+func TestSupportsRSAPSS(t *testing.T) {
+	// Test only applies when SymCrypt provider is used,
+	// as we know which hashes are supported there.
+	if !symCryptProviderAvailable() {
+		t.Skip("SymCrypt provider not available")
+	}
+	for _, ch := range []crypto.Hash{
+		crypto.SHA1,
+		crypto.SHA224,
+		crypto.SHA256,
+		crypto.SHA512,
+		crypto.SHA512_224,
+		crypto.SHA512_256,
+		crypto.SHA3_224,
+		crypto.SHA3_256,
+		crypto.SHA3_512,
+	} {
+		t.Run(ch.String(), func(t *testing.T) {
+			if !openssl.SupportsRSAPSS(ch) {
+				t.Errorf("SupportsRSAPSS(%v) = false, want true", ch)
+			}
+		})
+	}
+}
