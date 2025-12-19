@@ -477,7 +477,7 @@ func TestRSAOAEP(t *testing.T) {
 	}
 	for _, hash := range stdHashes {
 		t.Run(hash.String(), func(t *testing.T) {
-			if !openssl.SupportsHash(hash) {
+			if !openssl.SupportsHash(hash) || cryptoToHash(hash) == nil {
 				t.Skipf("Hash %v not supported", hash)
 			}
 			h := cryptoToHash(hash)()
