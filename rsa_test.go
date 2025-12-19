@@ -217,43 +217,6 @@ var stdHashes = [...]crypto.Hash{
 	crypto.RIPEMD160,
 }
 
-func TestRSASignVerifyPKCS1v15(t *testing.T) {
-	priv, pub := newRSAKey(t, 2048)
-	for _, hash := range append([]crypto.Hash{0}, stdHashes[:]...) {
-		var name string
-		if hash == 0 {
-			name = "unhashed"
-		} else {
-			name = hash.String()
-		}
-		t.Run(name, func(t *testing.T) {
-			if hash != 0 && !openssl.SupportsHash(hash) {
-				t.Skip("skipping test because hash is not supported")
-			}
-			// Construct a fake hashed data.
-			size := 1
-			if hash != 0 {
-				size = hash.Size()
-			}
-			hashed := make([]byte, size)
-			hashed[0] = 0x30
-			signed, err := openssl.SignRSAPKCS1v15(priv, hash, hashed)
-			if err != nil {
-				if strings.Contains(err.Error(), "invalid digest") || strings.Contains(err.Error(), "digest not allowed") {
-					// Can happen if the hash is supported by EVP_MD_CTX but not by EVP_PKEY_CTX.
-					// There is nothing we can do about it.
-					t.Skip("skipping test because hash is not supported")
-				}
-				t.Fatal(err)
-			}
-			err = openssl.VerifyRSAPKCS1v15(pub, hash, hashed, signed)
-			if err != nil {
-				t.Fatal(err)
-			}
-		})
-	}
-}
-
 func TestRSAHashSignVerifyPKCS1v15(t *testing.T) {
 	sha256 := openssl.NewSHA256()
 	priv, pub := newRSAKey(t, 2048)
@@ -449,7 +412,7 @@ func TestRSAPSS(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, hash := range hashes {
+	for _, hash := range stdHashes {
 		t.Run(hash.String(), func(t *testing.T) {
 			if !openssl.SupportsHash(hash) {
 				t.Skipf("Hash %v not supported", hash)
@@ -495,14 +458,18 @@ func TestRSAPKCS1Signature(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, hash := range hashes {
+	for _, hash := range append([]crypto.Hash{0}, stdHashes[:]...) {
 		t.Run(hash.String(), func(t *testing.T) {
-			if !openssl.SupportsHash(hash) {
+			if !openssl.SupportsRSAPKCS1Signature(hash) {
 				t.Skipf("Hash %v not supported", hash)
 			}
-			h := cryptoToHash(hash)()
-			h.Write([]byte("message"))
-			digest := h.Sum(nil)
+			// Construct a fake hashed data.
+			size := 1
+			if hash != 0 {
+				size = hash.Size()
+			}
+			digest := make([]byte, size)
+			digest[0] = 0x30
 			signature, err := openssl.SignRSAPKCS1v15(priv, hash, digest)
 			if err != nil {
 				t.Fatal(err)
@@ -541,7 +508,7 @@ func TestRSAOAEP(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, hash := range hashes {
+	for _, hash := range stdHashes {
 		t.Run(hash.String(), func(t *testing.T) {
 			if !openssl.SupportsHash(hash) {
 				t.Skipf("Hash %v not supported", hash)
