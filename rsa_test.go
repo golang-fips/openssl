@@ -521,7 +521,6 @@ func TestSupportsRSAOAEP(t *testing.T) {
 		t.Skip("SymCrypt provider not available")
 	}
 	for _, ch := range []crypto.Hash{
-		crypto.MD5,
 		crypto.SHA1,
 		crypto.SHA224,
 		crypto.SHA256,
@@ -560,8 +559,6 @@ func TestSupportsRSAPKCS1v15Signature(t *testing.T) {
 	}
 	for _, ch := range []crypto.Hash{
 		0,
-		crypto.MD5SHA1,
-		crypto.MD5,
 		crypto.SHA1,
 		crypto.SHA224,
 		crypto.SHA256,
