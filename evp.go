@@ -306,7 +306,7 @@ func setupEVP(withKey withKeyFunc, padding int32,
 	case ossl.RSA_PKCS1_OAEP_PADDING:
 		err = setOAEPPadding(ctx, h, mgfHash, label)
 	case ossl.RSA_PKCS1_PSS_PADDING:
-		err = setPSSPading(ctx, saltLen, ch)
+		err = setPSSPadding(ctx, saltLen, ch)
 	case ossl.RSA_PKCS1_PADDING:
 		err = setPKCS1Padding(ctx, ch)
 	default:
@@ -318,7 +318,7 @@ func setupEVP(withKey withKeyFunc, padding int32,
 	return ctx, nil
 }
 
-func setPSSPading(ctx ossl.EVP_PKEY_CTX_PTR, saltLen int32, ch crypto.Hash) error {
+func setPSSPadding(ctx ossl.EVP_PKEY_CTX_PTR, saltLen int32, ch crypto.Hash) error {
 	alg := loadHash(ch, false)
 	if alg == nil {
 		return errors.New("crypto/rsa: unsupported hash function")

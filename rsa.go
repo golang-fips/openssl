@@ -432,6 +432,7 @@ func SupportsRSAPKCS1v15Signature(ch crypto.Hash) (supported bool) {
 
 var rsaPSSSupport sync.Map
 
+// SupportsRSAPSS returns true if the RSA PSS padding is supported for signatures with the given hash.
 func SupportsRSAPSS(ch crypto.Hash) (supported bool) {
 	v, ok := rsaPSSSupport.Load(ch)
 	if ok {
@@ -447,9 +448,6 @@ func SupportsRSAPSS(ch crypto.Hash) (supported bool) {
 	}
 
 	pkey := testRSAPrivateKey()
-	if pkey == nil {
-		return false
-	}
 	ctx, err := ossl.EVP_PKEY_CTX_new(pkey, nil)
 	if err != nil {
 		return false
@@ -458,7 +456,7 @@ func SupportsRSAPSS(ch crypto.Hash) (supported bool) {
 	if _, err := ossl.EVP_PKEY_sign_init(ctx); err != nil {
 		return false
 	}
-	if setPSSPading(ctx, 0, ch) != nil {
+	if setPSSPadding(ctx, 0, ch) != nil {
 		return false
 	}
 	// In FIPS mode, setting the padding might succeed, but the actual signature will fail.
@@ -518,8 +516,8 @@ func SupportsRSAOAEP(h, mgfHash hash.Hash) (supported bool) {
 		return false
 	}
 
-	// In FIPS mode, setting the padding might succeed, but the actual signature will fail.
-	// So we need to try to sign something to be sure.
+	// In FIPS mode, setting the padding might succeed, but the actual encryption will fail.
+	// So we need to try to encrypt something to be sure.
 	in := []byte("test")
 	var outLen int
 	if _, err := ossl.EVP_PKEY_encrypt(ctx, nil, &outLen, &in[0], len(in)); err != nil {
