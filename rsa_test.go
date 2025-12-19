@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"math/big"
 	"strconv"
-	"strings"
 	"testing"
 
 	"github.com/golang-fips/openssl/v2"
@@ -42,7 +41,7 @@ func testRSAEncryptDecryptPKCS1(t *testing.T, priv *openssl.PrivateKeyRSA, pub *
 }
 
 func TestRSAEncryptDecryptPKCS1(t *testing.T) {
-	if !openssl.SupportsRSAPKCS1Encryption() {
+	if !openssl.SupportsRSAPKCS1v15Encryption() {
 		t.Skip("RSA PKCS1 v1.5 encryption not supported")
 	}
 	for _, size := range []int{2048, 3072} {
@@ -56,7 +55,7 @@ func TestRSAEncryptDecryptPKCS1(t *testing.T) {
 }
 
 func TestRSAEncryptDecryptPKCS1_MissingPrecomputedValues(t *testing.T) {
-	if !openssl.SupportsRSAPKCS1Encryption() {
+	if !openssl.SupportsRSAPKCS1v15Encryption() {
 		t.Skip("RSA PKCS1 v1.5 encryption not supported")
 	}
 	n, e, d, p, q, dp, dq, qinv, err := openssl.GenerateKeyRSA(2048)
@@ -260,37 +259,6 @@ func TestRSASignVerifyPKCS1v15_Invalid(t *testing.T) {
 	}
 }
 
-func TestRSASignVerifyRSAPSS(t *testing.T) {
-	priv, pub := newRSAKey(t, 2048)
-	for _, hash := range stdHashes {
-		t.Run(hash.String(), func(t *testing.T) {
-			if !openssl.SupportsHash(hash) {
-				t.Skip("skipping test because hash is not supported")
-			}
-			// Construct a fake hashed data.
-			size := 1
-			if hash != 0 {
-				size = hash.Size()
-			}
-			hashed := make([]byte, size)
-			hashed[0] = 0x30
-			signed, err := openssl.SignRSAPSS(priv, hash, hashed, rsa.PSSSaltLengthEqualsHash)
-			if err != nil {
-				if strings.Contains(err.Error(), "invalid digest") || strings.Contains(err.Error(), "digest not allowed") {
-					// Can happen if the hash is supported by EVP_MD_CTX but not by EVP_PKEY_CTX.
-					// There is nothing we can do about it.
-					t.Skip("skipping test because hash is not supported")
-				}
-				t.Fatal(err)
-			}
-			err = openssl.VerifyRSAPSS(pub, hash, hashed, signed, rsa.PSSSaltLengthEqualsHash)
-			if err != nil {
-				t.Fatal(err)
-			}
-		})
-	}
-}
-
 func TestRSASignVerifyRSAPSS_SaltLength(t *testing.T) {
 	// Test cases taken from
 	// https://github.com/golang/go/blob/54182ff54a687272dd7632c3a963e036ce03cb7c/src/crypto/rsa/pss_test.go#L200.
@@ -366,7 +334,7 @@ func BenchmarkEncryptRSA(b *testing.B) {
 	}
 	b.StartTimer()
 	b.Run("PKCS1", func(b *testing.B) {
-		if !openssl.SupportsRSAPKCS1Encryption() {
+		if !openssl.SupportsRSAPKCS1v15Encryption() {
 			b.Skip("RSA PKCS1 v1.5 encryption not supported")
 		}
 		b.ReportAllocs()
@@ -414,12 +382,11 @@ func TestRSAPSS(t *testing.T) {
 	}
 	for _, hash := range stdHashes {
 		t.Run(hash.String(), func(t *testing.T) {
-			if !openssl.SupportsHash(hash) {
+			if !openssl.SupportsRSAPSS(hash) {
 				t.Skipf("Hash %v not supported", hash)
 			}
-			h := cryptoToHash(hash)()
-			h.Write([]byte("message"))
-			digest := h.Sum(nil)
+			digest := make([]byte, hash.Size())
+			digest[0] = 0x30
 			signature, err := openssl.SignRSAPSS(priv, hash, digest, rsa.PSSSaltLengthEqualsHash)
 			if err != nil {
 				t.Fatal(err)
@@ -460,7 +427,7 @@ func TestRSAPKCS1Signature(t *testing.T) {
 	}
 	for _, hash := range append([]crypto.Hash{0}, stdHashes[:]...) {
 		t.Run(hash.String(), func(t *testing.T) {
-			if !openssl.SupportsRSAPKCS1Signature(hash) {
+			if !openssl.SupportsRSAPKCS1v15Signature(hash) {
 				t.Skipf("Hash %v not supported", hash)
 			}
 			// Construct a fake hashed data.
@@ -510,12 +477,13 @@ func TestRSAOAEP(t *testing.T) {
 	}
 	for _, hash := range stdHashes {
 		t.Run(hash.String(), func(t *testing.T) {
-			if !openssl.SupportsHash(hash) {
+			fnh := cryptoToHash(hash)
+			if h := fnh; h == nil || !openssl.SupportsRSAOAEP(h(), h()) {
 				t.Skipf("Hash %v not supported", hash)
 			}
+			h := fnh()
 			msg := []byte("hi!")
 			label := []byte("ho!")
-			h := cryptoToHash(hash)()
 			ciphertext, err := openssl.EncryptRSAOAEP(h, h, pub, msg, label)
 			if err != nil {
 				t.Fatal(err)

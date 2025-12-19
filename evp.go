@@ -294,92 +294,104 @@ func setupEVP(withKey withKeyFunc, padding int32,
 	}
 	// Each padding type has its own requirements in terms of when to apply the padding,
 	// so it can't be just set at this point.
-	setPadding := func() error {
-		_, err := ossl.EVP_PKEY_CTX_ctrl(ctx, ossl.EVP_PKEY_RSA, -1, ossl.EVP_PKEY_CTRL_RSA_PADDING, padding, nil)
-		return err
-	}
 	switch padding {
 	case ossl.RSA_PKCS1_OAEP_PADDING:
-		md := hashToMD(h)
-		if md == nil {
-			return nil, errors.New("crypto/rsa: unsupported hash function")
-		}
-		var mgfMD ossl.EVP_MD_PTR
-		if mgfHash != nil {
-			// mgfHash is optional, but if it is set it must match a supported hash function.
-			mgfMD = hashToMD(mgfHash)
-			if mgfMD == nil {
-				return nil, errors.New("crypto/rsa: unsupported hash function")
-			}
-		}
-		// setPadding must happen before setting EVP_PKEY_CTRL_RSA_OAEP_MD.
-		if err := setPadding(); err != nil {
-			return nil, err
-		}
-		if _, err := ossl.EVP_PKEY_CTX_ctrl(ctx, ossl.EVP_PKEY_RSA, -1, ossl.EVP_PKEY_CTRL_RSA_OAEP_MD, 0, unsafe.Pointer(md)); err != nil {
-			return nil, err
-		}
-		if mgfHash != nil {
-			if _, err := ossl.EVP_PKEY_CTX_ctrl(ctx, ossl.EVP_PKEY_RSA, -1, ossl.EVP_PKEY_CTRL_RSA_MGF1_MD, 0, unsafe.Pointer(mgfMD)); err != nil {
-				return nil, err
-			}
-		}
-		// ctx takes ownership of label, so malloc a copy for OpenSSL to free.
-		// OpenSSL does not take ownership of the label if the length is zero,
-		// so better avoid the allocation.
-		var clabel *byte
-		if len(label) > 0 {
-			clabel = (*byte)(cryptoMalloc(len(label)))
-			copy((*[1 << 30]byte)(unsafe.Pointer(clabel))[:len(label)], label)
-			var err error
-			if major() == 3 {
-				_, err = ossl.EVP_PKEY_CTX_set0_rsa_oaep_label(ctx, unsafe.Pointer(clabel), int32(len(label)))
-			} else {
-				_, err = ossl.EVP_PKEY_CTX_ctrl(ctx, ossl.EVP_PKEY_RSA, -1, ossl.EVP_PKEY_CTRL_RSA_OAEP_LABEL, int32(len(label)), unsafe.Pointer(clabel))
-			}
-			if err != nil {
-				cryptoFree(unsafe.Pointer(clabel))
-				return nil, err
-			}
-		}
+		err = setOAEPPadding(ctx, h, mgfHash, label)
 	case ossl.RSA_PKCS1_PSS_PADDING:
-		alg := loadHash(ch, false)
-		if alg == nil {
-			return nil, errors.New("crypto/rsa: unsupported hash function")
-		}
-		if _, err := ossl.EVP_PKEY_CTX_ctrl(ctx, ossl.EVP_PKEY_RSA, -1, ossl.EVP_PKEY_CTRL_MD, 0, unsafe.Pointer(alg.md)); err != nil {
-			return nil, err
-		}
-		// setPadding must happen after setting EVP_PKEY_CTRL_MD.
-		if err := setPadding(); err != nil {
-			return nil, err
-		}
-		if saltLen != 0 {
-			if _, err := ossl.EVP_PKEY_CTX_ctrl(ctx, ossl.EVP_PKEY_RSA, -1, ossl.EVP_PKEY_CTRL_RSA_PSS_SALTLEN, saltLen, nil); err != nil {
-				return nil, err
-			}
-		}
-
+		err = setPSSPading(ctx, saltLen, ch)
 	case ossl.RSA_PKCS1_PADDING:
-		if ch != 0 {
-			// We support unhashed messages.
-			alg := loadHash(ch, false)
-			if alg == nil {
-				return nil, errors.New("crypto/rsa: unsupported hash function")
-			}
-			if _, err := ossl.EVP_PKEY_CTX_ctrl(ctx, -1, -1, ossl.EVP_PKEY_CTRL_MD, 0, unsafe.Pointer(alg.md)); err != nil {
-				return nil, err
-			}
-			if err := setPadding(); err != nil {
-				return nil, err
-			}
-		}
+		err = setPKCS1Padding(ctx, ch)
 	default:
-		if err := setPadding(); err != nil {
-			return nil, err
-		}
+		_, err = ossl.EVP_PKEY_CTX_ctrl(ctx, ossl.EVP_PKEY_RSA, -1, ossl.EVP_PKEY_CTRL_RSA_PADDING, padding, nil)
+	}
+	if err != nil {
+		return nil, err
 	}
 	return ctx, nil
+}
+
+func setPSSPading(ctx ossl.EVP_PKEY_CTX_PTR, saltLen int32, ch crypto.Hash) error {
+	alg := loadHash(ch, false)
+	if alg == nil {
+		return errors.New("crypto/rsa: unsupported hash function")
+	}
+	if _, err := ossl.EVP_PKEY_CTX_ctrl(ctx, ossl.EVP_PKEY_RSA, -1, ossl.EVP_PKEY_CTRL_MD, 0, unsafe.Pointer(alg.md)); err != nil {
+		return err
+	}
+	// setPadding must happen after setting EVP_PKEY_CTRL_MD.
+	if _, err := ossl.EVP_PKEY_CTX_ctrl(ctx, ossl.EVP_PKEY_RSA, -1, ossl.EVP_PKEY_CTRL_RSA_PADDING, ossl.RSA_PKCS1_PSS_PADDING, nil); err != nil {
+		return err
+	}
+	if saltLen != 0 {
+		if _, err := ossl.EVP_PKEY_CTX_ctrl(ctx, ossl.EVP_PKEY_RSA, -1, ossl.EVP_PKEY_CTRL_RSA_PSS_SALTLEN, saltLen, nil); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func setPKCS1Padding(ctx ossl.EVP_PKEY_CTX_PTR, ch crypto.Hash) error {
+	if ch == 0 {
+		// We support unhashed messages.
+		return nil
+	}
+	alg := loadHash(ch, false)
+	if alg == nil {
+		return errors.New("crypto/rsa: unsupported hash function")
+	}
+	if _, err := ossl.EVP_PKEY_CTX_ctrl(ctx, -1, -1, ossl.EVP_PKEY_CTRL_MD, 0, unsafe.Pointer(alg.md)); err != nil {
+		return err
+	}
+	if _, err := ossl.EVP_PKEY_CTX_ctrl(ctx, ossl.EVP_PKEY_RSA, -1, ossl.EVP_PKEY_CTRL_RSA_PADDING, ossl.RSA_PKCS1_PADDING, nil); err != nil {
+		return err
+	}
+	return nil
+}
+
+func setOAEPPadding(ctx ossl.EVP_PKEY_CTX_PTR, h, mgfHash hash.Hash, label []byte) error {
+	md := hashToMD(h)
+	if md == nil {
+		return errors.New("crypto/rsa: unsupported hash function")
+	}
+	var mgfMD ossl.EVP_MD_PTR
+	if mgfHash != nil {
+		// mgfHash is optional, but if it is set it must match a supported hash function.
+		mgfMD = hashToMD(mgfHash)
+		if mgfMD == nil {
+			return errors.New("crypto/rsa: unsupported hash function")
+		}
+	}
+	// setPadding must happen before setting EVP_PKEY_CTRL_RSA_OAEP_MD.
+	if _, err := ossl.EVP_PKEY_CTX_ctrl(ctx, ossl.EVP_PKEY_RSA, -1, ossl.EVP_PKEY_CTRL_RSA_PADDING, ossl.RSA_PKCS1_OAEP_PADDING, nil); err != nil {
+		return err
+	}
+	if _, err := ossl.EVP_PKEY_CTX_ctrl(ctx, ossl.EVP_PKEY_RSA, -1, ossl.EVP_PKEY_CTRL_RSA_OAEP_MD, 0, unsafe.Pointer(md)); err != nil {
+		return err
+	}
+	if mgfHash != nil {
+		if _, err := ossl.EVP_PKEY_CTX_ctrl(ctx, ossl.EVP_PKEY_RSA, -1, ossl.EVP_PKEY_CTRL_RSA_MGF1_MD, 0, unsafe.Pointer(mgfMD)); err != nil {
+			return err
+		}
+	}
+	// ctx takes ownership of label, so malloc a copy for OpenSSL to free.
+	// OpenSSL does not take ownership of the label if the length is zero,
+	// so better avoid the allocation.
+	var clabel *byte
+	if len(label) > 0 {
+		clabel = (*byte)(cryptoMalloc(len(label)))
+		copy((*[1 << 30]byte)(unsafe.Pointer(clabel))[:len(label)], label)
+		var err error
+		if major() == 3 {
+			_, err = ossl.EVP_PKEY_CTX_set0_rsa_oaep_label(ctx, unsafe.Pointer(clabel), int32(len(label)))
+		} else {
+			_, err = ossl.EVP_PKEY_CTX_ctrl(ctx, ossl.EVP_PKEY_RSA, -1, ossl.EVP_PKEY_CTRL_RSA_OAEP_LABEL, int32(len(label)), unsafe.Pointer(clabel))
+		}
+		if err != nil {
+			cryptoFree(unsafe.Pointer(clabel))
+			return err
+		}
+	}
+	return nil
 }
 
 func cryptEVP(withKey withKeyFunc, padding int32,

@@ -365,8 +365,17 @@ func newRSAKey3(isPriv bool, n, e, d, p, q, dp, dq, qinv BigInt) (ossl.EVP_PKEY_
 	return newEvpFromParams(ossl.EVP_PKEY_RSA, int32(selection), params)
 }
 
-// SupportsRSAPKCS1Encryption returns true if the RSA PKCS1 v1.5 padding is supported for encryption and decryption.
-var SupportsRSAPKCS1Encryption = sync.OnceValue(func() bool {
+var proveKeyRSAOnce = sync.OnceValue(func() ossl.EVP_PKEY_PTR {
+	// 2048 bits is a safe default that should be supported by all providers.
+	pkey, err := generateEVPPKey(ossl.EVP_PKEY_RSA, 2048, "")
+	if err != nil {
+		return nil
+	}
+	return pkey
+})
+
+// SupportsRSAPKCS1v15Encryption returns true if the RSA PKCS1 v1.5 padding is supported for encryption and decryption.
+var SupportsRSAPKCS1v15Encryption = sync.OnceValue(func() bool {
 	pkey := proveKeyRSAOnce()
 	if pkey == nil {
 		return false
@@ -398,13 +407,95 @@ var SupportsRSAPKCS1Encryption = sync.OnceValue(func() bool {
 
 var rsaPKCS1SignatureSupport sync.Map
 
-func SupportsRSAPKCS1Signature(ch crypto.Hash) (supported bool) {
+// SupportsRSAPKCS1v15Signature returns true if the RSA PKCS1 v1.5 padding is supported for signatures with the given hash.
+func SupportsRSAPKCS1v15Signature(ch crypto.Hash) (supported bool) {
 	v, ok := rsaPKCS1SignatureSupport.Load(ch)
 	if ok {
 		return v.(bool)
 	}
 	defer func() {
 		rsaPKCS1SignatureSupport.Store(ch, supported)
+	}()
+
+	pkey := proveKeyRSAOnce()
+	if pkey == nil {
+		return false
+	}
+	ctx, err := ossl.EVP_PKEY_CTX_new(pkey, nil)
+	if err != nil {
+		return false
+	}
+	defer ossl.EVP_PKEY_CTX_free(ctx)
+	if _, err := ossl.EVP_PKEY_sign_init(ctx); err != nil {
+		return false
+	}
+	if setPKCS1Padding(ctx, ch) != nil {
+		return false
+	}
+	// In FIPS mode, setting the padding might succeed, but the actual signature will fail.
+	// So we need to try to sign something to be sure.
+	in := []byte("test")
+	var outLen int
+	if _, err := ossl.EVP_PKEY_sign(ctx, nil, &outLen, &in[0], len(in)); err != nil {
+		return false
+	}
+	return true
+}
+
+var rsaPSSSupport sync.Map
+
+func SupportsRSAPSS(ch crypto.Hash) (supported bool) {
+	v, ok := rsaPSSSupport.Load(ch)
+	if ok {
+		return v.(bool)
+	}
+	defer func() {
+		rsaPSSSupport.Store(ch, supported)
+	}()
+
+	pkey := proveKeyRSAOnce()
+	if pkey == nil {
+		return false
+	}
+	ctx, err := ossl.EVP_PKEY_CTX_new(pkey, nil)
+	if err != nil {
+		return false
+	}
+	defer ossl.EVP_PKEY_CTX_free(ctx)
+	if _, err := ossl.EVP_PKEY_sign_init(ctx); err != nil {
+		return false
+	}
+	if setPSSPading(ctx, 0, ch) != nil {
+		return false
+	}
+	// In FIPS mode, setting the padding might succeed, but the actual signature will fail.
+	// So we need to try to sign something to be sure.
+	in := []byte("test")
+	var outLen int
+	if _, err := ossl.EVP_PKEY_sign(ctx, nil, &outLen, &in[0], len(in)); err != nil {
+		return false
+	}
+	return true
+}
+
+var rsaOAEPSupport sync.Map
+
+type rsaOAEPSupportEntry struct {
+	ch      hash.Hash
+	mgfHash hash.Hash
+}
+
+// SupportsRSAOAEP returns true if the RSA OAEP padding is supported for encryption/decryption
+// with the given hash and MGF hash.
+func SupportsRSAOAEP(h, mgfHash hash.Hash) (supported bool) {
+	entry := rsaOAEPSupportEntry{h, mgfHash}
+	v, ok := rsaOAEPSupport.Load(entry)
+	if ok {
+		return v.(bool)
+	}
+
+	defer func() {
+		rsaOAEPSupport.Store(entry, supported)
 	}()
 	pkey := proveKeyRSAOnce()
 	if pkey == nil {
@@ -417,38 +508,20 @@ func SupportsRSAPKCS1Signature(ch crypto.Hash) (supported bool) {
 	}
 	defer ossl.EVP_PKEY_CTX_free(ctx)
 
-	if _, err := ossl.EVP_PKEY_sign_init(ctx); err != nil {
+	if _, err := ossl.EVP_PKEY_encrypt_init(ctx); err != nil {
 		return false
 	}
 
-	if ch != 0 {
-		alg := loadHash(ch, false)
-		if alg == nil {
-			return false
-		}
-		if _, err := ossl.EVP_PKEY_CTX_ctrl(ctx, ossl.EVP_PKEY_RSA, -1, ossl.EVP_PKEY_CTRL_MD, 0, unsafe.Pointer(alg.md)); err != nil {
-			return false
-		}
-		if _, err := ossl.EVP_PKEY_CTX_ctrl(ctx, ossl.EVP_PKEY_RSA, -1, ossl.EVP_PKEY_CTRL_RSA_PADDING, ossl.RSA_PKCS1_PADDING, nil); err != nil {
-			return false
-		}
+	if setOAEPPadding(ctx, h, mgfHash, nil) != nil {
+		return false
 	}
 
 	// In FIPS mode, setting the padding might succeed, but the actual signature will fail.
 	// So we need to try to sign something to be sure.
 	in := []byte("test")
 	var outLen int
-	if _, err := ossl.EVP_PKEY_sign(ctx, nil, &outLen, &in[0], len(in)); err != nil {
+	if _, err := ossl.EVP_PKEY_encrypt(ctx, nil, &outLen, &in[0], len(in)); err != nil {
 		return false
 	}
 	return true
 }
-
-var proveKeyRSAOnce = sync.OnceValue(func() ossl.EVP_PKEY_PTR {
-	// 2048 bits is a safe default that should be supported by all providers.
-	pkey, err := generateEVPPKey(ossl.EVP_PKEY_RSA, 2048, "")
-	if err != nil {
-		return nil
-	}
-	return pkey
-})
