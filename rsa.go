@@ -481,14 +481,22 @@ func SupportsRSAPSS(ch crypto.Hash) (supported bool) {
 var rsaOAEPSupport sync.Map
 
 type rsaOAEPSupportEntry struct {
-	ch      hash.Hash
-	mgfHash hash.Hash
+	ch      crypto.Hash
+	mgfHash crypto.Hash
 }
 
 // SupportsRSAOAEP returns true if the RSA OAEP padding is supported for encryption/decryption
 // with the given hash and MGF hash.
 func SupportsRSAOAEP(h, mgfHash hash.Hash) (supported bool) {
-	entry := rsaOAEPSupportEntry{h, mgfHash}
+	ch := hashToCryptoHash(h)
+	if ch == 0 {
+		return false
+	}
+	mgfCh := hashToCryptoHash(mgfHash)
+	if mgfCh == 0 {
+		return false
+	}
+	entry := rsaOAEPSupportEntry{ch, mgfCh}
 	v, ok := rsaOAEPSupport.Load(entry)
 	if ok {
 		return v.(bool)

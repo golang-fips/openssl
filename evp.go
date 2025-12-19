@@ -48,6 +48,14 @@ func hashToMD(h hash.Hash) ossl.EVP_MD_PTR {
 	return nil
 }
 
+// hashToCryptoHash converts a hash.Hash implementation from this package to a crypto.Hash.
+func hashToCryptoHash(h hash.Hash) crypto.Hash {
+	if h, ok := h.(*Hash); ok {
+		return h.alg.ch
+	}
+	return 0
+}
+
 // hashFuncToMD converts a hash.Hash function to a GOossl.EVP_MD_PTR.
 // See [hashFuncHash] for details on error handling.
 func hashFuncToMD(fn func() hash.Hash) (ossl.EVP_MD_PTR, error) {
