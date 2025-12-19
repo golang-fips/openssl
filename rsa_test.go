@@ -477,11 +477,13 @@ func TestRSAOAEP(t *testing.T) {
 	}
 	for _, hash := range stdHashes {
 		t.Run(hash.String(), func(t *testing.T) {
-			fnh := cryptoToHash(hash)
-			if h := fnh; h == nil || !openssl.SupportsRSAOAEP(h(), h()) {
+			if !openssl.SupportsHash(hash) {
 				t.Skipf("Hash %v not supported", hash)
 			}
-			h := fnh()
+			h := cryptoToHash(hash)()
+			if !openssl.SupportsRSAOAEP(h, h) {
+				t.Skipf("Hash %v not supported", hash)
+			}
 			msg := []byte("hi!")
 			label := []byte("ho!")
 			ciphertext, err := openssl.EncryptRSAOAEP(h, h, pub, msg, label)
