@@ -453,6 +453,11 @@ func SupportsRSAPSS(ch crypto.Hash) (supported bool) {
 		rsaPSSSupport.Store(ch, supported)
 	}()
 
+	if !SupportsHash(ch) {
+		// Short-circuit if the hash itself is not supported.
+		return false
+	}
+
 	pkey := proveKeyRSAOnce()
 	if pkey == nil {
 		return false
@@ -501,10 +506,15 @@ func SupportsRSAOAEP(h, mgfHash hash.Hash) (supported bool) {
 	if ok {
 		return v.(bool)
 	}
-
 	defer func() {
 		rsaOAEPSupport.Store(entry, supported)
 	}()
+
+	if !SupportsHash(ch) {
+		// Short-circuit if the hash itself is not supported.
+		return false
+	}
+
 	pkey := proveKeyRSAOnce()
 	if pkey == nil {
 		return false
