@@ -432,3 +432,147 @@ func BenchmarkGenerateKeyRSA(b *testing.B) {
 		}
 	}
 }
+
+func TestRSAPSS(t *testing.T) {
+	privGo, err := rsa.GenerateKey(openssl.RandReader, 2048)
+	if err != nil {
+		t.Fatal(err)
+	}
+	priv, err := openssl.NewPrivateKeyRSA(
+		bbig.Enc(privGo.N), bbig.Enc(big.NewInt(int64(privGo.E))), bbig.Enc(privGo.D),
+		bbig.Enc(privGo.Primes[0]), bbig.Enc(privGo.Primes[1]), nil, nil, nil,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	pub, err := openssl.NewPublicKeyRSA(bbig.Enc(privGo.N), bbig.Enc(big.NewInt(int64(privGo.E))))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, hash := range hashes {
+		t.Run(hash.String(), func(t *testing.T) {
+			if !openssl.SupportsHash(hash) {
+				t.Skipf("Hash %v not supported", hash)
+			}
+			h := cryptoToHash(hash)()
+			h.Write([]byte("message"))
+			digest := h.Sum(nil)
+			signature, err := openssl.SignRSAPSS(priv, hash, digest, rsa.PSSSaltLengthEqualsHash)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if len(signature) == 0 {
+				t.Fatal("empty signature returned")
+			}
+			err = openssl.VerifyRSAPSS(pub, hash, digest, signature, rsa.PSSSaltLengthEqualsHash)
+			if err != nil {
+				t.Error(err)
+			}
+			if hash.Available() {
+				// Verify with crypto/rsa
+				err = rsa.VerifyPSS(&privGo.PublicKey, hash, digest, signature, &rsa.PSSOptions{SaltLength: rsa.PSSSaltLengthEqualsHash})
+				if err != nil {
+					t.Error(err)
+				}
+			}
+		})
+	}
+}
+
+func TestRSAPKCS1Signature(t *testing.T) {
+	privGo, err := rsa.GenerateKey(openssl.RandReader, 2048)
+	if err != nil {
+		t.Fatal(err)
+	}
+	priv, err := openssl.NewPrivateKeyRSA(
+		bbig.Enc(privGo.N), bbig.Enc(big.NewInt(int64(privGo.E))), bbig.Enc(privGo.D),
+		bbig.Enc(privGo.Primes[0]), bbig.Enc(privGo.Primes[1]), nil, nil, nil,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	pub, err := openssl.NewPublicKeyRSA(bbig.Enc(privGo.N), bbig.Enc(big.NewInt(int64(privGo.E))))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, hash := range hashes {
+		t.Run(hash.String(), func(t *testing.T) {
+			if !openssl.SupportsHash(hash) {
+				t.Skipf("Hash %v not supported", hash)
+			}
+			h := cryptoToHash(hash)()
+			h.Write([]byte("message"))
+			digest := h.Sum(nil)
+			signature, err := openssl.SignRSAPKCS1v15(priv, hash, digest)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if len(signature) == 0 {
+				t.Fatal("empty signature returned")
+			}
+			err = openssl.VerifyRSAPKCS1v15(pub, hash, digest, signature)
+			if err != nil {
+				t.Error(err)
+			}
+			if hash.Available() {
+				// Verify with crypto/rsa
+				err = rsa.VerifyPKCS1v15(&privGo.PublicKey, hash, digest, signature)
+				if err != nil {
+					t.Error(err)
+				}
+			}
+		})
+	}
+}
+
+func TestRSAOAEP(t *testing.T) {
+	privGo, err := rsa.GenerateKey(openssl.RandReader, 2048)
+	if err != nil {
+		t.Fatal(err)
+	}
+	priv, err := openssl.NewPrivateKeyRSA(
+		bbig.Enc(privGo.N), bbig.Enc(big.NewInt(int64(privGo.E))), bbig.Enc(privGo.D),
+		bbig.Enc(privGo.Primes[0]), bbig.Enc(privGo.Primes[1]), nil, nil, nil,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	pub, err := openssl.NewPublicKeyRSA(bbig.Enc(privGo.N), bbig.Enc(big.NewInt(int64(privGo.E))))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, hash := range hashes {
+		t.Run(hash.String(), func(t *testing.T) {
+			if !openssl.SupportsHash(hash) {
+				t.Skipf("Hash %v not supported", hash)
+			}
+			msg := []byte("hi!")
+			label := []byte("ho!")
+			h := cryptoToHash(hash)()
+			ciphertext, err := openssl.EncryptRSAOAEP(h, h, pub, msg, label)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if len(ciphertext) == 0 {
+				t.Fatal("empty ciphertext returned")
+			}
+			plaintext, err := openssl.DecryptRSAOAEP(h, h, priv, ciphertext, label)
+			if err != nil {
+				t.Error(err)
+			}
+			if !bytes.Equal(plaintext, msg) {
+				t.Errorf("got:%x want:%x", plaintext, msg)
+			}
+			if hash.Available() {
+				// Decrypt with crypto/rsa
+				plaintext, err = rsa.DecryptOAEP(h, openssl.RandReader, privGo, ciphertext, label)
+				if err != nil {
+					t.Error(err)
+				}
+				if !bytes.Equal(plaintext, msg) {
+					t.Errorf("got:%x want:%x", plaintext, msg)
+				}
+			}
+		})
+	}
+}
