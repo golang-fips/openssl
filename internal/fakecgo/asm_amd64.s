@@ -16,11 +16,21 @@ TEXT crosscall2(SB), NOSPLIT, $0-0
 	// Make room for arguments to cgocallback.
 	ADJSP $0x18
 
+#ifndef GOOS_windows
 	MOVQ DI, 0x0(SP) // fn
 	MOVQ SI, 0x8(SP) // arg
 
 	// Skip n in DX.
 	MOVQ CX, 0x10(SP) // ctxt
+
+#else
+	MOVQ CX, 0x0(SP) // fn
+	MOVQ DX, 0x8(SP) // arg
+
+	// Skip n in R8.
+	MOVQ R9, 0x10(SP) // ctxt
+
+#endif
 
 	CALL runtime·cgocallback(SB)
 

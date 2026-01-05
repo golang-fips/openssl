@@ -78,7 +78,9 @@ TEXT threadentry_trampoline(SB), NOSPLIT, $0
 	// See crosscall2.
 	PUSH_REGS_HOST_TO_ABI0()
 
-	PXOR	X15, X15
+	// X15 is designated by Go as a fixed zero register.
+	// Calling directly into ABIInternal, ensure it is zero.
+	PXOR X15, X15
 
 	MOVQ DI, AX
 	MOVQ ·threadentry_call(SB), DX
