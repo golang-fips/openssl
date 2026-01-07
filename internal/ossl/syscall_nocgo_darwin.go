@@ -1,4 +1,4 @@
-//go:build !cgo && darwin && goexperiment.ms_nocgo_opensslcrypto
+//go:build !cgo && darwin
 
 package ossl
 

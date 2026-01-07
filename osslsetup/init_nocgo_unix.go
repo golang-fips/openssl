@@ -1,4 +1,4 @@
-//go:build unix && !cmd_go_bootstrap && !cgo && goexperiment.ms_nocgo_opensslcrypto
+//go:build unix && !cmd_go_bootstrap && !cgo
 
 package osslsetup
 

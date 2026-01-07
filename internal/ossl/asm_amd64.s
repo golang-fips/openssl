@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-//go:build !cgo && goexperiment.ms_nocgo_opensslcrypto
+//go:build !cgo
 
 #include "go_asm.h"
 #include "textflag.h"

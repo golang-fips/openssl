@@ -2,8 +2,8 @@
 package ossl
 
 //go:generate go run ../../cmd/mkcgo -out zossl.go -mode dynload -package ossl shims.h
-//go:generate go run ../../cmd/mkcgo -out zossl.go -nocgo -mode dynload -package ossl -tags goexperiment.ms_nocgo_opensslcrypto shims.h
-//go:generate go run ../../cmd/mkcgo -out zdl.go -nocgo -mode dynamic -noerrors -package ossl -tags "unix && goexperiment.ms_nocgo_opensslcrypto" dl.h
+//go:generate go run ../../cmd/mkcgo -out zossl.go -nocgo -mode dynload -package ossl shims.h
+//go:generate go run ../../cmd/mkcgo -out zdl.go -nocgo -mode dynamic -noerrors -package ossl -tags unix dl.h
 
 import "unsafe"
 

@@ -52,6 +52,10 @@ func main() {
 		usage()
 	}
 
+	if *extratags != "" && strings.Contains(*extratags, " ") {
+		*extratags = "(" + *extratags + ")"
+	}
+
 	if *copyrightFile != "" {
 		var err error
 		copyright, err = os.ReadFile(*copyrightFile)

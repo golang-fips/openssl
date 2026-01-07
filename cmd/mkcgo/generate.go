@@ -743,7 +743,7 @@ func generateGoNocgo(src *mkcgo.Source, w io.Writer) {
 
 	tags := "!cgo"
 	if *extratags != "" {
-		tags += " && (" + *extratags + ")"
+		tags += " && " + *extratags
 	}
 	fmt.Fprintf(w, "//go:build %s\n\n", tags)
 
@@ -1196,7 +1196,7 @@ func generateAssembly(src *mkcgo.Source, w io.Writer) {
 	printHeader(w)
 	tags := "!cgo"
 	if *extratags != "" {
-		tags += " && (" + *extratags + ")"
+		tags += " && " + *extratags
 	}
 	fmt.Fprintf(w, "//go:build %s\n\n", tags)
 	fmt.Fprintf(w, "#include \"textflag.h\"\n\n")

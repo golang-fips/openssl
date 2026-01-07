@@ -1,4 +1,4 @@
-//go:build !cmd_go_bootstrap && (cgo || goexperiment.ms_nocgo_opensslcrypto)
+//go:build !cmd_go_bootstrap
 
 // Package openssl provides access to OpenSSL cryptographic functions.
 package openssl

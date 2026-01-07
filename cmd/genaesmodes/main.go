@@ -39,7 +39,7 @@ func main() {
 	if gopackage := os.Getenv("GOPACKAGE"); gopackage != "" {
 		pkg = gopackage
 	}
-	fmt.Fprint(&b, "//go:build (cgo || goexperiment.ms_nocgo_opensslcrypto) && !cmd_go_bootstrap\n\n")
+	fmt.Fprint(&b, "//go:build !cmd_go_bootstrap\n\n")
 	fmt.Fprintf(&b, "package %s\n\n", pkg)
 	fmt.Fprint(&b, `import "crypto/cipher"`+"\n\n")
 

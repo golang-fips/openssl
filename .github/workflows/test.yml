@@ -55,13 +55,12 @@ jobs:
       env:
         GO_OPENSSL_VERSION_OVERRIDE: ${{ matrix.openssl-version }}
         CGO_ENABLED: 0
-        GOFLAGS: -tags=goexperiment.ms_nocgo_opensslcrypto
     - name: Run Test CGO disabled and optimizations off
       run: go test -shuffle=on -count 10 -gcflags=all="-N -l" -v ./...
       env:
         GO_OPENSSL_VERSION_OVERRIDE: ${{ matrix.openssl-version }}
         CGO_ENABLED: 0
-        GOFLAGS: -tags=goexperiment.ms_nocgo_opensslcrypto,noopt
+        GOFLAGS: -tags=noopt
     - name: Run Test with address sanitizer
       if: ${{ runner.arch == 'X64' }} # arm64 thread sanitizer is flaky, unrelated to this codebase
       run: |
@@ -100,7 +99,6 @@ jobs:
       env:
         GO_OPENSSL_VERSION_OVERRIDE: ${{ matrix.host.openssl-version }}
         CGO_ENABLED: 0
-        GOFLAGS: -tags=goexperiment.ms_nocgo_opensslcrypto
 
   container:
     strategy:
@@ -127,7 +125,6 @@ jobs:
       run: go test -shuffle=on -v ./...
       env:
         CGO_ENABLED: 0
-        GOFLAGS: -tags=goexperiment.ms_nocgo_opensslcrypto
 
   test-qemu:
     runs-on: ubuntu-latest
