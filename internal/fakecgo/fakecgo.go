@@ -1,11 +1,13 @@
 // SPDX-License-Identifier: Apache-2.0
-// SPDX-FileCopyrightText: 2022 The Ebitengine Authors
+// SPDX-FileCopyrightText: 2025 The Ebitengine Authors
 
 //go:build !cgo && (darwin || linux)
 
 package fakecgo
 
-import "unsafe"
+import (
+	"unsafe"
+)
 
 // setg_trampoline calls setg with the G provided
 func setg_trampoline(setg uintptr, G uintptr)
