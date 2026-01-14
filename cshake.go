@@ -51,6 +51,8 @@ func SumSHAKE256(data []byte, length int) []byte {
 	return out
 }
 
+var shakeSupported sync.Map
+
 // SupportsSHAKE returns true if the SHAKE extendable output functions
 // with the given securityBits are supported.
 func SupportsSHAKE(securityBits int) bool {
@@ -60,7 +62,28 @@ func SupportsSHAKE(securityBits int) bool {
 		// and we need it to implement [sha3.SHAKE].
 		return false
 	}
-	return loadShake(securityBits) != nil
+	if v, ok := shakeSupported.Load(securityBits); ok {
+		return v.(bool)
+	}
+	alg := loadShake(securityBits)
+	if alg == nil {
+		shakeSupported.Store(securityBits, false)
+		return false
+	}
+	// EVP_MD objects can be non-nil but the underlying provider may not
+	// support EVP_DigestSqueeze. We need to test it.
+	var supported bool
+	if ctx, _ := ossl.EVP_MD_CTX_new(); ctx != nil {
+		defer ossl.EVP_MD_CTX_free(ctx)
+		if _, err := ossl.EVP_DigestInit_ex(ctx, alg.md, nil); err == nil {
+			var tmp [1]byte
+			if _, err := ossl.EVP_DigestSqueeze(ctx, tmp[:]); err == nil {
+				supported = true
+			}
+		}
+	}
+	shakeSupported.Store(securityBits, supported)
+	return supported
 }
 
 // SupportsCSHAKE returns true if the CSHAKE extendable output functions

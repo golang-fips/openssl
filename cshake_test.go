@@ -43,6 +43,19 @@ func skipCSHAKEIfNotSupported(t *testing.T, algo string) {
 	}
 }
 
+func TestSupportsShake(t *testing.T) {
+	if !symCryptProviderAvailable() {
+		// We only know for sure that SymCrypt supports SHAKE.
+		t.Skip("SymCrypt provider not available")
+	}
+	if !openssl.SupportsSHAKE(128) {
+		t.Error("expected SHAKE128 to be supported")
+	}
+	if !openssl.SupportsSHAKE(256) {
+		t.Error("expected SHAKE256 to be supported")
+	}
+}
+
 // TestCSHAKESqueezing checks that squeezing the full output a single time produces
 // the same output as repeatedly squeezing the instance.
 func TestCSHAKESqueezing(t *testing.T) {
