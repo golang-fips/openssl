@@ -77,9 +77,8 @@ func SupportsSHAKE(securityBits int) bool {
 		defer ossl.EVP_MD_CTX_free(ctx)
 		if _, err := ossl.EVP_DigestInit_ex(ctx, alg.md, nil); err == nil {
 			var tmp [1]byte
-			if _, err := ossl.EVP_DigestSqueeze(ctx, tmp[:]); err == nil {
-				supported = true
-			}
+			_, err := ossl.EVP_DigestSqueeze(ctx, tmp[:])
+			supported = err == nil
 		}
 	}
 	shakeSupported.Store(securityBits, supported)
