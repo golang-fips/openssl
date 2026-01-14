@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"strings"
 )
 
 const baseURL = "https://raw.githubusercontent.com/ebitengine/purego/main/internal/fakecgo"
@@ -21,15 +22,6 @@ var filesToSkip = makeSet(
 	"ztrampolines_linux_arm64.s",
 	"zsymbols_linux.go",
 	"fakecgo.go",
-)
-
-var noTagModification = makeSet(
-	"go_darwin.go",
-	"go_linux.go",
-	"libcgo_linux.go",
-	"libcgo_darwin.go",
-	"zsymbols_darwin.go",
-	"zsymbols_linux.go",
 )
 
 func makeSet(items ...string) map[string]bool {
@@ -83,7 +75,7 @@ func updateFile(name string) error {
 		return fmt.Errorf("failed to read body: %w", err)
 	}
 
-	if !noTagModification[name] {
+	if !strings.Contains(name, "darwin") && !strings.Contains(name, "linux") {
 		content = modifyBuildTags(content)
 	}
 
@@ -92,7 +84,6 @@ func updateFile(name string) error {
 	if err := os.WriteFile(name, content, 0644); err != nil {
 		return fmt.Errorf("failed to write file: %w", err)
 	}
-
 	return nil
 }
 
