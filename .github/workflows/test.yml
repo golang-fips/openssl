@@ -127,26 +127,69 @@ jobs:
         CGO_ENABLED: 0
 
   test-qemu:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
         go-version: [1.24, 1.25]
-        architecture: [ppc64le, s390x, riscv64]
+        architecture: [
+          {goarch: loong64, dpkg: loongarch64},
+          {goarch: ppc64le, dpkg: ppc64el},
+          {goarch: s390x, dpkg: s390x},
+          {goarch: riscv64, dpkg: riscv64}
+        ]
+        cgo: [1]
+        include:
+          - architecture: {goarch: loong64, dpkg: loongarch64}
+            cgo: 0
+            go-version: 1.24
+          - architecture: {goarch: loong64, dpkg: loongarch64}
+            cgo: 0
+            go-version: 1.25
     steps:
-    - uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130 # v3.7.0
+    - uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
       with:
-        platforms: ${{ matrix.architecture }}
+        go-version: ${{ matrix.go-version }}
     - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
-    - name: Run tests on ${{matrix.architecture}}
+    - name: Set up the prerequisites
       run: |
-        docker run --rm --platform linux/${{matrix.architecture}} \
-          -v ${{ github.workspace }}:/workspace \
-          -w /workspace \
-          golang:${{ matrix.go-version }} \
-          bash -c "
-            go test -shuffle=on -v ./...
-          "
+        sudo dpkg --add-architecture ${{ matrix.architecture.dpkg }}
+        sudo bash -c 'cat > /etc/apt/sources.list.d/ubuntu.sources <<EOF
+        Types: deb
+        URIs: http://azure.archive.ubuntu.com/ubuntu/
+        Suites: noble noble-updates noble-backports
+        Components: main universe restricted multiverse
+        Architectures: amd64
+        Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
+
+        Types: deb
+        URIs: http://azure.archive.ubuntu.com/ubuntu/
+        Suites: noble-security
+        Components: main universe restricted multiverse
+        Architectures: amd64
+        Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
+
+        Types: deb
+        URIs: http://ports.ubuntu.com/ubuntu-ports/
+        Suites: noble noble-updates noble-backports
+        Components: main restricted universe multiverse
+        Architectures: ${{ matrix.architecture.dpkg }}
+        Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
+        EOF'
+        sudo apt-get update
+        sudo apt-get install -y gcc-14-${{ matrix.architecture.dpkg }}-linux-gnu g++-14-${{ matrix.architecture.dpkg }}-linux-gnu qemu-user libssl-dev:${{ matrix.architecture.dpkg }}
+    - name: go test (Linux ${{ matrix.architecture.goarch }})
+      run: |
+        go env -w CC=${{ matrix.architecture.dpkg }}-linux-gnu-gcc-14
+        go env -w CXX=${{ matrix.architecture.dpkg }}-linux-gnu-g++-14
+        go test -c -o=openssltest .
+        env QEMU_LD_PREFIX=/usr/${{ matrix.architecture.dpkg }}-linux-gnu qemu-${{ matrix.architecture.dpkg }} ./openssltest -test.shuffle=on -test.v -test.count=10
+        go env -u CC
+        go env -u CXX
+      env:
+        CGO_ENABLED: ${{ matrix.cgo }}
+        GOOS: linux
+        GOARCH: ${{ matrix.architecture.goarch }}
 
   # Verify that golang-fips/openssl builds successfully without cgo enabled.
   #
