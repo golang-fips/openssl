@@ -148,7 +148,8 @@ jobs:
             go test -shuffle=on -v ./...
           "
 
-  # Verify that golang-fips/openssl builds successfully without cgo enabled.
+  # Verify that golang-fips/openssl builds successfully without cgo enabled
+  # on a platform where cgoless execution is not supported.
   #
   # A project can avoid attempting to build the openssl package by only
   # importing it from Go files with a cgo build tag. However, this isn't always
@@ -165,7 +166,7 @@ jobs:
     steps:
     - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
     - name: Run Build
-      run: CGO_ENABLED=0 go build ./...
+      run: CGO_ENABLED=0 GOOS=windows GOARCH=386 go build ./...
 
   conclusion:
     needs: [test, ossltest, container, test-qemu, cgolessbuild]
