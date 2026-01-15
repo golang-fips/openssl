@@ -334,23 +334,21 @@ func newRSAKey3(isPriv bool, n, e, d, p, q, dp, dq, qinv BigInt) (ossl.EVP_PKEY_
 	bld.addBigInt(_OSSL_PKEY_PARAM_RSA_E, e, false)
 	bld.addBigInt(_OSSL_PKEY_PARAM_RSA_D, d, false)
 
-	if p != nil && q != nil {
-		allPrecomputedExists := dp != nil && dq != nil && qinv != nil
-		// The precomputed values should only be passed if P and Q are present
-		// and every precomputed value is present. (If any precomputed value is
-		// missing, don't pass any of them.)
-		//
-		// In OpenSSL 3.0 and 3.1, we must also omit P and Q if any precomputed
-		// value is missing. See https://github.com/openssl/openssl/pull/22334
-		if minor() >= 2 || allPrecomputedExists {
-			bld.addBigInt(_OSSL_PKEY_PARAM_RSA_FACTOR1, p, true)
-			bld.addBigInt(_OSSL_PKEY_PARAM_RSA_FACTOR2, q, true)
-		}
-		if allPrecomputedExists {
-			bld.addBigInt(_OSSL_PKEY_PARAM_RSA_EXPONENT1, dp, true)
-			bld.addBigInt(_OSSL_PKEY_PARAM_RSA_EXPONENT2, dq, true)
-			bld.addBigInt(_OSSL_PKEY_PARAM_RSA_COEFFICIENT1, qinv, true)
-		}
+	// OpenSSL 3.0 and 3.1 required all the precomputed values if
+	// P and Q are present. See:
+	// https://github.com/openssl/openssl/pull/22334
+	//
+	// We could only set P and Q if they exist when using OpenSSL 3.2
+	// or newer, but the RSA provider might be built with an older
+	// OpenSSL version, in which case it would still require all the
+	// precomputed values. So better always provide all the values or
+	// none of them.
+	if p != nil && q != nil && dp != nil && dq != nil && qinv != nil {
+		bld.addBigInt(_OSSL_PKEY_PARAM_RSA_FACTOR1, p, true)
+		bld.addBigInt(_OSSL_PKEY_PARAM_RSA_FACTOR2, q, true)
+		bld.addBigInt(_OSSL_PKEY_PARAM_RSA_EXPONENT1, dp, true)
+		bld.addBigInt(_OSSL_PKEY_PARAM_RSA_EXPONENT2, dq, true)
+		bld.addBigInt(_OSSL_PKEY_PARAM_RSA_COEFFICIENT1, qinv, true)
 	}
 
 	params, err := bld.build()
