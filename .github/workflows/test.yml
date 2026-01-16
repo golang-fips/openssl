@@ -138,16 +138,30 @@ jobs:
       with:
         platforms: ${{ matrix.architecture }}
     - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
-    - name: Run tests on ${{matrix.architecture}}
+    - name: Run tests on ${{matrix.architecture}} - CGO enabled
       run: |
         docker run --rm --platform linux/${{matrix.architecture}} \
           -v ${{ github.workspace }}:/workspace \
           -w /workspace \
+          -e CGO_ENABLED=1 \
           golang:${{ matrix.go-version }} \
           bash -c "
             go test -shuffle=on -v ./...
           "
-
+    - name: Run tests on ${{matrix.architecture}} - CGO disabled
+      if: matrix.architecture == 'riscv64'
+      run: |
+        docker run --rm --platform linux/${{matrix.architecture}} \
+          -v ${{ github.workspace }}:/workspace \
+          -w /workspace \
+          -e CGO_ENABLED=0 \
+          golang:${{ matrix.go-version }} \
+          bash -c "
+            # RISC-V needs the dynamic linker to be at a specific path.
+            # Create a symlink to satisfy that requirement.
+            ln -sf /usr/lib/riscv64-linux-gnu/ld-linux-riscv64-lp64d.so.1 /lib/ld.so.1
+            go test -shuffle=on -v ./...
+          "
   # Verify that golang-fips/openssl builds successfully without cgo enabled
   # on a platform where cgoless execution is not supported.
   #
