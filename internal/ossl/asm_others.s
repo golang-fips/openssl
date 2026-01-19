@@ -2,6 +2,6 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-//go:build !cgo && !arm64 && !amd64
+//go:build !cgo && !arm64 && !amd64 && !riscv64
 
 // This file silences errors about body-less functions.
