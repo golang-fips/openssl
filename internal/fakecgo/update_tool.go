@@ -20,6 +20,7 @@ var filesToSkip = makeSet(
 	"linux.go",
 	"ztrampolines_linux_amd64.s",
 	"ztrampolines_linux_arm64.s",
+	"ztrampolines_linux_riscv64.s",
 	"zsymbols_linux.go",
 	"fakecgo.go",
 )
