@@ -19,10 +19,14 @@ var filesToSkip = makeSet(
 	// TODO remove once https://github.com/ebitengine/purego/pull/344 is merged
 	"linux.go",
 	"ztrampolines_linux_amd64.s",
+	"ztrampolines_linux_arm.s",
 	"ztrampolines_linux_arm64.s",
 	"ztrampolines_linux_riscv64.s",
 	"zsymbols_linux.go",
 	"fakecgo.go",
+	// TODO remove once https://github.com/ebitengine/purego/pull/391 is merged
+	"asm_arm.s",
+	"trampolines_arm.s",
 )
 
 func makeSet(items ...string) map[string]bool {
