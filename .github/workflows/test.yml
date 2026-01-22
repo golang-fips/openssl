@@ -155,9 +155,15 @@ jobs:
           -e CGO_ENABLED=0 \
           golang:${{ matrix.go-version }} \
           bash -c "
-            # RISC-V needs the dynamic linker to be at a specific path.
-            # Create a symlink to satisfy that requirement.
-            ln -sf /usr/lib/riscv64-linux-gnu/ld-linux-riscv64-lp64d.so.1 /lib/ld.so.1
+            # Add required dynamic linker symlink (if applicable)
+            case ${{matrix.architecture}} in
+              riscv64)
+                ln -sf /usr/lib/riscv64-linux-gnu/ld-linux-riscv64-lp64d.so.1 /lib/ld-linux-riscv64-lp64d.so.1 ;;
+              arm/v7)
+                ln -sf /usr/lib/ld-linux-armhf.so.3 /lib/ld-linux.so.3
+                ;;
+              *) exit 0 ;;
+            esac
             go test -shuffle=on -v ./...
           "
   # Verify that golang-fips/openssl builds successfully without cgo enabled
