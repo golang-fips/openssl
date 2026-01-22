@@ -25,6 +25,7 @@ var filesToSkip = makeSet(
 	"zsymbols_linux.go",
 	"fakecgo.go",
 	// TODO remove once https://github.com/ebitengine/purego/pull/391 is merged
+	"go_util.go",
 	"asm_arm.s",
 	"trampolines_arm.s",
 )

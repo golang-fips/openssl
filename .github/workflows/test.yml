@@ -158,11 +158,10 @@ jobs:
             # Add required dynamic linker symlink (if applicable)
             case ${{matrix.architecture}} in
               riscv64)
-                ln -sf /usr/lib/riscv64-linux-gnu/ld-linux-riscv64-lp64d.so.1 /lib/ld-linux-riscv64-lp64d.so.1 ;;
+                ln -sf /usr/lib/riscv64-linux-gnu/ld-linux-riscv64-lp64d.so.1 /lib/ld.so.1 ;;
               arm/v7)
                 ln -sf /usr/lib/ld-linux-armhf.so.3 /lib/ld-linux.so.3
                 ;;
-              *) exit 0 ;;
             esac
             go test -shuffle=on -v ./...
           "
