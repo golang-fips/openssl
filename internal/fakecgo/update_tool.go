@@ -18,6 +18,7 @@ var filesToSkip = makeSet(
 	"generate.go",
 	// TODO remove once https://github.com/ebitengine/purego/pull/344 is merged
 	"linux.go",
+	"ztrampolines_linux_386.s",
 	"ztrampolines_linux_amd64.s",
 	"ztrampolines_linux_arm.s",
 	"ztrampolines_linux_arm64.s",
@@ -28,6 +29,9 @@ var filesToSkip = makeSet(
 	"go_util.go",
 	"asm_arm.s",
 	"trampolines_arm.s",
+	// TODO remove once 386 support is added to purego
+	"asm_386.s",
+	"trampolines_386.s",
 )
 
 func makeSet(items ...string) map[string]bool {
