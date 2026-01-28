@@ -1,0 +1,63 @@
+name: Update fakecgo dependencies
+
+on:
+  schedule:
+    # Run every 6 hours
+    - cron: '0 */6 * * *'
+  workflow_dispatch: # Allow manual trigger
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  check-and-update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: v2
+
+      - uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
+
+      - name: Check current lock file
+        id: check-current
+        run: |
+          if [ -f internal/fakecgo/fakecgo.lock ]; then
+            echo "current_hash=$(jq -r .commit_hash internal/fakecgo/fakecgo.lock)" >> $GITHUB_OUTPUT
+          else
+            echo "current_hash=" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Delete lock file to fetch latest
+        run: rm -f internal/fakecgo/fakecgo.lock
+
+      - name: Run go generate
+        run: go generate ./internal/fakecgo/
+
+      - name: Check new lock file
+        id: check-new
+        run: |
+          echo "new_hash=$(jq -r .commit_hash internal/fakecgo/fakecgo.lock)" >> $GITHUB_OUTPUT
+
+      - name: Check for changes
+        id: git-check
+        run: git diff --exit-code -- . ':!internal/fakecgo/fakecgo.lock' || echo "has_changes=true" >> $GITHUB_OUTPUT
+
+      - name: Create Pull Request
+        if: steps.git-check.outputs.has_changes == 'true'
+        uses: peter-evans/create-pull-request@c0f553fe549906ede9cf27b5156039d195d2ece0 # v8.1.0
+        with:
+          commit-message: 'chore: update fakecgo dependencies to ${{ steps.check-new.outputs.new_hash }}'
+          title: 'chore: update fakecgo dependencies'
+          body: |
+            This PR updates the fakecgo dependencies from the upstream [ebitengine/purego](https://github.com/ebitengine/purego) repository.
+            
+            **Previous commit**: `${{ steps.check-current.outputs.current_hash }}`
+            **New commit**: `${{ steps.check-new.outputs.new_hash }}`
+            
+            Changes: https://github.com/ebitengine/purego/compare/${{ steps.check-current.outputs.current_hash }}...${{ steps.check-new.outputs.new_hash }}
+            
+            This PR was automatically created by the [update-fakecgo workflow](.github/workflows/update-fakecgo.yml).
+          branch: update-fakecgo-dependencies
+          delete-branch: true
