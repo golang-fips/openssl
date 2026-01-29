@@ -34,6 +34,8 @@ jobs:
 
       - name: Run go generate
         run: go generate ./internal/fakecgo/
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
 
       - name: Check new lock file
         id: check-new
