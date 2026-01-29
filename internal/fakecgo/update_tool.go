@@ -39,11 +39,7 @@ var filesToSkip = makeSet(
 	"ztrampolines_linux_riscv64.s",
 	"zsymbols_linux.go",
 	"fakecgo.go",
-	// TODO remove once https://github.com/ebitengine/purego/pull/391 is merged
-	"go_util.go",
-	"asm_arm.s",
-	"trampolines_arm.s",
-	// TODO remove once 386 support is added to purego
+	// TODO remove once https://github.com/ebitengine/purego/pull/403 is merged
 	"asm_386.s",
 	"trampolines_386.s",
 )
