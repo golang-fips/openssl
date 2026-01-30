@@ -1199,7 +1199,7 @@ func generateAssembly(src *mkcgo.Source, w io.Writer) {
 		tags += " && " + *extratags
 	}
 	fmt.Fprintf(w, "//go:build %s\n\n", tags)
-	fmt.Fprintf(w, "#include \"textflag.h\"\n\n")
+	fmt.Fprintf(w, "#include \"textflag.h\"\n")
 
 	fmt.Fprintf(w, `
 #ifndef GOARCH_amd64
@@ -1222,7 +1222,6 @@ func generateAssembly(src *mkcgo.Source, w io.Writer) {
 #endif
 #endif
 
-
 #ifndef _GOPTRSIZE
 #define _GOPTRSIZE 8
 #endif
@@ -1231,10 +1230,10 @@ func generateAssembly(src *mkcgo.Source, w io.Writer) {
 	// Generate trampolines for each function
 	for _, fn := range src.Funcs {
 		fnName := fn.Name
-		fmt.Fprintf(w, "TEXT _mkcgo_%s_trampoline<>(SB),NOSPLIT,$0-0\n", fnName)
-		fmt.Fprintf(w, "    JMP _mkcgo_%s(SB)\n", fnName)
-		fmt.Fprintf(w, "GLOBL   ·_mkcgo_%s_trampoline_addr(SB), RODATA, $_GOPTRSIZE\n", fnName)
-		fmt.Fprintf(w, "DATA    ·_mkcgo_%s_trampoline_addr(SB)/_GOPTRSIZE, $_mkcgo_%s_trampoline<>(SB)\n\n", fnName, fnName)
+		fmt.Fprintf(w, "TEXT _mkcgo_%s_trampoline<>(SB), NOSPLIT, $0-0\n", fnName)
+		fmt.Fprintf(w, "\tJMP _mkcgo_%s(SB)\n\n", fnName)
+		fmt.Fprintf(w, "GLOBL ·_mkcgo_%s_trampoline_addr(SB), RODATA, $_GOPTRSIZE\n", fnName)
+		fmt.Fprintf(w, "DATA ·_mkcgo_%s_trampoline_addr(SB)/_GOPTRSIZE, $_mkcgo_%s_trampoline<>(SB)\n\n", fnName, fnName)
 	}
 }
 

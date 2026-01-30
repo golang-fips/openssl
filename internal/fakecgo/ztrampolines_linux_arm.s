@@ -8,67 +8,67 @@
 #include "textflag.h"
 
 TEXT ___errno_location(SB), NOSPLIT, $0-0
-	JMP	purego___errno_location(SB)
+	JMP purego___errno_location(SB)
 
 TEXT _cgo_purego_setegid_trampoline(SB), NOSPLIT, $4-0
-	MOVW	R0, 4(R13)
-	MOVW	·x_cgo_purego_setegid_call(SB), R12
-	MOVW	(R12), R2
-	CALL	(R2)
+	MOVW R0, 4(R13)
+	MOVW ·x_cgo_purego_setegid_call(SB), R12
+	MOVW (R12), R2
+	CALL (R2)
 	RET
 
 TEXT _cgo_purego_seteuid_trampoline(SB), NOSPLIT, $4-0
-	MOVW	R0, 4(R13)
-	MOVW	·x_cgo_purego_seteuid_call(SB), R12
-	MOVW	(R12), R2
-	CALL	(R2)
+	MOVW R0, 4(R13)
+	MOVW ·x_cgo_purego_seteuid_call(SB), R12
+	MOVW (R12), R2
+	CALL (R2)
 	RET
 
 TEXT _cgo_purego_setgid_trampoline(SB), NOSPLIT, $4-0
-	MOVW	R0, 4(R13)
-	MOVW	·x_cgo_purego_setgid_call(SB), R12
-	MOVW	(R12), R2
-	CALL	(R2)
+	MOVW R0, 4(R13)
+	MOVW ·x_cgo_purego_setgid_call(SB), R12
+	MOVW (R12), R2
+	CALL (R2)
 	RET
 
 TEXT _cgo_purego_setregid_trampoline(SB), NOSPLIT, $4-0
-	MOVW	R0, 4(R13)
-	MOVW	·x_cgo_purego_setregid_call(SB), R12
-	MOVW	(R12), R2
-	CALL	(R2)
+	MOVW R0, 4(R13)
+	MOVW ·x_cgo_purego_setregid_call(SB), R12
+	MOVW (R12), R2
+	CALL (R2)
 	RET
 
 TEXT _cgo_purego_setresgid_trampoline(SB), NOSPLIT, $4-0
-	MOVW	R0, 4(R13)
-	MOVW	·x_cgo_purego_setresgid_call(SB), R12
-	MOVW	(R12), R2
-	CALL	(R2)
+	MOVW R0, 4(R13)
+	MOVW ·x_cgo_purego_setresgid_call(SB), R12
+	MOVW (R12), R2
+	CALL (R2)
 	RET
 
 TEXT _cgo_purego_setresuid_trampoline(SB), NOSPLIT, $4-0
-	MOVW	R0, 4(R13)
-	MOVW	·x_cgo_purego_setresuid_call(SB), R12
-	MOVW	(R12), R2
-	CALL	(R2)
+	MOVW R0, 4(R13)
+	MOVW ·x_cgo_purego_setresuid_call(SB), R12
+	MOVW (R12), R2
+	CALL (R2)
 	RET
 
 TEXT _cgo_purego_setreuid_trampoline(SB), NOSPLIT, $4-0
-	MOVW	R0, 4(R13)
-	MOVW	·x_cgo_purego_setreuid_call(SB), R12
-	MOVW	(R12), R2
-	CALL	(R2)
+	MOVW R0, 4(R13)
+	MOVW ·x_cgo_purego_setreuid_call(SB), R12
+	MOVW (R12), R2
+	CALL (R2)
 	RET
 
 TEXT _cgo_purego_setuid_trampoline(SB), NOSPLIT, $4-0
-	MOVW	R0, 4(R13)
-	MOVW	·x_cgo_purego_setuid_call(SB), R12
-	MOVW	(R12), R2
-	CALL	(R2)
+	MOVW R0, 4(R13)
+	MOVW ·x_cgo_purego_setuid_call(SB), R12
+	MOVW (R12), R2
+	CALL (R2)
 	RET
 
 TEXT _cgo_purego_setgroups_trampoline(SB), NOSPLIT, $4-0
-	MOVW	R0, 4(R13)
-	MOVW	·x_cgo_purego_setgroups_call(SB), R12
-	MOVW	(R12), R2
-	CALL	(R2)
+	MOVW R0, 4(R13)
+	MOVW ·x_cgo_purego_setgroups_call(SB), R12
+	MOVW (R12), R2
+	CALL (R2)
 	RET

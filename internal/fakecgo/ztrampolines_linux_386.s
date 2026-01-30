@@ -7,104 +7,103 @@
 
 #include "textflag.h"
 
-
 TEXT ___errno_location(SB), NOSPLIT, $0-0
 	JMP purego___errno_location(SB)
 
 TEXT _cgo_purego_setegid_trampoline(SB), NOSPLIT, $4-0
-	MOVL	8(SP), AX	// first C arg
-	MOVL	AX, 0(SP)	// Go arg 1
-	MOVL	·x_cgo_purego_setegid_call(SB), CX
-	MOVL	(CX), CX
-	CALL	CX
+	MOVL 8(SP), AX                          // first C arg
+	MOVL AX, 0(SP)                          // Go arg 1
+	MOVL ·x_cgo_purego_setegid_call(SB), CX
+	MOVL (CX), CX
+	CALL CX
 	RET
 
 TEXT _setegid(SB), NOSPLIT, $0-0
 	JMP purego_setegid(SB)
 
 TEXT _cgo_purego_seteuid_trampoline(SB), NOSPLIT, $4-0
-	MOVL	8(SP), AX	// first C arg
-	MOVL	AX, 0(SP)	// Go arg 1
-	MOVL	·x_cgo_purego_seteuid_call(SB), CX
-	MOVL	(CX), CX
-	CALL	CX
+	MOVL 8(SP), AX                          // first C arg
+	MOVL AX, 0(SP)                          // Go arg 1
+	MOVL ·x_cgo_purego_seteuid_call(SB), CX
+	MOVL (CX), CX
+	CALL CX
 	RET
 
 TEXT _seteuid(SB), NOSPLIT, $0-0
 	JMP purego_seteuid(SB)
 
 TEXT _cgo_purego_setgid_trampoline(SB), NOSPLIT, $4-0
-	MOVL	8(SP), AX	// first C arg
-	MOVL	AX, 0(SP)	// Go arg 1
-	MOVL	·x_cgo_purego_setgid_call(SB), CX
-	MOVL	(CX), CX
-	CALL	CX
+	MOVL 8(SP), AX                         // first C arg
+	MOVL AX, 0(SP)                         // Go arg 1
+	MOVL ·x_cgo_purego_setgid_call(SB), CX
+	MOVL (CX), CX
+	CALL CX
 	RET
 
 TEXT _setgid(SB), NOSPLIT, $0-0
 	JMP purego_setgid(SB)
 
 TEXT _cgo_purego_setregid_trampoline(SB), NOSPLIT, $4-0
-	MOVL	8(SP), AX	// first C arg
-	MOVL	AX, 0(SP)	// Go arg 1
-	MOVL	·x_cgo_purego_setregid_call(SB), CX
-	MOVL	(CX), CX
-	CALL	CX
+	MOVL 8(SP), AX                           // first C arg
+	MOVL AX, 0(SP)                           // Go arg 1
+	MOVL ·x_cgo_purego_setregid_call(SB), CX
+	MOVL (CX), CX
+	CALL CX
 	RET
 
 TEXT _setregid(SB), NOSPLIT, $0-0
 	JMP purego_setregid(SB)
 
 TEXT _cgo_purego_setresgid_trampoline(SB), NOSPLIT, $4-0
-	MOVL	8(SP), AX	// first C arg
-	MOVL	AX, 0(SP)	// Go arg 1
-	MOVL	·x_cgo_purego_setresgid_call(SB), CX
-	MOVL	(CX), CX
-	CALL	CX
+	MOVL 8(SP), AX                            // first C arg
+	MOVL AX, 0(SP)                            // Go arg 1
+	MOVL ·x_cgo_purego_setresgid_call(SB), CX
+	MOVL (CX), CX
+	CALL CX
 	RET
 
 TEXT _setresgid(SB), NOSPLIT, $0-0
 	JMP purego_setresgid(SB)
 
 TEXT _cgo_purego_setresuid_trampoline(SB), NOSPLIT, $4-0
-	MOVL	8(SP), AX	// first C arg
-	MOVL	AX, 0(SP)	// Go arg 1
-	MOVL	·x_cgo_purego_setresuid_call(SB), CX
-	MOVL	(CX), CX
-	CALL	CX
+	MOVL 8(SP), AX                            // first C arg
+	MOVL AX, 0(SP)                            // Go arg 1
+	MOVL ·x_cgo_purego_setresuid_call(SB), CX
+	MOVL (CX), CX
+	CALL CX
 	RET
 
 TEXT _setresuid(SB), NOSPLIT, $0-0
 	JMP purego_setresuid(SB)
 
 TEXT _cgo_purego_setreuid_trampoline(SB), NOSPLIT, $4-0
-	MOVL	8(SP), AX	// first C arg
-	MOVL	AX, 0(SP)	// Go arg 1
-	MOVL	·x_cgo_purego_setreuid_call(SB), CX
-	MOVL	(CX), CX
-	CALL	CX
+	MOVL 8(SP), AX                           // first C arg
+	MOVL AX, 0(SP)                           // Go arg 1
+	MOVL ·x_cgo_purego_setreuid_call(SB), CX
+	MOVL (CX), CX
+	CALL CX
 	RET
 
 TEXT _setreuid(SB), NOSPLIT, $0-0
 	JMP purego_setreuid(SB)
 
 TEXT _cgo_purego_setuid_trampoline(SB), NOSPLIT, $4-0
-	MOVL	8(SP), AX	// first C arg
-	MOVL	AX, 0(SP)	// Go arg 1
-	MOVL	·x_cgo_purego_setuid_call(SB), CX
-	MOVL	(CX), CX
-	CALL	CX
+	MOVL 8(SP), AX                         // first C arg
+	MOVL AX, 0(SP)                         // Go arg 1
+	MOVL ·x_cgo_purego_setuid_call(SB), CX
+	MOVL (CX), CX
+	CALL CX
 	RET
 
 TEXT _setuid(SB), NOSPLIT, $0-0
 	JMP purego_setuid(SB)
 
 TEXT _cgo_purego_setgroups_trampoline(SB), NOSPLIT, $4-0
-	MOVL	8(SP), AX	// first C arg
-	MOVL	AX, 0(SP)	// Go arg 1
-	MOVL	·x_cgo_purego_setgroups_call(SB), CX
-	MOVL	(CX), CX
-	CALL	CX
+	MOVL 8(SP), AX                            // first C arg
+	MOVL AX, 0(SP)                            // Go arg 1
+	MOVL ·x_cgo_purego_setgroups_call(SB), CX
+	MOVL (CX), CX
+	CALL CX
 	RET
 
 TEXT _setgroups(SB), NOSPLIT, $0-0
