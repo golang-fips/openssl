@@ -13,16 +13,14 @@ TEXT ·syscallNSystemStack_trampoline(SB), NOSPLIT, $16
 	RET
 
 TEXT ·syscallNAsm(SB), NOSPLIT, $0-8
+	// Load pointer from stack (ABI0 calling convention)
+	MOV libcArgs+0(FP), X5
+
 	// Save original stack pointer
 	MOV X2, X20
 
-	// TODO: upsteam doesn't correctly align the stack for us
-	// so we do it here.
 	// Align stack to 16 bytes for C calling convention
 	ANDI $-16, X2, X2
-
-	// Load pointer from stack (ABI0 calling convention)
-	MOV libcArgs+0(FP), X5
 
 	MOV libcCallInfo_args(X5), X30
 	MOV libcCallInfo_fn(X5), X29
