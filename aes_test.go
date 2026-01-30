@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math"
 	"testing"
+	"unsafe"
 
 	"github.com/golang-fips/openssl/v2"
 	"github.com/golang-fips/openssl/v2/internal/cryptotest"
@@ -258,6 +259,7 @@ func assertPanic(t *testing.T, f func()) {
 }
 
 func TestSealPanic(t *testing.T) {
+	const is32bit = unsafe.Sizeof(uintptr(0)) == 4
 	ci, err := openssl.NewAESCipher([]byte("D249BF6DEC97B1EBD69BC4D6B3A3C49D"))
 	if err != nil {
 		t.Fatal(err)
@@ -269,9 +271,13 @@ func TestSealPanic(t *testing.T) {
 	assertPanic(t, func() {
 		gcm.Seal(nil, make([]byte, gcm.NonceSize()-1), []byte{0x01, 0x02, 0x03}, nil)
 	})
-	assertPanic(t, func() {
-		gcm.Seal(nil, make([]byte, gcm.NonceSize()), make([]byte, math.MaxInt), nil)
-	})
+	// On 32-bit systems, requesting a slice larger than MaxInt will
+	// cause a runtime panic before reaching OpenSSL.
+	if !is32bit {
+		assertPanic(t, func() {
+			gcm.Seal(nil, make([]byte, gcm.NonceSize()), make([]byte, math.MaxInt), nil)
+		})
+	}
 }
 
 func TestBlobEncryptBasicBlockEncryption(t *testing.T) {

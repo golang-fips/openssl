@@ -16,13 +16,12 @@ TEXT ·syscallNAsm(SB), NOSPLIT, $0-4
 	// Load args pointer first, before modifying SP
 	MOVW libcArgs+0(FP), R0
 
-	// Save callee-saved registers R4-R8 and LR.
+	// Save callee-saved registers R4-R7 and LR.
 	// We use R4 for libcArgs pointer.
 	// We use R5 for args pointer.
-	// We use R6 for n.
+	// We use R6 for n, then reused for saving SP.
 	// We use R7 for scratch.
-	// We use R8 for saving SP.
-	MOVM.DB.W [R4-R8, R14], (R13)
+	MOVM.DB.W [R4-R7, R14], (R13)
 
 	MOVW R0, R4 // Move libcArgs to R4
 
@@ -64,8 +63,8 @@ args_stack:
 	MOVW R7, R2
 	SLL  $2, R2     // bytes
 
-	// Save SP
-	MOVW R13, R8
+	// Save SP (R6 is free now, n no longer needed)
+	MOVW R13, R6
 
 	// Allocate stack
 	SUB R2, R13
@@ -91,7 +90,7 @@ copy_loop:
 	BL (R12)
 
 	// Restore SP
-	MOVW R8, R13
+	MOVW R6, R13
 	B    ret
 
 call:
@@ -101,5 +100,5 @@ ret:
 	MOVW R0, libcCallInfo_r1(R4)
 	MOVW R1, libcCallInfo_r2(R4)
 
-	MOVM.IA.W (R13), [R4-R8, R14]
+	MOVM.IA.W (R13), [R4-R7, R14]
 	RET

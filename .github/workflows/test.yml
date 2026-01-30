@@ -127,7 +127,7 @@ jobs:
         CGO_ENABLED: 0
 
   test-qemu:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.architecture == 'arm/v7' && 'ubuntu-24.04-arm' || 'ubuntu-24.04' }}
     strategy:
       fail-fast: false
       matrix:
@@ -144,7 +144,7 @@ jobs:
           -e CGO_ENABLED=1 \
           golang:${{ matrix.go-version }} \
           bash -c "
-            go test -shuffle=on -v ./...
+            go test -shuffle=on -count 10 -v ./...
           "
     - name: Run tests on ${{matrix.architecture}} - CGO disabled
       if: matrix.architecture == 'riscv64' || matrix.architecture == 'arm/v7' || matrix.architecture == '386'
@@ -163,7 +163,7 @@ jobs:
                 ln -sf /usr/lib/ld-linux-armhf.so.3 /lib/ld-linux.so.3
                 ;;
             esac
-            go test -shuffle=on -v ./...
+            go test -shuffle=on -count 10 -v ./...
           "
   # Verify that golang-fips/openssl builds successfully without cgo enabled
   # on a platform where cgoless execution is not supported.
