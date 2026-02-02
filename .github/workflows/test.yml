@@ -135,8 +135,6 @@ jobs:
         architecture: [386, arm/v7, ppc64le, s390x, riscv64]
         cgo: [1, 0]
         exclude:
-          - architecture: ppc64le
-            cgo: 0
           - architecture: s390x
             cgo: 0
     steps:
