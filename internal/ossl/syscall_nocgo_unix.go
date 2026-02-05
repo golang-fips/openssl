@@ -1,4 +1,4 @@
-//go:build !cgo && unix
+//go:build !cgo && unix && (go1.27 || !s390x)
 
 package ossl
 

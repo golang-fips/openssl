@@ -1210,8 +1210,10 @@ func generateAssembly(src *mkcgo.Source, w io.Writer) {
 #ifndef GOARCH_mips64le
 #ifndef GOARCH_ppc64
 #ifndef GOARCH_ppc64le
+#ifndef GOARCH_s390x
 #ifndef GOARCH_sparc64
 #define _GOPTRSIZE 4
+#endif
 #endif
 #endif
 #endif

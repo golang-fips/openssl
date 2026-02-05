@@ -38,8 +38,11 @@ var filesToSkip = makeSet(
 	"ztrampolines_linux_arm64.s",
 	"ztrampolines_linux_ppc64le.s",
 	"ztrampolines_linux_riscv64.s",
+	"ztrampolines_linux_s390x.s",
 	"zsymbols_linux.go",
 	"fakecgo.go",
+	// TODO remove once s390x support is added to purego
+	"trampolines_s390x.s",
 )
 
 func makeSet(items ...string) map[string]bool {
