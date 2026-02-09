@@ -520,6 +520,23 @@ func TestHashNewAllocations(t *testing.T) {
 	}
 }
 
+func TestHashAllocationsWithTypeAsserts(t *testing.T) {
+	if Asan() || OptimizationOff() {
+		t.Skip("skipping allocations test with sanitizers")
+	}
+	allocs := testing.AllocsPerRun(100, func() {
+		h := openssl.NewSHA256()
+		h.Write([]byte{1, 2, 3})
+		marshaled, _ := h.(encoding.BinaryMarshaler).MarshalBinary()
+		marshaled, _ = h.(encoding.BinaryAppender).AppendBinary(marshaled[:0])
+		h.(encoding.BinaryUnmarshaler).UnmarshalBinary(marshaled)
+	})
+	const maxAllocs = 2
+	if allocs > float64(maxAllocs) {
+		t.Fatalf("allocs = %v; want <= %v", allocs, maxAllocs)
+	}
+}
+
 func BenchmarkNewSHA256(b *testing.B) {
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
