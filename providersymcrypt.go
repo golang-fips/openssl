@@ -5,7 +5,6 @@ package openssl
 import (
 	"crypto"
 	"errors"
-	"runtime"
 	"unsafe"
 
 	"github.com/golang-fips/openssl/v2/internal/ossl"
@@ -268,10 +267,6 @@ func symCryptHashUnmarshalBinary(ctx ossl.EVP_MD_CTX_PTR, ch crypto.Hash, magic 
 		panic("unsupported hash " + ch.String())
 	}
 	var checksum int32 = 1
-	var pinner runtime.Pinner
-	pinner.Pin(blobPtr)
-	pinner.Pin(&checksum)
-	defer pinner.Unpin()
 	params := [3]ossl.OSSL_PARAM{
 		ossl.OSSL_PARAM_construct_octet_string(_SCOSSL_DIGEST_PARAM_STATE.ptr(), blobPtr, int(hdr.size)),
 		ossl.OSSL_PARAM_construct_int32(_SCOSSL_DIGEST_PARAM_RECOMPUTE_CHECKSUM.ptr(), &checksum),
