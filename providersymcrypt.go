@@ -193,9 +193,6 @@ func (b *_SYMCRYPT_SHA512_STATE_EXPORT_BLOB) unmarshalBinary(d []byte) {
 func symCryptHashAppendBinary(ctx ossl.EVP_MD_CTX_PTR, ch crypto.Hash, magic string, buf []byte) ([]byte, error) {
 	size, typ := symCryptHashStateInfo(ch)
 	state := make([]byte, size, _SYMCRYPT_SHA512_STATE_EXPORT_SIZE) // 512 is the largest size
-	var pinner runtime.Pinner
-	pinner.Pin(&state[0])
-	defer pinner.Unpin()
 	params := [2]ossl.OSSL_PARAM{
 		ossl.OSSL_PARAM_construct_octet_string(_SCOSSL_DIGEST_PARAM_STATE.ptr(), unsafe.Pointer(&state[0]), len(state)),
 		ossl.OSSL_PARAM_construct_end(),

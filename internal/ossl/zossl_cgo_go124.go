@@ -29,6 +29,8 @@ package ossl
 #cgo nocallback _mkcgo_EVP_EncryptFinal_ex
 #cgo noescape _mkcgo_EVP_EncryptUpdate
 #cgo nocallback _mkcgo_EVP_EncryptUpdate
+#cgo noescape _mkcgo_EVP_MD_CTX_get_params
+#cgo nocallback _mkcgo_EVP_MD_CTX_get_params
 #cgo noescape _mkcgo_EVP_PKEY_derive
 #cgo nocallback _mkcgo_EVP_PKEY_derive
 #cgo noescape _mkcgo_EVP_PKEY_get_raw_private_key
