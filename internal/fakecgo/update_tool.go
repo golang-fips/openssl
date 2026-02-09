@@ -40,10 +40,6 @@ var filesToSkip = makeSet(
 	"ztrampolines_linux_riscv64.s",
 	"zsymbols_linux.go",
 	"fakecgo.go",
-	// TODO remove once https://github.com/ebitengine/purego/pull/408 is merged
-	"abi_ppc64x.h",
-	"asm_ppc64le.s",
-	"trampolines_ppc64le.s",
 )
 
 func makeSet(items ...string) map[string]bool {
