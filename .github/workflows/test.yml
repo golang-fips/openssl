@@ -14,7 +14,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        go-version: [1.24.x, 1.25.x]
+        go-version: [1.25.x, 1.26.x]
         openssl-version: [1.1.0, 1.1.1, 3.0.1, 3.0.13, 3.1.5, 3.2.1, 3.3.0, 3.3.1, 3.4.0, 3.5.0]
         host: [ubuntu-22.04, ubuntu-24.04-arm]
     runs-on: ${{ matrix.host }}
@@ -76,7 +76,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        go-version: [1.24.x, 1.25.x]
+        go-version: [1.25.x, 1.26.x]
         host: [
           # the non-intel macOS runners use ARM64
           {os: macos-15-intel, openssl-version: /usr/local/opt/openssl@3/lib/libcrypto.3.dylib},
@@ -132,8 +132,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        go-version: [1.24, 1.25]
-        architecture: [386, arm/v7, ppc64le, s390x, riscv64]
+        go-version: [1.25, 1.26]
+        architecture: [386, arm/v7, loong64, ppc64le, s390x, riscv64]
         cgo: [1, 0]
         exclude:
           - architecture: s390x
@@ -145,14 +145,23 @@ jobs:
             cgo: 0
     steps:
     - uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130 # v3.7.0
+      if: ${{ matrix.architecture != 'loong64' }}
+    - name: Setup qemu for Loong64
+      if: ${{ matrix.architecture == 'loong64' }}
+      run: docker run --privileged --rm tonistiigi/binfmt --install all
     - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
     - name: Run tests on ${{matrix.architecture}}
       run: |
+        if [ "${{matrix.architecture}}" = "loong64" ]; then
+          IMAGE="ghcr.io/loong64/golang:${{ matrix.go-version }}-trixie"
+        else
+          IMAGE="golang:${{ matrix.go-version }}"
+        fi
         docker run --rm --platform linux/${{matrix.architecture}} \
           -v ${{ github.workspace }}:/workspace \
           -w /workspace \
           -e CGO_ENABLED=${{ matrix.cgo }} \
-          golang:${{ matrix.go-version }} \
+          "$IMAGE" \
           bash -c "
             # Add required dynamic linker symlink (if applicable)
             case ${{matrix.architecture}} in

@@ -36,6 +36,7 @@ var filesToSkip = makeSet(
 	"ztrampolines_linux_amd64.s",
 	"ztrampolines_linux_arm.s",
 	"ztrampolines_linux_arm64.s",
+	"ztrampolines_linux_loong64.s",
 	"ztrampolines_linux_ppc64le.s",
 	"ztrampolines_linux_riscv64.s",
 	"ztrampolines_linux_s390x.s",
