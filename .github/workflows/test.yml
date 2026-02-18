@@ -165,10 +165,14 @@ jobs:
           bash -c "
             # Add required dynamic linker symlink (if applicable)
             case ${{matrix.architecture}} in
-              riscv64)
-                ln -sf /usr/lib/riscv64-linux-gnu/ld-linux-riscv64-lp64d.so.1 /lib/ld.so.1 ;;
               arm/v7)
                 ln -sf /usr/lib/ld-linux-armhf.so.3 /lib/ld-linux.so.3
+                ;;
+              riscv64)
+                ln -sf /usr/lib/riscv64-linux-gnu/ld-linux-riscv64-lp64d.so.1 /lib/ld.so.1 ;;
+              s390x)
+                mkdir -p /lib64
+                ln -sf /usr/lib/s390x-linux-gnu/ld64.so.1 /lib64/ld64.so.1
                 ;;
             esac
             go test -shuffle=on -count 3 -v ./...
