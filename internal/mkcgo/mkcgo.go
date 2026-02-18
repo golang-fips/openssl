@@ -96,7 +96,7 @@ func (attrs *Attrs) SliceFromLen(name string) (Slice, bool) {
 func (attrs *Attrs) String() string {
 	var bld strings.Builder
 	if len(attrs.Tags) != 0 {
-		bld.Write([]byte(fmt.Sprintf("%s", attrs.Tags)))
+		bld.Write(fmt.Appendf(nil, "%s", attrs.Tags))
 	}
 	if attrs.VariadicTarget != "" {
 		bld.WriteString(", variadic(")

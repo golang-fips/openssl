@@ -130,7 +130,7 @@ func testBadLengths[E encapsulationKey, D decapsulationKey[E]](
 		}
 	}
 	dkLong := dkBytes
-	for i := 0; i < 100; i++ {
+	for range 100 {
 		dkLong = append(dkLong, 0)
 		if _, err := newDecapsulationKey(dkLong); err == nil {
 			t.Errorf("expected error for dk length %d", len(dkLong))
@@ -143,7 +143,7 @@ func testBadLengths[E encapsulationKey, D decapsulationKey[E]](
 		}
 	}
 	ekLong := ekBytes
-	for i := 0; i < 100; i++ {
+	for range 100 {
 		ekLong = append(ekLong, 0)
 		if _, err := newEncapsulationKey(ekLong); err == nil {
 			t.Errorf("expected error for ek length %d", len(ekLong))
@@ -156,7 +156,7 @@ func testBadLengths[E encapsulationKey, D decapsulationKey[E]](
 		}
 	}
 	cLong := c
-	for i := 0; i < 100; i++ {
+	for range 100 {
 		cLong = append(cLong, 0)
 		if _, err := dk.Decapsulate(cLong); err == nil {
 			t.Errorf("expected error for c length %d", len(cLong))
