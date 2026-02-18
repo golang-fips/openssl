@@ -90,11 +90,23 @@ func (c cipherWithCBC) NewCBCEncrypter(iv []byte) cipher.BlockMode {
 	return c.cipher.newCBC(iv, cipherOpEncrypt)
 }
 
+func (c cipherWithCBC) NewFIPSCBCEncrypter(iv []byte) cipher.BlockMode {
+	return c.cipher.newCBC(iv, cipherOpEncrypt)
+}
+
 func (c cipherWithCBC) NewCBCDecrypter(iv []byte) cipher.BlockMode {
 	return c.cipher.newCBC(iv, cipherOpDecrypt)
 }
 
+func (c cipherWithCBC) NewFIPSCBCDecrypter(iv []byte) cipher.BlockMode {
+	return c.cipher.newCBC(iv, cipherOpDecrypt)
+}
+
 func (c cipherWithCTR) NewCTR(iv []byte) cipher.Stream {
+	return c.cipher.newCTR(iv)
+}
+
+func (c cipherWithCTR) NewFIPSCTR(iv []byte) cipher.Stream {
 	return c.cipher.newCTR(iv)
 }
 
