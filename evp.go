@@ -618,3 +618,14 @@ func checkPkey(pkey ossl.EVP_PKEY_PTR, isPrivate bool) error {
 	}
 	return nil
 }
+
+// Cleanup functions for use with runtime.AddCleanup.
+// These are named functions to avoid allocating a new closure for each cleanup registration.
+
+func evpPkeyFree(pkey ossl.EVP_PKEY_PTR)           { ossl.EVP_PKEY_free(pkey) }
+func evpPkeyCtxFree(ctx ossl.EVP_PKEY_CTX_PTR)     { ossl.EVP_PKEY_CTX_free(ctx) }
+func evpMdCtxFree(ctx ossl.EVP_MD_CTX_PTR)         { ossl.EVP_MD_CTX_free(ctx) }
+func evpCipherCtxFree(ctx ossl.EVP_CIPHER_CTX_PTR) { ossl.EVP_CIPHER_CTX_free(ctx) }
+func evpMacCtxFree(ctx ossl.EVP_MAC_CTX_PTR)       { ossl.EVP_MAC_CTX_free(ctx) }
+func evpKdfCtxFree(ctx ossl.EVP_KDF_CTX_PTR)       { ossl.EVP_KDF_CTX_free(ctx) }
+func hmacCtxFree(ctx ossl.HMAC_CTX_PTR)            { ossl.HMAC_CTX_free(ctx) }

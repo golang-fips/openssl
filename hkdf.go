@@ -90,12 +90,6 @@ type hkdf1 struct {
 	buf     []byte
 }
 
-func (c *hkdf1) finalize() {
-	if c.ctx != nil {
-		ossl.EVP_PKEY_CTX_free(c.ctx)
-	}
-}
-
 func (c *hkdf1) Read(p []byte) (int, error) {
 	defer runtime.KeepAlive(c)
 
@@ -283,7 +277,7 @@ func ExpandHKDF(h func() hash.Hash, pseudorandomKey, info []byte) (io.Reader, er
 			return nil, err
 		}
 		c := &hkdf1{ctx: ctx, hashLen: size}
-		runtime.SetFinalizer(c, (*hkdf1).finalize)
+		runtime.AddCleanup(c, evpPkeyCtxFree, ctx)
 		return c, nil
 	case 3:
 		ctx, err := newHKDFCtx3(md, ossl.EVP_KDF_HKDF_MODE_EXPAND_ONLY, nil, nil, pseudorandomKey, info)
@@ -291,7 +285,7 @@ func ExpandHKDF(h func() hash.Hash, pseudorandomKey, info []byte) (io.Reader, er
 			return nil, err
 		}
 		c := &hkdf3{ctx: ctx, hashLen: size}
-		runtime.SetFinalizer(c, (*hkdf3).finalize)
+		runtime.AddCleanup(c, evpKdfCtxFree, ctx)
 		return c, nil
 	default:
 		panic(errUnsupportedVersion())
@@ -303,12 +297,6 @@ type hkdf3 struct {
 
 	hashLen int
 	buf     []byte
-}
-
-func (c *hkdf3) finalize() {
-	if c.ctx != nil {
-		ossl.EVP_KDF_CTX_free(c.ctx)
-	}
 }
 
 // fetchTLS13_KDF fetches the TLS13-KDF algorithm.

@@ -19,17 +19,9 @@ type PublicKeyECDH struct {
 	bytes []byte
 }
 
-func (k *PublicKeyECDH) finalize() {
-	ossl.EVP_PKEY_free(k._pkey)
-}
-
 type PrivateKeyECDH struct {
 	_pkey ossl.EVP_PKEY_PTR
 	curve string
-}
-
-func (k *PrivateKeyECDH) finalize() {
-	ossl.EVP_PKEY_free(k._pkey)
 }
 
 func NewPublicKeyECDH(curve string, bytes []byte) (*PublicKeyECDH, error) {
@@ -46,7 +38,7 @@ func NewPublicKeyECDH(curve string, bytes []byte) (*PublicKeyECDH, error) {
 		return nil, err
 	}
 	k := &PublicKeyECDH{pkey, slices.Clone(bytes)}
-	runtime.SetFinalizer(k, (*PublicKeyECDH).finalize)
+	runtime.AddCleanup(k, evpPkeyFree, pkey)
 	return k, nil
 }
 
@@ -65,7 +57,7 @@ func NewPrivateKeyECDH(curve string, bytes []byte) (*PrivateKeyECDH, error) {
 		return nil, err
 	}
 	k := &PrivateKeyECDH{pkey, curve}
-	runtime.SetFinalizer(k, (*PrivateKeyECDH).finalize)
+	runtime.AddCleanup(k, evpPkeyFree, pkey)
 	return k, nil
 }
 
@@ -124,7 +116,7 @@ func (k *PrivateKeyECDH) PublicKey() (*PublicKeyECDH, error) {
 	}
 	pub := &PublicKeyECDH{pkey, bytes}
 	pkey = nil
-	runtime.SetFinalizer(pub, (*PublicKeyECDH).finalize)
+	runtime.AddCleanup(pub, evpPkeyFree, pub._pkey)
 	return pub, nil
 }
 
@@ -338,6 +330,6 @@ func GenerateKeyECDH(curve string) (*PrivateKeyECDH, []byte, error) {
 		}
 	}
 	k = &PrivateKeyECDH{pkey, curve}
-	runtime.SetFinalizer(k, (*PrivateKeyECDH).finalize)
+	runtime.AddCleanup(k, evpPkeyFree, pkey)
 	return k, bytes, nil
 }

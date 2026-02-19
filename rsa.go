@@ -114,12 +114,8 @@ func NewPublicKeyRSA(n, e BigInt) (*PublicKeyRSA, error) {
 		panic(errUnsupportedVersion())
 	}
 	k := &PublicKeyRSA{_pkey: pkey}
-	runtime.SetFinalizer(k, (*PublicKeyRSA).finalize)
+	runtime.AddCleanup(k, evpPkeyFree, pkey)
 	return k, nil
-}
-
-func (k *PublicKeyRSA) finalize() {
-	ossl.EVP_PKEY_free(k._pkey)
 }
 
 func (k *PublicKeyRSA) withKey(f func(ossl.EVP_PKEY_PTR) error) error {
@@ -193,12 +189,8 @@ func NewPrivateKeyRSA(n, e, d, p, q, dp, dq, qinv BigInt) (*PrivateKeyRSA, error
 		panic(errUnsupportedVersion())
 	}
 	k := &PrivateKeyRSA{_pkey: pkey}
-	runtime.SetFinalizer(k, (*PrivateKeyRSA).finalize)
+	runtime.AddCleanup(k, evpPkeyFree, pkey)
 	return k, nil
-}
-
-func (k *PrivateKeyRSA) finalize() {
-	ossl.EVP_PKEY_free(k._pkey)
 }
 
 func (k *PrivateKeyRSA) withKey(f func(ossl.EVP_PKEY_PTR) error) error {
@@ -708,7 +700,5 @@ var testRSAPrivateKey = sync.OnceValue(func() ossl.EVP_PKEY_PTR {
 	if err != nil {
 		panic("failed to create test RSA private key: " + err.Error())
 	}
-	// Prevent finalization to avoid freeing OpenSSL objects.
-	runtime.SetFinalizer(priv, nil)
 	return priv._pkey
 })

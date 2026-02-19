@@ -147,12 +147,8 @@ func newSHAKE(securityBits int) *SHAKE {
 		panic(err)
 	}
 	s := &SHAKE{alg: alg, ctx: ctx}
-	runtime.SetFinalizer(s, (*SHAKE).finalize)
+	runtime.AddCleanup(s, evpMdCtxFree, ctx)
 	return s
-}
-
-func (s *SHAKE) finalize() {
-	ossl.EVP_MD_CTX_free(s.ctx)
 }
 
 // Write absorbs more data into the XOF's state.

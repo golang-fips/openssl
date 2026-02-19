@@ -44,16 +44,17 @@ func NewHMAC(fh func() hash.Hash, key []byte) hash.Hash {
 			return nil
 		}
 		hmac.ctx1 = ctx
+		runtime.AddCleanup(hmac, hmacCtxFree, ctx.ctx)
 	case 3:
 		ctx := newHMAC3(key, md)
 		if ctx.ctx == nil {
 			return nil
 		}
 		hmac.ctx3 = ctx
+		runtime.AddCleanup(hmac, evpMacCtxFree, ctx.ctx)
 	default:
 		panic(errUnsupportedVersion())
 	}
-	runtime.SetFinalizer(hmac, (*opensslHMAC).finalize)
 	return hmac
 }
 
@@ -182,15 +183,6 @@ func (h *opensslHMAC) Reset() {
 	runtime.KeepAlive(h) // Next line will keep h alive too; just making doubly sure.
 }
 
-func (h *opensslHMAC) finalize() {
-	if h.ctx1.ctx != nil {
-		ossl.HMAC_CTX_free(h.ctx1.ctx)
-	}
-	if h.ctx3.ctx != nil {
-		ossl.EVP_MAC_CTX_free(h.ctx3.ctx)
-	}
-}
-
 func (h *opensslHMAC) Write(p []byte) (int, error) {
 	if len(p) > 0 {
 		switch major() {
@@ -259,7 +251,7 @@ func (h *opensslHMAC) Clone() (HashCloner, error) {
 			size:      h.size,
 			blockSize: h.blockSize,
 		}
-		runtime.SetFinalizer(cl, (*opensslHMAC).finalize)
+		runtime.AddCleanup(cl, hmacCtxFree, ctx2)
 		return cl, nil
 
 	case 3:
@@ -273,7 +265,7 @@ func (h *opensslHMAC) Clone() (HashCloner, error) {
 			size:      h.size,
 			blockSize: h.blockSize,
 		}
-		runtime.SetFinalizer(cl, (*opensslHMAC).finalize)
+		runtime.AddCleanup(cl, evpMacCtxFree, ctx2)
 		return cl, nil
 
 	default:

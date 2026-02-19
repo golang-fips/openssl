@@ -55,10 +55,6 @@ type PublicKeyEd25519 struct {
 	_pkey ossl.EVP_PKEY_PTR
 }
 
-func (k *PublicKeyEd25519) finalize() {
-	ossl.EVP_PKEY_free(k._pkey)
-}
-
 func (k *PublicKeyEd25519) Bytes() ([]byte, error) {
 	defer runtime.KeepAlive(k)
 	pub := make([]byte, publicKeySizeEd25519)
@@ -70,10 +66,6 @@ func (k *PublicKeyEd25519) Bytes() ([]byte, error) {
 
 type PrivateKeyEd25519 struct {
 	_pkey ossl.EVP_PKEY_PTR
-}
-
-func (k *PrivateKeyEd25519) finalize() {
-	ossl.EVP_PKEY_free(k._pkey)
 }
 
 func (k *PrivateKeyEd25519) Bytes() ([]byte, error) {
@@ -104,7 +96,7 @@ func GenerateKeyEd25519() (*PrivateKeyEd25519, error) {
 		return nil, err
 	}
 	priv := &PrivateKeyEd25519{_pkey: pkeyPriv}
-	runtime.SetFinalizer(priv, (*PrivateKeyEd25519).finalize)
+	runtime.AddCleanup(priv, evpPkeyFree, pkeyPriv)
 	return priv, nil
 }
 
@@ -134,7 +126,7 @@ func NewPublicKeyEd25519(pub []byte) (*PublicKeyEd25519, error) {
 		return nil, err
 	}
 	pubk := &PublicKeyEd25519{_pkey: pkey}
-	runtime.SetFinalizer(pubk, (*PublicKeyEd25519).finalize)
+	runtime.AddCleanup(pubk, evpPkeyFree, pkey)
 	return pubk, nil
 }
 
@@ -150,7 +142,7 @@ func NewPrivateKeyEd25519FromSeed(seed []byte) (*PrivateKeyEd25519, error) {
 		return nil, err
 	}
 	priv := &PrivateKeyEd25519{_pkey: pkey}
-	runtime.SetFinalizer(priv, (*PrivateKeyEd25519).finalize)
+	runtime.AddCleanup(priv, evpPkeyFree, pkey)
 	return priv, nil
 }
 

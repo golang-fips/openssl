@@ -14,10 +14,6 @@ type PrivateKeyECDSA struct {
 	_pkey ossl.EVP_PKEY_PTR
 }
 
-func (k *PrivateKeyECDSA) finalize() {
-	ossl.EVP_PKEY_free(k._pkey)
-}
-
 func (k *PrivateKeyECDSA) withKey(f func(ossl.EVP_PKEY_PTR) error) error {
 	defer runtime.KeepAlive(k)
 	return f(k._pkey)
@@ -26,10 +22,6 @@ func (k *PrivateKeyECDSA) withKey(f func(ossl.EVP_PKEY_PTR) error) error {
 type PublicKeyECDSA struct {
 	// _pkey MUST NOT be accessed directly. Instead, use the withKey method.
 	_pkey ossl.EVP_PKEY_PTR
-}
-
-func (k *PublicKeyECDSA) finalize() {
-	ossl.EVP_PKEY_free(k._pkey)
 }
 
 func (k *PublicKeyECDSA) withKey(f func(ossl.EVP_PKEY_PTR) error) error {
@@ -43,7 +35,7 @@ func NewPublicKeyECDSA(curve string, x, y BigInt) (*PublicKeyECDSA, error) {
 		return nil, err
 	}
 	k := &PublicKeyECDSA{_pkey: pkey}
-	runtime.SetFinalizer(k, (*PublicKeyECDSA).finalize)
+	runtime.AddCleanup(k, evpPkeyFree, pkey)
 	return k, nil
 }
 
@@ -53,7 +45,7 @@ func NewPrivateKeyECDSA(curve string, x, y, d BigInt) (*PrivateKeyECDSA, error) 
 		return nil, err
 	}
 	k := &PrivateKeyECDSA{_pkey: pkey}
-	runtime.SetFinalizer(k, (*PrivateKeyECDSA).finalize)
+	runtime.AddCleanup(k, evpPkeyFree, pkey)
 	return k, nil
 }
 

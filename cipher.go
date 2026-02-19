@@ -225,10 +225,6 @@ type cipherCBC struct {
 	blockSize int
 }
 
-func (c *cipherCBC) finalize() {
-	ossl.EVP_CIPHER_CTX_free(c.ctx)
-}
-
 func (x *cipherCBC) BlockSize() int { return x.blockSize }
 
 func (x *cipherCBC) CryptBlocks(dst, src []byte) {
@@ -265,7 +261,7 @@ func (c *evpCipher) newCBC(iv []byte, op cipherOp) cipher.BlockMode {
 		panic(err)
 	}
 	x := &cipherCBC{ctx: ctx, blockSize: c.blockSize}
-	runtime.SetFinalizer(x, (*cipherCBC).finalize)
+	runtime.AddCleanup(x, evpCipherCtxFree, ctx)
 	if _, err := ossl.EVP_CIPHER_CTX_set_padding(x.ctx, 0); err != nil {
 		panic("crypto/cipher: " + err.Error())
 	}
@@ -299,12 +295,8 @@ func (c *evpCipher) newCTR(iv []byte) cipher.Stream {
 		panic(err)
 	}
 	x := &cipherCTR{ctx: ctx}
-	runtime.SetFinalizer(x, (*cipherCTR).finalize)
+	runtime.AddCleanup(x, evpCipherCtxFree, ctx)
 	return x
-}
-
-func (c *cipherCTR) finalize() {
-	ossl.EVP_CIPHER_CTX_free(c.ctx)
 }
 
 type cipherGCMTLS uint8

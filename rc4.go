@@ -27,14 +27,8 @@ func NewRC4Cipher(key []byte) (*RC4Cipher, error) {
 		return nil, err
 	}
 	c := &RC4Cipher{ctx}
-	runtime.SetFinalizer(c, (*RC4Cipher).finalize)
+	runtime.AddCleanup(c, evpCipherCtxFree, ctx)
 	return c, nil
-}
-
-func (c *RC4Cipher) finalize() {
-	if c.ctx != nil {
-		ossl.EVP_CIPHER_CTX_free(c.ctx)
-	}
 }
 
 // Reset zeros the key data and makes the Cipher unusable.
