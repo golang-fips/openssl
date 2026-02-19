@@ -516,12 +516,12 @@ func SupportsRSAOAEP(h, mgfHash hash.Hash) (supported bool) {
 	return true
 }
 
-// testRSAPrivateKey returns a test RSA private key for use in capability probing functions.
+// _testRSAPrivateKey is a singleton test RSA private key for use in capability probing functions.
 //
 // The key is constructed from hard-coded parameters to avoid
 // spurious failures due to key generation issues and to avoid the speed cost of
 // key generation.
-var testRSAPrivateKey = sync.OnceValue(func() ossl.EVP_PKEY_PTR {
+var _testRSAPrivateKey = sync.OnceValue(func() *PrivateKeyRSA {
 	// RSA-2048 key "testRSA2048":
 	// https://www.rfc-editor.org/rfc/rfc9500.html#section-2.1
 	N := []byte{
@@ -700,5 +700,12 @@ var testRSAPrivateKey = sync.OnceValue(func() ossl.EVP_PKEY_PTR {
 	if err != nil {
 		panic("failed to create test RSA private key: " + err.Error())
 	}
-	return priv._pkey
+	// Return the PrivateKeyRSA object, not just the _pkey pointer.
+	// This keeps priv alive so its AddCleanup won't run and free the key.
+	return priv
 })
+
+// testRSAPrivateKey returns the EVP_PKEY_PTR from the singleton test key.
+func testRSAPrivateKey() ossl.EVP_PKEY_PTR {
+	return _testRSAPrivateKey()._pkey
+}
