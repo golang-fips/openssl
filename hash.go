@@ -225,6 +225,18 @@ func NewSHA3_512() *Hash {
 var _ hash.Hash = (*Hash)(nil)
 var _ HashCloner = (*Hash)(nil)
 
+// FIPSApproved reports whether this hash algorithm is FIPS 140-3 approved.
+func (h *Hash) FIPSApproved() bool {
+	switch h.alg.ch {
+	case crypto.SHA224, crypto.SHA256, crypto.SHA384, crypto.SHA512,
+		crypto.SHA512_224, crypto.SHA512_256,
+		crypto.SHA3_224, crypto.SHA3_256, crypto.SHA3_384, crypto.SHA3_512:
+		return true
+	default:
+		return false
+	}
+}
+
 // hashBufSize is the size of the buffer used for hashing.
 // 256 bytes is a reasonable compromise for general purpose use,
 // and the resulting evpHash size is still similar to the
