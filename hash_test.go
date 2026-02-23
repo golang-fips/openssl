@@ -520,6 +520,40 @@ func TestHashNewAllocations(t *testing.T) {
 	}
 }
 
+func TestHashStructAllocations(t *testing.T) {
+	if Asan() {
+		t.Skip("skipping allocations test with sanitizers")
+	}
+	msg := []byte("testing")
+
+	sum := make([]byte, openssl.NewSHA512().Size())
+	n := int(testing.AllocsPerRun(10, func() {
+		sha1Hash := openssl.NewSHA1()
+		sha224Hash := openssl.NewSHA224()
+		sha256Hash := openssl.NewSHA256()
+		sha512Hash := openssl.NewSHA512()
+
+		sha1Hash.Write(msg)
+		sha224Hash.Write(msg)
+		sha256Hash.Write(msg)
+		sha512Hash.Write(msg)
+
+		sha1Hash.Sum(sum[:0])
+		sha224Hash.Sum(sum[:0])
+		sha256Hash.Sum(sum[:0])
+		sha512Hash.Sum(sum[:0])
+
+		sha1Hash.Reset()
+		sha224Hash.Reset()
+		sha256Hash.Reset()
+		sha512Hash.Reset()
+	}))
+	want := 12
+	if n > want {
+		t.Errorf("allocs = %d, want %d", n, want)
+	}
+}
+
 func TestHashAllocationsWithTypeAsserts(t *testing.T) {
 	if Asan() || OptimizationOff() {
 		t.Skip("skipping allocations test with sanitizers")
