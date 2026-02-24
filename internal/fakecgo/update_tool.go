@@ -168,7 +168,7 @@ func updateFile(name, commitHash string) error {
 		return fmt.Errorf("failed to read body: %w", err)
 	}
 
-	if !strings.Contains(name, "darwin") && !strings.Contains(name, "linux") {
+	if !strings.Contains(name, "darwin") && !strings.Contains(name, "freebsd") && !strings.Contains(name, "linux") {
 		content = modifyBuildTags(content)
 	}
 
@@ -184,7 +184,7 @@ func modifyBuildTags(content []byte) []byte {
 	lines := bytes.Split(content, []byte("\n"))
 	for i, line := range lines {
 		if bytes.HasPrefix(line, []byte("//go:build")) {
-			lines[i] = []byte("//go:build !cgo && (darwin || linux)")
+			lines[i] = []byte("//go:build !cgo && (darwin || freebsd || linux)")
 		}
 	}
 	return bytes.Join(lines, []byte("\n"))

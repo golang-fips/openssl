@@ -127,6 +127,7 @@ jobs:
       env:
         CGO_ENABLED: 0
         MS_GO_NOSYSTEMCRYPTO: 1
+
   test-qemu:
     runs-on: ${{ matrix.architecture == 'arm/v7' && 'ubuntu-24.04-arm' || 'ubuntu-24.04' }}
     strategy:
@@ -177,6 +178,28 @@ jobs:
             esac
             go test -shuffle=on -count 3 -v ./...
           "
+
+  freebsd:
+    strategy:
+      matrix:
+        go: ['1.25.0', '1.26.0']
+        cgo: [1, 0]
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+    - name: Run tests on FreeBSD
+      uses: vmactions/freebsd-vm@c9f815bc7aa0d34c9fdd0619b034a32d6ca7b57e # v1.4.2
+      with:
+        prepare: |
+          fetch https://go.dev/dl/go${{matrix.go}}.freebsd-amd64.tar.gz
+          rm -rf /usr/local/go && tar -C /usr/local -xf go${{matrix.go}}.freebsd-amd64.tar.gz
+        run: |
+          GCFLAGS=""
+          if [ "${{ matrix.cgo }}" = "0" ]; then
+            GCFLAGS="-gcflags=github.com/golang-fips/openssl/v2/internal/fakecgo=-std"
+          fi
+          CGO_ENABLED=${{ matrix.cgo }} /usr/local/go/bin/go test -shuffle=on -count 3 $GCFLAGS -v ./...
+
   # Verify that golang-fips/openssl builds successfully without cgo enabled
   # on a platform where cgoless execution is not supported.
   #
@@ -198,7 +221,7 @@ jobs:
       run: CGO_ENABLED=0 GOOS=windows GOARCH=386 go build ./...
 
   conclusion:
-    needs: [test, ossltest, container, test-qemu, cgolessbuild]
+    needs: [test, ossltest, container, test-qemu, freebsd, cgolessbuild]
     runs-on: ubuntu-latest
     if: ${{ always() }}
     steps:
