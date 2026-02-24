@@ -422,12 +422,7 @@ func TestIssue71943(t *testing.T) {
 	n := int(testing.AllocsPerRun(10, func() {
 		runtime.KeepAlive(verifySHA256("teststring", "test"))
 	}))
-	want := 2
-	if compareCurrentVersion("go1.25") >= 0 {
-		want = 0
-	} else if compareCurrentVersion("go1.24") >= 0 {
-		want = 1
-	}
+	want := 0
 	if n > want {
 		t.Errorf("allocs = %d, want %d", n, want)
 	}
@@ -444,12 +439,7 @@ func TestHashOneShotAllocations(t *testing.T) {
 		sink ^= openssl.SHA256(msg)[0]
 		sink ^= openssl.SHA512(msg)[0]
 	}))
-	want := 4
-	if compareCurrentVersion("go1.24") >= 0 {
-		// The go1.24 compiler is able to optimize the allocation away.
-		// See cgo_go124.go for more information.
-		want = 0
-	}
+	want := 0
 	if n > want {
 		t.Errorf("allocs = %d, want %d", n, want)
 	}
@@ -483,12 +473,7 @@ func TestHashAllocations(t *testing.T) {
 		sha256Hash.Reset()
 		sha512Hash.Reset()
 	}))
-	want := 4
-	if compareCurrentVersion("go1.24") >= 0 {
-		// The go1.24 compiler is able to optimize the allocation away.
-		// See cgo_go124.go for more information.
-		want = 0
-	}
+	want := 0
 	if n > want {
 		t.Errorf("allocs = %d, want %d", n, want)
 	}
@@ -509,12 +494,7 @@ func TestHashNewAllocations(t *testing.T) {
 		sha256Hash.Reset()
 		sha512Hash.Reset()
 	}))
-	want := 4
-	if compareCurrentVersion("go1.24") >= 0 {
-		// The go1.24 compiler is able to optimize the allocation away.
-		// See cgo_go124.go for more information.
-		want = 0
-	}
+	want := 0
 	if n > want {
 		t.Errorf("allocs = %d, want %d", n, want)
 	}
