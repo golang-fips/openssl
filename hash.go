@@ -33,6 +33,8 @@ const (
 // maxHashSize is the size of SHA52 and SHA3_512, the largest hashes we support.
 const maxHashSize = 64
 
+type HashCloner = hash.Cloner
+
 func hashOneShot(ch crypto.Hash, p []byte, sum []byte) bool {
 	_, err := ossl.EVP_Digest(p, sum, nil, loadHash(ch, true).md, nil)
 	return err == nil
