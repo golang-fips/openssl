@@ -1163,6 +1163,10 @@ func generateNocgoFnBody(src *mkcgo.Source, fn *mkcgo.Func, errorType int, newR0
 		fmt.Fprintf(w, "\tsyscallN(%d, %s", errorType, fnArg)
 	}
 
+	// Determine if we need to force escape for pointer parameters.
+	// If the function has both noescape and nocallback, we can skip escaping.
+	needEscape := !(fn.NoEscape && fn.NoCallback)
+
 	// Add actual parameters
 	for _, param := range fn.Params {
 		// Skip void parameters
@@ -1173,13 +1177,21 @@ func generateNocgoFnBody(src *mkcgo.Source, fn *mkcgo.Func, errorType int, newR0
 		goType, _ := cTypeToGo(param.Type, false)
 
 		if _, ok := fn.SliceFromPtr(param.Name); ok {
-			// Slice parameter
-			fmt.Fprintf(w, ", uintptr(unsafe.Pointer(unsafe.SliceData(%s)))", param.Name)
+			// Slice parameter - force escape if needed
+			if needEscape {
+				fmt.Fprintf(w, ", uintptr(escapePtr(unsafe.Pointer(unsafe.SliceData(%s))))", param.Name)
+			} else {
+				fmt.Fprintf(w, ", uintptr(unsafe.Pointer(unsafe.SliceData(%s)))", param.Name)
+			}
 		} else if slice, ok := fn.SliceFromLen(param.Name); ok {
 			fmt.Fprintf(w, ", uintptr(len(%s))", slice.Ptr)
 		} else if strings.HasPrefix(goType, "*") {
-			// Pointer types need to go through unsafe.Pointer
-			fmt.Fprintf(w, ", uintptr(unsafe.Pointer(%s))", param.Name)
+			// Pointer types need to go through unsafe.Pointer - force escape if needed
+			if needEscape {
+				fmt.Fprintf(w, ", uintptr(escapePtr(unsafe.Pointer(%s)))", param.Name)
+			} else {
+				fmt.Fprintf(w, ", uintptr(unsafe.Pointer(%s))", param.Name)
+			}
 		} else {
 			fmt.Fprintf(w, ", uintptr(%s)", param.Name)
 		}

@@ -18,6 +18,17 @@ func noescape(p unsafe.Pointer) unsafe.Pointer {
 	return unsafe.Pointer(x ^ 0)
 }
 
+// escapePtr forces p to escape to the heap.
+// By assigning to a global sink, the compiler must assume the pointer escapes.
+//
+//go:noinline
+func escapePtr(p unsafe.Pointer) unsafe.Pointer {
+	escapeSink = p
+	return p
+}
+
+var escapeSink unsafe.Pointer
+
 type libcCallInfo struct {
 	fn      uintptr
 	n       uintptr // number of parameters
