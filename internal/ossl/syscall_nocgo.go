@@ -21,6 +21,9 @@ func noescape(p unsafe.Pointer) unsafe.Pointer {
 var alwaysFalse bool
 var escapeSink unsafe.Pointer
 
+// escapePtr forces p to escape to the heap.
+// This implementation is also used in the standard library:
+// https://github.com/golang/go/blob/go1.26.0/src/internal/abi/escape.go#L24-L33
 func escapePtr(p unsafe.Pointer) unsafe.Pointer {
 	if alwaysFalse {
 		escapeSink = p
