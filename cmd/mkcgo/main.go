@@ -24,7 +24,6 @@ var (
 	noerrors      = flag.Bool("noerrors", false, "disable error handling")
 	extratags     = flag.String("tags", "", "tags to add to the generated files")
 	copyrightFile = flag.String("copyright", "", "file containing copyright notice to add to the generated files")
-	noEscapePtr   = flag.Bool("noescapeptr", false, "don't generate mkcgoEscapePtr helper (use when another file provides it)")
 )
 
 var copyright []byte

@@ -759,21 +759,18 @@ func generateGoNocgo(src *mkcgo.Source, w io.Writer) {
 	// to avoid "imported and not used" error.
 	fmt.Fprintf(w, "var _ = runtime.GOOS\n\n")
 
-	// Generate mkcgoEscapePtr helper function for pointer escaping
-	// (unless -noescapeptr flag is set, indicating another file provides it)
-	if !*noEscapePtr {
-		fmt.Fprintf(w, "var _mkcgoAlwaysFalse bool\n")
-		fmt.Fprintf(w, "var _mkcgoEscapeSink unsafe.Pointer\n\n")
-		fmt.Fprintf(w, "// mkcgoEscapePtr forces p to escape to the heap.\n")
-		fmt.Fprintf(w, "// This implementation is also used in the standard library:\n")
-		fmt.Fprintf(w, "// https://github.com/golang/go/blob/f71432d223eeb2139b460957817400750fd13655/src/internal/abi/escape.go#L24-L33\n")
-		fmt.Fprintf(w, "func mkcgoEscapePtr(p unsafe.Pointer) unsafe.Pointer {\n")
-		fmt.Fprintf(w, "\tif _mkcgoAlwaysFalse {\n")
-		fmt.Fprintf(w, "\t\t_mkcgoEscapeSink = p\n")
-		fmt.Fprintf(w, "\t}\n")
-		fmt.Fprintf(w, "\treturn p\n")
-		fmt.Fprintf(w, "}\n\n")
-	}
+	// Generate mkcgoEscapePtr helper function for pointer escaping.
+	fmt.Fprintf(w, "var _mkcgoAlwaysFalse bool\n")
+	fmt.Fprintf(w, "var _mkcgoEscapeSink unsafe.Pointer\n\n")
+	fmt.Fprintf(w, "// mkcgoEscapePtr forces p to escape to the heap.\n")
+	fmt.Fprintf(w, "// This implementation is also used in the standard library:\n")
+	fmt.Fprintf(w, "// https://github.com/golang/go/blob/f71432d223eeb2139b460957817400750fd13655/src/internal/abi/escape.go#L24-L33\n")
+	fmt.Fprintf(w, "func mkcgoEscapePtr(p unsafe.Pointer) unsafe.Pointer {\n")
+	fmt.Fprintf(w, "\tif _mkcgoAlwaysFalse {\n")
+	fmt.Fprintf(w, "\t\t_mkcgoEscapeSink = p\n")
+	fmt.Fprintf(w, "\t}\n")
+	fmt.Fprintf(w, "\treturn p\n")
+	fmt.Fprintf(w, "}\n\n")
 
 	// Generate all type aliases
 	generateNocgoAliases(src.TypeDefs, w)

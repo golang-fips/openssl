@@ -11,6 +11,19 @@ import (
 
 var _ = runtime.GOOS
 
+var _mkcgoAlwaysFalse bool
+var _mkcgoEscapeSink unsafe.Pointer
+
+// mkcgoEscapePtr forces p to escape to the heap.
+// This implementation is also used in the standard library:
+// https://github.com/golang/go/blob/f71432d223eeb2139b460957817400750fd13655/src/internal/abi/escape.go#L24-L33
+func mkcgoEscapePtr(p unsafe.Pointer) unsafe.Pointer {
+	if _mkcgoAlwaysFalse {
+		_mkcgoEscapeSink = p
+	}
+	return p
+}
+
 //go:cgo_import_dynamic _mkcgo_dlclose dlclose ""
 //go:cgo_import_dynamic _mkcgo_dlerror dlerror ""
 //go:cgo_import_dynamic _mkcgo_dlopen dlopen ""
