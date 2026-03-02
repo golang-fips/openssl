@@ -11,15 +11,15 @@ import (
 
 var _ = runtime.GOOS
 
-var _mkcgoAlwaysFalse__mkcgoEscapePtr_dl bool
-var _mkcgoEscapeSink__mkcgoEscapePtr_dl unsafe.Pointer
+var _mkcgoAlwaysFalseDl bool
+var _mkcgoEscapeSinkDl unsafe.Pointer
 
-// _mkcgoEscapePtr_dl forces p to escape to the heap.
+// mkcgoEscapePtrDl forces p to escape to the heap.
 // This implementation is also used in the standard library:
 // https://github.com/golang/go/blob/f71432d223eeb2139b460957817400750fd13655/src/internal/abi/escape.go#L24-L33
-func _mkcgoEscapePtr_dl(p unsafe.Pointer) unsafe.Pointer {
-	if _mkcgoAlwaysFalse__mkcgoEscapePtr_dl {
-		_mkcgoEscapeSink__mkcgoEscapePtr_dl = p
+func mkcgoEscapePtrDl(p unsafe.Pointer) unsafe.Pointer {
+	if _mkcgoAlwaysFalseDl {
+		_mkcgoEscapeSinkDl = p
 	}
 	return p
 }
@@ -46,13 +46,13 @@ func Dlerror() *byte {
 var _mkcgo_dlopen_trampoline_addr uintptr
 
 func Dlopen(path *byte, flags int32) unsafe.Pointer {
-	r0, _ := syscallN(0, _mkcgo_dlopen_trampoline_addr, uintptr(_mkcgoEscapePtr_dl(unsafe.Pointer(path))), uintptr(flags))
+	r0, _ := syscallN(0, _mkcgo_dlopen_trampoline_addr, uintptr(mkcgoEscapePtrDl(unsafe.Pointer(path))), uintptr(flags))
 	return unsafe.Pointer(r0)
 }
 
 var _mkcgo_dlsym_trampoline_addr uintptr
 
 func Dlsym(handle unsafe.Pointer, symbol *byte) unsafe.Pointer {
-	r0, _ := syscallN(0, _mkcgo_dlsym_trampoline_addr, uintptr(handle), uintptr(_mkcgoEscapePtr_dl(unsafe.Pointer(symbol))))
+	r0, _ := syscallN(0, _mkcgo_dlsym_trampoline_addr, uintptr(handle), uintptr(mkcgoEscapePtrDl(unsafe.Pointer(symbol))))
 	return unsafe.Pointer(r0)
 }
