@@ -11,7 +11,7 @@ func goString(ptr *byte) string {
 	}
 	var result []byte
 	for i := 0; ; i++ {
-		b := *(*byte)(unsafe.Add(unsafe.Pointer(ptr), i))
+		b := *(*byte)(unsafe.Pointer(uintptr(unsafe.Pointer(ptr)) + uintptr(i)))
 		if b == 0 {
 			break
 		}

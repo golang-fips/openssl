@@ -403,20 +403,19 @@ func testSlice[S ~[]E, E comparable](t *testing.T, name string, got, want S) {
 	if reflect.DeepEqual(got, want) {
 		return
 	}
-	var str strings.Builder
-	str.WriteString(fmt.Sprintf("== %s ==\n", name))
+	str := fmt.Sprintf("== %s ==\n", name)
 	if len(got) != len(want) {
-		str.WriteString(fmt.Sprintf("len: got %d, want %d\n", len(got), len(want)))
+		str += fmt.Sprintf("len: got %d, want %d\n", len(got), len(want))
 	}
 	n := max(len(got), len(want))
 	for i := range n {
 		if i >= len(got) {
-			str.WriteString(fmt.Sprintf("[%d]:got nil, want {%v}\n", i, want[i]))
+			str += fmt.Sprintf("[%d]:got nil, want {%v}\n", i, want[i])
 		} else if i >= len(want) {
-			str.WriteString(fmt.Sprintf("[%d]:got {%v}, want nil\n", i, got[i]))
+			str += fmt.Sprintf("[%d]:got {%v}, want nil\n", i, got[i])
 		} else if !reflect.DeepEqual(got[i], want[i]) {
-			str.WriteString(fmt.Sprintf("[%d]:got {%v}, want {%v}\n", i, got[i], want[i]))
+			str += fmt.Sprintf("[%d]:got {%v}, want {%v}\n", i, got[i], want[i])
 		}
 	}
-	t.Error(str.String())
+	t.Error(str)
 }

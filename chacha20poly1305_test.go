@@ -94,7 +94,7 @@ func TestChaCha20Poly1305Random(t *testing.T) {
 	}
 	// Some random tests to verify Open(Seal) == Plaintext
 	f := func(t *testing.T, nonceSize int) {
-		for i := range 256 {
+		for i := 0; i < 256; i++ {
 			var nonce = make([]byte, nonceSize)
 			var key [32]byte
 

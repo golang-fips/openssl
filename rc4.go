@@ -6,14 +6,13 @@ import (
 	"runtime"
 
 	"github.com/golang-fips/openssl/v2/internal/ossl"
-	"github.com/golang-fips/openssl/v2/osslsetup"
 )
 
 // SupportsRC4 returns true if NewRC4Cipher is supported.
 func SupportsRC4() bool {
 	// True for stock OpenSSL 1 w/o FIPS.
 	// False for stock OpenSSL 3 unless the legacy provider is available.
-	return (versionAtOrAbove(3, 0, 0) || !osslsetup.FIPS()) && loadCipher(cipherRC4, cipherModeNone) != nil
+	return (versionAtOrAbove(3, 0, 0) || !FIPS()) && loadCipher(cipherRC4, cipherModeNone) != nil
 }
 
 // A RC4Cipher is an instance of RC4 using a particular key.

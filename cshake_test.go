@@ -143,10 +143,10 @@ func TestCSHAKEAccumulated(t *testing.T) {
 func testCSHAKEAccumulated(t *testing.T, newCSHAKE func(N, S []byte) *openssl.SHAKE, rate int64, exp string) {
 	rnd := newCSHAKE(nil, nil)
 	acc := newCSHAKE(nil, nil)
-	for n := range 200 {
+	for n := 0; n < 200; n++ {
 		N := make([]byte, n)
 		rnd.Read(N)
-		for s := range 200 {
+		for s := 0; s < 200; s++ {
 			S := make([]byte, s)
 			rnd.Read(S)
 
@@ -231,7 +231,7 @@ func benchmarkHash(b *testing.B, h hash.Hash, size, num int) {
 
 	var state []byte
 	for i := 0; i < b.N; i++ {
-		for range num {
+		for j := 0; j < num; j++ {
 			h.Write(data)
 		}
 		state = h.Sum(state[:0])
@@ -253,7 +253,7 @@ func benchmarkCSHAKE(b *testing.B, h *openssl.SHAKE, size, num int) {
 
 	for i := 0; i < b.N; i++ {
 		h.Reset()
-		for range num {
+		for j := 0; j < num; j++ {
 			h.Write(data)
 		}
 		h.Read(d)

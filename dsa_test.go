@@ -9,7 +9,6 @@ import (
 
 	"github.com/golang-fips/openssl/v2"
 	"github.com/golang-fips/openssl/v2/bbig"
-	"github.com/golang-fips/openssl/v2/osslsetup"
 )
 
 type dsaSignature struct {
@@ -31,7 +30,7 @@ func TestDSAGenerateParameters(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(fmt.Sprintf("%d-%d", test.L, test.N), func(t *testing.T) {
-			if osslsetup.FIPS() {
+			if openssl.FIPS() {
 				t.Skip("generating DSA parameters with L = 2048 is not supported in FIPS mode")
 			}
 			testGenerateParametersDSA(t, test.L, test.N)
@@ -138,7 +137,7 @@ func TestDSASignAndVerify(t *testing.T) {
 	if !openssl.SupportsDSA() {
 		t.Skip("DSA is not supported")
 	}
-	if osslsetup.FIPS() {
+	if openssl.FIPS() {
 		t.Skip("DSA signing with L = 2048 is not supported in FIPS mode")
 	}
 
