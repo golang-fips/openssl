@@ -759,14 +759,15 @@ func generateGoNocgo(src *mkcgo.Source, w io.Writer) {
 	// to avoid "imported and not used" error.
 	fmt.Fprintf(w, "var _ = runtime.GOOS\n\n")
 
-	// Generate escapePtr helper function for pointer escaping (only if flag is set)
-	if *genEscapePtr {
+	// Generate mkcgoEscapePtr helper function for pointer escaping
+	// (unless -noescapeptr flag is set, indicating another file provides it)
+	if !*noEscapePtr {
 		fmt.Fprintf(w, "var _mkcgoAlwaysFalse bool\n")
 		fmt.Fprintf(w, "var _mkcgoEscapeSink unsafe.Pointer\n\n")
-		fmt.Fprintf(w, "// escapePtr forces p to escape to the heap.\n")
+		fmt.Fprintf(w, "// mkcgoEscapePtr forces p to escape to the heap.\n")
 		fmt.Fprintf(w, "// This implementation is also used in the standard library:\n")
 		fmt.Fprintf(w, "// https://github.com/golang/go/blob/f71432d223eeb2139b460957817400750fd13655/src/internal/abi/escape.go#L24-L33\n")
-		fmt.Fprintf(w, "func escapePtr(p unsafe.Pointer) unsafe.Pointer {\n")
+		fmt.Fprintf(w, "func mkcgoEscapePtr(p unsafe.Pointer) unsafe.Pointer {\n")
 		fmt.Fprintf(w, "\tif _mkcgoAlwaysFalse {\n")
 		fmt.Fprintf(w, "\t\t_mkcgoEscapeSink = p\n")
 		fmt.Fprintf(w, "\t}\n")
@@ -1194,7 +1195,7 @@ func generateNocgoFnBody(src *mkcgo.Source, fn *mkcgo.Func, errorType int, newR0
 		if _, ok := fn.SliceFromPtr(param.Name); ok {
 			// Slice parameter - force escape if needed
 			if needEscape {
-				fmt.Fprintf(w, ", uintptr(escapePtr(unsafe.Pointer(unsafe.SliceData(%s))))", param.Name)
+				fmt.Fprintf(w, ", uintptr(mkcgoEscapePtr(unsafe.Pointer(unsafe.SliceData(%s))))", param.Name)
 			} else {
 				fmt.Fprintf(w, ", uintptr(unsafe.Pointer(unsafe.SliceData(%s)))", param.Name)
 			}
@@ -1203,7 +1204,7 @@ func generateNocgoFnBody(src *mkcgo.Source, fn *mkcgo.Func, errorType int, newR0
 		} else if strings.HasPrefix(goType, "*") {
 			// Pointer types need to go through unsafe.Pointer - force escape if needed
 			if needEscape {
-				fmt.Fprintf(w, ", uintptr(escapePtr(unsafe.Pointer(%s)))", param.Name)
+				fmt.Fprintf(w, ", uintptr(mkcgoEscapePtr(unsafe.Pointer(%s)))", param.Name)
 			} else {
 				fmt.Fprintf(w, ", uintptr(unsafe.Pointer(%s))", param.Name)
 			}

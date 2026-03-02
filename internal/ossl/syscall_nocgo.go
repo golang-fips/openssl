@@ -18,19 +18,6 @@ func noescape(p unsafe.Pointer) unsafe.Pointer {
 	return unsafe.Pointer(x ^ 0)
 }
 
-var alwaysFalse bool
-var escapeSink unsafe.Pointer
-
-// escapePtr forces p to escape to the heap.
-// This implementation is also used in the standard library:
-// https://github.com/golang/go/blob/f71432d223eeb2139b460957817400750fd13655/src/internal/abi/escape.go#L24-L33
-func escapePtr(p unsafe.Pointer) unsafe.Pointer {
-	if alwaysFalse {
-		escapeSink = p
-	}
-	return p
-}
-
 type libcCallInfo struct {
 	fn      uintptr
 	n       uintptr // number of parameters
