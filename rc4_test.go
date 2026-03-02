@@ -95,10 +95,7 @@ func TestRC4Golden(t *testing.T) {
 
 			off := 0
 			for off < len(g.keystream) {
-				n := len(g.keystream) - off
-				if n > size {
-					n = size
-				}
+				n := min(len(g.keystream)-off, size)
 				desc := fmt.Sprintf("#%d@[%d:%d]", gi, off, off+n)
 				src := data[off : off+n]
 				expect := expect[off : off+n]

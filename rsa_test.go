@@ -45,7 +45,6 @@ func TestRSAEncryptDecryptPKCS1(t *testing.T) {
 		t.Skip("RSA PKCS1 v1.5 encryption not supported")
 	}
 	for _, size := range []int{2048, 3072} {
-		size := size
 		t.Run(strconv.Itoa(size), func(t *testing.T) {
 			t.Parallel()
 			priv, pub := newRSAKey(t, size)
@@ -77,7 +76,6 @@ func TestRSAEncryptDecryptPKCS1_MissingPrecomputedValues(t *testing.T) {
 		{true, true, true},
 	}
 	for _, tt := range tt {
-		tt := tt
 		t.Run(fmt.Sprintf("dp=%v,dq=%v,qinv=%v", tt.withDp, tt.withDq, tt.withQinv), func(t *testing.T) {
 			t.Parallel()
 			dp1, dq1, qinv1 := dp, dq, qinv

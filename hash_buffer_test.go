@@ -289,10 +289,7 @@ func TestHashBufferingLargeData(t *testing.T) {
 	// Write in chunks that will cause multiple buffer flushes
 	chunkSize := 10
 	for i := 0; i < len(largeData); i += chunkSize {
-		end := i + chunkSize
-		if end > len(largeData) {
-			end = len(largeData)
-		}
+		end := min(i+chunkSize, len(largeData))
 		h.Write(largeData[i:end])
 	}
 

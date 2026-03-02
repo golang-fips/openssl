@@ -5,6 +5,7 @@ package openssl
 import (
 	"crypto/cipher"
 	"errors"
+	"github.com/golang-fips/openssl/v2/osslsetup"
 )
 
 // SupportsDESCipher returns true if NewDESCipher is supported,
@@ -14,7 +15,7 @@ import (
 func SupportsDESCipher() bool {
 	// True for stock OpenSSL 1 w/o FIPS.
 	// False for stock OpenSSL 3 unless the legacy provider is available.
-	return (versionAtOrAbove(3, 0, 0) || !FIPS()) && loadCipher(cipherDES, cipherModeECB) != nil
+	return (versionAtOrAbove(3, 0, 0) || !osslsetup.FIPS()) && loadCipher(cipherDES, cipherModeECB) != nil
 }
 
 // SupportsTripleDESCipher returns true if NewTripleDESCipher is supported,

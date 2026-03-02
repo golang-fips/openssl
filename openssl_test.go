@@ -87,7 +87,7 @@ func TestMain(m *testing.M) {
 // If not, it prints the error stacks and returns false.
 func testErrorStack() bool {
 	var wg sync.WaitGroup
-	var stack string
+	var stack strings.Builder
 	var mu sync.Mutex
 	for range runtime.GOMAXPROCS(0) {
 		wg.Add(1)
@@ -100,15 +100,15 @@ func testErrorStack() bool {
 			if ossl.ERR_peek_error() != 0 {
 				mu.Lock()
 				defer mu.Unlock()
-				stack += errorStack()
+				stack.WriteString(errorStack())
 			}
 		}()
 	}
 	wg.Wait()
-	if stack != "" {
-		fmt.Printf("OpenSSL error queue not empty at exit:\n%s", stack)
+	if stack.String() != "" {
+		fmt.Printf("OpenSSL error queue not empty at exit:\n%s", stack.String())
 	}
-	return stack == ""
+	return stack.String() == ""
 }
 
 func errorStack() string {
