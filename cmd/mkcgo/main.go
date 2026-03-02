@@ -24,6 +24,7 @@ var (
 	noerrors      = flag.Bool("noerrors", false, "disable error handling")
 	extratags     = flag.String("tags", "", "tags to add to the generated files")
 	copyrightFile = flag.String("copyright", "", "file containing copyright notice to add to the generated files")
+	genEscapePtr  = flag.Bool("escapeptr", false, "generate escapePtr helper function in nocgo mode")
 )
 
 var copyright []byte
