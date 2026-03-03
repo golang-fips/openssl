@@ -696,7 +696,7 @@ var _mkcgo_EVP_MAC_final uintptr
 
 func EVP_MAC_final(ctx EVP_MAC_CTX_PTR, out *byte, outl *int, outsize int) (int32, error) {
 	var _err uintptr
-	r0, _ := syscallN(3, _mkcgo_EVP_MAC_final, uintptr(ctx), uintptr(mkcgoEscapePtrOssl(unsafe.Pointer(out))), uintptr(mkcgoEscapePtrOssl(unsafe.Pointer(outl))), uintptr(outsize), uintptr(unsafe.Pointer(&_err)))
+	r0, _ := syscallN(3, _mkcgo_EVP_MAC_final, uintptr(ctx), uintptr(unsafe.Pointer(out)), uintptr(unsafe.Pointer(outl)), uintptr(outsize), uintptr(unsafe.Pointer(&_err)))
 	return int32(r0), newMkcgoErr("EVP_MAC_final", _err)
 }
 
@@ -704,7 +704,7 @@ var _mkcgo_EVP_MAC_init uintptr
 
 func EVP_MAC_init(ctx EVP_MAC_CTX_PTR, key *byte, keylen int, params OSSL_PARAM_PTR) (int32, error) {
 	var _err uintptr
-	r0, _ := syscallN(3, _mkcgo_EVP_MAC_init, uintptr(ctx), uintptr(mkcgoEscapePtrOssl(unsafe.Pointer(key))), uintptr(keylen), uintptr(params), uintptr(unsafe.Pointer(&_err)))
+	r0, _ := syscallN(3, _mkcgo_EVP_MAC_init, uintptr(ctx), uintptr(unsafe.Pointer(key)), uintptr(keylen), uintptr(params), uintptr(unsafe.Pointer(&_err)))
 	return int32(r0), newMkcgoErr("EVP_MAC_init", _err)
 }
 
@@ -712,7 +712,7 @@ var _mkcgo_EVP_MAC_update uintptr
 
 func EVP_MAC_update(ctx EVP_MAC_CTX_PTR, data *byte, datalen int) (int32, error) {
 	var _err uintptr
-	r0, _ := syscallN(3, _mkcgo_EVP_MAC_update, uintptr(ctx), uintptr(mkcgoEscapePtrOssl(unsafe.Pointer(data))), uintptr(datalen), uintptr(unsafe.Pointer(&_err)))
+	r0, _ := syscallN(3, _mkcgo_EVP_MAC_update, uintptr(ctx), uintptr(unsafe.Pointer(data)), uintptr(datalen), uintptr(unsafe.Pointer(&_err)))
 	return int32(r0), newMkcgoErr("EVP_MAC_update", _err)
 }
 
@@ -921,20 +921,20 @@ func EVP_PKEY_Q_keygen_EC(ctx OSSL_LIB_CTX_PTR, propq *byte, __type *byte, arg1 
 	if runtime.GOOS == "darwin" && runtime.GOARCH == "arm64" {
 		r0, _ = syscallN(1, _mkcgo_EVP_PKEY_Q_keygen, uintptr(ctx), uintptr(unsafe.Pointer(propq)), uintptr(unsafe.Pointer(__type)), 0, 0, 0, 0, 0, uintptr(unsafe.Pointer(arg1)), uintptr(unsafe.Pointer(&_err)))
 	} else {
-		r0, _ = syscallN(1, _mkcgo_EVP_PKEY_Q_keygen, uintptr(ctx), uintptr(mkcgoEscapePtrOssl(unsafe.Pointer(propq))), uintptr(mkcgoEscapePtrOssl(unsafe.Pointer(__type))), uintptr(mkcgoEscapePtrOssl(unsafe.Pointer(arg1))), uintptr(unsafe.Pointer(&_err)))
+		r0, _ = syscallN(1, _mkcgo_EVP_PKEY_Q_keygen, uintptr(ctx), uintptr(unsafe.Pointer(propq)), uintptr(unsafe.Pointer(__type)), uintptr(unsafe.Pointer(arg1)), uintptr(unsafe.Pointer(&_err)))
 	}
 	return EVP_PKEY_PTR(r0), newMkcgoErr("EVP_PKEY_Q_keygen_EC", _err)
 }
 
 func EVP_PKEY_Q_keygen_ED25519(ctx OSSL_LIB_CTX_PTR, propq *byte, __type *byte) (EVP_PKEY_PTR, error) {
 	var _err uintptr
-	r0, _ := syscallN(1, _mkcgo_EVP_PKEY_Q_keygen, uintptr(ctx), uintptr(mkcgoEscapePtrOssl(unsafe.Pointer(propq))), uintptr(mkcgoEscapePtrOssl(unsafe.Pointer(__type))), uintptr(unsafe.Pointer(&_err)))
+	r0, _ := syscallN(1, _mkcgo_EVP_PKEY_Q_keygen, uintptr(ctx), uintptr(unsafe.Pointer(propq)), uintptr(unsafe.Pointer(__type)), uintptr(unsafe.Pointer(&_err)))
 	return EVP_PKEY_PTR(r0), newMkcgoErr("EVP_PKEY_Q_keygen_ED25519", _err)
 }
 
 func EVP_PKEY_Q_keygen_MLKEM(ctx OSSL_LIB_CTX_PTR, propq *byte, __type *byte) (EVP_PKEY_PTR, error) {
 	var _err uintptr
-	r0, _ := syscallN(1, _mkcgo_EVP_PKEY_Q_keygen, uintptr(ctx), uintptr(mkcgoEscapePtrOssl(unsafe.Pointer(propq))), uintptr(mkcgoEscapePtrOssl(unsafe.Pointer(__type))), uintptr(unsafe.Pointer(&_err)))
+	r0, _ := syscallN(1, _mkcgo_EVP_PKEY_Q_keygen, uintptr(ctx), uintptr(unsafe.Pointer(propq)), uintptr(unsafe.Pointer(__type)), uintptr(unsafe.Pointer(&_err)))
 	return EVP_PKEY_PTR(r0), newMkcgoErr("EVP_PKEY_Q_keygen_MLKEM", _err)
 }
 
@@ -944,14 +944,14 @@ func EVP_PKEY_Q_keygen_RSA(ctx OSSL_LIB_CTX_PTR, propq *byte, __type *byte, arg1
 	if runtime.GOOS == "darwin" && runtime.GOARCH == "arm64" {
 		r0, _ = syscallN(1, _mkcgo_EVP_PKEY_Q_keygen, uintptr(ctx), uintptr(unsafe.Pointer(propq)), uintptr(unsafe.Pointer(__type)), 0, 0, 0, 0, 0, uintptr(arg1), uintptr(unsafe.Pointer(&_err)))
 	} else {
-		r0, _ = syscallN(1, _mkcgo_EVP_PKEY_Q_keygen, uintptr(ctx), uintptr(mkcgoEscapePtrOssl(unsafe.Pointer(propq))), uintptr(mkcgoEscapePtrOssl(unsafe.Pointer(__type))), uintptr(arg1), uintptr(unsafe.Pointer(&_err)))
+		r0, _ = syscallN(1, _mkcgo_EVP_PKEY_Q_keygen, uintptr(ctx), uintptr(unsafe.Pointer(propq)), uintptr(unsafe.Pointer(__type)), uintptr(arg1), uintptr(unsafe.Pointer(&_err)))
 	}
 	return EVP_PKEY_PTR(r0), newMkcgoErr("EVP_PKEY_Q_keygen_RSA", _err)
 }
 
 func EVP_PKEY_Q_keygen_X25519(ctx OSSL_LIB_CTX_PTR, propq *byte, __type *byte) (EVP_PKEY_PTR, error) {
 	var _err uintptr
-	r0, _ := syscallN(1, _mkcgo_EVP_PKEY_Q_keygen, uintptr(ctx), uintptr(mkcgoEscapePtrOssl(unsafe.Pointer(propq))), uintptr(mkcgoEscapePtrOssl(unsafe.Pointer(__type))), uintptr(unsafe.Pointer(&_err)))
+	r0, _ := syscallN(1, _mkcgo_EVP_PKEY_Q_keygen, uintptr(ctx), uintptr(unsafe.Pointer(propq)), uintptr(unsafe.Pointer(__type)), uintptr(unsafe.Pointer(&_err)))
 	return EVP_PKEY_PTR(r0), newMkcgoErr("EVP_PKEY_Q_keygen_X25519", _err)
 }
 
@@ -1586,7 +1586,7 @@ var _mkcgo_HMAC_Final uintptr
 
 func HMAC_Final(arg0 HMAC_CTX_PTR, arg1 *byte, arg2 *uint32) (int32, error) {
 	var _err uintptr
-	r0, _ := syscallN(3, _mkcgo_HMAC_Final, uintptr(arg0), uintptr(mkcgoEscapePtrOssl(unsafe.Pointer(arg1))), uintptr(mkcgoEscapePtrOssl(unsafe.Pointer(arg2))), uintptr(unsafe.Pointer(&_err)))
+	r0, _ := syscallN(3, _mkcgo_HMAC_Final, uintptr(arg0), uintptr(unsafe.Pointer(arg1)), uintptr(unsafe.Pointer(arg2)), uintptr(unsafe.Pointer(&_err)))
 	return int32(r0), newMkcgoErr("HMAC_Final", _err)
 }
 
@@ -1602,7 +1602,7 @@ var _mkcgo_HMAC_Update uintptr
 
 func HMAC_Update(arg0 HMAC_CTX_PTR, arg1 *byte, arg2 int) (int32, error) {
 	var _err uintptr
-	r0, _ := syscallN(3, _mkcgo_HMAC_Update, uintptr(arg0), uintptr(mkcgoEscapePtrOssl(unsafe.Pointer(arg1))), uintptr(arg2), uintptr(unsafe.Pointer(&_err)))
+	r0, _ := syscallN(3, _mkcgo_HMAC_Update, uintptr(arg0), uintptr(unsafe.Pointer(arg1)), uintptr(arg2), uintptr(unsafe.Pointer(&_err)))
 	return int32(r0), newMkcgoErr("HMAC_Update", _err)
 }
 
