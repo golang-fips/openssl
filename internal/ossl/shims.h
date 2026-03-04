@@ -291,7 +291,7 @@ _EC_KEY_PTR EVP_PKEY_get0_EC_KEY(_EVP_PKEY_PTR pkey) __attribute__((tag("legacy_
 _DSA_PTR EVP_PKEY_get0_DSA(_EVP_PKEY_PTR pkey) __attribute__((tag("legacy_1")));
 int EVP_PKEY_set1_encoded_public_key(_EVP_PKEY_PTR pkey, const unsigned char *pub, size_t publen) __attribute__((tag("3")));
 size_t EVP_PKEY_get1_encoded_public_key(_EVP_PKEY_PTR pkey, unsigned char **ppub) __attribute__((tag("3")));
-int EVP_PKEY_get_bn_param(const _EVP_PKEY_PTR pkey, const char *key_name, _BIGNUM_PTR *bn) __attribute__((tag("3")));
+int EVP_PKEY_get_bn_param(const _EVP_PKEY_PTR pkey, const char *key_name, _BIGNUM_PTR *bn) __attribute__((tag("3"),noescape,nocallback));
 int EVP_PKEY_get_octet_string_param(const _EVP_PKEY_PTR pkey, const char *key_name, unsigned char *buf, size_t buf_len, size_t *out_len) __attribute__((tag("3")));
 int EVP_PKEY_up_ref(_EVP_PKEY_PTR key);
 int EVP_PKEY_set1_EC_KEY(_EVP_PKEY_PTR pkey, _EC_KEY_PTR key) __attribute__((tag("legacy_1")));
@@ -303,7 +303,7 @@ int EVP_PKEY_fromdata(_EVP_PKEY_CTX_PTR ctx, _EVP_PKEY_PTR *pkey, int selection,
 int EVP_PKEY_paramgen_init(_EVP_PKEY_CTX_PTR ctx);
 int EVP_PKEY_paramgen(_EVP_PKEY_CTX_PTR ctx, _EVP_PKEY_PTR *ppkey);
 int EVP_PKEY_keygen_init(_EVP_PKEY_CTX_PTR ctx);
-int EVP_PKEY_keygen(_EVP_PKEY_CTX_PTR ctx, _EVP_PKEY_PTR *ppkey);
+int EVP_PKEY_keygen(_EVP_PKEY_CTX_PTR ctx, _EVP_PKEY_PTR *ppkey) __attribute__((noescape,nocallback));
 int EVP_PKEY_decrypt(_EVP_PKEY_CTX_PTR arg0, unsigned char *arg1, size_t *arg2, const unsigned char *arg3, size_t arg4);
 int EVP_PKEY_encrypt(_EVP_PKEY_CTX_PTR arg0, unsigned char *arg1, size_t *arg2, const unsigned char *arg3, size_t arg4);
 int EVP_PKEY_decrypt_init(_EVP_PKEY_CTX_PTR arg0);

@@ -57,10 +57,14 @@ package ossl
 #cgo nocallback _mkcgo_EVP_PKEY_Q_keygen_X25519
 #cgo noescape _mkcgo_EVP_PKEY_derive
 #cgo nocallback _mkcgo_EVP_PKEY_derive
+#cgo noescape _mkcgo_EVP_PKEY_get_bn_param
+#cgo nocallback _mkcgo_EVP_PKEY_get_bn_param
 #cgo noescape _mkcgo_EVP_PKEY_get_raw_private_key
 #cgo nocallback _mkcgo_EVP_PKEY_get_raw_private_key
 #cgo noescape _mkcgo_EVP_PKEY_get_raw_public_key
 #cgo nocallback _mkcgo_EVP_PKEY_get_raw_public_key
+#cgo noescape _mkcgo_EVP_PKEY_keygen
+#cgo nocallback _mkcgo_EVP_PKEY_keygen
 #cgo noescape _mkcgo_HMAC_CTX_copy
 #cgo nocallback _mkcgo_HMAC_CTX_copy
 #cgo noescape _mkcgo_HMAC_CTX_free

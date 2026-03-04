@@ -1117,7 +1117,7 @@ var _mkcgo_EVP_PKEY_get_bn_param uintptr
 
 func EVP_PKEY_get_bn_param(pkey EVP_PKEY_PTR, key_name *byte, bn *BIGNUM_PTR) (int32, error) {
 	var _err uintptr
-	r0, _ := syscallN(3, _mkcgo_EVP_PKEY_get_bn_param, uintptr(pkey), uintptr(mkcgoEscapePtrOssl(unsafe.Pointer(key_name))), uintptr(mkcgoEscapePtrOssl(unsafe.Pointer(bn))), uintptr(unsafe.Pointer(&_err)))
+	r0, _ := syscallN(3, _mkcgo_EVP_PKEY_get_bn_param, uintptr(pkey), uintptr(unsafe.Pointer(key_name)), uintptr(unsafe.Pointer(bn)), uintptr(unsafe.Pointer(&_err)))
 	return int32(r0), newMkcgoErr("EVP_PKEY_get_bn_param", _err)
 }
 
@@ -1157,7 +1157,7 @@ var _mkcgo_EVP_PKEY_keygen uintptr
 
 func EVP_PKEY_keygen(ctx EVP_PKEY_CTX_PTR, ppkey *EVP_PKEY_PTR) (int32, error) {
 	var _err uintptr
-	r0, _ := syscallN(3, _mkcgo_EVP_PKEY_keygen, uintptr(ctx), uintptr(mkcgoEscapePtrOssl(unsafe.Pointer(ppkey))), uintptr(unsafe.Pointer(&_err)))
+	r0, _ := syscallN(3, _mkcgo_EVP_PKEY_keygen, uintptr(ctx), uintptr(unsafe.Pointer(ppkey)), uintptr(unsafe.Pointer(&_err)))
 	return int32(r0), newMkcgoErr("EVP_PKEY_keygen", _err)
 }
 
