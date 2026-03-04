@@ -101,14 +101,12 @@ func main() {
 			outFiles = append(outFiles, outFile{".s", assemblyBuffer.Bytes()})
 		}
 	} else {
-		var gobuf, go124buf, hbuf, cbuf bytes.Buffer
+		var gobuf, hbuf, cbuf bytes.Buffer
 		generateGoCgo(&src, &gobuf)
-		generateGo124(&src, &go124buf)
 		generateCHeader(&src, &hbuf)
 		generateC(&src, &cbuf)
 
 		outFiles = append(outFiles, outFile{"_cgo.go", gobuf.Bytes()})
-		outFiles = append(outFiles, outFile{"_cgo_go124.go", go124buf.Bytes()})
 		outFiles = append(outFiles, outFile{".h", hbuf.Bytes()})
 		outFiles = append(outFiles, outFile{".c", cbuf.Bytes()})
 	}
