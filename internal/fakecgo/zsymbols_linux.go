@@ -16,7 +16,6 @@ import "unsafe"
 //go:cgo_import_dynamic purego_sigfillset sigfillset "libc.so.6"
 //go:cgo_import_dynamic purego_nanosleep nanosleep "libc.so.6"
 //go:cgo_import_dynamic purego_abort abort "libc.so.6"
-//go:cgo_import_dynamic purego_sigaltstack sigaltstack "libc.so.6"
 //go:cgo_import_dynamic purego___errno_location __errno_location "libc.so.6"
 //go:cgo_import_dynamic purego_setegid setegid "libc.so.6"
 //go:cgo_import_dynamic purego_seteuid seteuid "libc.so.6"
@@ -37,26 +36,6 @@ import "unsafe"
 //go:cgo_import_dynamic purego_pthread_setspecific pthread_setspecific "libpthread.so.0"
 //go:cgo_import_dynamic purego_pthread_attr_getstacksize pthread_attr_getstacksize "libpthread.so.0"
 //go:cgo_import_dynamic purego_pthread_attr_destroy pthread_attr_destroy "libpthread.so.0"
-
-//go:nosplit
-//go:norace
-func pthread_attr_getstacksize(attr *pthread_attr_t, stacksize *size_t) int32 {
-	return int32(call5(pthread_attr_getstacksizeABI0, uintptr(unsafe.Pointer(attr)), uintptr(unsafe.Pointer(stacksize)), 0, 0, 0))
-}
-
-//go:nosplit
-//go:norace
-func pthread_attr_destroy(attr *pthread_attr_t) int32 {
-	return int32(call5(pthread_attr_destroyABI0, uintptr(unsafe.Pointer(attr)), 0, 0, 0, 0))
-}
-
-//go:linkname _pthread_attr_getstacksize _pthread_attr_getstacksize
-var _pthread_attr_getstacksize uint8
-var pthread_attr_getstacksizeABI0 = uintptr(unsafe.Pointer(&_pthread_attr_getstacksize))
-
-//go:linkname _pthread_attr_destroy _pthread_attr_destroy
-var _pthread_attr_destroy uint8
-var pthread_attr_destroyABI0 = uintptr(unsafe.Pointer(&_pthread_attr_destroy))
 
 //go:nosplit
 //go:norace
@@ -118,6 +97,18 @@ func setgroups(ngid uint32, gidset *uint32) int32 {
 	return int32(call5(setgroupsABI0, uintptr(ngid), uintptr(unsafe.Pointer(gidset)), 0, 0, 0))
 }
 
+//go:nosplit
+//go:norace
+func pthread_attr_getstacksize(attr *pthread_attr_t, stacksize *size_t) int32 {
+	return int32(call5(pthread_attr_getstacksizeABI0, uintptr(unsafe.Pointer(attr)), uintptr(unsafe.Pointer(stacksize)), 0, 0, 0))
+}
+
+//go:nosplit
+//go:norace
+func pthread_attr_destroy(attr *pthread_attr_t) int32 {
+	return int32(call5(pthread_attr_destroyABI0, uintptr(unsafe.Pointer(attr)), 0, 0, 0, 0))
+}
+
 //go:linkname ___errno_location ___errno_location
 var ___errno_location uint8
 var __errno_locationABI0 = uintptr(unsafe.Pointer(&___errno_location))
@@ -158,137 +149,10 @@ var setuidABI0 = uintptr(unsafe.Pointer(&_setuid))
 var _setgroups uint8
 var setgroupsABI0 = uintptr(unsafe.Pointer(&_setgroups))
 
-//go:linkname _cgo_purego_setegid_trampoline _cgo_purego_setegid_trampoline
-var _cgo_purego_setegid_trampoline byte
-var x_cgo_purego_setegid_call = x_cgo_purego_setegid
+//go:linkname _pthread_attr_getstacksize _pthread_attr_getstacksize
+var _pthread_attr_getstacksize uint8
+var pthread_attr_getstacksizeABI0 = uintptr(unsafe.Pointer(&_pthread_attr_getstacksize))
 
-//go:nosplit
-//go:norace
-func x_cgo_purego_setegid(c *argset) {
-	ret := setegid(uint32(uintptr(c.arg(0))))
-	if ret == -1 {
-		c.retval = uintptr(errno())
-	} else {
-		c.retval = uintptr(ret)
-	}
-}
-
-//go:linkname _cgo_purego_seteuid_trampoline _cgo_purego_seteuid_trampoline
-var _cgo_purego_seteuid_trampoline byte
-var x_cgo_purego_seteuid_call = x_cgo_purego_seteuid
-
-//go:nosplit
-//go:norace
-func x_cgo_purego_seteuid(c *argset) {
-	ret := seteuid(uint32(uintptr(c.arg(0))))
-	if ret == -1 {
-		c.retval = uintptr(errno())
-	} else {
-		c.retval = uintptr(ret)
-	}
-}
-
-//go:linkname _cgo_purego_setgid_trampoline _cgo_purego_setgid_trampoline
-var _cgo_purego_setgid_trampoline byte
-var x_cgo_purego_setgid_call = x_cgo_purego_setgid
-
-//go:nosplit
-//go:norace
-func x_cgo_purego_setgid(c *argset) {
-	ret := setgid(uint32(uintptr(c.arg(0))))
-	if ret == -1 {
-		c.retval = uintptr(errno())
-	} else {
-		c.retval = uintptr(ret)
-	}
-}
-
-//go:linkname _cgo_purego_setregid_trampoline _cgo_purego_setregid_trampoline
-var _cgo_purego_setregid_trampoline byte
-var x_cgo_purego_setregid_call = x_cgo_purego_setregid
-
-//go:nosplit
-//go:norace
-func x_cgo_purego_setregid(c *argset) {
-	ret := setregid(uint32(uintptr(c.arg(0))), uint32(uintptr(c.arg(1))))
-	if ret == -1 {
-		c.retval = uintptr(errno())
-	} else {
-		c.retval = uintptr(ret)
-	}
-}
-
-//go:linkname _cgo_purego_setresgid_trampoline _cgo_purego_setresgid_trampoline
-var _cgo_purego_setresgid_trampoline byte
-var x_cgo_purego_setresgid_call = x_cgo_purego_setresgid
-
-//go:nosplit
-//go:norace
-func x_cgo_purego_setresgid(c *argset) {
-	ret := setresgid(uint32(uintptr(c.arg(0))), uint32(uintptr(c.arg(1))), uint32(uintptr(c.arg(2))))
-	if ret == -1 {
-		c.retval = uintptr(errno())
-	} else {
-		c.retval = uintptr(ret)
-	}
-}
-
-//go:linkname _cgo_purego_setresuid_trampoline _cgo_purego_setresuid_trampoline
-var _cgo_purego_setresuid_trampoline byte
-var x_cgo_purego_setresuid_call = x_cgo_purego_setresuid
-
-//go:nosplit
-//go:norace
-func x_cgo_purego_setresuid(c *argset) {
-	ret := setresuid(uint32(uintptr(c.arg(0))), uint32(uintptr(c.arg(1))), uint32(uintptr(c.arg(2))))
-	if ret == -1 {
-		c.retval = uintptr(errno())
-	} else {
-		c.retval = uintptr(ret)
-	}
-}
-
-//go:linkname _cgo_purego_setreuid_trampoline _cgo_purego_setreuid_trampoline
-var _cgo_purego_setreuid_trampoline byte
-var x_cgo_purego_setreuid_call = x_cgo_purego_setreuid
-
-//go:nosplit
-//go:norace
-func x_cgo_purego_setreuid(c *argset) {
-	ret := setreuid(uint32(uintptr(c.arg(0))), uint32(uintptr(c.arg(1))))
-	if ret == -1 {
-		c.retval = uintptr(errno())
-	} else {
-		c.retval = uintptr(ret)
-	}
-}
-
-//go:linkname _cgo_purego_setuid_trampoline _cgo_purego_setuid_trampoline
-var _cgo_purego_setuid_trampoline byte
-var x_cgo_purego_setuid_call = x_cgo_purego_setuid
-
-//go:nosplit
-//go:norace
-func x_cgo_purego_setuid(c *argset) {
-	ret := setuid(uint32(uintptr(c.arg(0))))
-	if ret == -1 {
-		c.retval = uintptr(errno())
-	} else {
-		c.retval = uintptr(ret)
-	}
-}
-
-//go:linkname _cgo_purego_setgroups_trampoline _cgo_purego_setgroups_trampoline
-var _cgo_purego_setgroups_trampoline byte
-var x_cgo_purego_setgroups_call = x_cgo_purego_setgroups
-
-//go:nosplit
-//go:norace
-func x_cgo_purego_setgroups(c *argset) {
-	ret := setgroups(uint32(uintptr(c.arg(0))), (*uint32)(c.arg(1)))
-	if ret == -1 {
-		c.retval = uintptr(errno())
-	} else {
-		c.retval = uintptr(ret)
-	}
-}
+//go:linkname _pthread_attr_destroy _pthread_attr_destroy
+var _pthread_attr_destroy uint8
+var pthread_attr_destroyABI0 = uintptr(unsafe.Pointer(&_pthread_attr_destroy))
