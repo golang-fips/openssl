@@ -117,6 +117,14 @@ func SetFIPS(enable bool) error {
 	return osslsetup.SetFIPS(enable)
 }
 
+// sliceNeverEmpty returns b if non-nil, and a non-nil zero-length slice otherwise.
+func sliceNeverEmpty(b []byte) []byte {
+	if b == nil {
+		return []byte{}
+	}
+	return b
+}
+
 // base returns the address of the underlying array in b,
 // being careful not to panic when b has zero length.
 func base(b []byte) *byte {
