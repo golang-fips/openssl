@@ -46,7 +46,7 @@ func PBKDF2(password, salt []byte, iter, keyLen int, fh func() hash.Hash) ([]byt
 		return nil, errors.New("unsupported hash function")
 	}
 	out := make([]byte, keyLen)
-	_, err = ossl.PKCS5_PBKDF2_HMAC(base(password), int32(len(password)), base(salt), int32(len(salt)), int32(iter), md, int32(keyLen), base(out))
+	_, err = ossl.PKCS5_PBKDF2_HMAC(password, salt, int32(iter), md, out)
 	if err != nil {
 		return nil, err
 	}

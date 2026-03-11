@@ -384,7 +384,7 @@ var SupportsRSAPKCS1v15Encryption = sync.OnceValue(func() bool {
 	// So we need to try to encrypt something to be sure.
 	in := []byte("test")
 	var outLen int
-	if _, err := ossl.EVP_PKEY_encrypt(ctx, nil, &outLen, &in[0], len(in)); err != nil {
+	if _, err := ossl.EVP_PKEY_encrypt(ctx, nil, &outLen, in); err != nil {
 		return false
 	}
 	return true
@@ -422,7 +422,7 @@ func SupportsRSAPKCS1v15Signature(ch crypto.Hash) (supported bool) {
 	}
 	in := make([]byte, size, maxHashSize)
 	var outLen int
-	if _, err := ossl.EVP_PKEY_sign(ctx, nil, &outLen, &in[0], len(in)); err != nil {
+	if _, err := ossl.EVP_PKEY_sign(ctx, nil, &outLen, in); err != nil {
 		return false
 	}
 	return true
@@ -461,7 +461,7 @@ func SupportsRSAPSS(ch crypto.Hash) (supported bool) {
 	// So we need to try to sign something to be sure.
 	in := make([]byte, ch.Size(), maxHashSize)
 	var outLen int
-	if _, err := ossl.EVP_PKEY_sign(ctx, nil, &outLen, &in[0], len(in)); err != nil {
+	if _, err := ossl.EVP_PKEY_sign(ctx, nil, &outLen, in); err != nil {
 		return false
 	}
 	return true
@@ -518,7 +518,7 @@ func SupportsRSAOAEP(h, mgfHash hash.Hash) (supported bool) {
 	// So we need to try to encrypt something to be sure.
 	in := []byte("test")
 	var outLen int
-	if _, err := ossl.EVP_PKEY_encrypt(ctx, nil, &outLen, &in[0], len(in)); err != nil {
+	if _, err := ossl.EVP_PKEY_encrypt(ctx, nil, &outLen, in); err != nil {
 		return false
 	}
 	return true
@@ -687,7 +687,7 @@ var testRSAPrivateKey = sync.OnceValue(func() ossl.EVP_PKEY_PTR {
 
 	// Convert []byte to BigInt using BN_bin2bn and bnToBig
 	bytesToBigInt := func(b []byte) BigInt {
-		bn, err := ossl.BN_bin2bn(base(b), int32(len(b)), nil)
+		bn, err := ossl.BN_bin2bn(b, nil)
 		if err != nil {
 			panic(err)
 		}

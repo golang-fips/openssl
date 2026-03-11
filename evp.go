@@ -273,8 +273,8 @@ func generateEVPPKey(id, bits int32, curve string) (ossl.EVP_PKEY_PTR, error) {
 
 type withKeyFunc func(func(ossl.EVP_PKEY_PTR) error) error
 type initFunc func(ossl.EVP_PKEY_CTX_PTR) error
-type cryptFunc func(ossl.EVP_PKEY_CTX_PTR, *byte, *int, *byte, int) error
-type verifyFunc func(ossl.EVP_PKEY_CTX_PTR, *byte, int, *byte, int) error
+type cryptFunc func(ossl.EVP_PKEY_CTX_PTR, []byte, *int, []byte) error
+type verifyFunc func(ossl.EVP_PKEY_CTX_PTR, []byte, []byte) error
 
 func setupEVP(withKey withKeyFunc, padding int32,
 	h, mgfHash hash.Hash, label []byte, saltLen int32, ch crypto.Hash,
@@ -390,7 +390,7 @@ func setOAEPPadding(ctx ossl.EVP_PKEY_CTX_PTR, h, mgfHash hash.Hash, label []byt
 		copy((*[1 << 30]byte)(unsafe.Pointer(clabel))[:len(label)], label)
 		var err error
 		if major() == 3 {
-			_, err = ossl.EVP_PKEY_CTX_set0_rsa_oaep_label(ctx, unsafe.Pointer(clabel), int32(len(label)))
+			_, err = ossl.EVP_PKEY_CTX_set0_rsa_oaep_label(ctx, unsafe.Slice(clabel, len(label)))
 		} else {
 			_, err = ossl.EVP_PKEY_CTX_ctrl(ctx, ossl.EVP_PKEY_RSA, -1, ossl.EVP_PKEY_CTRL_RSA_OAEP_LABEL, int32(len(label)), unsafe.Pointer(clabel))
 		}
@@ -420,7 +420,7 @@ func cryptEVP(withKey withKeyFunc, padding int32,
 	}
 	outLen := int(pkeySize)
 	out := make([]byte, pkeySize)
-	if err := crypt(ctx, base(out), &outLen, base(in), len(in)); err != nil {
+	if err := crypt(ctx, out, &outLen, in); err != nil {
 		return nil, err
 	}
 	// The size returned by EVP_PKEY_get_size() is only preliminary and not exact,
@@ -438,7 +438,7 @@ func verifyEVP(withKey withKeyFunc, padding int32,
 		return err
 	}
 	defer ossl.EVP_PKEY_CTX_free(ctx)
-	return verify(ctx, base(sig), len(sig), base(in), len(in))
+	return verify(ctx, sig, in)
 }
 
 func evpEncrypt(withKey withKeyFunc, padding int32, h, mgfHash hash.Hash, label, msg []byte) ([]byte, error) {
@@ -446,8 +446,8 @@ func evpEncrypt(withKey withKeyFunc, padding int32, h, mgfHash hash.Hash, label,
 		_, err := ossl.EVP_PKEY_encrypt_init(ctx)
 		return err
 	}
-	encrypt := func(ctx ossl.EVP_PKEY_CTX_PTR, out *byte, outLen *int, in *byte, inLen int) error {
-		if _, err := ossl.EVP_PKEY_encrypt(ctx, out, outLen, in, inLen); err != nil {
+	encrypt := func(ctx ossl.EVP_PKEY_CTX_PTR, out []byte, outLen *int, in []byte) error {
+		if _, err := ossl.EVP_PKEY_encrypt(ctx, out, outLen, in); err != nil {
 			return err
 		}
 		return nil
@@ -460,8 +460,8 @@ func evpDecrypt(withKey withKeyFunc, padding int32, h, mgfHash hash.Hash, label,
 		_, err := ossl.EVP_PKEY_decrypt_init(ctx)
 		return err
 	}
-	decrypt := func(ctx ossl.EVP_PKEY_CTX_PTR, out *byte, outLen *int, in *byte, inLen int) error {
-		_, err := ossl.EVP_PKEY_decrypt(ctx, out, outLen, in, inLen)
+	decrypt := func(ctx ossl.EVP_PKEY_CTX_PTR, out []byte, outLen *int, in []byte) error {
+		_, err := ossl.EVP_PKEY_decrypt(ctx, out, outLen, in)
 		return err
 	}
 	return cryptEVP(withKey, padding, h, mgfHash, label, 0, 0, decryptInit, decrypt, msg)
@@ -472,8 +472,8 @@ func evpSign(withKey withKeyFunc, padding int32, saltLen int32, h crypto.Hash, h
 		_, err := ossl.EVP_PKEY_sign_init(ctx)
 		return err
 	}
-	sign := func(ctx ossl.EVP_PKEY_CTX_PTR, out *byte, outLen *int, in *byte, inLen int) error {
-		_, err := ossl.EVP_PKEY_sign(ctx, out, outLen, in, inLen)
+	sign := func(ctx ossl.EVP_PKEY_CTX_PTR, out []byte, outLen *int, in []byte) error {
+		_, err := ossl.EVP_PKEY_sign(ctx, out, outLen, in)
 		return err
 	}
 	return cryptEVP(withKey, padding, nil, nil, nil, saltLen, h, signtInit, sign, hashed)
@@ -484,8 +484,8 @@ func evpVerify(withKey withKeyFunc, padding int32, saltLen int32, h crypto.Hash,
 		_, err := ossl.EVP_PKEY_verify_init(ctx)
 		return err
 	}
-	verify := func(ctx ossl.EVP_PKEY_CTX_PTR, out *byte, outLen int, in *byte, inLen int) error {
-		_, err := ossl.EVP_PKEY_verify(ctx, out, outLen, in, inLen)
+	verify := func(ctx ossl.EVP_PKEY_CTX_PTR, sig []byte, in []byte) error {
+		_, err := ossl.EVP_PKEY_verify(ctx, sig, in)
 		return err
 	}
 	return verifyEVP(withKey, padding, nil, nil, saltLen, h, verifyInit, verify, sig, hashed)
@@ -547,7 +547,7 @@ func evpHashVerify(withKey withKeyFunc, h crypto.Hash, msg, sig []byte) error {
 			return err
 		}
 	}
-	if _, err := ossl.EVP_DigestVerifyFinal(ctx, base(sig), len(sig)); err != nil {
+	if _, err := ossl.EVP_DigestVerifyFinal(ctx, sig); err != nil {
 		return err
 	}
 	return nil

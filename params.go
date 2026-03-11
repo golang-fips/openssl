@@ -4,6 +4,7 @@ package openssl
 
 import (
 	"runtime"
+	"unsafe"
 
 	"github.com/golang-fips/openssl/v2/internal/ossl"
 )
@@ -102,7 +103,10 @@ func (b *paramBuilder) addUTF8String(name cString, value *byte, size int) {
 		return
 	}
 	// OSSL_PARAM_BLD_push_utf8_string calculates the size if it is zero.
-	if _, err := ossl.OSSL_PARAM_BLD_push_utf8_string(b.bld, name.ptr(), value, size); err != nil {
+	if size == 0 {
+		size = cStringLen(value)
+	}
+	if _, err := ossl.OSSL_PARAM_BLD_push_utf8_string(b.bld, name.ptr(), unsafe.Slice(value, size)); err != nil {
 		b.err = addParamError{name.str(), err}
 	}
 }
@@ -116,8 +120,19 @@ func (b *paramBuilder) addOctetString(name cString, value []byte) {
 	if len(value) != 0 {
 		b.pinner.Pin(&value[0])
 	}
-	if _, err := ossl.OSSL_PARAM_BLD_push_octet_string(b.bld, name.ptr(), pbase(value), len(value)); err != nil {
+	if _, err := ossl.OSSL_PARAM_BLD_push_octet_string(b.bld, name.ptr(), value); err != nil {
 		b.err = addParamError{name.str(), err}
+	}
+}
+
+func cStringLen(ptr *byte) int {
+	if ptr == nil {
+		return 0
+	}
+	for n := 0; ; n++ {
+		if *(*byte)(unsafe.Pointer(uintptr(unsafe.Pointer(ptr)) + uintptr(n))) == 0 {
+			return n
+		}
 	}
 }
 
@@ -153,7 +168,7 @@ func (b *paramBuilder) addBin(name cString, value []byte, private bool) {
 		// Nothing to do.
 		return
 	}
-	bn, err := ossl.BN_bin2bn(base(value), int32(len(value)), nil)
+	bn, err := ossl.BN_bin2bn(value, nil)
 	if err != nil {
 		b.err = err
 		return

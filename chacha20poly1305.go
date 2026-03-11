@@ -75,13 +75,13 @@ func (c *chacha20poly1305) Seal(dst, nonce, plaintext, additionalData []byte) []
 	}
 	if len(additionalData) > 0 {
 		var discard int32
-		if _, err := ossl.EVP_EncryptUpdate(ctx, nil, &discard, base(additionalData), int32(len(additionalData))); err != nil {
+		if _, err := ossl.EVP_EncryptUpdate(ctx, nil, &discard, additionalData); err != nil {
 			panic(err)
 		}
 	}
 	var outl int32
 	if len(plaintext) > 0 {
-		if _, err := ossl.EVP_EncryptUpdate(ctx, base(out), &outl, base(plaintext), int32(len(plaintext))); err != nil {
+		if _, err := ossl.EVP_EncryptUpdate(ctx, out, &outl, plaintext); err != nil {
 			panic(err)
 		}
 	}
@@ -131,13 +131,13 @@ func (c *chacha20poly1305) Open(dst, nonce, ciphertext, additionalData []byte) (
 	}
 	if len(additionalData) > 0 {
 		var discard int32
-		if _, err := ossl.EVP_DecryptUpdate(ctx, nil, &discard, base(additionalData), int32(len(additionalData))); err != nil {
+		if _, err := ossl.EVP_DecryptUpdate(ctx, nil, &discard, additionalData); err != nil {
 			return nil, err
 		}
 	}
 	var outl int32
 	if len(ciphertext) > 0 {
-		if _, err := ossl.EVP_DecryptUpdate(ctx, base(out), &outl, base(ciphertext), int32(len(ciphertext))); err != nil {
+		if _, err := ossl.EVP_DecryptUpdate(ctx, out, &outl, ciphertext); err != nil {
 			return nil, err
 		}
 	}

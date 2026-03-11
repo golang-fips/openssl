@@ -58,7 +58,7 @@ func (c *RC4Cipher) XORKeyStream(dst, src []byte) {
 	// which is what crypto/rc4 does.
 	_ = dst[len(src)-1]
 	var outLen int32
-	if _, err := ossl.EVP_EncryptUpdate(c.ctx, base(dst), &outLen, base(src), int32(len(src))); err != nil {
+	if _, err := ossl.EVP_EncryptUpdate(c.ctx, dst, &outLen, src); err != nil {
 		panic("crypto/rc4: " + err.Error())
 	}
 	if int(outLen) != len(src) {

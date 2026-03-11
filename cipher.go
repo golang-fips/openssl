@@ -185,7 +185,7 @@ func (c *evpCipher) encrypt(dst, src []byte) error {
 	defer ossl.EVP_CIPHER_CTX_free(enc_ctx)
 
 	var outl int32
-	if _, err := ossl.EVP_EncryptUpdate(enc_ctx, base(dst), &outl, base(src), int32(c.blockSize)); err != nil {
+	if _, err := ossl.EVP_EncryptUpdate(enc_ctx, dst[:c.blockSize], &outl, src[:c.blockSize]); err != nil {
 		return err
 	}
 	runtime.KeepAlive(c)
@@ -215,7 +215,7 @@ func (c *evpCipher) decrypt(dst, src []byte) error {
 	}
 
 	var outl int32
-	ossl.EVP_DecryptUpdate(dec_ctx, base(dst), &outl, base(src), int32(c.blockSize))
+	ossl.EVP_DecryptUpdate(dec_ctx, dst[:c.blockSize], &outl, src[:c.blockSize])
 	runtime.KeepAlive(c)
 	return nil
 }
@@ -243,7 +243,7 @@ func (x *cipherCBC) CryptBlocks(dst, src []byte) {
 	}
 	if len(src) > 0 {
 		var outl int32
-		if _, err := ossl.EVP_CipherUpdate(x.ctx, base(dst), &outl, base(src), int32(len(src))); err != nil {
+		if _, err := ossl.EVP_CipherUpdate(x.ctx, dst, &outl, src); err != nil {
 			panic("crypto/cipher: " + err.Error())
 		}
 		runtime.KeepAlive(x)
@@ -287,7 +287,7 @@ func (x *cipherCTR) XORKeyStream(dst, src []byte) {
 		return
 	}
 	var outl int32
-	if _, err := ossl.EVP_EncryptUpdate(x.ctx, base(dst), &outl, base(src), int32(len(src))); err != nil {
+	if _, err := ossl.EVP_EncryptUpdate(x.ctx, dst, &outl, src); err != nil {
 		panic("crypto/cipher: " + err.Error())
 	}
 	runtime.KeepAlive(x)
@@ -467,10 +467,10 @@ func (g *cipherGCM) Seal(dst, nonce, plaintext, aad []byte) []byte {
 		panic(err)
 	}
 	var outl, discard int32
-	if _, err := ossl.EVP_EncryptUpdate(ctx, nil, &discard, baseNeverEmpty(aad), int32(len(aad))); err != nil {
+	if _, err := ossl.EVP_EncryptUpdate(ctx, nil, &discard, aad); err != nil {
 		panic(err)
 	}
-	if _, err := ossl.EVP_EncryptUpdate(ctx, base(out), &outl, baseNeverEmpty(plaintext), int32(len(plaintext))); err != nil {
+	if _, err := ossl.EVP_EncryptUpdate(ctx, out, &outl, plaintext); err != nil {
 		panic(err)
 	}
 	if len(plaintext) != int(outl) {
@@ -518,10 +518,10 @@ func (g *cipherGCM) SealWithRandomNonce(out, nonce, plaintext, aad []byte) {
 		panic(err)
 	}
 	var outl, discard int32
-	if _, err := ossl.EVP_EncryptUpdate(ctx, nil, &discard, baseNeverEmpty(aad), int32(len(aad))); err != nil {
+	if _, err := ossl.EVP_EncryptUpdate(ctx, nil, &discard, aad); err != nil {
 		panic(err)
 	}
-	if _, err := ossl.EVP_EncryptUpdate(ctx, base(out), &outl, baseNeverEmpty(plaintext), int32(len(plaintext))); err != nil {
+	if _, err := ossl.EVP_EncryptUpdate(ctx, out, &outl, plaintext); err != nil {
 		panic(err)
 	}
 	if len(plaintext) != int(outl) {
@@ -582,10 +582,10 @@ func (g *cipherGCM) Open(dst, nonce, ciphertext, aad []byte) (_ []byte, err erro
 		return nil, errOpen
 	}
 	var outl, discard int32
-	if _, err := ossl.EVP_DecryptUpdate(ctx, nil, &discard, baseNeverEmpty(aad), int32(len(aad))); err != nil {
+	if _, err := ossl.EVP_DecryptUpdate(ctx, nil, &discard, aad); err != nil {
 		return nil, errOpen
 	}
-	if _, err := ossl.EVP_DecryptUpdate(ctx, base(out), &outl, baseNeverEmpty(ciphertext), int32(len(ciphertext))); err != nil {
+	if _, err := ossl.EVP_DecryptUpdate(ctx, out, &outl, ciphertext); err != nil {
 		return nil, errOpen
 	}
 	if len(ciphertext) != int(outl) {

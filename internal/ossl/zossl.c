@@ -122,7 +122,7 @@ void (*_g_EVP_PKEY_CTX_free)(_EVP_PKEY_CTX_PTR);
 _EVP_PKEY_CTX_PTR (*_g_EVP_PKEY_CTX_new)(_EVP_PKEY_PTR, _ENGINE_PTR);
 _EVP_PKEY_CTX_PTR (*_g_EVP_PKEY_CTX_new_from_pkey)(_OSSL_LIB_CTX_PTR, _EVP_PKEY_PTR, const char*);
 _EVP_PKEY_CTX_PTR (*_g_EVP_PKEY_CTX_new_id)(int, _ENGINE_PTR);
-int (*_g_EVP_PKEY_CTX_set0_rsa_oaep_label)(_EVP_PKEY_CTX_PTR, void*, int);
+int (*_g_EVP_PKEY_CTX_set0_rsa_oaep_label)(_EVP_PKEY_CTX_PTR, unsigned char*, int);
 int (*_g_EVP_PKEY_CTX_set1_hkdf_key)(_EVP_PKEY_CTX_PTR, const unsigned char*, int);
 int (*_g_EVP_PKEY_CTX_set1_hkdf_salt)(_EVP_PKEY_CTX_PTR, const unsigned char*, int);
 int (*_g_EVP_PKEY_CTX_set_hkdf_md)(_EVP_PKEY_CTX_PTR, const _EVP_MD_PTR);
@@ -212,7 +212,7 @@ int (*_g_HMAC_CTX_copy)(_HMAC_CTX_PTR, _HMAC_CTX_PTR);
 void (*_g_HMAC_CTX_free)(_HMAC_CTX_PTR);
 _HMAC_CTX_PTR (*_g_HMAC_CTX_new)(void);
 int (*_g_HMAC_Final)(_HMAC_CTX_PTR, unsigned char*, unsigned int*);
-int (*_g_HMAC_Init_ex)(_HMAC_CTX_PTR, const void*, int, const _EVP_MD_PTR, _ENGINE_PTR);
+int (*_g_HMAC_Init_ex)(_HMAC_CTX_PTR, const unsigned char*, int, const _EVP_MD_PTR, _ENGINE_PTR);
 int (*_g_HMAC_Update)(_HMAC_CTX_PTR, const unsigned char*, size_t);
 const char* (*_g_OBJ_nid2sn)(int);
 void (*_g_OPENSSL_init)(void);
@@ -224,7 +224,7 @@ void (*_g_OSSL_PARAM_BLD_free)(_OSSL_PARAM_BLD_PTR);
 _OSSL_PARAM_BLD_PTR (*_g_OSSL_PARAM_BLD_new)(void);
 int (*_g_OSSL_PARAM_BLD_push_BN)(_OSSL_PARAM_BLD_PTR, const char*, const _BIGNUM_PTR);
 int (*_g_OSSL_PARAM_BLD_push_int32)(_OSSL_PARAM_BLD_PTR, const char*, int32_t);
-int (*_g_OSSL_PARAM_BLD_push_octet_string)(_OSSL_PARAM_BLD_PTR, const char*, const void*, size_t);
+int (*_g_OSSL_PARAM_BLD_push_octet_string)(_OSSL_PARAM_BLD_PTR, const char*, const unsigned char*, size_t);
 int (*_g_OSSL_PARAM_BLD_push_utf8_string)(_OSSL_PARAM_BLD_PTR, const char*, const char*, size_t);
 _OSSL_PARAM_PTR (*_g_OSSL_PARAM_BLD_to_param)(_OSSL_PARAM_BLD_PTR);
 void (*_g_OSSL_PARAM_free)(_OSSL_PARAM_PTR);
@@ -1384,7 +1384,7 @@ _EVP_PKEY_CTX_PTR _mkcgo_EVP_PKEY_CTX_new_id(int _arg0, _ENGINE_PTR _arg1, uintp
 	return _ret;
 }
 
-int _mkcgo_EVP_PKEY_CTX_set0_rsa_oaep_label(_EVP_PKEY_CTX_PTR _arg0, void* _arg1, int _arg2, uintptr_t *_err_state) {
+int _mkcgo_EVP_PKEY_CTX_set0_rsa_oaep_label(_EVP_PKEY_CTX_PTR _arg0, unsigned char* _arg1, int _arg2, uintptr_t *_err_state) {
 	int _ret = _g_EVP_PKEY_CTX_set0_rsa_oaep_label(_arg0, _arg1, _arg2);
 	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
 	return _ret;
@@ -1876,7 +1876,7 @@ int _mkcgo_HMAC_Final(_HMAC_CTX_PTR _arg0, unsigned char* _arg1, unsigned int* _
 	return _ret;
 }
 
-int _mkcgo_HMAC_Init_ex(_HMAC_CTX_PTR _arg0, const void* _arg1, int _arg2, const _EVP_MD_PTR _arg3, _ENGINE_PTR _arg4, uintptr_t *_err_state) {
+int _mkcgo_HMAC_Init_ex(_HMAC_CTX_PTR _arg0, const unsigned char* _arg1, int _arg2, const _EVP_MD_PTR _arg3, _ENGINE_PTR _arg4, uintptr_t *_err_state) {
 	int _ret = _g_HMAC_Init_ex(_arg0, _arg1, _arg2, _arg3, _arg4);
 	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
 	return _ret;
@@ -1948,7 +1948,7 @@ int _mkcgo_OSSL_PARAM_BLD_push_int32(_OSSL_PARAM_BLD_PTR _arg0, const char* _arg
 	return _ret;
 }
 
-int _mkcgo_OSSL_PARAM_BLD_push_octet_string(_OSSL_PARAM_BLD_PTR _arg0, const char* _arg1, const void* _arg2, size_t _arg3, uintptr_t *_err_state) {
+int _mkcgo_OSSL_PARAM_BLD_push_octet_string(_OSSL_PARAM_BLD_PTR _arg0, const char* _arg1, const unsigned char* _arg2, size_t _arg3, uintptr_t *_err_state) {
 	int _ret = _g_OSSL_PARAM_BLD_push_octet_string(_arg0, _arg1, _arg2, _arg3);
 	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
 	return _ret;

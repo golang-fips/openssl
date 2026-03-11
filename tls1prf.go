@@ -151,7 +151,7 @@ func tls1PRF3(result, secret, label, seed []byte, md ossl.EVP_MD_PTR) error {
 	}
 	defer ossl.OSSL_PARAM_free(params)
 
-	if _, err := ossl.EVP_KDF_derive(ctx, base(result), len(result), params); err != nil {
+	if _, err := ossl.EVP_KDF_derive(ctx, result, params); err != nil {
 		return err
 	}
 	return nil

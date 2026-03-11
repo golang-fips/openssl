@@ -201,21 +201,21 @@ func BIO_s_mem() BIO_METHOD_PTR {
 	return C._mkcgo_BIO_s_mem()
 }
 
-func BN_bin2bn(arg0 *byte, arg1 int32, arg2 BIGNUM_PTR) (BIGNUM_PTR, error) {
+func BN_bin2bn(arg0 []byte, arg2 BIGNUM_PTR) (BIGNUM_PTR, error) {
 	var _err C.uintptr_t
-	_ret := C._mkcgo_BN_bin2bn((*C.uchar)(unsafe.Pointer(arg0)), C.int(arg1), arg2, mkcgoNoEscape(&_err))
+	_ret := C._mkcgo_BN_bin2bn((*C.uchar)(unsafe.Pointer(unsafe.SliceData(arg0))), C.int(len(arg0)), arg2, mkcgoNoEscape(&_err))
 	return _ret, newMkcgoErr("BN_bin2bn", uintptr(_err))
 }
 
-func BN_bn2binpad(a BIGNUM_PTR, to *byte, tolen int32) (int32, error) {
+func BN_bn2binpad(a BIGNUM_PTR, to []byte) (int32, error) {
 	var _err C.uintptr_t
-	_ret := C._mkcgo_BN_bn2binpad(a, (*C.uchar)(unsafe.Pointer(to)), C.int(tolen), mkcgoNoEscape(&_err))
+	_ret := C._mkcgo_BN_bn2binpad(a, (*C.uchar)(unsafe.Pointer(unsafe.SliceData(to))), C.int(len(to)), mkcgoNoEscape(&_err))
 	return int32(_ret), newMkcgoErr("BN_bn2binpad", uintptr(_err))
 }
 
-func BN_bn2lebinpad(a BIGNUM_PTR, to *byte, tolen int32) (int32, error) {
+func BN_bn2lebinpad(a BIGNUM_PTR, to []byte) (int32, error) {
 	var _err C.uintptr_t
-	_ret := C._mkcgo_BN_bn2lebinpad(a, (*C.uchar)(unsafe.Pointer(to)), C.int(tolen), mkcgoNoEscape(&_err))
+	_ret := C._mkcgo_BN_bn2lebinpad(a, (*C.uchar)(unsafe.Pointer(unsafe.SliceData(to))), C.int(len(to)), mkcgoNoEscape(&_err))
 	return int32(_ret), newMkcgoErr("BN_bn2lebinpad", uintptr(_err))
 }
 
@@ -231,9 +231,9 @@ func BN_free(arg0 BIGNUM_PTR) {
 	C._mkcgo_BN_free(arg0)
 }
 
-func BN_lebin2bn(s *byte, len int32, ret BIGNUM_PTR) (BIGNUM_PTR, error) {
+func BN_lebin2bn(s []byte, ret BIGNUM_PTR) (BIGNUM_PTR, error) {
 	var _err C.uintptr_t
-	_ret := C._mkcgo_BN_lebin2bn((*C.uchar)(unsafe.Pointer(s)), C.int(len), ret, mkcgoNoEscape(&_err))
+	_ret := C._mkcgo_BN_lebin2bn((*C.uchar)(unsafe.Pointer(unsafe.SliceData(s))), C.int(len(s)), ret, mkcgoNoEscape(&_err))
 	return _ret, newMkcgoErr("BN_lebin2bn", uintptr(_err))
 }
 
@@ -371,15 +371,15 @@ func EC_POINT_new(arg0 EC_GROUP_PTR) (EC_POINT_PTR, error) {
 	return _ret, newMkcgoErr("EC_POINT_new", uintptr(_err))
 }
 
-func EC_POINT_oct2point(group EC_GROUP_PTR, p EC_POINT_PTR, buf *byte, len int, ctx BN_CTX_PTR) (int32, error) {
+func EC_POINT_oct2point(group EC_GROUP_PTR, p EC_POINT_PTR, buf []byte, ctx BN_CTX_PTR) (int32, error) {
 	var _err C.uintptr_t
-	_ret := C._mkcgo_EC_POINT_oct2point(group, p, (*C.uchar)(unsafe.Pointer(buf)), C.size_t(len), ctx, mkcgoNoEscape(&_err))
+	_ret := C._mkcgo_EC_POINT_oct2point(group, p, (*C.uchar)(unsafe.Pointer(unsafe.SliceData(buf))), C.size_t(len(buf)), ctx, mkcgoNoEscape(&_err))
 	return int32(_ret), newMkcgoErr("EC_POINT_oct2point", uintptr(_err))
 }
 
-func EC_POINT_point2oct(group EC_GROUP_PTR, p EC_POINT_PTR, form Point_conversion_form_t, buf *byte, len int, ctx BN_CTX_PTR) (int, error) {
+func EC_POINT_point2oct(group EC_GROUP_PTR, p EC_POINT_PTR, form Point_conversion_form_t, buf []byte, ctx BN_CTX_PTR) (int, error) {
 	var _err C.uintptr_t
-	_ret := C._mkcgo_EC_POINT_point2oct(group, p, form, (*C.uchar)(unsafe.Pointer(buf)), C.size_t(len), ctx, mkcgoNoEscape(&_err))
+	_ret := C._mkcgo_EC_POINT_point2oct(group, p, form, (*C.uchar)(unsafe.Pointer(unsafe.SliceData(buf))), C.size_t(len(buf)), ctx, mkcgoNoEscape(&_err))
 	return int(_ret), newMkcgoErr("EC_POINT_point2oct", uintptr(_err))
 }
 
@@ -445,9 +445,9 @@ func EVP_CipherInit_ex(ctx EVP_CIPHER_CTX_PTR, __type EVP_CIPHER_PTR, impl ENGIN
 	return int32(_ret), newMkcgoErr("EVP_CipherInit_ex", uintptr(_err))
 }
 
-func EVP_CipherUpdate(ctx EVP_CIPHER_CTX_PTR, out *byte, outl *int32, in *byte, inl int32) (int32, error) {
+func EVP_CipherUpdate(ctx EVP_CIPHER_CTX_PTR, out []byte, outl *int32, in []byte) (int32, error) {
 	var _err C.uintptr_t
-	_ret := C._mkcgo_EVP_CipherUpdate(ctx, (*C.uchar)(unsafe.Pointer(out)), (*C.int)(unsafe.Pointer(outl)), (*C.uchar)(unsafe.Pointer(in)), C.int(inl), mkcgoNoEscape(&_err))
+	_ret := C._mkcgo_EVP_CipherUpdate(ctx, (*C.uchar)(unsafe.Pointer(unsafe.SliceData(out))), (*C.int)(unsafe.Pointer(outl)), (*C.uchar)(unsafe.Pointer(unsafe.SliceData(in))), C.int(len(in)), mkcgoNoEscape(&_err))
 	return int32(_ret), newMkcgoErr("EVP_CipherUpdate", uintptr(_err))
 }
 
@@ -463,9 +463,9 @@ func EVP_DecryptInit_ex(ctx EVP_CIPHER_CTX_PTR, __type EVP_CIPHER_PTR, impl ENGI
 	return int32(_ret), newMkcgoErr("EVP_DecryptInit_ex", uintptr(_err))
 }
 
-func EVP_DecryptUpdate(ctx EVP_CIPHER_CTX_PTR, out *byte, outl *int32, in *byte, inl int32) (int32, error) {
+func EVP_DecryptUpdate(ctx EVP_CIPHER_CTX_PTR, out []byte, outl *int32, in []byte) (int32, error) {
 	var _err C.uintptr_t
-	_ret := C._mkcgo_EVP_DecryptUpdate(ctx, (*C.uchar)(unsafe.Pointer(out)), (*C.int)(unsafe.Pointer(outl)), (*C.uchar)(unsafe.Pointer(in)), C.int(inl), mkcgoNoEscape(&_err))
+	_ret := C._mkcgo_EVP_DecryptUpdate(ctx, (*C.uchar)(unsafe.Pointer(unsafe.SliceData(out))), (*C.int)(unsafe.Pointer(outl)), (*C.uchar)(unsafe.Pointer(unsafe.SliceData(in))), C.int(len(in)), mkcgoNoEscape(&_err))
 	return int32(_ret), newMkcgoErr("EVP_DecryptUpdate", uintptr(_err))
 }
 
@@ -475,9 +475,9 @@ func EVP_Digest(data []byte, md []byte, size *uint32, __type EVP_MD_PTR, impl EN
 	return int32(_ret), newMkcgoErr("EVP_Digest", uintptr(_err))
 }
 
-func EVP_DigestFinalXOF(ctx EVP_MD_CTX_PTR, md []byte, len int) (int32, error) {
+func EVP_DigestFinalXOF(ctx EVP_MD_CTX_PTR, md []byte) (int32, error) {
 	var _err C.uintptr_t
-	_ret := C._mkcgo_EVP_DigestFinalXOF(ctx, (*C.uchar)(unsafe.Pointer(unsafe.SliceData(md))), C.size_t(len), mkcgoNoEscape(&_err))
+	_ret := C._mkcgo_EVP_DigestFinalXOF(ctx, (*C.uchar)(unsafe.Pointer(unsafe.SliceData(md))), C.size_t(len(md)), mkcgoNoEscape(&_err))
 	return int32(_ret), newMkcgoErr("EVP_DigestFinalXOF", uintptr(_err))
 }
 
@@ -499,9 +499,9 @@ func EVP_DigestInit_ex(ctx EVP_MD_CTX_PTR, __type EVP_MD_PTR, impl ENGINE_PTR) (
 	return int32(_ret), newMkcgoErr("EVP_DigestInit_ex", uintptr(_err))
 }
 
-func EVP_DigestSign(ctx EVP_MD_CTX_PTR, sigret *byte, siglen *int, tbs *byte, tbslen int) (int32, error) {
+func EVP_DigestSign(ctx EVP_MD_CTX_PTR, sigret []byte, siglen *int, tbs []byte) (int32, error) {
 	var _err C.uintptr_t
-	_ret := C._mkcgo_EVP_DigestSign(ctx, (*C.uchar)(unsafe.Pointer(sigret)), (*C.size_t)(unsafe.Pointer(siglen)), (*C.uchar)(unsafe.Pointer(tbs)), C.size_t(tbslen), mkcgoNoEscape(&_err))
+	_ret := C._mkcgo_EVP_DigestSign(ctx, (*C.uchar)(unsafe.Pointer(unsafe.SliceData(sigret))), (*C.size_t)(unsafe.Pointer(siglen)), (*C.uchar)(unsafe.Pointer(unsafe.SliceData(tbs))), C.size_t(len(tbs)), mkcgoNoEscape(&_err))
 	return int32(_ret), newMkcgoErr("EVP_DigestSign", uintptr(_err))
 }
 
@@ -529,15 +529,15 @@ func EVP_DigestUpdate(ctx EVP_MD_CTX_PTR, d []byte) (int32, error) {
 	return int32(_ret), newMkcgoErr("EVP_DigestUpdate", uintptr(_err))
 }
 
-func EVP_DigestVerify(ctx EVP_MD_CTX_PTR, sigret *byte, siglen int, tbs *byte, tbslen int) (int32, error) {
+func EVP_DigestVerify(ctx EVP_MD_CTX_PTR, sigret []byte, tbs []byte) (int32, error) {
 	var _err C.uintptr_t
-	_ret := C._mkcgo_EVP_DigestVerify(ctx, (*C.uchar)(unsafe.Pointer(sigret)), C.size_t(siglen), (*C.uchar)(unsafe.Pointer(tbs)), C.size_t(tbslen), mkcgoNoEscape(&_err))
+	_ret := C._mkcgo_EVP_DigestVerify(ctx, (*C.uchar)(unsafe.Pointer(unsafe.SliceData(sigret))), C.size_t(len(sigret)), (*C.uchar)(unsafe.Pointer(unsafe.SliceData(tbs))), C.size_t(len(tbs)), mkcgoNoEscape(&_err))
 	return int32(_ret), newMkcgoErr("EVP_DigestVerify", uintptr(_err))
 }
 
-func EVP_DigestVerifyFinal(ctx EVP_MD_CTX_PTR, sig *byte, siglen int) (int32, error) {
+func EVP_DigestVerifyFinal(ctx EVP_MD_CTX_PTR, sig []byte) (int32, error) {
 	var _err C.uintptr_t
-	_ret := C._mkcgo_EVP_DigestVerifyFinal(ctx, (*C.uchar)(unsafe.Pointer(sig)), C.size_t(siglen), mkcgoNoEscape(&_err))
+	_ret := C._mkcgo_EVP_DigestVerifyFinal(ctx, (*C.uchar)(unsafe.Pointer(unsafe.SliceData(sig))), C.size_t(len(sig)), mkcgoNoEscape(&_err))
 	return int32(_ret), newMkcgoErr("EVP_DigestVerifyFinal", uintptr(_err))
 }
 
@@ -559,9 +559,9 @@ func EVP_EncryptInit_ex(ctx EVP_CIPHER_CTX_PTR, __type EVP_CIPHER_PTR, impl ENGI
 	return int32(_ret), newMkcgoErr("EVP_EncryptInit_ex", uintptr(_err))
 }
 
-func EVP_EncryptUpdate(ctx EVP_CIPHER_CTX_PTR, out *byte, outl *int32, in *byte, inl int32) (int32, error) {
+func EVP_EncryptUpdate(ctx EVP_CIPHER_CTX_PTR, out []byte, outl *int32, in []byte) (int32, error) {
 	var _err C.uintptr_t
-	_ret := C._mkcgo_EVP_EncryptUpdate(ctx, (*C.uchar)(unsafe.Pointer(out)), (*C.int)(unsafe.Pointer(outl)), (*C.uchar)(unsafe.Pointer(in)), C.int(inl), mkcgoNoEscape(&_err))
+	_ret := C._mkcgo_EVP_EncryptUpdate(ctx, (*C.uchar)(unsafe.Pointer(unsafe.SliceData(out))), (*C.int)(unsafe.Pointer(outl)), (*C.uchar)(unsafe.Pointer(unsafe.SliceData(in))), C.int(len(in)), mkcgoNoEscape(&_err))
 	return int32(_ret), newMkcgoErr("EVP_EncryptUpdate", uintptr(_err))
 }
 
@@ -587,9 +587,9 @@ func EVP_KDF_CTX_set_params(ctx EVP_KDF_CTX_PTR, params OSSL_PARAM_PTR) (int32, 
 	return int32(_ret), newMkcgoErr("EVP_KDF_CTX_set_params", uintptr(_err))
 }
 
-func EVP_KDF_derive(ctx EVP_KDF_CTX_PTR, key *byte, keylen int, params OSSL_PARAM_PTR) (int32, error) {
+func EVP_KDF_derive(ctx EVP_KDF_CTX_PTR, key []byte, params OSSL_PARAM_PTR) (int32, error) {
 	var _err C.uintptr_t
-	_ret := C._mkcgo_EVP_KDF_derive(ctx, (*C.uchar)(unsafe.Pointer(key)), C.size_t(keylen), params, mkcgoNoEscape(&_err))
+	_ret := C._mkcgo_EVP_KDF_derive(ctx, (*C.uchar)(unsafe.Pointer(unsafe.SliceData(key))), C.size_t(len(key)), params, mkcgoNoEscape(&_err))
 	return int32(_ret), newMkcgoErr("EVP_KDF_derive", uintptr(_err))
 }
 
@@ -641,21 +641,21 @@ func EVP_MAC_fetch(ctx OSSL_LIB_CTX_PTR, algorithm *byte, properties *byte) (EVP
 	return _ret, newMkcgoErr("EVP_MAC_fetch", uintptr(_err))
 }
 
-func EVP_MAC_final(ctx EVP_MAC_CTX_PTR, out *byte, outl *int, outsize int) (int32, error) {
+func EVP_MAC_final(ctx EVP_MAC_CTX_PTR, out []byte, outl *int) (int32, error) {
 	var _err C.uintptr_t
-	_ret := C._mkcgo_EVP_MAC_final(ctx, (*C.uchar)(unsafe.Pointer(out)), (*C.size_t)(unsafe.Pointer(outl)), C.size_t(outsize), mkcgoNoEscape(&_err))
+	_ret := C._mkcgo_EVP_MAC_final(ctx, (*C.uchar)(unsafe.Pointer(unsafe.SliceData(out))), (*C.size_t)(unsafe.Pointer(outl)), C.size_t(len(out)), mkcgoNoEscape(&_err))
 	return int32(_ret), newMkcgoErr("EVP_MAC_final", uintptr(_err))
 }
 
-func EVP_MAC_init(ctx EVP_MAC_CTX_PTR, key *byte, keylen int, params OSSL_PARAM_PTR) (int32, error) {
+func EVP_MAC_init(ctx EVP_MAC_CTX_PTR, key []byte, params OSSL_PARAM_PTR) (int32, error) {
 	var _err C.uintptr_t
-	_ret := C._mkcgo_EVP_MAC_init(ctx, (*C.uchar)(unsafe.Pointer(key)), C.size_t(keylen), params, mkcgoNoEscape(&_err))
+	_ret := C._mkcgo_EVP_MAC_init(ctx, (*C.uchar)(unsafe.Pointer(unsafe.SliceData(key))), C.size_t(len(key)), params, mkcgoNoEscape(&_err))
 	return int32(_ret), newMkcgoErr("EVP_MAC_init", uintptr(_err))
 }
 
-func EVP_MAC_update(ctx EVP_MAC_CTX_PTR, data *byte, datalen int) (int32, error) {
+func EVP_MAC_update(ctx EVP_MAC_CTX_PTR, data []byte) (int32, error) {
 	var _err C.uintptr_t
-	_ret := C._mkcgo_EVP_MAC_update(ctx, (*C.uchar)(unsafe.Pointer(data)), C.size_t(datalen), mkcgoNoEscape(&_err))
+	_ret := C._mkcgo_EVP_MAC_update(ctx, (*C.uchar)(unsafe.Pointer(unsafe.SliceData(data))), C.size_t(len(data)), mkcgoNoEscape(&_err))
 	return int32(_ret), newMkcgoErr("EVP_MAC_update", uintptr(_err))
 }
 
@@ -769,9 +769,9 @@ func EVP_PKEY_CTX_new_id(id int32, e ENGINE_PTR) (EVP_PKEY_CTX_PTR, error) {
 	return _ret, newMkcgoErr("EVP_PKEY_CTX_new_id", uintptr(_err))
 }
 
-func EVP_PKEY_CTX_set0_rsa_oaep_label(ctx EVP_PKEY_CTX_PTR, label unsafe.Pointer, len int32) (int32, error) {
+func EVP_PKEY_CTX_set0_rsa_oaep_label(ctx EVP_PKEY_CTX_PTR, label []byte) (int32, error) {
 	var _err C.uintptr_t
-	_ret := C._mkcgo_EVP_PKEY_CTX_set0_rsa_oaep_label(ctx, label, C.int(len), mkcgoNoEscape(&_err))
+	_ret := C._mkcgo_EVP_PKEY_CTX_set0_rsa_oaep_label(ctx, (*C.uchar)(unsafe.Pointer(unsafe.SliceData(label))), C.int(len(label)), mkcgoNoEscape(&_err))
 	return int32(_ret), newMkcgoErr("EVP_PKEY_CTX_set0_rsa_oaep_label", uintptr(_err))
 }
 
@@ -847,9 +847,9 @@ func EVP_PKEY_decapsulate_init(ctx EVP_PKEY_CTX_PTR, params OSSL_PARAM_PTR) (int
 	return int32(_ret), newMkcgoErr("EVP_PKEY_decapsulate_init", uintptr(_err))
 }
 
-func EVP_PKEY_decrypt(arg0 EVP_PKEY_CTX_PTR, arg1 *byte, arg2 *int, arg3 *byte, arg4 int) (int32, error) {
+func EVP_PKEY_decrypt(arg0 EVP_PKEY_CTX_PTR, arg1 []byte, arg2 *int, arg3 []byte) (int32, error) {
 	var _err C.uintptr_t
-	_ret := C._mkcgo_EVP_PKEY_decrypt(arg0, (*C.uchar)(unsafe.Pointer(arg1)), (*C.size_t)(unsafe.Pointer(arg2)), (*C.uchar)(unsafe.Pointer(arg3)), C.size_t(arg4), mkcgoNoEscape(&_err))
+	_ret := C._mkcgo_EVP_PKEY_decrypt(arg0, (*C.uchar)(unsafe.Pointer(unsafe.SliceData(arg1))), (*C.size_t)(unsafe.Pointer(arg2)), (*C.uchar)(unsafe.Pointer(unsafe.SliceData(arg3))), C.size_t(len(arg3)), mkcgoNoEscape(&_err))
 	return int32(_ret), newMkcgoErr("EVP_PKEY_decrypt", uintptr(_err))
 }
 
@@ -889,9 +889,9 @@ func EVP_PKEY_encapsulate_init(ctx EVP_PKEY_CTX_PTR, params OSSL_PARAM_PTR) (int
 	return int32(_ret), newMkcgoErr("EVP_PKEY_encapsulate_init", uintptr(_err))
 }
 
-func EVP_PKEY_encrypt(arg0 EVP_PKEY_CTX_PTR, arg1 *byte, arg2 *int, arg3 *byte, arg4 int) (int32, error) {
+func EVP_PKEY_encrypt(arg0 EVP_PKEY_CTX_PTR, arg1 []byte, arg2 *int, arg3 []byte) (int32, error) {
 	var _err C.uintptr_t
-	_ret := C._mkcgo_EVP_PKEY_encrypt(arg0, (*C.uchar)(unsafe.Pointer(arg1)), (*C.size_t)(unsafe.Pointer(arg2)), (*C.uchar)(unsafe.Pointer(arg3)), C.size_t(arg4), mkcgoNoEscape(&_err))
+	_ret := C._mkcgo_EVP_PKEY_encrypt(arg0, (*C.uchar)(unsafe.Pointer(unsafe.SliceData(arg1))), (*C.size_t)(unsafe.Pointer(arg2)), (*C.uchar)(unsafe.Pointer(unsafe.SliceData(arg3))), C.size_t(len(arg3)), mkcgoNoEscape(&_err))
 	return int32(_ret), newMkcgoErr("EVP_PKEY_encrypt", uintptr(_err))
 }
 
@@ -953,9 +953,9 @@ func EVP_PKEY_get_bn_param(pkey EVP_PKEY_PTR, key_name *byte, bn *BIGNUM_PTR) (i
 	return int32(_ret), newMkcgoErr("EVP_PKEY_get_bn_param", uintptr(_err))
 }
 
-func EVP_PKEY_get_octet_string_param(pkey EVP_PKEY_PTR, key_name *byte, buf *byte, buf_len int, out_len *int) (int32, error) {
+func EVP_PKEY_get_octet_string_param(pkey EVP_PKEY_PTR, key_name *byte, buf []byte, out_len *int) (int32, error) {
 	var _err C.uintptr_t
-	_ret := C._mkcgo_EVP_PKEY_get_octet_string_param(pkey, (*C.char)(unsafe.Pointer(key_name)), (*C.uchar)(unsafe.Pointer(buf)), C.size_t(buf_len), (*C.size_t)(unsafe.Pointer(out_len)), mkcgoNoEscape(&_err))
+	_ret := C._mkcgo_EVP_PKEY_get_octet_string_param(pkey, (*C.char)(unsafe.Pointer(key_name)), (*C.uchar)(unsafe.Pointer(unsafe.SliceData(buf))), C.size_t(len(buf)), (*C.size_t)(unsafe.Pointer(out_len)), mkcgoNoEscape(&_err))
 	return int32(_ret), newMkcgoErr("EVP_PKEY_get_octet_string_param", uintptr(_err))
 }
 
@@ -995,15 +995,15 @@ func EVP_PKEY_new() (EVP_PKEY_PTR, error) {
 	return _ret, newMkcgoErr("EVP_PKEY_new", uintptr(_err))
 }
 
-func EVP_PKEY_new_raw_private_key(__type int32, e ENGINE_PTR, key *byte, keylen int) (EVP_PKEY_PTR, error) {
+func EVP_PKEY_new_raw_private_key(__type int32, e ENGINE_PTR, key []byte) (EVP_PKEY_PTR, error) {
 	var _err C.uintptr_t
-	_ret := C._mkcgo_EVP_PKEY_new_raw_private_key(C.int(__type), e, (*C.uchar)(unsafe.Pointer(key)), C.size_t(keylen), mkcgoNoEscape(&_err))
+	_ret := C._mkcgo_EVP_PKEY_new_raw_private_key(C.int(__type), e, (*C.uchar)(unsafe.Pointer(unsafe.SliceData(key))), C.size_t(len(key)), mkcgoNoEscape(&_err))
 	return _ret, newMkcgoErr("EVP_PKEY_new_raw_private_key", uintptr(_err))
 }
 
-func EVP_PKEY_new_raw_public_key(__type int32, e ENGINE_PTR, key *byte, keylen int) (EVP_PKEY_PTR, error) {
+func EVP_PKEY_new_raw_public_key(__type int32, e ENGINE_PTR, key []byte) (EVP_PKEY_PTR, error) {
 	var _err C.uintptr_t
-	_ret := C._mkcgo_EVP_PKEY_new_raw_public_key(C.int(__type), e, (*C.uchar)(unsafe.Pointer(key)), C.size_t(keylen), mkcgoNoEscape(&_err))
+	_ret := C._mkcgo_EVP_PKEY_new_raw_public_key(C.int(__type), e, (*C.uchar)(unsafe.Pointer(unsafe.SliceData(key))), C.size_t(len(key)), mkcgoNoEscape(&_err))
 	return _ret, newMkcgoErr("EVP_PKEY_new_raw_public_key", uintptr(_err))
 }
 
@@ -1043,9 +1043,9 @@ func EVP_PKEY_set1_encoded_public_key(pkey EVP_PKEY_PTR, pub *byte, publen int) 
 	return int32(_ret), newMkcgoErr("EVP_PKEY_set1_encoded_public_key", uintptr(_err))
 }
 
-func EVP_PKEY_sign(arg0 EVP_PKEY_CTX_PTR, arg1 *byte, arg2 *int, arg3 *byte, arg4 int) (int32, error) {
+func EVP_PKEY_sign(arg0 EVP_PKEY_CTX_PTR, arg1 []byte, arg2 *int, arg3 []byte) (int32, error) {
 	var _err C.uintptr_t
-	_ret := C._mkcgo_EVP_PKEY_sign(arg0, (*C.uchar)(unsafe.Pointer(arg1)), (*C.size_t)(unsafe.Pointer(arg2)), (*C.uchar)(unsafe.Pointer(arg3)), C.size_t(arg4), mkcgoNoEscape(&_err))
+	_ret := C._mkcgo_EVP_PKEY_sign(arg0, (*C.uchar)(unsafe.Pointer(unsafe.SliceData(arg1))), (*C.size_t)(unsafe.Pointer(arg2)), (*C.uchar)(unsafe.Pointer(unsafe.SliceData(arg3))), C.size_t(len(arg3)), mkcgoNoEscape(&_err))
 	return int32(_ret), newMkcgoErr("EVP_PKEY_sign", uintptr(_err))
 }
 
@@ -1061,9 +1061,9 @@ func EVP_PKEY_up_ref(key EVP_PKEY_PTR) (int32, error) {
 	return int32(_ret), newMkcgoErr("EVP_PKEY_up_ref", uintptr(_err))
 }
 
-func EVP_PKEY_verify(ctx EVP_PKEY_CTX_PTR, sig *byte, siglen int, tbs *byte, tbslen int) (int32, error) {
+func EVP_PKEY_verify(ctx EVP_PKEY_CTX_PTR, sig []byte, tbs []byte) (int32, error) {
 	var _err C.uintptr_t
-	_ret := C._mkcgo_EVP_PKEY_verify(ctx, (*C.uchar)(unsafe.Pointer(sig)), C.size_t(siglen), (*C.uchar)(unsafe.Pointer(tbs)), C.size_t(tbslen), mkcgoNoEscape(&_err))
+	_ret := C._mkcgo_EVP_PKEY_verify(ctx, (*C.uchar)(unsafe.Pointer(unsafe.SliceData(sig))), C.size_t(len(sig)), (*C.uchar)(unsafe.Pointer(unsafe.SliceData(tbs))), C.size_t(len(tbs)), mkcgoNoEscape(&_err))
 	return int32(_ret), newMkcgoErr("EVP_PKEY_verify", uintptr(_err))
 }
 
@@ -1255,21 +1255,21 @@ func HMAC_CTX_new() (HMAC_CTX_PTR, error) {
 	return _ret, newMkcgoErr("HMAC_CTX_new", uintptr(_err))
 }
 
-func HMAC_Final(arg0 HMAC_CTX_PTR, arg1 *byte, arg2 *uint32) (int32, error) {
+func HMAC_Final(arg0 HMAC_CTX_PTR, arg1 []byte, arg2 *uint32) (int32, error) {
 	var _err C.uintptr_t
-	_ret := C._mkcgo_HMAC_Final(arg0, (*C.uchar)(unsafe.Pointer(arg1)), (*C.uint)(unsafe.Pointer(arg2)), mkcgoNoEscape(&_err))
+	_ret := C._mkcgo_HMAC_Final(arg0, (*C.uchar)(unsafe.Pointer(unsafe.SliceData(arg1))), (*C.uint)(unsafe.Pointer(arg2)), mkcgoNoEscape(&_err))
 	return int32(_ret), newMkcgoErr("HMAC_Final", uintptr(_err))
 }
 
-func HMAC_Init_ex(arg0 HMAC_CTX_PTR, arg1 unsafe.Pointer, arg2 int32, arg3 EVP_MD_PTR, arg4 ENGINE_PTR) (int32, error) {
+func HMAC_Init_ex(arg0 HMAC_CTX_PTR, arg1 []byte, arg3 EVP_MD_PTR, arg4 ENGINE_PTR) (int32, error) {
 	var _err C.uintptr_t
-	_ret := C._mkcgo_HMAC_Init_ex(arg0, arg1, C.int(arg2), arg3, arg4, mkcgoNoEscape(&_err))
+	_ret := C._mkcgo_HMAC_Init_ex(arg0, (*C.uchar)(unsafe.Pointer(unsafe.SliceData(arg1))), C.int(len(arg1)), arg3, arg4, mkcgoNoEscape(&_err))
 	return int32(_ret), newMkcgoErr("HMAC_Init_ex", uintptr(_err))
 }
 
-func HMAC_Update(arg0 HMAC_CTX_PTR, arg1 *byte, arg2 int) (int32, error) {
+func HMAC_Update(arg0 HMAC_CTX_PTR, arg1 []byte) (int32, error) {
 	var _err C.uintptr_t
-	_ret := C._mkcgo_HMAC_Update(arg0, (*C.uchar)(unsafe.Pointer(arg1)), C.size_t(arg2), mkcgoNoEscape(&_err))
+	_ret := C._mkcgo_HMAC_Update(arg0, (*C.uchar)(unsafe.Pointer(unsafe.SliceData(arg1))), C.size_t(len(arg1)), mkcgoNoEscape(&_err))
 	return int32(_ret), newMkcgoErr("HMAC_Update", uintptr(_err))
 }
 
@@ -1333,15 +1333,15 @@ func OSSL_PARAM_BLD_push_int32(bld OSSL_PARAM_BLD_PTR, key *byte, num int32) (in
 	return int32(_ret), newMkcgoErr("OSSL_PARAM_BLD_push_int32", uintptr(_err))
 }
 
-func OSSL_PARAM_BLD_push_octet_string(bld OSSL_PARAM_BLD_PTR, key *byte, buf unsafe.Pointer, bsize int) (int32, error) {
+func OSSL_PARAM_BLD_push_octet_string(bld OSSL_PARAM_BLD_PTR, key *byte, buf []byte) (int32, error) {
 	var _err C.uintptr_t
-	_ret := C._mkcgo_OSSL_PARAM_BLD_push_octet_string(bld, (*C.char)(unsafe.Pointer(key)), buf, C.size_t(bsize), mkcgoNoEscape(&_err))
+	_ret := C._mkcgo_OSSL_PARAM_BLD_push_octet_string(bld, (*C.char)(unsafe.Pointer(key)), (*C.uchar)(unsafe.Pointer(unsafe.SliceData(buf))), C.size_t(len(buf)), mkcgoNoEscape(&_err))
 	return int32(_ret), newMkcgoErr("OSSL_PARAM_BLD_push_octet_string", uintptr(_err))
 }
 
-func OSSL_PARAM_BLD_push_utf8_string(bld OSSL_PARAM_BLD_PTR, key *byte, buf *byte, bsize int) (int32, error) {
+func OSSL_PARAM_BLD_push_utf8_string(bld OSSL_PARAM_BLD_PTR, key *byte, buf []byte) (int32, error) {
 	var _err C.uintptr_t
-	_ret := C._mkcgo_OSSL_PARAM_BLD_push_utf8_string(bld, (*C.char)(unsafe.Pointer(key)), (*C.char)(unsafe.Pointer(buf)), C.size_t(bsize), mkcgoNoEscape(&_err))
+	_ret := C._mkcgo_OSSL_PARAM_BLD_push_utf8_string(bld, (*C.char)(unsafe.Pointer(key)), (*C.char)(unsafe.Pointer(unsafe.SliceData(buf))), C.size_t(len(buf)), mkcgoNoEscape(&_err))
 	return int32(_ret), newMkcgoErr("OSSL_PARAM_BLD_push_utf8_string", uintptr(_err))
 }
 
@@ -1387,15 +1387,15 @@ func OpenSSL_version_num() uint64 {
 	return uint64(C._mkcgo_OpenSSL_version_num())
 }
 
-func PKCS5_PBKDF2_HMAC(pass *byte, passlen int32, salt *byte, saltlen int32, iter int32, digest EVP_MD_PTR, keylen int32, out *byte) (int32, error) {
+func PKCS5_PBKDF2_HMAC(pass []byte, salt []byte, iter int32, digest EVP_MD_PTR, out []byte) (int32, error) {
 	var _err C.uintptr_t
-	_ret := C._mkcgo_PKCS5_PBKDF2_HMAC((*C.char)(unsafe.Pointer(pass)), C.int(passlen), (*C.uchar)(unsafe.Pointer(salt)), C.int(saltlen), C.int(iter), digest, C.int(keylen), (*C.uchar)(unsafe.Pointer(out)), mkcgoNoEscape(&_err))
+	_ret := C._mkcgo_PKCS5_PBKDF2_HMAC((*C.char)(unsafe.Pointer(unsafe.SliceData(pass))), C.int(len(pass)), (*C.uchar)(unsafe.Pointer(unsafe.SliceData(salt))), C.int(len(salt)), C.int(iter), digest, C.int(len(out)), (*C.uchar)(unsafe.Pointer(unsafe.SliceData(out))), mkcgoNoEscape(&_err))
 	return int32(_ret), newMkcgoErr("PKCS5_PBKDF2_HMAC", uintptr(_err))
 }
 
-func RAND_bytes(arg0 *byte, arg1 int32) (int32, error) {
+func RAND_bytes(arg0 []byte) (int32, error) {
 	var _err C.uintptr_t
-	_ret := C._mkcgo_RAND_bytes((*C.uchar)(unsafe.Pointer(arg0)), C.int(arg1), mkcgoNoEscape(&_err))
+	_ret := C._mkcgo_RAND_bytes((*C.uchar)(unsafe.Pointer(unsafe.SliceData(arg0))), C.int(len(arg0)), mkcgoNoEscape(&_err))
 	return int32(_ret), newMkcgoErr("RAND_bytes", uintptr(_err))
 }
 

@@ -131,9 +131,9 @@ func (k *PrivateKeyECDH) PublicKey() (*PublicKeyECDH, error) {
 func newECDHPkey(curve string, bytes []byte, isPrivate bool) (ossl.EVP_PKEY_PTR, error) {
 	if curve == "X25519" {
 		if isPrivate {
-			return ossl.EVP_PKEY_new_raw_private_key(ossl.EVP_PKEY_X25519, nil, base(bytes), len(bytes))
+			return ossl.EVP_PKEY_new_raw_private_key(ossl.EVP_PKEY_X25519, nil, bytes)
 		} else {
-			return ossl.EVP_PKEY_new_raw_public_key(ossl.EVP_PKEY_X25519, nil, base(bytes), len(bytes))
+			return ossl.EVP_PKEY_new_raw_public_key(ossl.EVP_PKEY_X25519, nil, bytes)
 		}
 	}
 	nid := curveNID(curve)
@@ -161,7 +161,7 @@ func newECDHPkey1(nid int32, bytes []byte, isPrivate bool) (pkey ossl.EVP_PKEY_P
 	}()
 	group := ossl.EC_KEY_get0_group(key)
 	if isPrivate {
-		priv, err := ossl.BN_bin2bn(base(bytes), int32(len(bytes)), nil)
+		priv, err := ossl.BN_bin2bn(bytes, nil)
 		if err != nil {
 			return nil, err
 		}
@@ -183,7 +183,7 @@ func newECDHPkey1(nid int32, bytes []byte, isPrivate bool) (pkey ossl.EVP_PKEY_P
 			return nil, err
 		}
 		defer ossl.EC_POINT_free(pub)
-		if _, err := ossl.EC_POINT_oct2point(group, pub, base(bytes), len(bytes), nil); err != nil {
+		if _, err := ossl.EC_POINT_oct2point(group, pub, bytes, nil); err != nil {
 			return nil, err
 		}
 		if _, err := ossl.EC_KEY_set_public_key(key, pub); err != nil {
@@ -212,7 +212,7 @@ func newECDHPkey3(nid int32, bytes []byte, isPrivate bool) (ossl.EVP_PKEY_PTR, e
 	bld.addUTF8String(_OSSL_PKEY_PARAM_GROUP_NAME, ossl.OBJ_nid2sn(nid), 0)
 	var selection int32
 	if isPrivate {
-		priv, err := ossl.BN_bin2bn(base(bytes), int32(len(bytes)), nil)
+		priv, err := ossl.BN_bin2bn(bytes, nil)
 		if err != nil {
 			return nil, err
 		}

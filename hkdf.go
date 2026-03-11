@@ -180,7 +180,7 @@ func ExtractHKDF(h func() hash.Hash, secret, salt []byte) ([]byte, error) {
 			return nil, err
 		}
 		out := make([]byte, size)
-		if _, err := ossl.EVP_KDF_derive(ctx, base(out), len(out), nil); err != nil {
+		if _, err := ossl.EVP_KDF_derive(ctx, out, nil); err != nil {
 			return nil, err
 		}
 		return out, nil
@@ -230,7 +230,7 @@ func ExpandHKDFOneShot(h func() hash.Hash, pseudorandomKey, info []byte, keyLeng
 			// We can only exit after calling newHKDFCtx3 because we still need it to validate the parameters.
 			return out, nil
 		}
-		if _, err := ossl.EVP_KDF_derive(ctx, base(out), keyLength, nil); err != nil {
+		if _, err := ossl.EVP_KDF_derive(ctx, out, nil); err != nil {
 			return nil, err
 		}
 	default:
@@ -258,7 +258,7 @@ func ExpandTLS13KDF(h func() hash.Hash, pseudorandomKey, label, context []byte, 
 		return nil, err
 	}
 	defer ossl.EVP_KDF_CTX_free(ctx)
-	if _, err := ossl.EVP_KDF_derive(ctx, base(out), keyLength, nil); err != nil {
+	if _, err := ossl.EVP_KDF_derive(ctx, out, nil); err != nil {
 		return nil, err
 	}
 	return out, nil
@@ -447,7 +447,7 @@ func (c *hkdf3) Read(p []byte) (int, error) {
 	}
 	c.buf = append(c.buf, make([]byte, needLen)...)
 	outLen := prevLen + needLen
-	if _, err := ossl.EVP_KDF_derive(c.ctx, base(c.buf), outLen, nil); err != nil {
+	if _, err := ossl.EVP_KDF_derive(c.ctx, c.buf[:outLen], nil); err != nil {
 		return 0, err
 	}
 	n := copy(p, c.buf[prevLen:outLen])

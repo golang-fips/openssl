@@ -30,7 +30,7 @@ func shakeOneShot(secuirtyBits int, data []byte, out []byte) {
 	if _, err := ossl.EVP_DigestUpdate(ctx, data); err != nil {
 		panic(err)
 	}
-	if _, err := ossl.EVP_DigestFinalXOF(ctx, out, len(out)); err != nil {
+	if _, err := ossl.EVP_DigestFinalXOF(ctx, out); err != nil {
 		panic(err)
 	}
 }

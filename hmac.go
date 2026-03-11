@@ -7,7 +7,6 @@ import (
 	"runtime"
 	"slices"
 	"sync"
-	"unsafe"
 
 	"github.com/golang-fips/openssl/v2/internal/ossl"
 )
@@ -81,7 +80,7 @@ func newHMAC1(key []byte, md ossl.EVP_MD_PTR) hmacCtx1 {
 	if err != nil {
 		panic(err)
 	}
-	if _, err := ossl.HMAC_Init_ex(ctx, unsafe.Pointer(&key[0]), int32(len(key)), md, nil); err != nil {
+	if _, err := ossl.HMAC_Init_ex(ctx, key, md, nil); err != nil {
 		panic(err)
 	}
 	return hmacCtx1{ctx}
@@ -148,7 +147,7 @@ func newHMAC3(key []byte, md ossl.EVP_MD_PTR) hmacCtx3 {
 		panic(err)
 	}
 
-	if _, err := ossl.EVP_MAC_init(ctx, base(key), len(key), params); err != nil {
+	if _, err := ossl.EVP_MAC_init(ctx, key, params); err != nil {
 		ossl.EVP_MAC_CTX_free(ctx)
 		panic(err)
 	}
@@ -168,11 +167,11 @@ func newHMAC3(key []byte, md ossl.EVP_MD_PTR) hmacCtx3 {
 func (h *opensslHMAC) Reset() {
 	switch major() {
 	case 1:
-		if _, err := ossl.HMAC_Init_ex(h.ctx1.ctx, nil, 0, nil, nil); err != nil {
+		if _, err := ossl.HMAC_Init_ex(h.ctx1.ctx, nil, nil, nil); err != nil {
 			panic(err)
 		}
 	case 3:
-		if _, err := ossl.EVP_MAC_init(h.ctx3.ctx, base(h.ctx3.key), len(h.ctx3.key), nil); err != nil {
+		if _, err := ossl.EVP_MAC_init(h.ctx3.ctx, h.ctx3.key, nil); err != nil {
 			panic(err)
 		}
 	default:
@@ -195,9 +194,9 @@ func (h *opensslHMAC) Write(p []byte) (int, error) {
 	if len(p) > 0 {
 		switch major() {
 		case 1:
-			ossl.HMAC_Update(h.ctx1.ctx, base(p), len(p))
+			ossl.HMAC_Update(h.ctx1.ctx, p)
 		case 3:
-			ossl.EVP_MAC_update(h.ctx3.ctx, base(p), len(p))
+			ossl.EVP_MAC_update(h.ctx3.ctx, p)
 		default:
 			panic(errUnsupportedVersion())
 		}
@@ -229,14 +228,14 @@ func (h *opensslHMAC) Sum(in []byte) []byte {
 		if _, err := ossl.HMAC_CTX_copy(ctx2, h.ctx1.ctx); err != nil {
 			panic(err)
 		}
-		ossl.HMAC_Final(ctx2, base(h.sum[:h.size]), nil)
+		ossl.HMAC_Final(ctx2, h.sum[:h.size], nil)
 	case 3:
 		ctx2, err := ossl.EVP_MAC_CTX_dup(h.ctx3.ctx)
 		if err != nil {
 			panic(err)
 		}
 		defer ossl.EVP_MAC_CTX_free(ctx2)
-		ossl.EVP_MAC_final(ctx2, base(h.sum[:h.size]), nil, len(h.sum))
+		ossl.EVP_MAC_final(ctx2, h.sum[:h.size], nil)
 	default:
 		panic(errUnsupportedVersion())
 	}

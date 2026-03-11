@@ -129,7 +129,7 @@ func NewPublicKeyEd25519(pub []byte) (*PublicKeyEd25519, error) {
 	if len(pub) != publicKeySizeEd25519 {
 		panic("ed25519: bad public key length: " + strconv.Itoa(len(pub)))
 	}
-	pkey, err := ossl.EVP_PKEY_new_raw_public_key(ossl.EVP_PKEY_ED25519, nil, base(pub), len(pub))
+	pkey, err := ossl.EVP_PKEY_new_raw_public_key(ossl.EVP_PKEY_ED25519, nil, pub)
 	if err != nil {
 		return nil, err
 	}
@@ -145,7 +145,7 @@ func NewPrivateKeyEd25519FromSeed(seed []byte) (*PrivateKeyEd25519, error) {
 	if len(seed) != seedSizeEd25519 {
 		panic("ed25519: bad seed length: " + strconv.Itoa(len(seed)))
 	}
-	pkey, err := ossl.EVP_PKEY_new_raw_private_key(ossl.EVP_PKEY_ED25519, nil, base(seed), len(seed))
+	pkey, err := ossl.EVP_PKEY_new_raw_private_key(ossl.EVP_PKEY_ED25519, nil, seed)
 	if err != nil {
 		return nil, err
 	}
@@ -183,7 +183,7 @@ func signEd25519(priv *PrivateKeyEd25519, sig, message []byte) error {
 		return err
 	}
 	siglen := signatureSizeEd25519
-	if _, err := ossl.EVP_DigestSign(ctx, base(sig), &siglen, base(message), len(message)); err != nil {
+	if _, err := ossl.EVP_DigestSign(ctx, sig, &siglen, message); err != nil {
 		return err
 	}
 	if siglen != signatureSizeEd25519 {
@@ -203,7 +203,7 @@ func VerifyEd25519(pub *PublicKeyEd25519, message, sig []byte) error {
 	if _, err := ossl.EVP_DigestVerifyInit(ctx, nil, nil, nil, pub._pkey); err != nil {
 		return err
 	}
-	if _, err := ossl.EVP_DigestVerify(ctx, base(sig), len(sig), base(message), len(message)); err != nil {
+	if _, err := ossl.EVP_DigestVerify(ctx, sig, message); err != nil {
 		return errors.New("ed25519: invalid signature")
 	}
 	return nil

@@ -86,13 +86,13 @@ func curveSize(curve string) int {
 // encodeEcPoint encodes pt.
 func encodeEcPoint(group ossl.EC_GROUP_PTR, pt ossl.EC_POINT_PTR) ([]byte, error) {
 	// Get encoded point size.
-	n, err := ossl.EC_POINT_point2oct(group, pt, ossl.POINT_CONVERSION_UNCOMPRESSED, nil, 0, nil)
+	n, err := ossl.EC_POINT_point2oct(group, pt, ossl.POINT_CONVERSION_UNCOMPRESSED, nil, nil)
 	if err != nil {
 		return nil, err
 	}
 	// Encode point into bytes.
 	bytes := make([]byte, n)
-	if _, err = ossl.EC_POINT_point2oct(group, pt, ossl.POINT_CONVERSION_UNCOMPRESSED, base(bytes), n, nil); err != nil {
+	if _, err = ossl.EC_POINT_point2oct(group, pt, ossl.POINT_CONVERSION_UNCOMPRESSED, bytes, nil); err != nil {
 		return nil, err
 	}
 	return bytes, nil

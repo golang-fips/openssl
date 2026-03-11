@@ -298,7 +298,7 @@ func generateMLKEMSeed(keyType int32, seed []byte) error {
 	}
 	defer ossl.EVP_PKEY_free(pkey)
 
-	_, err = ossl.EVP_PKEY_get_octet_string_param(pkey, _OSSL_PKEY_PARAM_ML_KEM_SEED.ptr(), base(seed), seedSizeMLKEM, nil)
+	_, err = ossl.EVP_PKEY_get_octet_string_param(pkey, _OSSL_PKEY_PARAM_ML_KEM_SEED.ptr(), seed, nil)
 	return err
 }
 

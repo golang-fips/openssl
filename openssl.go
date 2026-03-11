@@ -117,23 +117,6 @@ func SetFIPS(enable bool) error {
 	return osslsetup.SetFIPS(enable)
 }
 
-var zero byte
-
-// baseNeverEmpty returns the address of the underlying array in b.
-// If b has zero length, it returns a pointer to a zero byte.
-func baseNeverEmpty(b []byte) *byte {
-	if len(b) == 0 {
-		return &zero
-	}
-	return unsafe.SliceData(b)
-}
-
-// pbase returns the address of the underlying array in b,
-// being careful not to panic when b has zero length.
-func pbase(b []byte) unsafe.Pointer {
-	return unsafe.Pointer(base(b))
-}
-
 // base returns the address of the underlying array in b,
 // being careful not to panic when b has zero length.
 func base(b []byte) *byte {
@@ -207,7 +190,7 @@ func bigToBN(x BigInt) (ossl.BIGNUM_PTR, error) {
 	}
 	// Limbs are always ordered in LSB first, so we can safely apply
 	// BN_lebin2bn regardless of host endianness.
-	bn, err := ossl.BN_lebin2bn(wbase(x), int32(len(x)*wordBytes), nil)
+	bn, err := ossl.BN_lebin2bn(unsafe.Slice(wbase(x), len(x)*wordBytes), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -222,7 +205,7 @@ func bnToBig(bn ossl.BIGNUM_PTR) BigInt {
 	// Limbs are always ordered in LSB first, so we can safely apply
 	// BN_bn2lebinpad regardless of host endianness.
 	x := make(BigInt, ossl.BN_num_bits(bn))
-	if _, err := ossl.BN_bn2lebinpad(bn, wbase(x), int32(len(x)*wordBytes)); err != nil {
+	if _, err := ossl.BN_bn2lebinpad(bn, unsafe.Slice(wbase(x), len(x)*wordBytes)); err != nil {
 		panic(err)
 	}
 	if isBigEndian() {
@@ -235,7 +218,7 @@ func bnToBig(bn ossl.BIGNUM_PTR) BigInt {
 // it at to, padding with zeroes if necessary. If len(to) is not large enough to
 // hold the result, an error is returned.
 func bnToBinPad(bn ossl.BIGNUM_PTR, to []byte) error {
-	_, err := ossl.BN_bn2binpad(bn, base(to), int32(len(to)))
+	_, err := ossl.BN_bn2binpad(bn, to)
 	return err
 }
 
