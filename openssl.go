@@ -117,8 +117,8 @@ func SetFIPS(enable bool) error {
 	return osslsetup.SetFIPS(enable)
 }
 
-// sliceNeverEmpty returns b if non-nil, and a non-nil zero-length slice otherwise.
-func sliceNeverEmpty(b []byte) []byte {
+// sliceNeverNil returns b if non-nil, and a non-nil zero-length slice otherwise.
+func sliceNeverNil(b []byte) []byte {
 	if b == nil {
 		return []byte{}
 	}
