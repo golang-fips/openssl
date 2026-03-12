@@ -322,13 +322,10 @@ var attributes = [...]attribute{
 		name:        "slice",
 		description: "The parameter corresponds to a Go slice.",
 		handle: func(opts *Attrs, s ...string) error {
-			if len(s) == 0 || len(s) > 2 {
-				return errors.New("requires 1 or 2 arguments")
+			if len(s) != 2 {
+				return errors.New("requires 2 arguments")
 			}
-			slice := Slice{Ptr: s[0]}
-			if len(s) == 2 {
-				slice.Len = s[1]
-			}
+			slice := Slice{Ptr: s[0], Len: s[1]}
 			opts.Slice = append(opts.Slice, slice)
 			return nil
 		},

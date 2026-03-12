@@ -520,7 +520,7 @@ func evpHashSign(withKey withKeyFunc, h crypto.Hash, msg []byte) ([]byte, error)
 	}
 	out = make([]byte, outLen)
 	// Obtain the signature
-	if _, err := ossl.EVP_DigestSignFinal(ctx, base(out), &outLen); err != nil {
+	if _, err := ossl.EVP_DigestSignFinal(ctx, out, &outLen); err != nil {
 		return nil, err
 	}
 	return out[:outLen], nil

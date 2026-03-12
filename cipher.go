@@ -476,7 +476,7 @@ func (g *cipherGCM) Seal(dst, nonce, plaintext, aad []byte) []byte {
 	if len(plaintext) != int(outl) {
 		panic("cipher: incorrect length returned from GCM EncryptUpdate")
 	}
-	if _, err := ossl.EVP_EncryptFinal_ex(ctx, base(out[outl:]), &discard); err != nil {
+	if _, err := ossl.EVP_EncryptFinal_ex(ctx, out[outl:], &discard); err != nil {
 		panic(err)
 	}
 	if _, err := ossl.EVP_CIPHER_CTX_ctrl(ctx, ossl.EVP_CTRL_GCM_GET_TAG, 16, unsafe.Pointer(base(out[outl:]))); err != nil {
@@ -527,7 +527,7 @@ func (g *cipherGCM) SealWithRandomNonce(out, nonce, plaintext, aad []byte) {
 	if len(plaintext) != int(outl) {
 		panic("cipher: incorrect length returned from GCM EncryptUpdate")
 	}
-	if _, err := ossl.EVP_EncryptFinal_ex(ctx, base(out[outl:]), &discard); err != nil {
+	if _, err := ossl.EVP_EncryptFinal_ex(ctx, out[outl:], &discard); err != nil {
 		panic(err)
 	}
 	if _, err := ossl.EVP_CIPHER_CTX_ctrl(ctx, ossl.EVP_CTRL_GCM_GET_TAG, 16, unsafe.Pointer(base(out[outl:]))); err != nil {
@@ -591,7 +591,7 @@ func (g *cipherGCM) Open(dst, nonce, ciphertext, aad []byte) (_ []byte, err erro
 	if len(ciphertext) != int(outl) {
 		return nil, errOpen
 	}
-	if _, err := ossl.EVP_DecryptFinal_ex(ctx, base(out[outl:]), &discard); err != nil {
+	if _, err := ossl.EVP_DecryptFinal_ex(ctx, out[outl:], &discard); err != nil {
 		return nil, errOpen
 	}
 	runtime.KeepAlive(g)

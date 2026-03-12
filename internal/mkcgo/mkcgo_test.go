@@ -376,12 +376,12 @@ void F1(void) __attribute__((framework("t1")));
 			content: `
 void F1(void * p, int l) __attribute__((slice));
 `,
-			want: `can't extract function attributes: error parsing attribute slice: requires 1 or 2 arguments`,
+			want: `can't extract function attributes: error parsing attribute slice: requires 2 arguments`,
 		}, {
 			content: `
 void F1(void * p, int l, int m) __attribute__((slice("p", "l", "m")));
 `,
-			want: `can't extract function attributes: error parsing attribute slice: requires 1 or 2 arguments`,
+			want: `can't extract function attributes: error parsing attribute slice: requires 2 arguments`,
 		},
 	}
 	for i, tt := range tests {

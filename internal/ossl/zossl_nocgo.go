@@ -431,6 +431,9 @@ func EVP_CipherInit_ex(ctx EVP_CIPHER_CTX_PTR, __type EVP_CIPHER_PTR, impl ENGIN
 var _mkcgo_EVP_CipherUpdate uintptr
 
 func EVP_CipherUpdate(ctx EVP_CIPHER_CTX_PTR, out []byte, outl *int32, in []byte) (int32, error) {
+	if outl == nil || int(*outl) > len(out) {
+		panic("EVP_CipherUpdate: invalid outl for len(out)")
+	}
 	var _err uintptr
 	r0, _ := syscallN(3, _mkcgo_EVP_CipherUpdate, uintptr(ctx), uintptr(unsafe.Pointer(unsafe.SliceData(out))), uintptr(unsafe.Pointer(outl)), uintptr(unsafe.Pointer(unsafe.SliceData(in))), uintptr(len(in)), uintptr(unsafe.Pointer(&_err)))
 	return int32(r0), newMkcgoErr("EVP_CipherUpdate", _err)
@@ -438,9 +441,12 @@ func EVP_CipherUpdate(ctx EVP_CIPHER_CTX_PTR, out []byte, outl *int32, in []byte
 
 var _mkcgo_EVP_DecryptFinal_ex uintptr
 
-func EVP_DecryptFinal_ex(ctx EVP_CIPHER_CTX_PTR, outm *byte, outl *int32) (int32, error) {
+func EVP_DecryptFinal_ex(ctx EVP_CIPHER_CTX_PTR, outm []byte, outl *int32) (int32, error) {
+	if outl == nil || int(*outl) > len(outm) {
+		panic("EVP_DecryptFinal_ex: invalid outl for len(outm)")
+	}
 	var _err uintptr
-	r0, _ := syscallN(3, _mkcgo_EVP_DecryptFinal_ex, uintptr(ctx), uintptr(unsafe.Pointer(outm)), uintptr(unsafe.Pointer(outl)), uintptr(unsafe.Pointer(&_err)))
+	r0, _ := syscallN(3, _mkcgo_EVP_DecryptFinal_ex, uintptr(ctx), uintptr(unsafe.Pointer(unsafe.SliceData(outm))), uintptr(unsafe.Pointer(outl)), uintptr(unsafe.Pointer(&_err)))
 	return int32(r0), newMkcgoErr("EVP_DecryptFinal_ex", _err)
 }
 
@@ -455,6 +461,9 @@ func EVP_DecryptInit_ex(ctx EVP_CIPHER_CTX_PTR, __type EVP_CIPHER_PTR, impl ENGI
 var _mkcgo_EVP_DecryptUpdate uintptr
 
 func EVP_DecryptUpdate(ctx EVP_CIPHER_CTX_PTR, out []byte, outl *int32, in []byte) (int32, error) {
+	if outl == nil || int(*outl) > len(out) {
+		panic("EVP_DecryptUpdate: invalid outl for len(out)")
+	}
 	var _err uintptr
 	r0, _ := syscallN(3, _mkcgo_EVP_DecryptUpdate, uintptr(ctx), uintptr(unsafe.Pointer(unsafe.SliceData(out))), uintptr(unsafe.Pointer(outl)), uintptr(unsafe.Pointer(unsafe.SliceData(in))), uintptr(len(in)), uintptr(unsafe.Pointer(&_err)))
 	return int32(r0), newMkcgoErr("EVP_DecryptUpdate", _err)
@@ -463,6 +472,9 @@ func EVP_DecryptUpdate(ctx EVP_CIPHER_CTX_PTR, out []byte, outl *int32, in []byt
 var _mkcgo_EVP_Digest uintptr
 
 func EVP_Digest(data []byte, md []byte, size *uint32, __type EVP_MD_PTR, impl ENGINE_PTR) (int32, error) {
+	if size == nil || int(*size) > len(md) {
+		panic("EVP_Digest: invalid size for len(md)")
+	}
 	var _err uintptr
 	r0, _ := syscallN(3, _mkcgo_EVP_Digest, uintptr(unsafe.Pointer(unsafe.SliceData(data))), uintptr(len(data)), uintptr(unsafe.Pointer(unsafe.SliceData(md))), uintptr(unsafe.Pointer(size)), uintptr(__type), uintptr(impl), uintptr(unsafe.Pointer(&_err)))
 	return int32(r0), newMkcgoErr("EVP_Digest", _err)
@@ -479,6 +491,9 @@ func EVP_DigestFinalXOF(ctx EVP_MD_CTX_PTR, md []byte) (int32, error) {
 var _mkcgo_EVP_DigestFinal_ex uintptr
 
 func EVP_DigestFinal_ex(ctx EVP_MD_CTX_PTR, md []byte, s *uint32) (int32, error) {
+	if s == nil || int(*s) > len(md) {
+		panic("EVP_DigestFinal_ex: invalid s for len(md)")
+	}
 	var _err uintptr
 	r0, _ := syscallN(3, _mkcgo_EVP_DigestFinal_ex, uintptr(ctx), uintptr(unsafe.Pointer(unsafe.SliceData(md))), uintptr(unsafe.Pointer(s)), uintptr(unsafe.Pointer(&_err)))
 	return int32(r0), newMkcgoErr("EVP_DigestFinal_ex", _err)
@@ -503,6 +518,9 @@ func EVP_DigestInit_ex(ctx EVP_MD_CTX_PTR, __type EVP_MD_PTR, impl ENGINE_PTR) (
 var _mkcgo_EVP_DigestSign uintptr
 
 func EVP_DigestSign(ctx EVP_MD_CTX_PTR, sigret []byte, siglen *int, tbs []byte) (int32, error) {
+	if siglen == nil || int(*siglen) > len(sigret) {
+		panic("EVP_DigestSign: invalid siglen for len(sigret)")
+	}
 	var _err uintptr
 	r0, _ := syscallN(3, _mkcgo_EVP_DigestSign, uintptr(ctx), uintptr(unsafe.Pointer(unsafe.SliceData(sigret))), uintptr(unsafe.Pointer(siglen)), uintptr(unsafe.Pointer(unsafe.SliceData(tbs))), uintptr(len(tbs)), uintptr(unsafe.Pointer(&_err)))
 	return int32(r0), newMkcgoErr("EVP_DigestSign", _err)
@@ -510,9 +528,12 @@ func EVP_DigestSign(ctx EVP_MD_CTX_PTR, sigret []byte, siglen *int, tbs []byte) 
 
 var _mkcgo_EVP_DigestSignFinal uintptr
 
-func EVP_DigestSignFinal(ctx EVP_MD_CTX_PTR, sig *byte, siglen *int) (int32, error) {
+func EVP_DigestSignFinal(ctx EVP_MD_CTX_PTR, sig []byte, siglen *int) (int32, error) {
+	if siglen == nil || int(*siglen) > len(sig) {
+		panic("EVP_DigestSignFinal: invalid siglen for len(sig)")
+	}
 	var _err uintptr
-	r0, _ := syscallN(3, _mkcgo_EVP_DigestSignFinal, uintptr(ctx), uintptr(mkcgoEscapePtrOssl(unsafe.Pointer(sig))), uintptr(mkcgoEscapePtrOssl(unsafe.Pointer(siglen))), uintptr(unsafe.Pointer(&_err)))
+	r0, _ := syscallN(3, _mkcgo_EVP_DigestSignFinal, uintptr(ctx), uintptr(mkcgoEscapePtrOssl(unsafe.Pointer(unsafe.SliceData(sig)))), uintptr(mkcgoEscapePtrOssl(unsafe.Pointer(siglen))), uintptr(unsafe.Pointer(&_err)))
 	return int32(r0), newMkcgoErr("EVP_DigestSignFinal", _err)
 }
 
@@ -566,9 +587,12 @@ func EVP_DigestVerifyInit(ctx EVP_MD_CTX_PTR, pctx *EVP_PKEY_CTX_PTR, __type EVP
 
 var _mkcgo_EVP_EncryptFinal_ex uintptr
 
-func EVP_EncryptFinal_ex(ctx EVP_CIPHER_CTX_PTR, out *byte, outl *int32) (int32, error) {
+func EVP_EncryptFinal_ex(ctx EVP_CIPHER_CTX_PTR, out []byte, outl *int32) (int32, error) {
+	if outl == nil || int(*outl) > len(out) {
+		panic("EVP_EncryptFinal_ex: invalid outl for len(out)")
+	}
 	var _err uintptr
-	r0, _ := syscallN(3, _mkcgo_EVP_EncryptFinal_ex, uintptr(ctx), uintptr(unsafe.Pointer(out)), uintptr(unsafe.Pointer(outl)), uintptr(unsafe.Pointer(&_err)))
+	r0, _ := syscallN(3, _mkcgo_EVP_EncryptFinal_ex, uintptr(ctx), uintptr(unsafe.Pointer(unsafe.SliceData(out))), uintptr(unsafe.Pointer(outl)), uintptr(unsafe.Pointer(&_err)))
 	return int32(r0), newMkcgoErr("EVP_EncryptFinal_ex", _err)
 }
 
@@ -583,6 +607,9 @@ func EVP_EncryptInit_ex(ctx EVP_CIPHER_CTX_PTR, __type EVP_CIPHER_PTR, impl ENGI
 var _mkcgo_EVP_EncryptUpdate uintptr
 
 func EVP_EncryptUpdate(ctx EVP_CIPHER_CTX_PTR, out []byte, outl *int32, in []byte) (int32, error) {
+	if outl == nil || int(*outl) > len(out) {
+		panic("EVP_EncryptUpdate: invalid outl for len(out)")
+	}
 	var _err uintptr
 	r0, _ := syscallN(3, _mkcgo_EVP_EncryptUpdate, uintptr(ctx), uintptr(unsafe.Pointer(unsafe.SliceData(out))), uintptr(unsafe.Pointer(outl)), uintptr(unsafe.Pointer(unsafe.SliceData(in))), uintptr(len(in)), uintptr(unsafe.Pointer(&_err)))
 	return int32(r0), newMkcgoErr("EVP_EncryptUpdate", _err)
@@ -829,9 +856,9 @@ func EVP_MD_get_type(md EVP_MD_PTR) int32 {
 
 var _mkcgo_EVP_PKEY_CTX_add1_hkdf_info uintptr
 
-func EVP_PKEY_CTX_add1_hkdf_info(arg0 EVP_PKEY_CTX_PTR, arg1 *byte, arg2 int32) (int32, error) {
+func EVP_PKEY_CTX_add1_hkdf_info(arg0 EVP_PKEY_CTX_PTR, arg1 []byte) (int32, error) {
 	var _err uintptr
-	r0, _ := syscallN(3, _mkcgo_EVP_PKEY_CTX_add1_hkdf_info, uintptr(arg0), uintptr(mkcgoEscapePtrOssl(unsafe.Pointer(arg1))), uintptr(arg2), uintptr(unsafe.Pointer(&_err)))
+	r0, _ := syscallN(3, _mkcgo_EVP_PKEY_CTX_add1_hkdf_info, uintptr(arg0), uintptr(mkcgoEscapePtrOssl(unsafe.Pointer(unsafe.SliceData(arg1)))), uintptr(len(arg1)), uintptr(unsafe.Pointer(&_err)))
 	return int32(r0), newMkcgoErr("EVP_PKEY_CTX_add1_hkdf_info", _err)
 }
 
@@ -883,17 +910,17 @@ func EVP_PKEY_CTX_set0_rsa_oaep_label(ctx EVP_PKEY_CTX_PTR, label []byte) (int32
 
 var _mkcgo_EVP_PKEY_CTX_set1_hkdf_key uintptr
 
-func EVP_PKEY_CTX_set1_hkdf_key(arg0 EVP_PKEY_CTX_PTR, arg1 *byte, arg2 int32) (int32, error) {
+func EVP_PKEY_CTX_set1_hkdf_key(arg0 EVP_PKEY_CTX_PTR, arg1 []byte) (int32, error) {
 	var _err uintptr
-	r0, _ := syscallN(3, _mkcgo_EVP_PKEY_CTX_set1_hkdf_key, uintptr(arg0), uintptr(mkcgoEscapePtrOssl(unsafe.Pointer(arg1))), uintptr(arg2), uintptr(unsafe.Pointer(&_err)))
+	r0, _ := syscallN(3, _mkcgo_EVP_PKEY_CTX_set1_hkdf_key, uintptr(arg0), uintptr(mkcgoEscapePtrOssl(unsafe.Pointer(unsafe.SliceData(arg1)))), uintptr(len(arg1)), uintptr(unsafe.Pointer(&_err)))
 	return int32(r0), newMkcgoErr("EVP_PKEY_CTX_set1_hkdf_key", _err)
 }
 
 var _mkcgo_EVP_PKEY_CTX_set1_hkdf_salt uintptr
 
-func EVP_PKEY_CTX_set1_hkdf_salt(arg0 EVP_PKEY_CTX_PTR, arg1 *byte, arg2 int32) (int32, error) {
+func EVP_PKEY_CTX_set1_hkdf_salt(arg0 EVP_PKEY_CTX_PTR, arg1 []byte) (int32, error) {
 	var _err uintptr
-	r0, _ := syscallN(3, _mkcgo_EVP_PKEY_CTX_set1_hkdf_salt, uintptr(arg0), uintptr(mkcgoEscapePtrOssl(unsafe.Pointer(arg1))), uintptr(arg2), uintptr(unsafe.Pointer(&_err)))
+	r0, _ := syscallN(3, _mkcgo_EVP_PKEY_CTX_set1_hkdf_salt, uintptr(arg0), uintptr(mkcgoEscapePtrOssl(unsafe.Pointer(unsafe.SliceData(arg1)))), uintptr(len(arg1)), uintptr(unsafe.Pointer(&_err)))
 	return int32(r0), newMkcgoErr("EVP_PKEY_CTX_set1_hkdf_salt", _err)
 }
 
@@ -982,6 +1009,9 @@ func EVP_PKEY_decapsulate_init(ctx EVP_PKEY_CTX_PTR, params OSSL_PARAM_PTR) (int
 var _mkcgo_EVP_PKEY_decrypt uintptr
 
 func EVP_PKEY_decrypt(arg0 EVP_PKEY_CTX_PTR, arg1 []byte, arg2 *int, arg3 []byte) (int32, error) {
+	if arg2 == nil || int(*arg2) > len(arg1) {
+		panic("EVP_PKEY_decrypt: invalid arg2 for len(arg1)")
+	}
 	var _err uintptr
 	r0, _ := syscallN(3, _mkcgo_EVP_PKEY_decrypt, uintptr(arg0), uintptr(mkcgoEscapePtrOssl(unsafe.Pointer(unsafe.SliceData(arg1)))), uintptr(mkcgoEscapePtrOssl(unsafe.Pointer(arg2))), uintptr(mkcgoEscapePtrOssl(unsafe.Pointer(unsafe.SliceData(arg3)))), uintptr(len(arg3)), uintptr(unsafe.Pointer(&_err)))
 	return int32(r0), newMkcgoErr("EVP_PKEY_decrypt", _err)
@@ -997,9 +1027,12 @@ func EVP_PKEY_decrypt_init(arg0 EVP_PKEY_CTX_PTR) (int32, error) {
 
 var _mkcgo_EVP_PKEY_derive uintptr
 
-func EVP_PKEY_derive(ctx EVP_PKEY_CTX_PTR, key *byte, keylen *int) (int32, error) {
+func EVP_PKEY_derive(ctx EVP_PKEY_CTX_PTR, key []byte, keylen *int) (int32, error) {
+	if keylen == nil || int(*keylen) > len(key) {
+		panic("EVP_PKEY_derive: invalid keylen for len(key)")
+	}
 	var _err uintptr
-	r0, _ := syscallN(3, _mkcgo_EVP_PKEY_derive, uintptr(ctx), uintptr(unsafe.Pointer(key)), uintptr(unsafe.Pointer(keylen)), uintptr(unsafe.Pointer(&_err)))
+	r0, _ := syscallN(3, _mkcgo_EVP_PKEY_derive, uintptr(ctx), uintptr(unsafe.Pointer(unsafe.SliceData(key))), uintptr(unsafe.Pointer(keylen)), uintptr(unsafe.Pointer(&_err)))
 	return int32(r0), newMkcgoErr("EVP_PKEY_derive", _err)
 }
 
@@ -1038,6 +1071,9 @@ func EVP_PKEY_encapsulate_init(ctx EVP_PKEY_CTX_PTR, params OSSL_PARAM_PTR) (int
 var _mkcgo_EVP_PKEY_encrypt uintptr
 
 func EVP_PKEY_encrypt(arg0 EVP_PKEY_CTX_PTR, arg1 []byte, arg2 *int, arg3 []byte) (int32, error) {
+	if arg2 == nil || int(*arg2) > len(arg1) {
+		panic("EVP_PKEY_encrypt: invalid arg2 for len(arg1)")
+	}
 	var _err uintptr
 	r0, _ := syscallN(3, _mkcgo_EVP_PKEY_encrypt, uintptr(arg0), uintptr(mkcgoEscapePtrOssl(unsafe.Pointer(unsafe.SliceData(arg1)))), uintptr(mkcgoEscapePtrOssl(unsafe.Pointer(arg2))), uintptr(mkcgoEscapePtrOssl(unsafe.Pointer(unsafe.SliceData(arg3)))), uintptr(len(arg3)), uintptr(unsafe.Pointer(&_err)))
 	return int32(r0), newMkcgoErr("EVP_PKEY_encrypt", _err)
@@ -1131,17 +1167,23 @@ func EVP_PKEY_get_octet_string_param(pkey EVP_PKEY_PTR, key_name *byte, buf []by
 
 var _mkcgo_EVP_PKEY_get_raw_private_key uintptr
 
-func EVP_PKEY_get_raw_private_key(pkey EVP_PKEY_PTR, priv *byte, len *int) (int32, error) {
+func EVP_PKEY_get_raw_private_key(pkey EVP_PKEY_PTR, priv []byte, privlen *int) (int32, error) {
+	if privlen == nil || int(*privlen) > len(priv) {
+		panic("EVP_PKEY_get_raw_private_key: invalid privlen for len(priv)")
+	}
 	var _err uintptr
-	r0, _ := syscallN(3, _mkcgo_EVP_PKEY_get_raw_private_key, uintptr(pkey), uintptr(unsafe.Pointer(priv)), uintptr(unsafe.Pointer(len)), uintptr(unsafe.Pointer(&_err)))
+	r0, _ := syscallN(3, _mkcgo_EVP_PKEY_get_raw_private_key, uintptr(pkey), uintptr(unsafe.Pointer(unsafe.SliceData(priv))), uintptr(unsafe.Pointer(privlen)), uintptr(unsafe.Pointer(&_err)))
 	return int32(r0), newMkcgoErr("EVP_PKEY_get_raw_private_key", _err)
 }
 
 var _mkcgo_EVP_PKEY_get_raw_public_key uintptr
 
-func EVP_PKEY_get_raw_public_key(pkey EVP_PKEY_PTR, pub *byte, len *int) (int32, error) {
+func EVP_PKEY_get_raw_public_key(pkey EVP_PKEY_PTR, pub []byte, publen *int) (int32, error) {
+	if publen == nil || int(*publen) > len(pub) {
+		panic("EVP_PKEY_get_raw_public_key: invalid publen for len(pub)")
+	}
 	var _err uintptr
-	r0, _ := syscallN(3, _mkcgo_EVP_PKEY_get_raw_public_key, uintptr(pkey), uintptr(unsafe.Pointer(pub)), uintptr(unsafe.Pointer(len)), uintptr(unsafe.Pointer(&_err)))
+	r0, _ := syscallN(3, _mkcgo_EVP_PKEY_get_raw_public_key, uintptr(pkey), uintptr(unsafe.Pointer(unsafe.SliceData(pub))), uintptr(unsafe.Pointer(publen)), uintptr(unsafe.Pointer(&_err)))
 	return int32(r0), newMkcgoErr("EVP_PKEY_get_raw_public_key", _err)
 }
 
@@ -1235,15 +1277,18 @@ func EVP_PKEY_set1_EC_KEY(pkey EVP_PKEY_PTR, key EC_KEY_PTR) (int32, error) {
 
 var _mkcgo_EVP_PKEY_set1_encoded_public_key uintptr
 
-func EVP_PKEY_set1_encoded_public_key(pkey EVP_PKEY_PTR, pub *byte, publen int) (int32, error) {
+func EVP_PKEY_set1_encoded_public_key(pkey EVP_PKEY_PTR, pub []byte) (int32, error) {
 	var _err uintptr
-	r0, _ := syscallN(3, _mkcgo_EVP_PKEY_set1_encoded_public_key, uintptr(pkey), uintptr(mkcgoEscapePtrOssl(unsafe.Pointer(pub))), uintptr(publen), uintptr(unsafe.Pointer(&_err)))
+	r0, _ := syscallN(3, _mkcgo_EVP_PKEY_set1_encoded_public_key, uintptr(pkey), uintptr(mkcgoEscapePtrOssl(unsafe.Pointer(unsafe.SliceData(pub)))), uintptr(len(pub)), uintptr(unsafe.Pointer(&_err)))
 	return int32(r0), newMkcgoErr("EVP_PKEY_set1_encoded_public_key", _err)
 }
 
 var _mkcgo_EVP_PKEY_sign uintptr
 
 func EVP_PKEY_sign(arg0 EVP_PKEY_CTX_PTR, arg1 []byte, arg2 *int, arg3 []byte) (int32, error) {
+	if arg2 == nil || int(*arg2) > len(arg1) {
+		panic("EVP_PKEY_sign: invalid arg2 for len(arg1)")
+	}
 	var _err uintptr
 	r0, _ := syscallN(3, _mkcgo_EVP_PKEY_sign, uintptr(arg0), uintptr(mkcgoEscapePtrOssl(unsafe.Pointer(unsafe.SliceData(arg1)))), uintptr(mkcgoEscapePtrOssl(unsafe.Pointer(arg2))), uintptr(mkcgoEscapePtrOssl(unsafe.Pointer(unsafe.SliceData(arg3)))), uintptr(len(arg3)), uintptr(unsafe.Pointer(&_err)))
 	return int32(r0), newMkcgoErr("EVP_PKEY_sign", _err)
@@ -1585,6 +1630,9 @@ func HMAC_CTX_new() (HMAC_CTX_PTR, error) {
 var _mkcgo_HMAC_Final uintptr
 
 func HMAC_Final(arg0 HMAC_CTX_PTR, arg1 []byte, arg2 *uint32) (int32, error) {
+	if arg2 == nil || int(*arg2) > len(arg1) {
+		panic("HMAC_Final: invalid arg2 for len(arg1)")
+	}
 	var _err uintptr
 	r0, _ := syscallN(3, _mkcgo_HMAC_Final, uintptr(arg0), uintptr(unsafe.Pointer(unsafe.SliceData(arg1))), uintptr(unsafe.Pointer(arg2)), uintptr(unsafe.Pointer(&_err)))
 	return int32(r0), newMkcgoErr("HMAC_Final", _err)

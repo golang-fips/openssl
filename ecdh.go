@@ -282,7 +282,7 @@ func ECDH(priv *PrivateKeyECDH, pub *PublicKeyECDH) ([]byte, error) {
 		return nil, err
 	}
 	out := make([]byte, keylen)
-	if _, err := ossl.EVP_PKEY_derive(ctx, base(out), &keylen); err != nil {
+	if _, err := ossl.EVP_PKEY_derive(ctx, out, &keylen); err != nil {
 		return nil, err
 	}
 	return out, nil
@@ -303,7 +303,7 @@ func GenerateKeyECDH(curve string) (*PrivateKeyECDH, []byte, error) {
 	if curve == "X25519" {
 		bytes = make([]byte, privateKeySizeX25519)
 		keylen := len(bytes)
-		if _, err := ossl.EVP_PKEY_get_raw_private_key(pkey, base(bytes), &keylen); err != nil {
+		if _, err := ossl.EVP_PKEY_get_raw_private_key(pkey, bytes, &keylen); err != nil {
 			return nil, nil, err
 		}
 	} else {

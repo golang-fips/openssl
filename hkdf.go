@@ -114,7 +114,7 @@ func (c *hkdf1) Read(p []byte) (int, error) {
 	}
 	c.buf = append(c.buf, make([]byte, needLen)...)
 	outLen := prevLen + needLen
-	if _, err := ossl.EVP_PKEY_derive(c.ctx, base(c.buf), &outLen); err != nil {
+	if _, err := ossl.EVP_PKEY_derive(c.ctx, c.buf, &outLen); err != nil {
 		return 0, err
 	}
 	n := copy(p, c.buf[prevLen:outLen])
@@ -165,7 +165,7 @@ func ExtractHKDF(h func() hash.Hash, secret, salt []byte) ([]byte, error) {
 			return nil, err
 		}
 		out := make([]byte, keylen)
-		if _, err := ossl.EVP_PKEY_derive(ctx, base(out), &keylen); err != nil {
+		if _, err := ossl.EVP_PKEY_derive(ctx, out, &keylen); err != nil {
 			return nil, err
 		}
 		return out[:keylen], nil
@@ -215,7 +215,7 @@ func ExpandHKDFOneShot(h func() hash.Hash, pseudorandomKey, info []byte, keyLeng
 			return out, nil
 		}
 		keylen := keyLength
-		if _, err := ossl.EVP_PKEY_derive(ctx, base(out), &keylen); err != nil {
+		if _, err := ossl.EVP_PKEY_derive(ctx, out, &keylen); err != nil {
 			return nil, err
 		}
 	case 3:

@@ -115,7 +115,7 @@ func generateAndEncodeEcPublicKey(nid int32, newPubKeyPointFn func(group ossl.EC
 
 func extractPKEYRawPublic(pkey ossl.EVP_PKEY_PTR, pub []byte) error {
 	keylen := len(pub)
-	if _, err := ossl.EVP_PKEY_get_raw_public_key(pkey, base(pub), &keylen); err != nil {
+	if _, err := ossl.EVP_PKEY_get_raw_public_key(pkey, pub, &keylen); err != nil {
 		return err
 	}
 	if keylen != len(pub) {
@@ -126,7 +126,7 @@ func extractPKEYRawPublic(pkey ossl.EVP_PKEY_PTR, pub []byte) error {
 
 func extractPKEYRawPrivate(pkey ossl.EVP_PKEY_PTR, pub []byte) error {
 	keylen := len(pub)
-	if _, err := ossl.EVP_PKEY_get_raw_private_key(pkey, base(pub), &keylen); err != nil {
+	if _, err := ossl.EVP_PKEY_get_raw_private_key(pkey, pub, &keylen); err != nil {
 		return err
 	}
 	if keylen != len(pub) {
