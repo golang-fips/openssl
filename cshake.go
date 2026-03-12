@@ -6,6 +6,7 @@ import (
 	"runtime"
 	"strconv"
 	"sync"
+	"unsafe"
 
 	"github.com/golang-fips/openssl/v2/internal/ossl"
 )
@@ -178,7 +179,12 @@ func (s *SHAKE) Read(p []byte) (n int, err error) {
 		return 0, nil
 	}
 	if len(p) != s.lastXofLen {
-		if _, err := ossl.EVP_MD_CTX_ctrl(s.ctx, ossl.EVP_MD_CTRL_XOF_LEN, int32(len(p)), nil); err != nil {
+		xoflen := uint(len(p))
+		params := [2]ossl.OSSL_PARAM{
+			ossl.OSSL_PARAM_construct_size_t(_OSSL_DIGEST_PARAM_XOFLEN.ptr(), &xoflen),
+			ossl.OSSL_PARAM_construct_end(),
+		}
+		if _, err := ossl.EVP_MD_CTX_set_params(s.ctx, (ossl.OSSL_PARAM_PTR)(unsafe.Pointer(&params[0]))); err != nil {
 			panic(err)
 		}
 		s.lastXofLen = len(p)

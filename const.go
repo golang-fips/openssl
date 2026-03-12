@@ -88,4 +88,7 @@ const ( //checkheader:ignore
 
 	// MAC parameters
 	_OSSL_MAC_PARAM_DIGEST cString = "digest\x00"
+
+	// Digests parameters
+	_OSSL_DIGEST_PARAM_XOFLEN cString = "xoflen\x00"
 )

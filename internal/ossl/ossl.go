@@ -37,6 +37,10 @@ func OSSL_PARAM_construct_int32(key *byte, data *int32) OSSL_PARAM {
 	return ossl_param_construct(key, OSSL_PARAM_INTEGER, unsafe.Pointer(data), 4)
 }
 
+func OSSL_PARAM_construct_size_t(key *byte, data *uint) OSSL_PARAM {
+	return ossl_param_construct(key, OSSL_PARAM_UNSIGNED_INTEGER, unsafe.Pointer(data), int(unsafe.Sizeof(uint(0))))
+}
+
 func OSSL_PARAM_construct_end() OSSL_PARAM {
 	return OSSL_PARAM{}
 }
