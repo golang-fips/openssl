@@ -575,8 +575,8 @@ func generateSliceLenPointerChecks(fn *mkcgo.Func, w io.Writer) {
 		if !ok || !isPointerParam(lenParam) {
 			continue
 		}
-		fmt.Fprintf(w, "\tif %s == nil || int(*%s) > len(%s) {\n", slice.Len, slice.Len, slice.Ptr)
-		fmt.Fprintf(w, "\t\tpanic(\"%s: invalid %s for len(%s)\")\n", goSymName(fn.Name), slice.Len, slice.Ptr)
+		fmt.Fprintf(w, "\tif %s != nil && int(*%s) > len(%s) {\n", slice.Len, slice.Len, slice.Ptr)
+		fmt.Fprintf(w, "\t\tpanic(\"%s: *%s exceeds len(%s)\")\n", goSymName(fn.Name), slice.Len, slice.Ptr)
 		fmt.Fprintf(w, "\t}\n")
 	}
 }
