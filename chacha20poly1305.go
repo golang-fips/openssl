@@ -85,7 +85,8 @@ func (c *chacha20poly1305) Seal(dst, nonce, plaintext, additionalData []byte) []
 			panic(err)
 		}
 	}
-	if _, err := ossl.EVP_EncryptFinal_ex(ctx, out[outl:], &outl); err != nil {
+	var discard int32
+	if _, err := ossl.EVP_EncryptFinal_ex(ctx, out[outl:], &discard); err != nil {
 		panic(err)
 	}
 	tag := out[len(out)-chacha20Poly1305Overhead:]
@@ -141,7 +142,8 @@ func (c *chacha20poly1305) Open(dst, nonce, ciphertext, additionalData []byte) (
 			return nil, err
 		}
 	}
-	if _, err := ossl.EVP_DecryptFinal_ex(ctx, out[outl:], &outl); err != nil {
+	var discard int32
+	if _, err := ossl.EVP_DecryptFinal_ex(ctx, out[outl:], &discard); err != nil {
 		return nil, errOpen
 	}
 	runtime.KeepAlive(c)

@@ -476,6 +476,7 @@ func (g *cipherGCM) Seal(dst, nonce, plaintext, aad []byte) []byte {
 	if len(plaintext) != int(outl) {
 		panic("cipher: incorrect length returned from GCM EncryptUpdate")
 	}
+	discard = 0
 	if _, err := ossl.EVP_EncryptFinal_ex(ctx, out[outl:], &discard); err != nil {
 		panic(err)
 	}
@@ -527,6 +528,7 @@ func (g *cipherGCM) SealWithRandomNonce(out, nonce, plaintext, aad []byte) {
 	if len(plaintext) != int(outl) {
 		panic("cipher: incorrect length returned from GCM EncryptUpdate")
 	}
+	discard = 0
 	if _, err := ossl.EVP_EncryptFinal_ex(ctx, out[outl:], &discard); err != nil {
 		panic(err)
 	}
@@ -591,6 +593,7 @@ func (g *cipherGCM) Open(dst, nonce, ciphertext, aad []byte) (_ []byte, err erro
 	if len(ciphertext) != int(outl) {
 		return nil, errOpen
 	}
+	discard = 0
 	if _, err := ossl.EVP_DecryptFinal_ex(ctx, out[outl:], &discard); err != nil {
 		return nil, errOpen
 	}
