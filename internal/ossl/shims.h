@@ -389,7 +389,7 @@ int EVP_MAC_final(_EVP_MAC_CTX_PTR ctx, unsigned char *out, size_t *outl, size_t
 // OSSL_PARAM API
 void OSSL_PARAM_free(_OSSL_PARAM_PTR p) __attribute__((tag("3")));
 const _OSSL_PARAM_PTR OSSL_PARAM_locate_const(const _OSSL_PARAM_PTR p, const char *key) __attribute__((tag("3")));
-_OSSL_PARAM_BLD_PTR OSSL_PARAM_BLD_new(void) __attribute__((tag("3")));
+_OSSL_PARAM_BLD_PTR OSSL_PARAM_BLD_new(void) __attribute__((tag("3"),noerror));
 void OSSL_PARAM_BLD_free(_OSSL_PARAM_BLD_PTR bld) __attribute__((tag("3")));
 _OSSL_PARAM_PTR OSSL_PARAM_BLD_to_param(_OSSL_PARAM_BLD_PTR bld) __attribute__((tag("3")));
 int OSSL_PARAM_BLD_push_utf8_string(_OSSL_PARAM_BLD_PTR bld, const char *key, const char *buf, size_t bsize) __attribute__((tag("3"),slice("buf","bsize")));

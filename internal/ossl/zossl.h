@@ -336,7 +336,7 @@ unsigned int _mkcgo_OPENSSL_version_major(void);
 unsigned int _mkcgo_OPENSSL_version_minor(void);
 unsigned int _mkcgo_OPENSSL_version_patch(void);
 void _mkcgo_OSSL_PARAM_BLD_free(_OSSL_PARAM_BLD_PTR);
-_OSSL_PARAM_BLD_PTR _mkcgo_OSSL_PARAM_BLD_new(uintptr_t *);
+_OSSL_PARAM_BLD_PTR _mkcgo_OSSL_PARAM_BLD_new(void);
 int _mkcgo_OSSL_PARAM_BLD_push_BN(_OSSL_PARAM_BLD_PTR, const char*, const _BIGNUM_PTR, uintptr_t *);
 int _mkcgo_OSSL_PARAM_BLD_push_int32(_OSSL_PARAM_BLD_PTR, const char*, int32_t, uintptr_t *);
 int _mkcgo_OSSL_PARAM_BLD_push_octet_string(_OSSL_PARAM_BLD_PTR, const char*, const unsigned char*, size_t, uintptr_t *);

@@ -343,10 +343,8 @@ func newTLS13KDFExpandCtx3(md ossl.EVP_MD_PTR, label, context, pseudorandomKey [
 		}
 	}()
 
-	bld, err := newParamBuilder()
-	if err != nil {
-		return ctx, err
-	}
+	bld := newParamBuilder()
+	defer bld.finalize()
 	bld.addUTF8String(_OSSL_KDF_PARAM_DIGEST, ossl.EVP_MD_get0_name(md), 0)
 	bld.addInt32(_OSSL_KDF_PARAM_MODE, int32(ossl.EVP_KDF_HKDF_MODE_EXPAND_ONLY))
 	bld.addOctetString(_OSSL_KDF_PARAM_PREFIX, []byte("tls13 "))
@@ -399,10 +397,8 @@ func newHKDFCtx3(md ossl.EVP_MD_PTR, mode int32, secret, salt, pseudorandomKey, 
 		}
 	}()
 
-	bld, err := newParamBuilder()
-	if err != nil {
-		return ctx, err
-	}
+	bld := newParamBuilder()
+	defer bld.finalize()
 	bld.addUTF8String(_OSSL_KDF_PARAM_DIGEST, ossl.EVP_MD_get0_name(md), 0)
 	bld.addInt32(_OSSL_KDF_PARAM_MODE, int32(mode))
 	if len(secret) > 0 {

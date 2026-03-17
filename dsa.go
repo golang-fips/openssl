@@ -246,10 +246,7 @@ func newDSA1(params DSAParameters, x, y BigInt) (pkey ossl.EVP_PKEY_PTR, err err
 func newDSA3(params DSAParameters, x, y BigInt) (ossl.EVP_PKEY_PTR, error) {
 	checkMajorVersion(3)
 
-	bld, err := newParamBuilder()
-	if err != nil {
-		return nil, err
-	}
+	bld := newParamBuilder()
 	defer bld.finalize()
 
 	bld.addBigInt(_OSSL_PKEY_PARAM_FFC_P, params.P, false)

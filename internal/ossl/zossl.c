@@ -1930,10 +1930,8 @@ void _mkcgo_OSSL_PARAM_BLD_free(_OSSL_PARAM_BLD_PTR _arg0) {
 	_g_OSSL_PARAM_BLD_free(_arg0);
 }
 
-_OSSL_PARAM_BLD_PTR _mkcgo_OSSL_PARAM_BLD_new(uintptr_t *_err_state) {
-	_OSSL_PARAM_BLD_PTR _ret = _g_OSSL_PARAM_BLD_new();
-	if (_ret == NULL) *_err_state = mkcgo_err_retrieve();
-	return _ret;
+_OSSL_PARAM_BLD_PTR _mkcgo_OSSL_PARAM_BLD_new(void) {
+	return _g_OSSL_PARAM_BLD_new();
 }
 
 int _mkcgo_OSSL_PARAM_BLD_push_BN(_OSSL_PARAM_BLD_PTR _arg0, const char* _arg1, const _BIGNUM_PTR _arg2, uintptr_t *_err_state) {

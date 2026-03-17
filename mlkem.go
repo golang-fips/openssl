@@ -308,10 +308,7 @@ func createMLKEMPrivateKey(id int32, seed []byte) (ossl.EVP_PKEY_PTR, error) {
 		return nil, errors.New("mlkem: invalid seed size")
 	}
 
-	bld, err := newParamBuilder()
-	if err != nil {
-		return nil, err
-	}
+	bld := newParamBuilder()
 	defer bld.finalize()
 
 	bld.addOctetString(_OSSL_PKEY_PARAM_ML_KEM_SEED, seed)
@@ -327,10 +324,7 @@ func createMLKEMPrivateKey(id int32, seed []byte) (ossl.EVP_PKEY_PTR, error) {
 
 // createMLKEMPublicKey creates an ML-KEM public key from encoded bytes.
 func createMLKEMPublicKey(id int32, pubKeyBytes []byte) (ossl.EVP_PKEY_PTR, error) {
-	bld, err := newParamBuilder()
-	if err != nil {
-		return nil, err
-	}
+	bld := newParamBuilder()
 	defer bld.finalize()
 
 	bld.addOctetString(_OSSL_PKEY_PARAM_PUB_KEY, pubKeyBytes)

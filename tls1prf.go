@@ -137,10 +137,8 @@ func tls1PRF3(result, secret, label, seed []byte, md ossl.EVP_MD_PTR) error {
 	}
 	defer ossl.EVP_KDF_CTX_free(ctx)
 
-	bld, err := newParamBuilder()
-	if err != nil {
-		return err
-	}
+	bld := newParamBuilder()
+	defer bld.finalize()
 	bld.addUTF8String(_OSSL_KDF_PARAM_DIGEST, ossl.EVP_MD_get0_name(md), 0)
 	bld.addOctetString(_OSSL_KDF_PARAM_SECRET, secret)
 	bld.addOctetString(_OSSL_KDF_PARAM_SEED, label)

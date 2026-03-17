@@ -204,10 +204,7 @@ func newECDHPkey1(nid int32, bytes []byte, isPrivate bool) (pkey ossl.EVP_PKEY_P
 func newECDHPkey3(nid int32, bytes []byte, isPrivate bool) (ossl.EVP_PKEY_PTR, error) {
 	checkMajorVersion(3)
 
-	bld, err := newParamBuilder()
-	if err != nil {
-		return nil, err
-	}
+	bld := newParamBuilder()
 	defer bld.finalize()
 	bld.addUTF8String(_OSSL_PKEY_PARAM_GROUP_NAME, ossl.OBJ_nid2sn(nid), 0)
 	var selection int32

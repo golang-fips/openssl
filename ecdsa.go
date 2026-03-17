@@ -199,10 +199,7 @@ func newECDSAKey3(nid int32, bx, by, bd ossl.BIGNUM_PTR) (ossl.EVP_PKEY_PTR, err
 		return nil, err
 	}
 	// Construct the parameters.
-	bld, err := newParamBuilder()
-	if err != nil {
-		return nil, err
-	}
+	bld := newParamBuilder()
 	defer bld.finalize()
 	bld.addUTF8String(_OSSL_PKEY_PARAM_GROUP_NAME, ossl.OBJ_nid2sn(nid), 0)
 	bld.addOctetString(_OSSL_PKEY_PARAM_PUB_KEY, pubBytes)

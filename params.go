@@ -36,17 +36,14 @@ type paramBuilder struct {
 }
 
 // newParamBuilder creates a new paramBuilder.
-func newParamBuilder() (*paramBuilder, error) {
-	bld, err := ossl.OSSL_PARAM_BLD_new()
-	if err != nil {
-		return nil, err
+// [paramBuilder.finalize] must be called to free the builder.
+func newParamBuilder() *paramBuilder {
+	bld := ossl.OSSL_PARAM_BLD_new()
+	if bld == nil {
+		// If this happens it indicated an issue allocating memory.
+		panic("openssl: failed to create OSSL_PARAM_BLD")
 	}
-	pb := &paramBuilder{
-		bld:      bld,
-		bnToFree: make([]bnParam, 0, 8), // the maximum known number of BIGNUMs to free are 8 for RSA
-	}
-	runtime.SetFinalizer(pb, (*paramBuilder).finalize)
-	return pb, nil
+	return &paramBuilder{bld: bld}
 }
 
 // finalize frees the builder.
@@ -156,27 +153,6 @@ func (b *paramBuilder) addBN(name cString, value ossl.BIGNUM_PTR) {
 	}
 }
 
-// addBin adds a byte slice to the builder.
-// The slice is converted to a BIGNUM using BN_bin2bn and freed when the builder is finalized.
-// If private is true, the BIGNUM will be cleared with BN_clear_free,
-// otherwise it will be freed with BN_free.
-func (b *paramBuilder) addBin(name cString, value []byte, private bool) {
-	if !b.check() {
-		return
-	}
-	if len(value) == 0 {
-		// Nothing to do.
-		return
-	}
-	bn, err := ossl.BN_bin2bn(value, nil)
-	if err != nil {
-		b.err = err
-		return
-	}
-	b.bnToFree = append(b.bnToFree, bnParam{bn, private})
-	b.addBN(name, bn)
-}
-
 // addBigInt adds a BigInt to the builder.
 // The BigInt is converted using bigToBN to a BIGNUM that is freed when the builder is finalized.
 // If private is true, the BIGNUM will be cleared with BN_clear_free,
@@ -193,6 +169,11 @@ func (b *paramBuilder) addBigInt(name cString, value BigInt, private bool) {
 	if err != nil {
 		b.err = err
 		return
+	}
+	if b.bnToFree == nil {
+		// Preallocate the slice to avoid growing it later, which would cause allocations and copies.
+		// The maximum known number of BIGNUMs to free are 8 for RSA, so we use that as the capacity.
+		b.bnToFree = make([]bnParam, 0, 8)
 	}
 	b.bnToFree = append(b.bnToFree, bnParam{bn, private})
 	b.addBN(name, bn)

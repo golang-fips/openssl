@@ -96,10 +96,7 @@ var fetchHMAC3 = sync.OnceValue(func() ossl.EVP_MAC_PTR {
 })
 
 func buildHMAC3Params(md ossl.EVP_MD_PTR) (ossl.OSSL_PARAM_PTR, error) {
-	bld, err := newParamBuilder()
-	if err != nil {
-		return nil, err
-	}
+	bld := newParamBuilder()
 	defer bld.finalize()
 	bld.addUTF8String(_OSSL_MAC_PARAM_DIGEST, ossl.EVP_MD_get0_name(md), 0)
 	return bld.build()

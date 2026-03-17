@@ -1716,10 +1716,9 @@ func OSSL_PARAM_BLD_free(bld OSSL_PARAM_BLD_PTR) {
 
 var _mkcgo_OSSL_PARAM_BLD_new uintptr
 
-func OSSL_PARAM_BLD_new() (OSSL_PARAM_BLD_PTR, error) {
-	var _err uintptr
-	r0, _ := syscallN(1, _mkcgo_OSSL_PARAM_BLD_new, uintptr(unsafe.Pointer(&_err)))
-	return OSSL_PARAM_BLD_PTR(r0), newMkcgoErr("OSSL_PARAM_BLD_new", _err)
+func OSSL_PARAM_BLD_new() OSSL_PARAM_BLD_PTR {
+	r0, _ := syscallN(0, _mkcgo_OSSL_PARAM_BLD_new)
+	return OSSL_PARAM_BLD_PTR(r0)
 }
 
 var _mkcgo_OSSL_PARAM_BLD_push_BN uintptr

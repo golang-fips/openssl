@@ -1363,10 +1363,8 @@ func OSSL_PARAM_BLD_free(bld OSSL_PARAM_BLD_PTR) {
 	C._mkcgo_OSSL_PARAM_BLD_free(bld)
 }
 
-func OSSL_PARAM_BLD_new() (OSSL_PARAM_BLD_PTR, error) {
-	var _err C.uintptr_t
-	_ret := C._mkcgo_OSSL_PARAM_BLD_new(mkcgoNoEscape(&_err))
-	return _ret, newMkcgoErr("OSSL_PARAM_BLD_new", uintptr(_err))
+func OSSL_PARAM_BLD_new() OSSL_PARAM_BLD_PTR {
+	return C._mkcgo_OSSL_PARAM_BLD_new()
 }
 
 func OSSL_PARAM_BLD_push_BN(bld OSSL_PARAM_BLD_PTR, key *byte, bn BIGNUM_PTR) (int32, error) {
