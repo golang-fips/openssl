@@ -40,7 +40,7 @@ type paramBuilder struct {
 func newParamBuilder() *paramBuilder {
 	bld := ossl.OSSL_PARAM_BLD_new()
 	if bld == nil {
-		// If this happens it indicated an issue allocating memory.
+		// If this happens it indicates an issue allocating memory.
 		panic("openssl: failed to create OSSL_PARAM_BLD")
 	}
 	return &paramBuilder{bld: bld}
