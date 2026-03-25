@@ -1,6 +1,10 @@
 name: Benchmark
 
 on:
+  # TODO: Remove push trigger after testing; keep only workflow_dispatch.
+  push:
+    branches:
+      - dev/mclayton/benchmark-workflow
   workflow_dispatch:
     inputs:
       base-ref:
@@ -34,9 +38,9 @@ jobs:
         sudo sh ./_openssl_setup/scripts/openssl.sh ${{ matrix.openssl-version }}
         rm -rf _openssl_setup
 
-    - uses: golang-fips/go-infra/.github/actions/benchmark@dev/mclayton/benchmark-workflow
+    - uses: microsoft/go-infra/.github/actions/benchmark@dev/mclayton/benchmark-workflow
       with:
-        base-ref: ${{ inputs.base-ref }}
+        base-ref: ${{ inputs.base-ref || 'v2' }}
         go-version: ${{ matrix.go-version }}
         env-vars: |
           GO_OPENSSL_VERSION_OVERRIDE=${{ matrix.openssl-version }}
@@ -53,9 +57,9 @@ jobs:
           - {os: windows-2022, openssl-version: libcrypto-3-x64.dll}
     runs-on: ${{ matrix.host.os }}
     steps:
-    - uses: golang-fips/go-infra/.github/actions/benchmark@dev/mclayton/benchmark-workflow
+    - uses: microsoft/go-infra/.github/actions/benchmark@dev/mclayton/benchmark-workflow
       with:
-        base-ref: ${{ inputs.base-ref }}
+        base-ref: ${{ inputs.base-ref || 'v2' }}
         go-version: ${{ matrix.go-version }}
         env-vars: |
           GO_OPENSSL_VERSION_OVERRIDE=${{ matrix.host.openssl-version }}
