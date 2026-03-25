@@ -25,60 +25,22 @@ jobs:
     - name: Install build tools
       run: sudo apt-get update && sudo apt-get install -y build-essential
 
-    - name: Checkout HEAD (your branch)
-      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-      with:
-        path: head
-
-    - name: Checkout BASE (target branch)
-      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-      with:
-        ref: ${{ inputs.base-ref }}
-        path: base
-
-    - uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
-      with:
-        go-version: ${{ matrix.go-version }}
-        cache-dependency-path: head/go.mod
-
-    - name: Install benchstat
-      run: go install golang.org/x/perf/cmd/benchstat@latest
-
     - name: Install OpenSSL
-      run: sudo sh ./head/scripts/openssl.sh ${{ matrix.openssl-version }}
-
-    - name: Run benchmarks (base)
-      working-directory: base
-      run: go test -run='^$' -bench=. -count=7 -benchmem -timeout 30m ./... 2>/dev/null | tee ../base.txt
-      env:
-        GO_OPENSSL_VERSION_OVERRIDE: ${{ matrix.openssl-version }}
-        CGO_ENABLED: 1
-
-    - name: Run benchmarks (head)
-      working-directory: head
-      run: go test -run='^$' -bench=. -count=7 -benchmem -timeout 30m ./... 2>/dev/null | tee ../head.txt
-      env:
-        GO_OPENSSL_VERSION_OVERRIDE: ${{ matrix.openssl-version }}
-        CGO_ENABLED: 1
-
-    - name: Compare benchmarks
       run: |
-        benchstat base.txt head.txt | tee benchstat.txt
-        # For sec/op, B/op, allocs/op: a "+" means regression (slower / more allocs).
-        # For B/s: a "+" means improvement (more throughput), so we exclude it.
-        # Only flag regressions >= 5% to ignore CI noise on shared runners.
-        if awk '
-          /^[[:space:]]*│.*(sec\/op|B\/op|allocs\/op)/ { header=1; next }
-          /^$/ { header=0 }
-          header && match($0, /\+([0-9]+\.[0-9]+)% \(p=/, m) { if (m[1]+0 >= 5) found=1 }
-          END { exit !found }
-        ' benchstat.txt; then
-          echo ""
-          echo "Statistically significant benchmark regression(s) >= 5% detected."
-          exit 1
-        fi
-        echo ""
-        echo "No significant benchmark regressions detected."
+        # Checkout just the install script first
+        git clone --depth 1 --filter=blob:none --sparse ${{ github.server_url }}/${{ github.repository }} _openssl_setup
+        cd _openssl_setup && git sparse-checkout set scripts
+        cd ..
+        sudo sh ./_openssl_setup/scripts/openssl.sh ${{ matrix.openssl-version }}
+        rm -rf _openssl_setup
+
+    - uses: golang-fips/go-infra/.github/actions/benchmark@dev/mclayton/benchmark-workflow
+      with:
+        base-ref: ${{ inputs.base-ref }}
+        go-version: ${{ matrix.go-version }}
+        env-vars: |
+          GO_OPENSSL_VERSION_OVERRIDE=${{ matrix.openssl-version }}
+          CGO_ENABLED=1
 
   osslbench:
     strategy:
@@ -91,60 +53,13 @@ jobs:
           - {os: windows-2022, openssl-version: libcrypto-3-x64.dll}
     runs-on: ${{ matrix.host.os }}
     steps:
-    - name: Checkout HEAD (your branch)
-      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+    - uses: golang-fips/go-infra/.github/actions/benchmark@dev/mclayton/benchmark-workflow
       with:
-        path: head
-
-    - name: Checkout BASE (target branch)
-      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-      with:
-        ref: ${{ inputs.base-ref }}
-        path: base
-
-    - uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
-      with:
+        base-ref: ${{ inputs.base-ref }}
         go-version: ${{ matrix.go-version }}
-        cache-dependency-path: head/go.mod
-
-    - name: Install benchstat
-      run: go install golang.org/x/perf/cmd/benchstat@latest
-
-    - name: Run benchmarks (base)
-      shell: bash
-      working-directory: base
-      run: go test -run='^$' -bench=. -count=7 -benchmem -timeout 30m ./... 2>/dev/null | tee ../base.txt
-      env:
-        GO_OPENSSL_VERSION_OVERRIDE: ${{ matrix.host.openssl-version }}
-        CGO_ENABLED: 1
-
-    - name: Run benchmarks (head)
-      shell: bash
-      working-directory: head
-      run: go test -run='^$' -bench=. -count=7 -benchmem -timeout 30m ./... 2>/dev/null | tee ../head.txt
-      env:
-        GO_OPENSSL_VERSION_OVERRIDE: ${{ matrix.host.openssl-version }}
-        CGO_ENABLED: 1
-
-    - name: Compare benchmarks
-      shell: bash
-      run: |
-        benchstat base.txt head.txt | tee benchstat.txt
-        # For sec/op, B/op, allocs/op: a "+" means regression (slower / more allocs).
-        # For B/s: a "+" means improvement (more throughput), so we exclude it.
-        # Only flag regressions >= 5% to ignore CI noise on shared runners.
-        if awk '
-          /^[[:space:]]*│.*(sec\/op|B\/op|allocs\/op)/ { header=1; next }
-          /^$/ { header=0 }
-          header && match($0, /\+([0-9]+\.[0-9]+)% \(p=/, m) { if (m[1]+0 >= 5) found=1 }
-          END { exit !found }
-        ' benchstat.txt; then
-          echo ""
-          echo "Statistically significant benchmark regression(s) >= 5% detected."
-          exit 1
-        fi
-        echo ""
-        echo "No significant benchmark regressions detected."
+        env-vars: |
+          GO_OPENSSL_VERSION_OVERRIDE=${{ matrix.host.openssl-version }}
+          CGO_ENABLED=1
 
   conclusion:
     needs: [bench, osslbench]
