@@ -1,7 +1,12 @@
 name: Benchmark
 
 on:
-  pull_request:
+  workflow_dispatch:
+    inputs:
+      base-ref:
+        description: 'Base ref to compare against (branch, tag, or SHA)'
+        required: true
+        default: 'v2'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -28,7 +33,7 @@ jobs:
     - name: Checkout BASE (target branch)
       uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       with:
-        ref: ${{ github.base_ref }}
+        ref: ${{ inputs.base-ref }}
         path: base
 
     - uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
@@ -94,7 +99,7 @@ jobs:
     - name: Checkout BASE (target branch)
       uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       with:
-        ref: ${{ github.base_ref }}
+        ref: ${{ inputs.base-ref }}
         path: base
 
     - uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
