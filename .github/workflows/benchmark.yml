@@ -1,10 +1,10 @@
 name: Benchmark
 
 on:
-  # TODO: Remove push trigger after testing; keep only workflow_dispatch.
-  push:
-    branches:
-      - dev/mclayton/benchmark-workflow
+  # TODO: Remove pull_request trigger after testing; keep only issue_comment and workflow_dispatch.
+  pull_request:
+  issue_comment:
+    types: [created]
   workflow_dispatch:
     inputs:
       base-ref:
@@ -12,17 +12,72 @@ on:
         required: true
         default: 'v2'
 
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.event.issue.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
-  bench:
+  setup:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event_name == 'pull_request' ||
+      (github.event_name == 'issue_comment' &&
+       github.event.issue.pull_request &&
+       contains(github.event.comment.body, '/bench'))
+    runs-on: ubuntu-latest
+    outputs:
+      head-ref: ${{ steps.resolve.outputs.head-ref }}
+      base-ref: ${{ steps.resolve.outputs.base-ref }}
+      pr-number: ${{ steps.resolve.outputs.pr-number }}
+    steps:
+      - name: React to comment
+        if: github.event_name == 'issue_comment'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.reactions.createForIssueComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id: context.payload.comment.id,
+              content: 'eyes',
+            });
+
+      - name: Resolve refs
+        id: resolve
+        uses: actions/github-script@v7
+        with:
+          script: |
+            if (context.eventName === 'issue_comment') {
+              const pr = await github.rest.pulls.get({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: context.issue.number,
+              });
+              core.setOutput('head-ref', pr.data.head.sha);
+              core.setOutput('base-ref', pr.data.base.ref);
+              core.setOutput('pr-number', String(context.issue.number));
+            } else if (context.eventName === 'pull_request') {
+              core.setOutput('head-ref', context.payload.pull_request.head.sha);
+              core.setOutput('base-ref', context.payload.pull_request.base.ref);
+              core.setOutput('pr-number', String(context.payload.pull_request.number));
+            } else {
+              core.setOutput('head-ref', context.sha);
+              core.setOutput('base-ref', '${{ inputs.base-ref }}');
+              core.setOutput('pr-number', '');
+            }
+
+  bench-ubuntu:
+    needs: setup
     strategy:
       fail-fast: false
       matrix:
         go-version: [1.25.x, 1.26.x]
-        openssl-version: [1.1.0, 1.1.1, 3.0.1, 3.0.13, 3.1.5, 3.2.1, 3.3.0, 3.3.1, 3.4.0, 3.5.0]
+        openssl-version: [3.0.1, 3.0.13, 3.1.5, 3.2.1, 3.3.0, 3.3.1, 3.4.0, 3.5.0]
         host: [ubuntu-22.04, ubuntu-24.04-arm]
     runs-on: ${{ matrix.host }}
     steps:
@@ -38,39 +93,234 @@ jobs:
         sudo sh ./_openssl_setup/scripts/openssl.sh ${{ matrix.openssl-version }}
         rm -rf _openssl_setup
 
-    - uses: microsoft/go-infra/.github/actions/benchmark@dev/mclayton/benchmark-workflow
+    - name: Checkout HEAD
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       with:
-        base-ref: ${{ inputs.base-ref || 'v2' }}
-        go-version: ${{ matrix.go-version }}
-        env-vars: |
-          GO_OPENSSL_VERSION_OVERRIDE=${{ matrix.openssl-version }}
-          CGO_ENABLED=1
+        ref: ${{ needs.setup.outputs.head-ref }}
+        path: head
 
-  osslbench:
+    - name: Checkout BASE
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      with:
+        ref: ${{ needs.setup.outputs.base-ref }}
+        path: base
+
+    - uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
+      with:
+        go-version: ${{ matrix.go-version }}
+        cache-dependency-path: head/go.mod
+
+    - name: Install benchstat
+      run: go install golang.org/x/perf/cmd/benchstat@latest
+
+    - name: Run benchmarks (base)
+      working-directory: base
+      run: |
+        export GO_OPENSSL_VERSION_OVERRIDE=${{ matrix.openssl-version }}
+        export CGO_ENABLED=1
+        go test -run='^$' -bench=. -count=7 -benchmem -timeout 30m ./... 2>/dev/null | tee ../base.txt || true
+
+    - name: Run benchmarks (head)
+      working-directory: head
+      run: |
+        export GO_OPENSSL_VERSION_OVERRIDE=${{ matrix.openssl-version }}
+        export CGO_ENABLED=1
+        go test -run='^$' -bench=. -count=7 -benchmem -timeout 30m ./... 2>/dev/null | tee ../head.txt || true
+
+    - name: Compare benchmarks
+      id: benchstat
+      run: |
+        benchstat base.txt head.txt | tee benchstat.txt
+        THRESHOLD="5"
+        if awk -v threshold="$THRESHOLD" '
+          /^[[:space:]]*│.*(sec\/op|B\/op|allocs\/op)/ { header=1; next }
+          /^$/ { header=0 }
+          header && match($0, /\+([0-9]+\.[0-9]+)% \(p=/, m) { if (m[1]+0 >= threshold) found=1 }
+          END { exit !found }
+        ' benchstat.txt; then
+          echo "regression=true" >> "$GITHUB_OUTPUT"
+        else
+          echo "regression=false" >> "$GITHUB_OUTPUT"
+        fi
+
+    - name: Save status
+      if: always() && steps.benchstat.outcome == 'success'
+      run: echo '${{ steps.benchstat.outputs.regression }}' > status.txt
+
+    - name: Upload benchstat results
+      if: always() && steps.benchstat.outcome == 'success'
+      uses: actions/upload-artifact@v4
+      with:
+        name: benchstat-ubuntu-${{ matrix.host }}-ossl${{ matrix.openssl-version }}-go${{ matrix.go-version }}
+        path: |
+          benchstat.txt
+          status.txt
+
+    - name: Fail on regression
+      if: steps.benchstat.outputs.regression == 'true'
+      run: |
+        echo "Statistically significant benchmark regression(s) >= 5% detected."
+        exit 1
+
+  bench-azl3:
+    needs: setup
     strategy:
       fail-fast: false
       matrix:
         go-version: [1.25.x, 1.26.x]
-        host:
-          - {os: macos-15-intel, openssl-version: /usr/local/opt/openssl@3/lib/libcrypto.3.dylib}
-          - {os: macos-15, openssl-version: /opt/homebrew/opt/openssl@3/lib/libcrypto.3.dylib}
-          - {os: windows-2022, openssl-version: libcrypto-3-x64.dll}
-    runs-on: ${{ matrix.host.os }}
+    runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/azurelinux/base/core:3.0
     steps:
-    - uses: microsoft/go-infra/.github/actions/benchmark@dev/mclayton/benchmark-workflow
+    - name: Install build tools
+      run: tdnf install -y gcc glibc-devel openssl-devel git tar
+
+    - name: Checkout HEAD
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       with:
-        base-ref: ${{ inputs.base-ref || 'v2' }}
+        ref: ${{ needs.setup.outputs.head-ref }}
+        path: head
+
+    - name: Checkout BASE
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      with:
+        ref: ${{ needs.setup.outputs.base-ref }}
+        path: base
+
+    - uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
+      with:
         go-version: ${{ matrix.go-version }}
-        env-vars: |
-          GO_OPENSSL_VERSION_OVERRIDE=${{ matrix.host.openssl-version }}
-          CGO_ENABLED=1
+        cache-dependency-path: head/go.mod
+
+    - name: Install benchstat
+      run: go install golang.org/x/perf/cmd/benchstat@latest
+
+    - name: Run benchmarks (base)
+      working-directory: base
+      run: |
+        export CGO_ENABLED=1
+        go test -run='^$' -bench=. -count=7 -benchmem -timeout 30m ./... 2>/dev/null | tee ../base.txt || true
+
+    - name: Run benchmarks (head)
+      working-directory: head
+      run: |
+        export CGO_ENABLED=1
+        go test -run='^$' -bench=. -count=7 -benchmem -timeout 30m ./... 2>/dev/null | tee ../head.txt || true
+
+    - name: Compare benchmarks
+      id: benchstat
+      run: |
+        benchstat base.txt head.txt | tee benchstat.txt
+        THRESHOLD="5"
+        if awk -v threshold="$THRESHOLD" '
+          /^[[:space:]]*│.*(sec\/op|B\/op|allocs\/op)/ { header=1; next }
+          /^$/ { header=0 }
+          header && match($0, /\+([0-9]+\.[0-9]+)% \(p=/, m) { if (m[1]+0 >= threshold) found=1 }
+          END { exit !found }
+        ' benchstat.txt; then
+          echo "regression=true" >> "$GITHUB_OUTPUT"
+        else
+          echo "regression=false" >> "$GITHUB_OUTPUT"
+        fi
+
+    - name: Save status
+      if: always() && steps.benchstat.outcome == 'success'
+      run: echo '${{ steps.benchstat.outputs.regression }}' > status.txt
+
+    - name: Upload benchstat results
+      if: always() && steps.benchstat.outcome == 'success'
+      uses: actions/upload-artifact@v4
+      with:
+        name: benchstat-azl3-go${{ matrix.go-version }}
+        path: |
+          benchstat.txt
+          status.txt
+
+    - name: Fail on regression
+      if: steps.benchstat.outputs.regression == 'true'
+      run: |
+        echo "Statistically significant benchmark regression(s) >= 5% detected."
+        exit 1
 
   conclusion:
-    needs: [bench, osslbench]
+    needs: [setup, bench-ubuntu, bench-azl3]
     runs-on: ubuntu-latest
-    if: ${{ always() }}
+    if: always() && needs.setup.result == 'success'
     steps:
-      - name: Result
+      - name: Download all benchstat artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: results
+          pattern: benchstat-*
+
+      - name: Build report
+        run: |
+          {
+            echo "## Benchmark Results"
+            echo ""
+            if [[ "${{ needs.bench-ubuntu.result }}" == "failure" || "${{ needs.bench-azl3.result }}" == "failure" ]]; then
+              echo ":warning: **Regressions detected** (>= 5%, statistically significant)"
+            else
+              echo ":white_check_mark: **No significant regressions detected**"
+            fi
+            echo ""
+            for dir in results/benchstat-*; do
+              [ -d "$dir" ] || continue
+              label="${dir#results/benchstat-}"
+              if [ -f "$dir/status.txt" ] && grep -q 'true' "$dir/status.txt"; then
+                icon=":x:"
+              else
+                icon=":white_check_mark:"
+              fi
+              echo "<details>"
+              echo "<summary>${icon} <code>$label</code></summary>"
+              echo ""
+              echo '```'
+              cat "$dir/benchstat.txt"
+              echo '```'
+              echo ""
+              echo "</details>"
+              echo ""
+            done
+          } > report.md
+
+      - name: Post PR comment
+        if: needs.setup.outputs.pr-number != ''
+        uses: actions/github-script@v7
+        env:
+          PR_NUMBER: ${{ needs.setup.outputs.pr-number }}
+        with:
+          script: |
+            const fs = require('fs');
+            const body = fs.readFileSync('report.md', 'utf8');
+            const prNumber = parseInt(process.env.PR_NUMBER, 10);
+            const marker = '<!-- benchmark-results -->';
+            const fullBody = marker + '\n' + body;
+
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+            });
+            const existing = comments.find(c => c.body.includes(marker));
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body: fullBody,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                body: fullBody,
+              });
+            }
+
+      - name: Check result
         run: |
           if [[ "${{ contains(needs.*.result, 'failure') }}" == "true" || "${{ contains(needs.*.result, 'cancelled') }}" == "true" ]]; then
             echo "One or more benchmark jobs detected regressions or were cancelled."
