@@ -118,14 +118,27 @@ jobs:
       run: |
         export GO_OPENSSL_VERSION_OVERRIDE=${{ matrix.openssl-version }}
         export CGO_ENABLED=1
-        go test -run='^$' -bench=. -count=7 -benchmem -timeout 30m ./... 2>/dev/null | tee ../base.txt || true
+        go test -run='^$' -bench=. -count=7 -benchmem -timeout 30m ./... 2>&1 | tee ../base.txt || true
 
     - name: Run benchmarks (head)
       working-directory: head
       run: |
         export GO_OPENSSL_VERSION_OVERRIDE=${{ matrix.openssl-version }}
         export CGO_ENABLED=1
-        go test -run='^$' -bench=. -count=7 -benchmem -timeout 30m ./... 2>/dev/null | tee ../head.txt || true
+        go test -run='^$' -bench=. -count=7 -benchmem -timeout 30m ./... 2>&1 | tee ../head.txt || true
+
+    - name: Check for test failures
+      id: test-failures
+      run: |
+        {
+          grep -E '^(FAIL|---\s*FAIL)' base.txt | sed 's/^/base: /' || true
+          grep -E '^(FAIL|---\s*FAIL)' head.txt | sed 's/^/head: /' || true
+        } > failures.txt
+        if [ -s failures.txt ]; then
+          echo "found=true" >> "$GITHUB_OUTPUT"
+        else
+          echo "found=false" >> "$GITHUB_OUTPUT"
+        fi
 
     - name: Compare benchmarks
       id: benchstat
@@ -144,22 +157,25 @@ jobs:
         fi
 
     - name: Save status
-      if: always() && steps.benchstat.outcome == 'success'
-      run: echo '${{ steps.benchstat.outputs.regression }}' > status.txt
+      if: always()
+      run: |
+        echo 'regression=${{ steps.benchstat.outputs.regression }}' > status.txt
+        echo 'test_failures=${{ steps.test-failures.outputs.found }}' >> status.txt
 
     - name: Upload benchstat results
-      if: always() && steps.benchstat.outcome == 'success'
+      if: always()
       uses: actions/upload-artifact@v4
       with:
         name: benchstat-ubuntu-${{ matrix.host }}-ossl${{ matrix.openssl-version }}-go${{ matrix.go-version }}
         path: |
           benchstat.txt
+          failures.txt
           status.txt
 
-    - name: Fail on regression
-      if: steps.benchstat.outputs.regression == 'true'
+    - name: Fail on regression or test failure
+      if: steps.benchstat.outputs.regression == 'true' || steps.test-failures.outputs.found == 'true'
       run: |
-        echo "Statistically significant benchmark regression(s) >= 5% detected."
+        echo "Benchmark regression or test failure detected."
         exit 1
 
   bench-azl3:
@@ -173,7 +189,9 @@ jobs:
       image: mcr.microsoft.com/azurelinux/base/core:3.0
     steps:
     - name: Install build tools
-      run: tdnf install -y gcc glibc-devel openssl-devel git tar
+      run: |
+        tdnf install -y --nogpgcheck azurelinux-repos
+        tdnf install -y gcc glibc-devel openssl-devel git tar
 
     - name: Checkout HEAD
       uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -199,13 +217,26 @@ jobs:
       working-directory: base
       run: |
         export CGO_ENABLED=1
-        go test -run='^$' -bench=. -count=7 -benchmem -timeout 30m ./... 2>/dev/null | tee ../base.txt || true
+        go test -run='^$' -bench=. -count=7 -benchmem -timeout 30m ./... 2>&1 | tee ../base.txt || true
 
     - name: Run benchmarks (head)
       working-directory: head
       run: |
         export CGO_ENABLED=1
-        go test -run='^$' -bench=. -count=7 -benchmem -timeout 30m ./... 2>/dev/null | tee ../head.txt || true
+        go test -run='^$' -bench=. -count=7 -benchmem -timeout 30m ./... 2>&1 | tee ../head.txt || true
+
+    - name: Check for test failures
+      id: test-failures
+      run: |
+        {
+          grep -E '^(FAIL|---\s*FAIL)' base.txt | sed 's/^/base: /' || true
+          grep -E '^(FAIL|---\s*FAIL)' head.txt | sed 's/^/head: /' || true
+        } > failures.txt
+        if [ -s failures.txt ]; then
+          echo "found=true" >> "$GITHUB_OUTPUT"
+        else
+          echo "found=false" >> "$GITHUB_OUTPUT"
+        fi
 
     - name: Compare benchmarks
       id: benchstat
@@ -224,22 +255,25 @@ jobs:
         fi
 
     - name: Save status
-      if: always() && steps.benchstat.outcome == 'success'
-      run: echo '${{ steps.benchstat.outputs.regression }}' > status.txt
+      if: always()
+      run: |
+        echo 'regression=${{ steps.benchstat.outputs.regression }}' > status.txt
+        echo 'test_failures=${{ steps.test-failures.outputs.found }}' >> status.txt
 
     - name: Upload benchstat results
-      if: always() && steps.benchstat.outcome == 'success'
+      if: always()
       uses: actions/upload-artifact@v4
       with:
         name: benchstat-azl3-go${{ matrix.go-version }}
         path: |
           benchstat.txt
+          failures.txt
           status.txt
 
-    - name: Fail on regression
-      if: steps.benchstat.outputs.regression == 'true'
+    - name: Fail on regression or test failure
+      if: steps.benchstat.outputs.regression == 'true' || steps.test-failures.outputs.found == 'true'
       run: |
-        echo "Statistically significant benchmark regression(s) >= 5% detected."
+        echo "Benchmark regression or test failure detected."
         exit 1
 
   conclusion:
@@ -267,17 +301,27 @@ jobs:
             for dir in results/benchstat-*; do
               [ -d "$dir" ] || continue
               label="${dir#results/benchstat-}"
-              if [ -f "$dir/status.txt" ] && grep -q 'true' "$dir/status.txt"; then
-                icon=":x:"
-              else
-                icon=":white_check_mark:"
+              icon=":white_check_mark:"
+              if [ -f "$dir/status.txt" ]; then
+                grep -q 'regression=true' "$dir/status.txt" && icon=":x:"
+                grep -q 'test_failures=true' "$dir/status.txt" && icon=":x:"
               fi
               echo "<details>"
               echo "<summary>${icon} <code>$label</code></summary>"
               echo ""
-              echo '```'
-              cat "$dir/benchstat.txt"
-              echo '```'
+              if [ -f "$dir/failures.txt" ] && [ -s "$dir/failures.txt" ]; then
+                echo "**Test failures:**"
+                echo '```'
+                cat "$dir/failures.txt"
+                echo '```'
+                echo ""
+              fi
+              if [ -f "$dir/benchstat.txt" ]; then
+                echo "**Benchstat:**"
+                echo '```'
+                cat "$dir/benchstat.txt"
+                echo '```'
+              fi
               echo ""
               echo "</details>"
               echo ""
