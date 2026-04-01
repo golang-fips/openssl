@@ -144,21 +144,8 @@ jobs:
       id: benchstat
       run: |
         benchstat base.txt head.txt | tee benchstat.txt
-        # Allocation regressions (B/op, allocs/op): any increase fails.
-        # CPU time regressions (sec/op): >= 5% fails, but only for benchmarks >= 1µs
-        # (benchstat units: n=nano, µ=micro, m=milli; /[0-9].*[µm]/ skips ns-level noise).
-        if awk '
-          /^[[:space:]]*│.*(B\/op|allocs\/op)/ { header="alloc"; next }
-          /^[[:space:]]*│.*sec\/op/ { header="time"; next }
-          /^$/ { header="" }
-          header == "alloc" && match($0, /\+([0-9]+\.[0-9]+)% \(p=/, m) { if (m[1]+0 > 0) found=1 }
-          header == "time" && /[0-9].*[µm]/ && match($0, /\+([0-9]+\.[0-9]+)% \(p=/, m) { if (m[1]+0 >= 5) found=1 }
-          END { exit !found }
-        ' benchstat.txt; then
-          echo "regression=true" >> "$GITHUB_OUTPUT"
-        else
-          echo "regression=false" >> "$GITHUB_OUTPUT"
-        fi
+        regression=$(go run -C head/.github/benchcheck . "$PWD/base.txt" "$PWD/head.txt")
+        echo "regression=$regression" >> "$GITHUB_OUTPUT"
 
     - name: Save status
       if: always()
@@ -244,21 +231,8 @@ jobs:
       id: benchstat
       run: |
         benchstat base.txt head.txt | tee benchstat.txt
-        # Allocation regressions (B/op, allocs/op): any increase fails.
-        # CPU time regressions (sec/op): >= 5% fails, but only for benchmarks >= 1µs
-        # (benchstat units: n=nano, µ=micro, m=milli; /[0-9].*[µm]/ skips ns-level noise).
-        if awk '
-          /^[[:space:]]*│.*(B\/op|allocs\/op)/ { header="alloc"; next }
-          /^[[:space:]]*│.*sec\/op/ { header="time"; next }
-          /^$/ { header="" }
-          header == "alloc" && match($0, /\+([0-9]+\.[0-9]+)% \(p=/, m) { if (m[1]+0 > 0) found=1 }
-          header == "time" && /[0-9].*[µm]/ && match($0, /\+([0-9]+\.[0-9]+)% \(p=/, m) { if (m[1]+0 >= 5) found=1 }
-          END { exit !found }
-        ' benchstat.txt; then
-          echo "regression=true" >> "$GITHUB_OUTPUT"
-        else
-          echo "regression=false" >> "$GITHUB_OUTPUT"
-        fi
+        regression=$(go run -C head/.github/benchcheck . "$PWD/base.txt" "$PWD/head.txt")
+        echo "regression=$regression" >> "$GITHUB_OUTPUT"
 
     - name: Save status
       if: always()
