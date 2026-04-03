@@ -13,6 +13,7 @@ on:
         default: 'v2'
 
 permissions:
+  actions: read
   contents: read
   pull-requests: write
   issues: write
@@ -157,7 +158,8 @@ jobs:
       id: benchstat
       run: |
         benchstat base.txt head.txt | tee benchstat.txt
-        regression=$(go run -C head/.github/benchcheck . "$PWD/base.txt" "$PWD/head.txt")
+        go build -C head/.github/benchcheck -o "$PWD/benchcheck" .
+        regression=$(./benchcheck "$PWD/base.txt" "$PWD/head.txt" 2> regressions.txt)
         echo "regression=$regression" >> "$GITHUB_OUTPUT"
 
     - name: Save status
@@ -165,6 +167,7 @@ jobs:
       run: |
         echo 'regression=${{ steps.benchstat.outputs.regression }}' > status.txt
         echo 'test_failures=${{ steps.test-failures.outputs.found }}' >> status.txt
+        echo 'benchmark_error=${{ steps.benchstat.outcome == 'failure' && steps.benchstat.outputs.regression == '' }}' >> status.txt
 
     - name: Upload benchstat results
       if: always()
@@ -173,6 +176,7 @@ jobs:
         name: benchstat-${{ matrix.platform }}-${{ matrix.host }}-ossl${{ matrix.openssl-version || 'system' }}-go${{ matrix.go-version }}
         path: |
           benchstat.txt
+          regressions.txt
           failures.txt
           status.txt
 
@@ -193,7 +197,26 @@ jobs:
           path: results
           pattern: benchstat-*
 
+      - name: Fetch job URLs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api "repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/jobs" \
+            --paginate --jq '
+              .jobs[] | select(.name | startswith("bench (")) |
+              (.name | ltrimstr("bench (") | rtrimstr(")") | split(", ")) as $p |
+              (if ($p | length) == 4 then
+                {go: $p[0], ossl: (if $p[1] == "" then "system" else $p[1] end), host: $p[2], platform: $p[3]}
+              elif ($p | length) == 3 then
+                {go: $p[0], ossl: "system", host: $p[1], platform: $p[2]}
+              else empty end) as $m |
+              "\($m.platform)-\($m.host)-ossl\($m.ossl)-go\($m.go)\t\(.html_url)"' \
+            > job_urls.tsv
+          cat job_urls.tsv
+
       - name: Build report
+        env:
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
           {
             echo "## Benchmark Results"
@@ -207,30 +230,50 @@ jobs:
             for dir in results/benchstat-*; do
               [ -d "$dir" ] || continue
               label="${dir#results/benchstat-}"
-              icon=":white_check_mark:"
+              job_url=$(awk -F'\t' -v label="$label" '$1 == label {print $2; exit}' job_urls.tsv)
+              job_url="${job_url:-$RUN_URL}"
+              failed=false
+              bench_error=false
               if [ -f "$dir/status.txt" ]; then
-                grep -q 'regression=true' "$dir/status.txt" && icon=":x:"
-                grep -q 'test_failures=true' "$dir/status.txt" && icon=":x:"
+                grep -q 'regression=true' "$dir/status.txt" && failed=true
+                grep -q 'test_failures=true' "$dir/status.txt" && failed=true
+                grep -q 'benchmark_error=true' "$dir/status.txt" && { failed=true; bench_error=true; }
+              else
+                failed=true
+                bench_error=true
               fi
-              echo "<details>"
-              echo "<summary>${icon} <code>$label</code></summary>"
-              echo ""
-              if [ -f "$dir/failures.txt" ] && [ -s "$dir/failures.txt" ]; then
-                echo "**Test failures:**"
-                echo '```'
-                cat "$dir/failures.txt"
-                echo '```'
+              if [ "$failed" = true ]; then
+                echo "<details>"
+                echo "<summary>:x: <code>$label</code></summary>"
                 echo ""
+                if [ "$bench_error" = true ]; then
+                  echo ":boom: **Benchmark run failed** — see [workflow logs]($job_url) for details."
+                  echo ""
+                fi
+                if [ -f "$dir/failures.txt" ] && [ -s "$dir/failures.txt" ]; then
+                  echo "**Test failures:**"
+                  echo '```'
+                  cat "$dir/failures.txt"
+                  echo '```'
+                  echo ""
+                fi
+                if [ -f "$dir/regressions.txt" ] && [ -s "$dir/regressions.txt" ]; then
+                  echo "**Regressions:**"
+                  echo '```'
+                  sort -t'+' -k2 -rn "$dir/regressions.txt"
+                  echo '```'
+                  echo ""
+                elif [ "$bench_error" != true ]; then
+                  echo "No benchmark regressions detected."
+                  echo ""
+                fi
+                echo ":file_folder: [Full results]($job_url)"
+                echo ""
+                echo "</details>"
+                echo ""
+              else
+                echo ":white_check_mark: \`$label\` · [results]($job_url)"
               fi
-              if [ -f "$dir/benchstat.txt" ]; then
-                echo "**Benchstat:**"
-                echo '```'
-                cat "$dir/benchstat.txt"
-                echo '```'
-              fi
-              echo ""
-              echo "</details>"
-              echo ""
             done
           } > report.md
 
@@ -242,9 +285,13 @@ jobs:
         with:
           script: |
             const fs = require('fs');
-            const body = fs.readFileSync('report.md', 'utf8');
+            let body = fs.readFileSync('report.md', 'utf8');
             const prNumber = parseInt(process.env.PR_NUMBER, 10);
             const marker = '<!-- benchmark-results -->';
+            const maxLen = 65536 - marker.length - 1;
+            if (body.length > maxLen) {
+              body = body.substring(0, maxLen - 200) + '\n\n---\n:scissors: **Report truncated** — see workflow artifacts for full results.\n';
+            }
             const fullBody = marker + '\n' + body;
 
             const { data: comments } = await github.rest.issues.listComments({
