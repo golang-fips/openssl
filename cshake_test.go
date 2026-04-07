@@ -242,10 +242,11 @@ func benchmarkHash(b *testing.B, h hash.Hash, size, num int) {
 
 // benchmarkCSHAKE is specialized to the Shake instances, which don't
 // require a copy on reading output.
-func benchmarkCSHAKE(b *testing.B, h *openssl.SHAKE, size, num int) {
+func benchmarkCSHAKE(b *testing.B, hfun func() *openssl.SHAKE, size, num int) {
 	if !openssl.SupportsSHAKE(128) {
 		b.Skip("SHAKE not supported")
 	}
+	h := hfun()
 	b.StopTimer()
 	h.Reset()
 	data := sequentialBytes(size)
@@ -263,9 +264,9 @@ func benchmarkCSHAKE(b *testing.B, h *openssl.SHAKE, size, num int) {
 	}
 }
 
-func BenchmarkCSHAKE128_MTU(b *testing.B)  { benchmarkCSHAKE(b, openssl.NewSHAKE128(), 1350, 1) }
-func BenchmarkCSHAKE256_MTU(b *testing.B)  { benchmarkCSHAKE(b, openssl.NewSHAKE256(), 1350, 1) }
-func BenchmarkCSHAKE256_16x(b *testing.B)  { benchmarkCSHAKE(b, openssl.NewSHAKE256(), 16, 1024) }
-func BenchmarkCSHAKE256_1MiB(b *testing.B) { benchmarkCSHAKE(b, openssl.NewSHAKE256(), 1024, 1024) }
+func BenchmarkCSHAKE128_MTU(b *testing.B)  { benchmarkCSHAKE(b, openssl.NewSHAKE128, 1350, 1) }
+func BenchmarkCSHAKE256_MTU(b *testing.B)  { benchmarkCSHAKE(b, openssl.NewSHAKE256, 1350, 1) }
+func BenchmarkCSHAKE256_16x(b *testing.B)  { benchmarkCSHAKE(b, openssl.NewSHAKE256, 16, 1024) }
+func BenchmarkCSHAKE256_1MiB(b *testing.B) { benchmarkCSHAKE(b, openssl.NewSHAKE256, 1024, 1024) }
 
 func BenchmarkCSHA3_512_1MiB(b *testing.B) { benchmarkHash(b, openssl.NewSHA3_512(), 1024, 1024) }
