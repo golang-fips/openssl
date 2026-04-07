@@ -144,9 +144,36 @@ jobs:
     - name: Check for test failures
       id: test-failures
       run: |
+        extract_failures() {
+          local file=$1 prefix=$2
+          # Extract a compact crash/failure summary including the first goroutine's
+          # stack trace (the one that crashed). Stops at the first blank line after
+          # the crash to avoid dumping all goroutines.
+          awk '
+            # Build errors
+            /^# / { print; next }
+            # Test failures
+            /^--- FAIL/ { print; next }
+            # Package FAIL lines
+            /^FAIL\t/ { print; next }
+            # Start of a crash: capture signal, panic, and first goroutine stack
+            /^SIG[A-Z]+:/ || /^panic:/ {
+              crash = 1
+              print
+              next
+            }
+            crash && /^$/ {
+              # Blank line after first goroutine = stop
+              crash = 0
+              print ""
+              next
+            }
+            crash { print }
+          ' "$file" | sed "s/^/${prefix}/" || true
+        }
         {
-          grep -E '^(FAIL|---\s*FAIL)' base.txt | sed 's/^/base: /' || true
-          grep -E '^(FAIL|---\s*FAIL)' head.txt | sed 's/^/head: /' || true
+          extract_failures base.txt "base: "
+          extract_failures head.txt "head: "
         } > failures.txt
         if [ -s failures.txt ]; then
           echo "found=true" >> "$GITHUB_OUTPUT"
