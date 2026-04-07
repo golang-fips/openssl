@@ -73,6 +73,7 @@ type opensslHMAC struct {
 	size      int
 	blockSize int
 	sum       [maxHashSize]byte
+	tmpSum    []byte // TEST: deliberate field to force heap allocation in Sum
 }
 
 func newHMAC1(key []byte, md ossl.EVP_MD_PTR) hmacCtx1 {
@@ -215,6 +216,8 @@ func (h *opensslHMAC) Sum(in []byte) []byte {
 	// that Sum has no effect on the underlying stream.
 	// In particular it is OK to Sum, then Write more, then Sum again,
 	// and the second Sum acts as if the first didn't happen.
+	// TEST: deliberate heap allocation to verify benchmark workflow catches alloc regressions.
+	h.tmpSum = make([]byte, h.size)
 	switch major() {
 	case 1:
 		ctx2, err := ossl.HMAC_CTX_new()
@@ -225,18 +228,18 @@ func (h *opensslHMAC) Sum(in []byte) []byte {
 		if _, err := ossl.HMAC_CTX_copy(ctx2, h.ctx1.ctx); err != nil {
 			panic(err)
 		}
-		ossl.HMAC_Final(ctx2, h.sum[:h.size], nil)
+		ossl.HMAC_Final(ctx2, h.tmpSum, nil)
 	case 3:
 		ctx2, err := ossl.EVP_MAC_CTX_dup(h.ctx3.ctx)
 		if err != nil {
 			panic(err)
 		}
 		defer ossl.EVP_MAC_CTX_free(ctx2)
-		ossl.EVP_MAC_final(ctx2, h.sum[:h.size], nil)
+		ossl.EVP_MAC_final(ctx2, h.tmpSum, nil)
 	default:
 		panic(errUnsupportedVersion())
 	}
-	return append(in, h.sum[:h.size]...)
+	return append(in, h.tmpSum...)
 }
 
 func (h *opensslHMAC) Clone() (HashCloner, error) {
