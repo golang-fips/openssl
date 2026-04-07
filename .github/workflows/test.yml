@@ -50,6 +50,11 @@ jobs:
       env:
         GO_OPENSSL_VERSION_OVERRIDE: ${{ matrix.openssl-version }}
         CGO_ENABLED: 1
+    - name: Run benchmarks (1x)
+      run: go test -bench=. -run='^$' -benchtime=1x ./...
+      env:
+        GO_OPENSSL_VERSION_OVERRIDE: ${{ matrix.openssl-version }}
+        CGO_ENABLED: 1
     - name: Run Test CGO disabled
       run: go test -shuffle=on -count 10 -v ./...
       env:
@@ -94,6 +99,11 @@ jobs:
       env:
         GO_OPENSSL_VERSION_OVERRIDE: ${{ matrix.host.openssl-version }}
         CGO_ENABLED: 1
+    - name: Run benchmarks (1x)
+      run: go test -bench=. -run='^$' -benchtime=1x ./...
+      env:
+        GO_OPENSSL_VERSION_OVERRIDE: ${{ matrix.host.openssl-version }}
+        CGO_ENABLED: 1
     - name: Run Test CGO disabled
       run: go test -shuffle=on -count 10 -v ./...
       env:
@@ -122,6 +132,11 @@ jobs:
       env:
         CGO_ENABLED: 1
         MS_GO_NOSYSTEMCRYPTO: 1 # Avoid duplicated symbol errors when running the MS toolchain
+    - name: Run benchmarks (1x)
+      run: go test -bench=. -run='^$' -benchtime=1x ./...
+      env:
+        CGO_ENABLED: 1
+        MS_GO_NOSYSTEMCRYPTO: 1
     - name: Run Test CGO disabled
       run: go test -shuffle=on -v ./...
       env:
@@ -177,6 +192,7 @@ jobs:
                 ;;
             esac
             go test -shuffle=on -count 3 -v ./...
+            go test -bench=. -run='^$' -benchtime=1x ./...
           "
 
   freebsd:
@@ -199,6 +215,7 @@ jobs:
             GCFLAGS="-gcflags=github.com/golang-fips/openssl/v2/internal/fakecgo=-std"
           fi
           CGO_ENABLED=${{ matrix.cgo }} /usr/local/go/bin/go test -shuffle=on -count 3 $GCFLAGS -v ./...
+          CGO_ENABLED=${{ matrix.cgo }} /usr/local/go/bin/go test -bench=. -run='^$' -benchtime=1x ./...
 
   # Verify that golang-fips/openssl builds successfully without cgo enabled
   # on a platform where cgoless execution is not supported.
