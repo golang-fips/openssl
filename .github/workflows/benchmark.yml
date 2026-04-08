@@ -177,25 +177,33 @@ jobs:
           failures.txt
           status.txt
 
-    - name: "⚠️ RESULTS: regression or test failure detected"
-      if: steps.benchstat.outputs.regression == 'true' || steps.test-failures.outputs.found == 'true'
+    - name: "📊 RESULTS"
+      if: always()
       run: |
-        echo "::error::Benchmark regression or test failure detected."
-        if [ -s regressions.txt ]; then
-          echo ""
-          echo "=== Regressions ==="
-          cat regressions.txt
+        failed=false
+        if [ "${{ steps.benchstat.outputs.regression }}" = "true" ]; then
+          echo "::error::Benchmark regression detected — see the 'Compare benchmarks' step for benchstat output."
+          if [ -s regressions.txt ]; then
+            echo ""
+            echo "=== Regressions ==="
+            cat regressions.txt
+          fi
+          failed=true
         fi
-        if [ -s failures.txt ]; then
-          echo ""
-          echo "=== Test failures ==="
-          cat failures.txt
+        if [ "${{ steps.test-failures.outputs.found }}" = "true" ]; then
+          echo "::error::Test failure detected — see the 'Run benchmarks (base)' and 'Run benchmarks (head)' steps for details."
+          if [ -s failures.txt ]; then
+            echo ""
+            echo "=== Test failures ==="
+            cat failures.txt
+          fi
+          failed=true
         fi
-        exit 1
-
-    - name: "✅ RESULTS: no regressions"
-      if: steps.benchstat.outputs.regression == 'false' && steps.test-failures.outputs.found == 'false'
-      run: echo "No benchmark regressions or test failures detected."
+        if [ "$failed" = false ]; then
+          echo "✅ No benchmark regressions or test failures detected."
+        else
+          exit 1
+        fi
 
   conclusion:
     needs: [setup, bench]
