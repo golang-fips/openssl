@@ -108,6 +108,10 @@ func (b *paramBuilder) addUTF8String(name cString, value *byte, size int) {
 	}
 }
 
+// emptyOctetStringBuf serves as a non-nil sentinel pointer for
+// zero-length octet strings passed to OpenSSL.
+var emptyOctetStringBuf byte
+
 // addOctetString adds an octet string to the builder.
 // The value is pinned and will be unpinned when the builder is freed.
 func (b *paramBuilder) addOctetString(name cString, value []byte) {
@@ -116,6 +120,10 @@ func (b *paramBuilder) addOctetString(name cString, value []byte) {
 	}
 	if len(value) != 0 {
 		b.pinner.Pin(&value[0])
+	} else {
+		// OpenSSL >= 3.5.6 rejects a NULL buf in OSSL_PARAM_BLD_push_octet_string
+		// even when bsize is 0 (see crypto/param_build.c).
+		value = unsafe.Slice(&emptyOctetStringBuf, 0)
 	}
 	if _, err := ossl.OSSL_PARAM_BLD_push_octet_string(b.bld, name.ptr(), value); err != nil {
 		b.err = addParamError{name.str(), err}
