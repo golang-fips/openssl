@@ -54,6 +54,7 @@ jobs:
           # AZL3 with system OpenSSL
           - { go-version: 1.25.x, openssl-version: "", host: ubuntu-latest, platform: azl3 }
           - { go-version: 1.26.x, openssl-version: "", host: ubuntu-latest, platform: azl3 }
+    name: bench (${{ matrix.platform }}, ${{ matrix.host }}, ossl${{ matrix.openssl-version || 'system' }}, go${{ matrix.go-version }})
     runs-on: ${{ matrix.host }}
     container: ${{ matrix.platform == 'azl3' && fromJSON('{"image":"mcr.microsoft.com/azurelinux/base/core:3.0"}') || fromJSON('null') }}
     steps:
@@ -176,11 +177,25 @@ jobs:
           failures.txt
           status.txt
 
-    - name: Fail on regression or test failure
+    - name: "⚠️ RESULTS: regression or test failure detected"
       if: steps.benchstat.outputs.regression == 'true' || steps.test-failures.outputs.found == 'true'
       run: |
-        echo "Benchmark regression or test failure detected."
+        echo "::error::Benchmark regression or test failure detected."
+        if [ -s regressions.txt ]; then
+          echo ""
+          echo "=== Regressions ==="
+          cat regressions.txt
+        fi
+        if [ -s failures.txt ]; then
+          echo ""
+          echo "=== Test failures ==="
+          cat failures.txt
+        fi
         exit 1
+
+    - name: "✅ RESULTS: no regressions"
+      if: steps.benchstat.outputs.regression == 'false' && steps.test-failures.outputs.found == 'false'
+      run: echo "No benchmark regressions or test failures detected."
 
   conclusion:
     needs: [setup, bench]
@@ -197,17 +212,15 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          # Fetch job URLs and find the step number for the RESULTS step to deep-link.
           gh api "repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/jobs" \
             --paginate --jq '
               .jobs[] | select(.name | startswith("bench (")) |
               (.name | ltrimstr("bench (") | rtrimstr(")") | split(", ")) as $p |
-              (if ($p | length) == 4 then
-                {go: $p[0], ossl: (if $p[1] == "" then "system" else $p[1] end), host: $p[2], platform: $p[3]}
-              elif ($p | length) == 3 then
-                {go: $p[0], ossl: "system", host: $p[1], platform: $p[2]}
-              else empty end) as $m |
-              "\($m.platform)-\($m.host)-ossl\($m.ossl)-go\($m.go)\t\(.html_url)"' \
-            > job_urls.tsv
+              # Find the RESULTS step that actually ran (not skipped)
+              (first(.steps[] | select((.name | test("RESULTS")) and .conclusion != "skipped") | .number) // null) as $step |
+              "\($p | join("-"))\t\(.html_url)\(if $step then "#step:\($step):1" else "" end)"' \
+            > job_urls.tsv || true
           cat job_urls.tsv
 
       - name: Build report
