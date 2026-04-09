@@ -350,9 +350,7 @@ func newTLS13KDFExpandCtx3(md ossl.EVP_MD_PTR, label, context, pseudorandomKey [
 	bld.addOctetString(_OSSL_KDF_PARAM_PREFIX, []byte("tls13 "))
 	bld.addOctetString(_OSSL_KDF_PARAM_LABEL, label)
 	bld.addOctetString(_OSSL_KDF_PARAM_DATA, context)
-	if len(pseudorandomKey) > 0 {
-		bld.addOctetString(_OSSL_KDF_PARAM_KEY, pseudorandomKey)
-	}
+	bld.addOctetString(_OSSL_KDF_PARAM_KEY, pseudorandomKey)
 
 	params, err := bld.build()
 	if err != nil {
@@ -401,18 +399,10 @@ func newHKDFCtx3(md ossl.EVP_MD_PTR, mode int32, secret, salt, pseudorandomKey, 
 	defer bld.finalize()
 	bld.addUTF8String(_OSSL_KDF_PARAM_DIGEST, ossl.EVP_MD_get0_name(md), 0)
 	bld.addInt32(_OSSL_KDF_PARAM_MODE, int32(mode))
-	if len(secret) > 0 {
-		bld.addOctetString(_OSSL_KDF_PARAM_KEY, secret)
-	}
-	if len(salt) > 0 {
-		bld.addOctetString(_OSSL_KDF_PARAM_SALT, salt)
-	}
-	if len(pseudorandomKey) > 0 {
-		bld.addOctetString(_OSSL_KDF_PARAM_KEY, pseudorandomKey)
-	}
-	if len(info) > 0 {
-		bld.addOctetString(_OSSL_KDF_PARAM_INFO, info)
-	}
+	bld.addOctetString(_OSSL_KDF_PARAM_KEY, secret)
+	bld.addOctetString(_OSSL_KDF_PARAM_SALT, salt)
+	bld.addOctetString(_OSSL_KDF_PARAM_KEY, pseudorandomKey)
+	bld.addOctetString(_OSSL_KDF_PARAM_INFO, info)
 	params, err := bld.build()
 	if err != nil {
 		return ctx, err
