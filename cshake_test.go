@@ -2,8 +2,8 @@ package openssl_test
 
 import (
 	"bytes"
+	"crypto"
 	"encoding/hex"
-	"hash"
 	"io"
 	"math/rand"
 	"testing"
@@ -222,7 +222,11 @@ func TestCSHAKESum(t *testing.T) {
 }
 
 // benchmarkHash tests the speed to hash num buffers of buflen each.
-func benchmarkHash(b *testing.B, h hash.Hash, size, num int) {
+func benchmarkHash(b *testing.B, hType crypto.Hash, hfun func() *openssl.Hash, size, num int) {
+	if !openssl.SupportsHash(hType) {
+		b.Skip("skipping: not supported")
+	}
+	h := hfun()
 	b.StopTimer()
 	h.Reset()
 	data := sequentialBytes(size)
@@ -263,9 +267,11 @@ func benchmarkCSHAKE(b *testing.B, h *openssl.SHAKE, size, num int) {
 	}
 }
 
-func BenchmarkCSHAKE128_MTU(b *testing.B)  { benchmarkCSHAKE(b, openssl.NewSHAKE128(), 1350, 1) }
-func BenchmarkCSHAKE256_MTU(b *testing.B)  { benchmarkCSHAKE(b, openssl.NewSHAKE256(), 1350, 1) }
-func BenchmarkCSHAKE256_16x(b *testing.B)  { benchmarkCSHAKE(b, openssl.NewSHAKE256(), 16, 1024) }
-func BenchmarkCSHAKE256_1MiB(b *testing.B) { benchmarkCSHAKE(b, openssl.NewSHAKE256(), 1024, 1024) }
+func BenchmarkCSHAKE128_MTU(b *testing.B)  { benchmarkCSHAKE(b, 128, openssl.NewSHAKE128, 1350, 1) }
+func BenchmarkCSHAKE256_MTU(b *testing.B)  { benchmarkCSHAKE(b, 256, openssl.NewSHAKE256, 1350, 1) }
+func BenchmarkCSHAKE256_16x(b *testing.B)  { benchmarkCSHAKE(b, 256, openssl.NewSHAKE256, 16, 1024) }
+func BenchmarkCSHAKE256_1MiB(b *testing.B) { benchmarkCSHAKE(b, 256, openssl.NewSHAKE256, 1024, 1024) }
 
-func BenchmarkCSHA3_512_1MiB(b *testing.B) { benchmarkHash(b, openssl.NewSHA3_512(), 1024, 1024) }
+func BenchmarkCSHA3_512_1MiB(b *testing.B) {
+	benchmarkHash(b, crypto.SHA3_512, openssl.NewSHA3_512, 1024, 1024)
+}
