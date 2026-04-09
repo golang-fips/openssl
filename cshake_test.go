@@ -246,7 +246,11 @@ func benchmarkHash(b *testing.B, hType crypto.Hash, hfun func() *openssl.Hash, s
 
 // benchmarkCSHAKE is specialized to the Shake instances, which don't
 // require a copy on reading output.
-func benchmarkCSHAKE(b *testing.B, h *openssl.SHAKE, size, num int) {
+func benchmarkCSHAKE(b *testing.B, bits int, newShake func() *openssl.SHAKE, size, num int) {
+	if !openssl.SupportsSHAKE(bits) {
+		b.Skip("SHAKE not supported")
+	}
+	h := newShake()
 	b.StopTimer()
 	h.Reset()
 	data := sequentialBytes(size)
