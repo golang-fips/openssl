@@ -166,7 +166,7 @@ jobs:
         env:
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
-          go build -C head/.github/benchcheck -o benchcheck .
+          go build -C head/.github/benchcheck -o "$PWD/benchcheck" .
           ./benchcheck report \
             --run-url="$RUN_URL" \
             --job-urls=job_urls.tsv \
