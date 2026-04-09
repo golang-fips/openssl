@@ -65,17 +65,10 @@ jobs:
     - name: Install build tools (AZL3)
       if: matrix.platform == 'azl3'
       run: |
+        # The AZL3 base container ships without GPG keys for the package repos.
+        # Disable repo metadata signature verification to allow package installation.
         sed -i 's/repo_gpgcheck=1/repo_gpgcheck=0/' /etc/yum.repos.d/*.repo
         tdnf install -y --nogpgcheck gcc binutils kernel-headers glibc-devel openssl-devel git tar ca-certificates
-
-    - name: Install OpenSSL
-      if: matrix.openssl-version != ''
-      run: |
-        git clone --depth 1 --filter=blob:none --sparse ${{ github.server_url }}/${{ github.repository }} _openssl_setup
-        cd _openssl_setup && git sparse-checkout set scripts
-        cd ..
-        sudo sh ./_openssl_setup/scripts/openssl.sh ${{ matrix.openssl-version }}
-        rm -rf _openssl_setup
 
     - name: Checkout HEAD
       uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -88,6 +81,10 @@ jobs:
       with:
         ref: ${{ needs.setup.outputs.base-ref }}
         path: base
+
+    - name: Install OpenSSL
+      if: matrix.openssl-version != ''
+      run: sudo sh head/scripts/openssl.sh ${{ matrix.openssl-version }}
 
     - uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
       with:
@@ -111,62 +108,13 @@ jobs:
         export CGO_ENABLED=1
         go test -run='^$' -bench=. -count=10 -benchmem -timeout 60m ./... 2>&1 | tee ../head.txt || true
 
-    - name: Check for test failures
-      id: test-failures
+    - name: "📊 Compare and check"
       run: |
-        extract_failures() {
-          local file=$1 prefix=$2
-          # Extract a compact crash/failure summary including the first goroutine's
-          # stack trace (the one that crashed). Stops at the first blank line after
-          # the crash to avoid dumping all goroutines.
-          awk '
-            # Build errors
-            /^# / { print; next }
-            # Test failures
-            /^--- FAIL/ { print; next }
-            # Package FAIL lines
-            /^FAIL\t/ { print; next }
-            # Start of a crash: capture signal, panic, and first goroutine stack
-            /^SIG[A-Z]+:/ || /^panic:/ {
-              crash = 1
-              print
-              next
-            }
-            crash && /^$/ {
-              # Blank line after first goroutine = stop
-              crash = 0
-              print ""
-              next
-            }
-            crash { print }
-          ' "$file" | sed "s/^/${prefix}/" || true
-        }
-        {
-          extract_failures base.txt "base: "
-          extract_failures head.txt "head: "
-        } > failures.txt
-        if [ -s failures.txt ]; then
-          echo "found=true" >> "$GITHUB_OUTPUT"
-        else
-          echo "found=false" >> "$GITHUB_OUTPUT"
-        fi
-
-    - name: Compare benchmarks
-      id: benchstat
-      run: |
-        benchstat base.txt head.txt | tee benchstat.txt
+        benchstat base.txt head.txt | tee benchstat.txt || true
         go build -C head/.github/benchcheck -o "$PWD/benchcheck" .
-        regression=$(./benchcheck "$PWD/base.txt" "$PWD/head.txt" 2> regressions.txt)
-        echo "regression=$regression" >> "$GITHUB_OUTPUT"
+        ./benchcheck check base.txt head.txt
 
-    - name: Save status
-      if: always()
-      run: |
-        echo 'regression=${{ steps.benchstat.outputs.regression }}' > status.txt
-        echo 'test_failures=${{ steps.test-failures.outputs.found }}' >> status.txt
-        echo 'benchmark_error=${{ steps.benchstat.outcome == 'failure' && steps.benchstat.outputs.regression == '' }}' >> status.txt
-
-    - name: Upload benchstat results
+    - name: Upload results
       if: always()
       uses: actions/upload-artifact@v4
       with:
@@ -176,34 +124,6 @@ jobs:
           regressions.txt
           failures.txt
           status.txt
-
-    - name: "📊 RESULTS"
-      if: always()
-      run: |
-        failed=false
-        if [ "${{ steps.benchstat.outputs.regression }}" = "true" ]; then
-          echo "::error::Benchmark regression detected — see the 'Compare benchmarks' step for benchstat output."
-          if [ -s regressions.txt ]; then
-            echo ""
-            echo "=== Regressions ==="
-            cat regressions.txt
-          fi
-          failed=true
-        fi
-        if [ "${{ steps.test-failures.outputs.found }}" = "true" ]; then
-          echo "::error::Test failure detected — see the 'Run benchmarks (base)' and 'Run benchmarks (head)' steps for details."
-          if [ -s failures.txt ]; then
-            echo ""
-            echo "=== Test failures ==="
-            cat failures.txt
-          fi
-          failed=true
-        fi
-        if [ "$failed" = false ]; then
-          echo "✅ No benchmark regressions or test failures detected."
-        else
-          exit 1
-        fi
 
   conclusion:
     needs: [setup, bench]
@@ -216,17 +136,28 @@ jobs:
           path: results
           pattern: benchstat-*
 
+      - name: Checkout HEAD
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ needs.setup.outputs.head-ref }}
+          path: head
+
+      - uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
+        with:
+          go-version: 1.25.x
+          cache-dependency-path: head/.github/benchcheck/go.mod
+
       - name: Fetch job URLs
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          # Fetch job URLs and find the step number for the RESULTS step to deep-link.
+          # Fetch job URLs and find the step number for the Compare step to deep-link.
           gh api "repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/jobs" \
             --paginate --jq '
               .jobs[] | select(.name | startswith("bench (")) |
               (.name | ltrimstr("bench (") | rtrimstr(")") | split(", ")) as $p |
-              # Find the RESULTS step that actually ran (not skipped)
-              (first(.steps[] | select((.name | test("RESULTS")) and .conclusion != "skipped") | .number) // null) as $step |
+              # Find the Compare and check step that actually ran (not skipped)
+              (first(.steps[] | select((.name | test("Compare and check")) and .conclusion != "skipped") | .number) // null) as $step |
               "\($p | join("-"))\t\(.html_url)\(if $step then "#step:\($step):1" else "" end)"' \
             > job_urls.tsv || true
           cat job_urls.tsv
@@ -235,64 +166,12 @@ jobs:
         env:
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
-          {
-            echo "## Benchmark Results"
-            echo ""
-            if [[ "${{ needs.bench.result }}" == "failure" ]]; then
-              echo ":warning: **Regressions detected** (>= 5%, statistically significant)"
-            else
-              echo ":white_check_mark: **No significant regressions detected**"
-            fi
-            echo ""
-            for dir in results/benchstat-*; do
-              [ -d "$dir" ] || continue
-              label="${dir#results/benchstat-}"
-              job_url=$(awk -F'\t' -v label="$label" '$1 == label {print $2; exit}' job_urls.tsv)
-              job_url="${job_url:-$RUN_URL}"
-              failed=false
-              bench_error=false
-              if [ -f "$dir/status.txt" ]; then
-                grep -q 'regression=true' "$dir/status.txt" && failed=true
-                grep -q 'test_failures=true' "$dir/status.txt" && failed=true
-                grep -q 'benchmark_error=true' "$dir/status.txt" && { failed=true; bench_error=true; }
-              else
-                failed=true
-                bench_error=true
-              fi
-              if [ "$failed" = true ]; then
-                echo "<details>"
-                echo "<summary>:x: <code>$label</code></summary>"
-                echo ""
-                if [ "$bench_error" = true ]; then
-                  echo ":boom: **Benchmark run failed** — see [workflow logs]($job_url) for details."
-                  echo ""
-                fi
-                if [ -f "$dir/failures.txt" ] && [ -s "$dir/failures.txt" ]; then
-                  echo "**Test failures:**"
-                  echo '```'
-                  cat "$dir/failures.txt"
-                  echo '```'
-                  echo ""
-                fi
-                if [ -f "$dir/regressions.txt" ] && [ -s "$dir/regressions.txt" ]; then
-                  echo "**Regressions:**"
-                  echo '```'
-                  sort -t'+' -k2 -rn "$dir/regressions.txt"
-                  echo '```'
-                  echo ""
-                elif [ "$bench_error" != true ]; then
-                  echo "No benchmark regressions detected."
-                  echo ""
-                fi
-                echo ":file_folder: [Full results]($job_url)"
-                echo ""
-                echo "</details>"
-                echo ""
-              else
-                echo ":white_check_mark: \`$label\` · [results]($job_url)"
-              fi
-            done
-          } > report.md
+          go build -C head/.github/benchcheck -o benchcheck .
+          ./benchcheck report \
+            --run-url="$RUN_URL" \
+            --job-urls=job_urls.tsv \
+            --overall-result="${{ needs.bench.result }}" \
+            results/ > report.md
 
       - name: Post PR comment
         if: needs.setup.outputs.pr-number != ''
@@ -302,14 +181,9 @@ jobs:
         with:
           script: |
             const fs = require('fs');
-            let body = fs.readFileSync('report.md', 'utf8');
+            const body = fs.readFileSync('report.md', 'utf8');
             const prNumber = parseInt(process.env.PR_NUMBER, 10);
             const marker = '<!-- benchmark-results -->';
-            const maxLen = 65536 - marker.length - 1;
-            if (body.length > maxLen) {
-              body = body.substring(0, maxLen - 200) + '\n\n---\n:scissors: **Report truncated** — see workflow artifacts for full results.\n';
-            }
-            const fullBody = marker + '\n' + body;
 
             const { data: comments } = await github.rest.issues.listComments({
               owner: context.repo.owner,
@@ -323,14 +197,14 @@ jobs:
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 comment_id: existing.id,
-                body: fullBody,
+                body,
               });
             } else {
               await github.rest.issues.createComment({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 issue_number: prNumber,
-                body: fullBody,
+                body,
               });
             }
 
