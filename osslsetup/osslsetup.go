@@ -31,7 +31,7 @@ func utoa(n int) string {
 }
 
 func errUnsupportedVersion() error {
-	return errors.New("openssl: OpenSSL version: " + utoa(vMajor) + "." + utoa(vMinor) + "." + utoa(vPatch))
+	return errors.New("openssl: unsupported OpenSSL version: " + utoa(vMajor) + "." + utoa(vMinor) + "." + utoa(vPatch) + " (minimum supported version is 1.1.1)")
 }
 
 var (
