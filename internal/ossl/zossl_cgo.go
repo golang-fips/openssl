@@ -121,14 +121,6 @@ func MkcgoUnload_() {
 	C.__mkcgo_unload_()
 }
 
-func MkcgoLoad_111(handle unsafe.Pointer) {
-	C.__mkcgo_load_111(handle)
-}
-
-func MkcgoUnload_111() {
-	C.__mkcgo_unload_111()
-}
-
 func MkcgoLoad_3(handle unsafe.Pointer) {
 	C.__mkcgo_load_3(handle)
 }

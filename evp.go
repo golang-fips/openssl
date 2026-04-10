@@ -135,33 +135,21 @@ func loadHash(ch crypto.Hash, must bool) (h *hashAlgorithm) {
 		hash.magic = magic512
 		hash.marshalledSize = marshaledSize512
 	case crypto.SHA512_224:
-		if versionAtOrAbove(1, 1, 1) {
-			hash.md = ossl.EVP_sha512_224()
-			hash.magic = magic512_224
-			hash.marshalledSize = marshaledSize512
-		}
+		hash.md = ossl.EVP_sha512_224()
+		hash.magic = magic512_224
+		hash.marshalledSize = marshaledSize512
 	case crypto.SHA512_256:
-		if versionAtOrAbove(1, 1, 1) {
-			hash.md = ossl.EVP_sha512_256()
-			hash.magic = magic512_256
-			hash.marshalledSize = marshaledSize512
-		}
+		hash.md = ossl.EVP_sha512_256()
+		hash.magic = magic512_256
+		hash.marshalledSize = marshaledSize512
 	case crypto.SHA3_224:
-		if versionAtOrAbove(1, 1, 1) {
-			hash.md = ossl.EVP_sha3_224()
-		}
+		hash.md = ossl.EVP_sha3_224()
 	case crypto.SHA3_256:
-		if versionAtOrAbove(1, 1, 1) {
-			hash.md = ossl.EVP_sha3_256()
-		}
+		hash.md = ossl.EVP_sha3_256()
 	case crypto.SHA3_384:
-		if versionAtOrAbove(1, 1, 1) {
-			hash.md = ossl.EVP_sha3_384()
-		}
+		hash.md = ossl.EVP_sha3_384()
 	case crypto.SHA3_512:
-		if versionAtOrAbove(1, 1, 1) {
-			hash.md = ossl.EVP_sha3_512()
-		}
+		hash.md = ossl.EVP_sha3_512()
 	}
 	if hash.md == nil {
 		cacheMD.Store(ch, (*hashAlgorithm)(nil))

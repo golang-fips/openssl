@@ -9,13 +9,6 @@ set -eux
 version=$1
 
 case "$version" in
-    "1.1.0")
-        tag="OpenSSL_1_1_0l"
-        sha256="e2acf0cf58d9bff2b42f2dc0aee79340c8ffe2c5e45d3ca4533dd5d4f5775b1d"
-        config="shared"
-        make="build_libs"
-        install=""
-        ;;
     "1.1.1")
         tag="OpenSSL_1_1_1m"
         sha256="36ae24ad7cf0a824d0b76ac08861262e47ec541e5d0f20e6d94bab90b2dab360"

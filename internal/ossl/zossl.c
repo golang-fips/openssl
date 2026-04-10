@@ -295,15 +295,18 @@ void __mkcgo_load_(void* handle) {
 	__mkcgo__dlsym(EVP_DigestFinal_ex)
 	__mkcgo__dlsym(EVP_DigestInit)
 	__mkcgo__dlsym(EVP_DigestInit_ex)
+	__mkcgo__dlsym(EVP_DigestSign)
 	__mkcgo__dlsym(EVP_DigestSignFinal)
 	__mkcgo__dlsym(EVP_DigestSignInit)
 	__mkcgo__dlsym(EVP_DigestUpdate)
+	__mkcgo__dlsym(EVP_DigestVerify)
 	__mkcgo__dlsym(EVP_DigestVerifyFinal)
 	__mkcgo__dlsym(EVP_DigestVerifyInit)
 	__mkcgo__dlsym(EVP_EncryptFinal_ex)
 	__mkcgo__dlsym(EVP_EncryptInit_ex)
 	__mkcgo__dlsym(EVP_EncryptUpdate)
 	__mkcgo__dlsym(EVP_MD_CTX_copy_ex)
+	__mkcgo__dlsym(EVP_MD_CTX_ctrl)
 	__mkcgo__dlsym(EVP_MD_CTX_free)
 	__mkcgo__dlsym(EVP_MD_CTX_new)
 	__mkcgo__dlsym(EVP_PKEY_CTX_ctrl)
@@ -318,9 +321,13 @@ void __mkcgo_load_(void* handle) {
 	__mkcgo__dlsym(EVP_PKEY_encrypt)
 	__mkcgo__dlsym(EVP_PKEY_encrypt_init)
 	__mkcgo__dlsym(EVP_PKEY_free)
+	__mkcgo__dlsym(EVP_PKEY_get_raw_private_key)
+	__mkcgo__dlsym(EVP_PKEY_get_raw_public_key)
 	__mkcgo__dlsym(EVP_PKEY_keygen)
 	__mkcgo__dlsym(EVP_PKEY_keygen_init)
 	__mkcgo__dlsym(EVP_PKEY_new)
+	__mkcgo__dlsym(EVP_PKEY_new_raw_private_key)
+	__mkcgo__dlsym(EVP_PKEY_new_raw_public_key)
 	__mkcgo__dlsym(EVP_PKEY_paramgen)
 	__mkcgo__dlsym(EVP_PKEY_paramgen_init)
 	__mkcgo__dlsym(EVP_PKEY_sign)
@@ -354,7 +361,13 @@ void __mkcgo_load_(void* handle) {
 	__mkcgo__dlsym(EVP_sha224)
 	__mkcgo__dlsym(EVP_sha256)
 	__mkcgo__dlsym(EVP_sha384)
+	__mkcgo__dlsym(EVP_sha3_224)
+	__mkcgo__dlsym(EVP_sha3_256)
+	__mkcgo__dlsym(EVP_sha3_384)
+	__mkcgo__dlsym(EVP_sha3_512)
 	__mkcgo__dlsym(EVP_sha512)
+	__mkcgo__dlsym(EVP_sha512_224)
+	__mkcgo__dlsym(EVP_sha512_256)
 	__mkcgo__dlsym(OBJ_nid2sn)
 	__mkcgo__dlsym(OPENSSL_init)
 	__mkcgo__dlsym(OPENSSL_init_crypto)
@@ -402,15 +415,18 @@ void __mkcgo_unload_() {
 	_g_EVP_DigestFinal_ex = NULL;
 	_g_EVP_DigestInit = NULL;
 	_g_EVP_DigestInit_ex = NULL;
+	_g_EVP_DigestSign = NULL;
 	_g_EVP_DigestSignFinal = NULL;
 	_g_EVP_DigestSignInit = NULL;
 	_g_EVP_DigestUpdate = NULL;
+	_g_EVP_DigestVerify = NULL;
 	_g_EVP_DigestVerifyFinal = NULL;
 	_g_EVP_DigestVerifyInit = NULL;
 	_g_EVP_EncryptFinal_ex = NULL;
 	_g_EVP_EncryptInit_ex = NULL;
 	_g_EVP_EncryptUpdate = NULL;
 	_g_EVP_MD_CTX_copy_ex = NULL;
+	_g_EVP_MD_CTX_ctrl = NULL;
 	_g_EVP_MD_CTX_free = NULL;
 	_g_EVP_MD_CTX_new = NULL;
 	_g_EVP_PKEY_CTX_ctrl = NULL;
@@ -425,9 +441,13 @@ void __mkcgo_unload_() {
 	_g_EVP_PKEY_encrypt = NULL;
 	_g_EVP_PKEY_encrypt_init = NULL;
 	_g_EVP_PKEY_free = NULL;
+	_g_EVP_PKEY_get_raw_private_key = NULL;
+	_g_EVP_PKEY_get_raw_public_key = NULL;
 	_g_EVP_PKEY_keygen = NULL;
 	_g_EVP_PKEY_keygen_init = NULL;
 	_g_EVP_PKEY_new = NULL;
+	_g_EVP_PKEY_new_raw_private_key = NULL;
+	_g_EVP_PKEY_new_raw_public_key = NULL;
 	_g_EVP_PKEY_paramgen = NULL;
 	_g_EVP_PKEY_paramgen_init = NULL;
 	_g_EVP_PKEY_sign = NULL;
@@ -461,45 +481,19 @@ void __mkcgo_unload_() {
 	_g_EVP_sha224 = NULL;
 	_g_EVP_sha256 = NULL;
 	_g_EVP_sha384 = NULL;
+	_g_EVP_sha3_224 = NULL;
+	_g_EVP_sha3_256 = NULL;
+	_g_EVP_sha3_384 = NULL;
+	_g_EVP_sha3_512 = NULL;
 	_g_EVP_sha512 = NULL;
+	_g_EVP_sha512_224 = NULL;
+	_g_EVP_sha512_256 = NULL;
 	_g_OBJ_nid2sn = NULL;
 	_g_OPENSSL_init = NULL;
 	_g_OPENSSL_init_crypto = NULL;
 	_g_OpenSSL_version = NULL;
 	_g_PKCS5_PBKDF2_HMAC = NULL;
 	_g_RAND_bytes = NULL;
-}
-
-void __mkcgo_load_111(void* handle) {
-	__mkcgo__dlsym(EVP_DigestSign)
-	__mkcgo__dlsym(EVP_DigestVerify)
-	__mkcgo__dlsym(EVP_MD_CTX_ctrl)
-	__mkcgo__dlsym(EVP_PKEY_get_raw_private_key)
-	__mkcgo__dlsym(EVP_PKEY_get_raw_public_key)
-	__mkcgo__dlsym(EVP_PKEY_new_raw_private_key)
-	__mkcgo__dlsym(EVP_PKEY_new_raw_public_key)
-	__mkcgo__dlsym(EVP_sha3_224)
-	__mkcgo__dlsym(EVP_sha3_256)
-	__mkcgo__dlsym(EVP_sha3_384)
-	__mkcgo__dlsym(EVP_sha3_512)
-	__mkcgo__dlsym(EVP_sha512_224)
-	__mkcgo__dlsym(EVP_sha512_256)
-}
-
-void __mkcgo_unload_111() {
-	_g_EVP_DigestSign = NULL;
-	_g_EVP_DigestVerify = NULL;
-	_g_EVP_MD_CTX_ctrl = NULL;
-	_g_EVP_PKEY_get_raw_private_key = NULL;
-	_g_EVP_PKEY_get_raw_public_key = NULL;
-	_g_EVP_PKEY_new_raw_private_key = NULL;
-	_g_EVP_PKEY_new_raw_public_key = NULL;
-	_g_EVP_sha3_224 = NULL;
-	_g_EVP_sha3_256 = NULL;
-	_g_EVP_sha3_384 = NULL;
-	_g_EVP_sha3_512 = NULL;
-	_g_EVP_sha512_224 = NULL;
-	_g_EVP_sha512_256 = NULL;
 }
 
 void __mkcgo_load_3(void* handle) {

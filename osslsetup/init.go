@@ -25,11 +25,7 @@ func opensslInit(file string) error {
 	ossl.MkcgoLoad_(handle)
 	if vMajor == 1 {
 		ossl.MkcgoLoad_legacy_1(handle)
-		if vPatch == 1 {
-			ossl.MkcgoLoad_111(handle)
-		}
 	} else {
-		ossl.MkcgoLoad_111(handle)
 		ossl.MkcgoLoad_3(handle)
 		if vMajor >= 3 && vMinor >= 3 {
 			ossl.MkcgoLoad_33(handle)
@@ -148,7 +144,7 @@ func openLibrary(file string) (handle unsafe.Pointer, close func(), err error) {
 	var supported bool
 	switch vMajor {
 	case 1:
-		supported = vMinor == 1
+		supported = vMinor == 1 && vPatch >= 1
 	case 3:
 		// OpenSSL guarantees API and ABI compatibility within the same major version since OpenSSL 3.
 		supported = true

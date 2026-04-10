@@ -22,11 +22,6 @@ func SupportsCurve(curve string) bool {
 }
 
 var supportsX25519 = sync.OnceValue(func() bool {
-	if !versionAtOrAbove(1, 1, 1) {
-		// X25519 support was added in OpenSSL 1.1.0, but the APIs we use
-		// to implement it were only added in 1.1.1.
-		return false
-	}
 	ctx, _ := ossl.EVP_PKEY_CTX_new_id(ossl.EVP_PKEY_X25519, nil)
 	if ctx != nil {
 		ossl.EVP_PKEY_CTX_free(ctx)

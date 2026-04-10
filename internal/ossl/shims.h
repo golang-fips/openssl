@@ -137,10 +137,10 @@ typedef void* _BIO_PTR;
 typedef int point_conversion_form_t;
 
 // Tags used by mkcgo to determine which OpenSSL version each function is available in:
-// - no tag: OpenSSL 1.0 or later
+// - no tag: available in all supported versions (OpenSSL 1.1.1+)
 // - legacy_1: Only OpenSSL 1
 // - 3: OpenSSL 3.0 or later
-// - 111: OpenSSL 1.1.1 or later
+// - 33: OpenSSL 3.3 or later
 
 // The noescape/nocallback attributes are performance optimizations.
 // Only add functions that have been observed to benefit from these
@@ -203,16 +203,16 @@ const _EVP_MD_PTR EVP_sha224(void) __attribute__((noerror));
 const _EVP_MD_PTR EVP_sha256(void) __attribute__((noerror));
 const _EVP_MD_PTR EVP_sha384(void) __attribute__((noerror));
 const _EVP_MD_PTR EVP_sha512(void) __attribute__((noerror));
-const _EVP_MD_PTR EVP_sha512_224(void) __attribute__((tag("111"),noerror));
-const _EVP_MD_PTR EVP_sha512_256(void) __attribute__((tag("111"),noerror));
-const _EVP_MD_PTR EVP_sha3_224(void) __attribute__((tag("111"),noerror));
-const _EVP_MD_PTR EVP_sha3_256(void) __attribute__((tag("111"),noerror));
-const _EVP_MD_PTR EVP_sha3_384(void) __attribute__((tag("111"),noerror));
-const _EVP_MD_PTR EVP_sha3_512(void) __attribute__((tag("111"),noerror));
+const _EVP_MD_PTR EVP_sha512_224(void) __attribute__((noerror));
+const _EVP_MD_PTR EVP_sha512_256(void) __attribute__((noerror));
+const _EVP_MD_PTR EVP_sha3_224(void) __attribute__((noerror));
+const _EVP_MD_PTR EVP_sha3_256(void) __attribute__((noerror));
+const _EVP_MD_PTR EVP_sha3_384(void) __attribute__((noerror));
+const _EVP_MD_PTR EVP_sha3_512(void) __attribute__((noerror));
 
 _EVP_MD_CTX_PTR EVP_MD_CTX_new(void);
 void EVP_MD_CTX_free(_EVP_MD_CTX_PTR ctx);
-int EVP_MD_CTX_ctrl(_EVP_MD_CTX_PTR ctx, int cmd, int p1, void *p2) __attribute__((tag("111")));
+int EVP_MD_CTX_ctrl(_EVP_MD_CTX_PTR ctx, int cmd, int p1, void *p2);
 int EVP_MD_CTX_copy_ex(_EVP_MD_CTX_PTR out, const _EVP_MD_CTX_PTR in);
 const _OSSL_PARAM_PTR EVP_MD_CTX_gettable_params(_EVP_MD_CTX_PTR ctx) __attribute__((tag("3")));
 const _OSSL_PARAM_PTR EVP_MD_CTX_settable_params(_EVP_MD_CTX_PTR ctx) __attribute__((tag("3")));
@@ -225,12 +225,12 @@ int EVP_DigestUpdate(_EVP_MD_CTX_PTR ctx, const void *d, size_t cnt) __attribute
 int EVP_DigestFinal_ex(_EVP_MD_CTX_PTR ctx, unsigned char *md, unsigned int *s) __attribute__((noescape,nocallback,slice("md","s")));
 int EVP_DigestFinalXOF(_EVP_MD_CTX_PTR ctx, unsigned char *md, size_t mdlen) __attribute__((tag("33"),noescape,nocallback,slice("md","mdlen")));
 int EVP_DigestSqueeze(_EVP_MD_CTX_PTR ctx, unsigned char *out, size_t outlen) __attribute__((tag("33"),noescape,nocallback,slice("out","outlen")));
-int EVP_DigestSign(_EVP_MD_CTX_PTR ctx, unsigned char *sigret, size_t *siglen, const unsigned char *tbs, size_t tbslen) __attribute__((tag("111"),noescape,nocallback,slice("sigret","siglen"),slice("tbs","tbslen")));
+int EVP_DigestSign(_EVP_MD_CTX_PTR ctx, unsigned char *sigret, size_t *siglen, const unsigned char *tbs, size_t tbslen) __attribute__((noescape,nocallback,slice("sigret","siglen"),slice("tbs","tbslen")));
 int EVP_DigestSignInit(_EVP_MD_CTX_PTR ctx, _EVP_PKEY_CTX_PTR *pctx, const _EVP_MD_PTR type, _ENGINE_PTR e, _EVP_PKEY_PTR pkey);
 int EVP_DigestSignFinal(_EVP_MD_CTX_PTR ctx, unsigned char *sig, size_t *siglen) __attribute__((slice("sig","siglen")));
 int EVP_DigestVerifyInit(_EVP_MD_CTX_PTR ctx, _EVP_PKEY_CTX_PTR *pctx, const _EVP_MD_PTR type, _ENGINE_PTR e, _EVP_PKEY_PTR pkey);
 int EVP_DigestVerifyFinal(_EVP_MD_CTX_PTR ctx, const unsigned char *sig, size_t siglen) __attribute__((slice("sig","siglen")));
-int EVP_DigestVerify(_EVP_MD_CTX_PTR ctx, const unsigned char *sigret, size_t siglen, const unsigned char *tbs, size_t tbslen) __attribute__((tag("111"),slice("sigret","siglen"),slice("tbs","tbslen")));
+int EVP_DigestVerify(_EVP_MD_CTX_PTR ctx, const unsigned char *sigret, size_t siglen, const unsigned char *tbs, size_t tbslen) __attribute__((slice("sigret","siglen"),slice("tbs","tbslen")));
 
 // HMAC API
 int HMAC_Init_ex(_HMAC_CTX_PTR arg0, const void *arg1, int arg2, const _EVP_MD_PTR arg3, _ENGINE_PTR arg4) __attribute__((tag("legacy_1"),noescape,nocallback,slice("arg1","arg2")));
@@ -280,8 +280,8 @@ int EVP_DecryptFinal_ex(_EVP_CIPHER_CTX_PTR ctx, unsigned char *outm, int *outl)
 
 // EVP_PKEY API
 _EVP_PKEY_PTR EVP_PKEY_new(void);
-_EVP_PKEY_PTR EVP_PKEY_new_raw_private_key(int type, _ENGINE_PTR e, const unsigned char *key, size_t keylen) __attribute__((tag("111"),slice("key","keylen")));
-_EVP_PKEY_PTR EVP_PKEY_new_raw_public_key(int type, _ENGINE_PTR e, const unsigned char *key, size_t keylen) __attribute__((tag("111"),slice("key","keylen")));
+_EVP_PKEY_PTR EVP_PKEY_new_raw_private_key(int type, _ENGINE_PTR e, const unsigned char *key, size_t keylen) __attribute__((slice("key","keylen")));
+_EVP_PKEY_PTR EVP_PKEY_new_raw_public_key(int type, _ENGINE_PTR e, const unsigned char *key, size_t keylen) __attribute__((slice("key","keylen")));
 int EVP_PKEY_get_size(const _EVP_PKEY_PTR pkey) __attribute__((tag("3"),tag("legacy_1","EVP_PKEY_size")));
 int EVP_PKEY_get_bits(const _EVP_PKEY_PTR pkey) __attribute__((tag("3"),tag("legacy_1","EVP_PKEY_bits"))); 
 void EVP_PKEY_free(_EVP_PKEY_PTR arg0);
@@ -296,8 +296,8 @@ int EVP_PKEY_get_octet_string_param(const _EVP_PKEY_PTR pkey, const char *key_na
 int EVP_PKEY_up_ref(_EVP_PKEY_PTR key);
 int EVP_PKEY_set1_EC_KEY(_EVP_PKEY_PTR pkey, _EC_KEY_PTR key) __attribute__((tag("legacy_1")));
 int EVP_PKEY_CTX_set0_rsa_oaep_label(_EVP_PKEY_CTX_PTR ctx, void *label, int labellen) __attribute__((tag("3"),slice("label","labellen")));
-int EVP_PKEY_get_raw_public_key(const _EVP_PKEY_PTR pkey, unsigned char *pub, size_t *publen) __attribute__((tag("111"),noescape,nocallback,slice("pub","publen")));
-int EVP_PKEY_get_raw_private_key(const _EVP_PKEY_PTR pkey, unsigned char *priv, size_t *privlen) __attribute__((tag("111"),noescape,nocallback,slice("priv","privlen")));
+int EVP_PKEY_get_raw_public_key(const _EVP_PKEY_PTR pkey, unsigned char *pub, size_t *publen) __attribute__((noescape,nocallback,slice("pub","publen")));
+int EVP_PKEY_get_raw_private_key(const _EVP_PKEY_PTR pkey, unsigned char *priv, size_t *privlen) __attribute__((noescape,nocallback,slice("priv","privlen")));
 int EVP_PKEY_fromdata_init(_EVP_PKEY_CTX_PTR ctx) __attribute__((tag("3")));
 int EVP_PKEY_fromdata(_EVP_PKEY_CTX_PTR ctx, _EVP_PKEY_PTR *pkey, int selection, _OSSL_PARAM_PTR params) __attribute__((tag("3")));
 int EVP_PKEY_paramgen_init(_EVP_PKEY_CTX_PTR ctx);

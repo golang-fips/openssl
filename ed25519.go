@@ -28,12 +28,10 @@ const (
 var supportsEd25519 = sync.OnceValue(func() bool {
 	switch major() {
 	case 1:
-		if versionAtOrAbove(1, 1, 1) {
-			ctx, _ := ossl.EVP_PKEY_CTX_new_id(ossl.EVP_PKEY_ED25519, nil)
-			if ctx != nil {
-				ossl.EVP_PKEY_CTX_free(ctx)
-				return true
-			}
+		ctx, _ := ossl.EVP_PKEY_CTX_new_id(ossl.EVP_PKEY_ED25519, nil)
+		if ctx != nil {
+			ossl.EVP_PKEY_CTX_free(ctx)
+			return true
 		}
 	case 3:
 		sig, _ := ossl.EVP_SIGNATURE_fetch(nil, _KeyTypeED25519.ptr(), nil)

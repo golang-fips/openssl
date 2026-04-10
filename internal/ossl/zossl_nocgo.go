@@ -1946,15 +1946,18 @@ func MkcgoLoad_(handle unsafe.Pointer) {
 	_mkcgo_EVP_DigestFinal_ex = dlsym(handle, "EVP_DigestFinal_ex\x00", false)
 	_mkcgo_EVP_DigestInit = dlsym(handle, "EVP_DigestInit\x00", false)
 	_mkcgo_EVP_DigestInit_ex = dlsym(handle, "EVP_DigestInit_ex\x00", false)
+	_mkcgo_EVP_DigestSign = dlsym(handle, "EVP_DigestSign\x00", false)
 	_mkcgo_EVP_DigestSignFinal = dlsym(handle, "EVP_DigestSignFinal\x00", false)
 	_mkcgo_EVP_DigestSignInit = dlsym(handle, "EVP_DigestSignInit\x00", false)
 	_mkcgo_EVP_DigestUpdate = dlsym(handle, "EVP_DigestUpdate\x00", false)
+	_mkcgo_EVP_DigestVerify = dlsym(handle, "EVP_DigestVerify\x00", false)
 	_mkcgo_EVP_DigestVerifyFinal = dlsym(handle, "EVP_DigestVerifyFinal\x00", false)
 	_mkcgo_EVP_DigestVerifyInit = dlsym(handle, "EVP_DigestVerifyInit\x00", false)
 	_mkcgo_EVP_EncryptFinal_ex = dlsym(handle, "EVP_EncryptFinal_ex\x00", false)
 	_mkcgo_EVP_EncryptInit_ex = dlsym(handle, "EVP_EncryptInit_ex\x00", false)
 	_mkcgo_EVP_EncryptUpdate = dlsym(handle, "EVP_EncryptUpdate\x00", false)
 	_mkcgo_EVP_MD_CTX_copy_ex = dlsym(handle, "EVP_MD_CTX_copy_ex\x00", false)
+	_mkcgo_EVP_MD_CTX_ctrl = dlsym(handle, "EVP_MD_CTX_ctrl\x00", false)
 	_mkcgo_EVP_MD_CTX_free = dlsym(handle, "EVP_MD_CTX_free\x00", false)
 	_mkcgo_EVP_MD_CTX_new = dlsym(handle, "EVP_MD_CTX_new\x00", false)
 	_mkcgo_EVP_PKEY_CTX_ctrl = dlsym(handle, "EVP_PKEY_CTX_ctrl\x00", false)
@@ -1969,9 +1972,13 @@ func MkcgoLoad_(handle unsafe.Pointer) {
 	_mkcgo_EVP_PKEY_encrypt = dlsym(handle, "EVP_PKEY_encrypt\x00", false)
 	_mkcgo_EVP_PKEY_encrypt_init = dlsym(handle, "EVP_PKEY_encrypt_init\x00", false)
 	_mkcgo_EVP_PKEY_free = dlsym(handle, "EVP_PKEY_free\x00", false)
+	_mkcgo_EVP_PKEY_get_raw_private_key = dlsym(handle, "EVP_PKEY_get_raw_private_key\x00", false)
+	_mkcgo_EVP_PKEY_get_raw_public_key = dlsym(handle, "EVP_PKEY_get_raw_public_key\x00", false)
 	_mkcgo_EVP_PKEY_keygen = dlsym(handle, "EVP_PKEY_keygen\x00", false)
 	_mkcgo_EVP_PKEY_keygen_init = dlsym(handle, "EVP_PKEY_keygen_init\x00", false)
 	_mkcgo_EVP_PKEY_new = dlsym(handle, "EVP_PKEY_new\x00", false)
+	_mkcgo_EVP_PKEY_new_raw_private_key = dlsym(handle, "EVP_PKEY_new_raw_private_key\x00", false)
+	_mkcgo_EVP_PKEY_new_raw_public_key = dlsym(handle, "EVP_PKEY_new_raw_public_key\x00", false)
 	_mkcgo_EVP_PKEY_paramgen = dlsym(handle, "EVP_PKEY_paramgen\x00", false)
 	_mkcgo_EVP_PKEY_paramgen_init = dlsym(handle, "EVP_PKEY_paramgen_init\x00", false)
 	_mkcgo_EVP_PKEY_sign = dlsym(handle, "EVP_PKEY_sign\x00", false)
@@ -2005,7 +2012,13 @@ func MkcgoLoad_(handle unsafe.Pointer) {
 	_mkcgo_EVP_sha224 = dlsym(handle, "EVP_sha224\x00", false)
 	_mkcgo_EVP_sha256 = dlsym(handle, "EVP_sha256\x00", false)
 	_mkcgo_EVP_sha384 = dlsym(handle, "EVP_sha384\x00", false)
+	_mkcgo_EVP_sha3_224 = dlsym(handle, "EVP_sha3_224\x00", false)
+	_mkcgo_EVP_sha3_256 = dlsym(handle, "EVP_sha3_256\x00", false)
+	_mkcgo_EVP_sha3_384 = dlsym(handle, "EVP_sha3_384\x00", false)
+	_mkcgo_EVP_sha3_512 = dlsym(handle, "EVP_sha3_512\x00", false)
 	_mkcgo_EVP_sha512 = dlsym(handle, "EVP_sha512\x00", false)
+	_mkcgo_EVP_sha512_224 = dlsym(handle, "EVP_sha512_224\x00", false)
+	_mkcgo_EVP_sha512_256 = dlsym(handle, "EVP_sha512_256\x00", false)
 	_mkcgo_OBJ_nid2sn = dlsym(handle, "OBJ_nid2sn\x00", false)
 	_mkcgo_OPENSSL_init = dlsym(handle, "OPENSSL_init\x00", false)
 	_mkcgo_OPENSSL_init_crypto = dlsym(handle, "OPENSSL_init_crypto\x00", false)
@@ -2053,15 +2066,18 @@ func MkcgoUnload_() {
 	_mkcgo_EVP_DigestFinal_ex = 0
 	_mkcgo_EVP_DigestInit = 0
 	_mkcgo_EVP_DigestInit_ex = 0
+	_mkcgo_EVP_DigestSign = 0
 	_mkcgo_EVP_DigestSignFinal = 0
 	_mkcgo_EVP_DigestSignInit = 0
 	_mkcgo_EVP_DigestUpdate = 0
+	_mkcgo_EVP_DigestVerify = 0
 	_mkcgo_EVP_DigestVerifyFinal = 0
 	_mkcgo_EVP_DigestVerifyInit = 0
 	_mkcgo_EVP_EncryptFinal_ex = 0
 	_mkcgo_EVP_EncryptInit_ex = 0
 	_mkcgo_EVP_EncryptUpdate = 0
 	_mkcgo_EVP_MD_CTX_copy_ex = 0
+	_mkcgo_EVP_MD_CTX_ctrl = 0
 	_mkcgo_EVP_MD_CTX_free = 0
 	_mkcgo_EVP_MD_CTX_new = 0
 	_mkcgo_EVP_PKEY_CTX_ctrl = 0
@@ -2076,9 +2092,13 @@ func MkcgoUnload_() {
 	_mkcgo_EVP_PKEY_encrypt = 0
 	_mkcgo_EVP_PKEY_encrypt_init = 0
 	_mkcgo_EVP_PKEY_free = 0
+	_mkcgo_EVP_PKEY_get_raw_private_key = 0
+	_mkcgo_EVP_PKEY_get_raw_public_key = 0
 	_mkcgo_EVP_PKEY_keygen = 0
 	_mkcgo_EVP_PKEY_keygen_init = 0
 	_mkcgo_EVP_PKEY_new = 0
+	_mkcgo_EVP_PKEY_new_raw_private_key = 0
+	_mkcgo_EVP_PKEY_new_raw_public_key = 0
 	_mkcgo_EVP_PKEY_paramgen = 0
 	_mkcgo_EVP_PKEY_paramgen_init = 0
 	_mkcgo_EVP_PKEY_sign = 0
@@ -2112,45 +2132,19 @@ func MkcgoUnload_() {
 	_mkcgo_EVP_sha224 = 0
 	_mkcgo_EVP_sha256 = 0
 	_mkcgo_EVP_sha384 = 0
+	_mkcgo_EVP_sha3_224 = 0
+	_mkcgo_EVP_sha3_256 = 0
+	_mkcgo_EVP_sha3_384 = 0
+	_mkcgo_EVP_sha3_512 = 0
 	_mkcgo_EVP_sha512 = 0
+	_mkcgo_EVP_sha512_224 = 0
+	_mkcgo_EVP_sha512_256 = 0
 	_mkcgo_OBJ_nid2sn = 0
 	_mkcgo_OPENSSL_init = 0
 	_mkcgo_OPENSSL_init_crypto = 0
 	_mkcgo_OpenSSL_version = 0
 	_mkcgo_PKCS5_PBKDF2_HMAC = 0
 	_mkcgo_RAND_bytes = 0
-}
-
-func MkcgoLoad_111(handle unsafe.Pointer) {
-	_mkcgo_EVP_DigestSign = dlsym(handle, "EVP_DigestSign\x00", false)
-	_mkcgo_EVP_DigestVerify = dlsym(handle, "EVP_DigestVerify\x00", false)
-	_mkcgo_EVP_MD_CTX_ctrl = dlsym(handle, "EVP_MD_CTX_ctrl\x00", false)
-	_mkcgo_EVP_PKEY_get_raw_private_key = dlsym(handle, "EVP_PKEY_get_raw_private_key\x00", false)
-	_mkcgo_EVP_PKEY_get_raw_public_key = dlsym(handle, "EVP_PKEY_get_raw_public_key\x00", false)
-	_mkcgo_EVP_PKEY_new_raw_private_key = dlsym(handle, "EVP_PKEY_new_raw_private_key\x00", false)
-	_mkcgo_EVP_PKEY_new_raw_public_key = dlsym(handle, "EVP_PKEY_new_raw_public_key\x00", false)
-	_mkcgo_EVP_sha3_224 = dlsym(handle, "EVP_sha3_224\x00", false)
-	_mkcgo_EVP_sha3_256 = dlsym(handle, "EVP_sha3_256\x00", false)
-	_mkcgo_EVP_sha3_384 = dlsym(handle, "EVP_sha3_384\x00", false)
-	_mkcgo_EVP_sha3_512 = dlsym(handle, "EVP_sha3_512\x00", false)
-	_mkcgo_EVP_sha512_224 = dlsym(handle, "EVP_sha512_224\x00", false)
-	_mkcgo_EVP_sha512_256 = dlsym(handle, "EVP_sha512_256\x00", false)
-}
-
-func MkcgoUnload_111() {
-	_mkcgo_EVP_DigestSign = 0
-	_mkcgo_EVP_DigestVerify = 0
-	_mkcgo_EVP_MD_CTX_ctrl = 0
-	_mkcgo_EVP_PKEY_get_raw_private_key = 0
-	_mkcgo_EVP_PKEY_get_raw_public_key = 0
-	_mkcgo_EVP_PKEY_new_raw_private_key = 0
-	_mkcgo_EVP_PKEY_new_raw_public_key = 0
-	_mkcgo_EVP_sha3_224 = 0
-	_mkcgo_EVP_sha3_256 = 0
-	_mkcgo_EVP_sha3_384 = 0
-	_mkcgo_EVP_sha3_512 = 0
-	_mkcgo_EVP_sha512_224 = 0
-	_mkcgo_EVP_sha512_256 = 0
 }
 
 func MkcgoLoad_3(handle unsafe.Pointer) {

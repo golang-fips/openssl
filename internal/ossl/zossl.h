@@ -103,8 +103,6 @@ enum {
 uintptr_t mkcgo_err_retrieve();
 void __mkcgo_load_(void* handle);
 void __mkcgo_unload_();
-void __mkcgo_load_111(void* handle);
-void __mkcgo_unload_111();
 void __mkcgo_load_3(void* handle);
 void __mkcgo_unload_3();
 void __mkcgo_load_33(void* handle);

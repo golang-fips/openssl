@@ -17,7 +17,7 @@ import (
 func SupportsHKDF() bool {
 	switch major() {
 	case 1:
-		return versionAtOrAbove(1, 1, 1)
+		return true
 	case 3:
 		_, err := fetchHKDF3()
 		return err == nil
