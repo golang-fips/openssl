@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"io"
@@ -38,8 +39,23 @@ func cmdCheck(args []string) {
 	timeThreshold := fs.Float64("time-threshold", 5, "minimum sec/op regression percentage to flag")
 	minTime := fs.Duration("min-time", time.Microsecond, "minimum base time for sec/op checks")
 	alpha := fs.Float64("alpha", 0.05, "significance level for statistical tests")
+	regressionsOut := fs.String("o-regressions", "regressions.txt", "output file for regression details")
+	failuresOut := fs.String("o-failures", "failures.txt", "output file for test failure details")
+	statusOut := fs.String("o-status", "status.json", "output file for machine-readable status (JSON)")
 	fs.Usage = func() {
-		fmt.Fprintf(os.Stderr, "usage: benchcheck check [flags] base.txt head.txt\n\nFlags:\n")
+		fmt.Fprintf(os.Stderr, `usage: benchcheck check [flags] base.txt head.txt
+
+Compare base and head benchmark results, detect regressions and test failures.
+
+Writes the following output files (paths configurable via flags):
+  regressions.txt  One-line summary per detected regression.
+  failures.txt     Extracted build errors, test failures, and crash traces.
+  status.json      Machine-readable JSON status for the report subcommand.
+
+Exits 0 if no issues are found, 1 if regressions or failures are detected.
+
+Flags:
+`)
 		fs.PrintDefaults()
 	}
 	fs.Parse(args)
@@ -59,11 +75,12 @@ func cmdCheck(args []string) {
 
 	// Extract test failures from both files.
 	var failureLines []string
-	if lines, err := extractFailuresFromFile(basePath, "base: "); err == nil {
-		failureLines = append(failureLines, lines...)
+	var err error
+	if failureLines, err = appendFailuresFromFile(failureLines, basePath, "base: "); err != nil {
+		fmt.Fprintf(os.Stderr, "reading %s: %v\n", basePath, err)
 	}
-	if lines, err := extractFailuresFromFile(headPath, "head: "); err == nil {
-		failureLines = append(failureLines, lines...)
+	if failureLines, err = appendFailuresFromFile(failureLines, headPath, "head: "); err != nil {
+		fmt.Fprintf(os.Stderr, "reading %s: %v\n", headPath, err)
 	}
 	hasFailures := len(failureLines) > 0
 
@@ -87,11 +104,11 @@ func cmdCheck(args []string) {
 			regressionLines = append(regressionLines, fmt.Sprintf("time regression: %s +%.2f%% (p=%.3f, base=%.2g sec)", r.Name, r.PctChange, r.PValue, r.BaseVal))
 		}
 	}
-	writeLines("regressions.txt", regressionLines)
-	writeLines("failures.txt", failureLines)
+	writeLines(*regressionsOut, regressionLines)
+	writeLines(*failuresOut, failureLines)
 
-	// Write status.txt.
-	writeStatus("status.txt", hasRegressions, hasFailures)
+	// Write status.json.
+	writeStatus(*statusOut, hasRegressions, hasFailures)
 
 	// Print summary with GitHub Actions annotations.
 	if hasRegressions {
@@ -118,18 +135,19 @@ func cmdCheck(args []string) {
 	}
 }
 
-func extractFailuresFromFile(path, prefix string) ([]string, error) {
+func appendFailuresFromFile(lines []string, path, prefix string) ([]string, error) {
 	f, err := os.Open(path)
 	if err != nil {
-		return nil, err
+		return lines, err
 	}
 	defer f.Close()
-	return extractFailures(f, prefix), nil
+	result, err := extractFailures(f, prefix)
+	return append(lines, result...), err
 }
 
 // extractFailures parses go test output and returns lines related to
 // build errors, test failures, and crash traces.
-func extractFailures(r io.Reader, prefix string) []string {
+func extractFailures(r io.Reader, prefix string) ([]string, error) {
 	var lines []string
 	scanner := bufio.NewScanner(r)
 	inCrash := false
@@ -152,7 +170,7 @@ func extractFailures(r io.Reader, prefix string) []string {
 			lines = append(lines, prefix+line)
 		}
 	}
-	return lines
+	return lines, scanner.Err()
 }
 
 // isCrashLine returns true for signal or panic lines (e.g. "SIGSEGV:", "panic:").
@@ -267,29 +285,30 @@ func isAllocUnit(unit string) bool {
 }
 
 func writeLines(path string, lines []string) {
+	data := []byte(strings.Join(lines, "\n") + "\n")
 	if len(lines) == 0 {
-		// Write an empty file so the artifact upload doesn't skip it.
-		os.WriteFile(path, nil, 0o644)
-		return
+		data = nil
 	}
-	f, err := os.Create(path)
-	if err != nil {
+	if err := os.WriteFile(path, data, 0o644); err != nil {
 		fmt.Fprintf(os.Stderr, "writing %s: %v\n", path, err)
-		return
-	}
-	defer f.Close()
-	for _, line := range lines {
-		fmt.Fprintln(f, line)
 	}
 }
 
+// Status is the machine-readable status written by check and read by report.
+type Status struct {
+	Regression     bool `json:"regression"`
+	TestFailures   bool `json:"test_failures"`
+	BenchmarkError bool `json:"benchmark_error"`
+}
+
 func writeStatus(path string, regression, failures bool) {
-	f, err := os.Create(path)
+	s := Status{Regression: regression, TestFailures: failures}
+	data, err := json.Marshal(s)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "writing %s: %v\n", path, err)
+		fmt.Fprintf(os.Stderr, "marshaling status: %v\n", err)
 		return
 	}
-	defer f.Close()
-	fmt.Fprintf(f, "regression=%v\n", regression)
-	fmt.Fprintf(f, "test_failures=%v\n", failures)
+	if err := os.WriteFile(path, data, 0o644); err != nil {
+		fmt.Fprintf(os.Stderr, "writing %s: %v\n", path, err)
+	}
 }

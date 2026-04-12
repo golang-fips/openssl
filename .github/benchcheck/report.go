@@ -1,6 +1,8 @@
 package main
 
 import (
+	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"os"
@@ -55,7 +57,7 @@ func cmdReport(args []string) {
 		if jobURL == "" {
 			jobURL = *runURL
 		}
-		status := readJobStatus(filepath.Join(dir, "status.txt"))
+		status := readJobStatus(filepath.Join(dir, "status.json"))
 		failures := readFileContent(filepath.Join(dir, "failures.txt"))
 		regressions := readFileContent(filepath.Join(dir, "regressions.txt"))
 
@@ -105,25 +107,34 @@ type jobStatus struct {
 	failed       bool // derived: any of the above
 }
 
+func (s *jobStatus) setFailed(field *bool) {
+	*field = true
+	s.failed = true
+}
+
 func readJobStatus(path string) jobStatus {
 	data, err := os.ReadFile(path)
 	if err != nil {
-		// Missing status file means the job errored before writing it.
-		return jobStatus{failed: true, benchError: true}
+		if !errors.Is(err, os.ErrNotExist) {
+			fmt.Fprintf(os.Stderr, "reading %s: %v\n", path, err)
+		}
+		// Missing or unreadable status file means the job errored before writing it.
+		return jobStatus{benchError: true, failed: true}
+	}
+	var status Status
+	if err := json.Unmarshal(data, &status); err != nil {
+		fmt.Fprintf(os.Stderr, "parsing %s: %v\n", path, err)
+		return jobStatus{benchError: true, failed: true}
 	}
 	var s jobStatus
-	for _, line := range strings.Split(string(data), "\n") {
-		switch {
-		case line == "regression=true":
-			s.regression = true
-			s.failed = true
-		case line == "test_failures=true":
-			s.testFailures = true
-			s.failed = true
-		case line == "benchmark_error=true":
-			s.benchError = true
-			s.failed = true
-		}
+	if status.Regression {
+		s.setFailed(&s.regression)
+	}
+	if status.TestFailures {
+		s.setFailed(&s.testFailures)
+	}
+	if status.BenchmarkError {
+		s.setFailed(&s.benchError)
 	}
 	return s
 }

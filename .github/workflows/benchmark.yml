@@ -56,8 +56,11 @@ jobs:
           - { go-version: 1.26.x, openssl-version: "", host: ubuntu-latest, platform: azl3 }
     name: bench (${{ matrix.platform }}, ${{ matrix.host }}, ossl${{ matrix.openssl-version || 'system' }}, go${{ matrix.go-version }})
     runs-on: ${{ matrix.host }}
-    container: ${{ matrix.platform == 'azl3' && fromJSON('{"image":"mcr.microsoft.com/azurelinux/base/core:3.0"}') || fromJSON('null') }}
+    container: ${{ matrix.platform == 'azl3' && fromJSON('{"image":"mcr.microsoft.com/oss/go/microsoft/golang:1.25-azurelinux3.0"}') || fromJSON('null') }}
     steps:
+    - name: Initialize status
+      run: echo '{"regression":false,"test_failures":false,"benchmark_error":true}' > status.json
+
     - name: Install build tools (Ubuntu)
       if: matrix.platform == 'ubuntu'
       run: sudo apt-get update && sudo apt-get install -y build-essential
@@ -65,10 +68,8 @@ jobs:
     - name: Install build tools (AZL3)
       if: matrix.platform == 'azl3'
       run: |
-        # The AZL3 base container ships without GPG keys for the package repos.
-        # Disable repo metadata signature verification to allow package installation.
-        sed -i 's/repo_gpgcheck=1/repo_gpgcheck=0/' /etc/yum.repos.d/*.repo
-        tdnf install -y --nogpgcheck gcc binutils kernel-headers glibc-devel openssl-devel git tar ca-certificates
+        export GNUPGHOME=/root/.gnupg
+        tdnf install -y openssl-devel
 
     - name: Checkout HEAD
       uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -123,7 +124,7 @@ jobs:
           benchstat.txt
           regressions.txt
           failures.txt
-          status.txt
+          status.json
 
   conclusion:
     needs: [setup, bench]
@@ -168,9 +169,9 @@ jobs:
         run: |
           go build -C head/.github/benchcheck -o "$PWD/benchcheck" .
           ./benchcheck report \
-            --run-url="$RUN_URL" \
-            --job-urls=job_urls.tsv \
-            --overall-result="${{ needs.bench.result }}" \
+            -run-url="$RUN_URL" \
+            -job-urls=job_urls.tsv \
+            -overall-result="${{ needs.bench.result }}" \
             results/ > report.md
 
       - name: Post PR comment
