@@ -177,7 +177,10 @@ func TestParseBenchmarks(t *testing.T) {
 
 func TestExtractFailures_BuildErrors(t *testing.T) {
 	input := "# runtime/cgo\ncgo-gcc-prolog:3:20: error: call to undeclared function\nFAIL\tgithub.com/example [build failed]\n"
-	lines := extractFailures(strings.NewReader(input), "")
+	lines, err := extractFailures(strings.NewReader(input), "")
+	if err != nil {
+		t.Fatal(err)
+	}
 	if len(lines) != 2 {
 		t.Fatalf("expected 2 lines, got %d: %v", len(lines), lines)
 	}
@@ -191,7 +194,10 @@ func TestExtractFailures_BuildErrors(t *testing.T) {
 
 func TestExtractFailures_TestFailures(t *testing.T) {
 	input := "--- FAIL: TestFoo (0.01s)\n    foo_test.go:42: expected 1, got 2\nFAIL\tgithub.com/example\t0.123s\n"
-	lines := extractFailures(strings.NewReader(input), "pfx: ")
+	lines, err := extractFailures(strings.NewReader(input), "pfx: ")
+	if err != nil {
+		t.Fatal(err)
+	}
 	if len(lines) != 2 {
 		t.Fatalf("expected 2 lines, got %d: %v", len(lines), lines)
 	}
@@ -205,7 +211,10 @@ func TestExtractFailures_TestFailures(t *testing.T) {
 
 func TestExtractFailures_CrashTrace(t *testing.T) {
 	input := "SIGSEGV: segmentation violation\nPC=0x1234\ngoroutine 1 [running]:\nmain.foo()\n\tfile.go:10\n\ngoroutine 2 [sleep]:\ntime.Sleep()\n"
-	lines := extractFailures(strings.NewReader(input), "")
+	lines, err := extractFailures(strings.NewReader(input), "")
+	if err != nil {
+		t.Fatal(err)
+	}
 	// Should capture lines up to and including the blank line, not goroutine 2.
 	found := false
 	for _, l := range lines {
@@ -223,7 +232,10 @@ func TestExtractFailures_CrashTrace(t *testing.T) {
 
 func TestExtractFailures_Panic(t *testing.T) {
 	input := "panic: runtime error: index out of range\ngoroutine 1 [running]:\nmain.foo()\n\n"
-	lines := extractFailures(strings.NewReader(input), "")
+	lines, err := extractFailures(strings.NewReader(input), "")
+	if err != nil {
+		t.Fatal(err)
+	}
 	if len(lines) == 0 {
 		t.Fatal("expected panic lines")
 	}
@@ -234,7 +246,10 @@ func TestExtractFailures_Panic(t *testing.T) {
 
 func TestExtractFailures_NoFailures(t *testing.T) {
 	input := "BenchmarkFoo-8\t1000\t1234 ns/op\t56 B/op\t3 allocs/op\nok\tgithub.com/example\t1.234s\n"
-	lines := extractFailures(strings.NewReader(input), "")
+	lines, err := extractFailures(strings.NewReader(input), "")
+	if err != nil {
+		t.Fatal(err)
+	}
 	if len(lines) != 0 {
 		t.Errorf("expected no failures, got %d: %v", len(lines), lines)
 	}
