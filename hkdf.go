@@ -18,7 +18,7 @@ func SupportsHKDF() bool {
 	switch major() {
 	case 1:
 		return true
-	case 3:
+	case 3, 4:
 		_, err := fetchHKDF3()
 		return err == nil
 	default:
@@ -31,7 +31,7 @@ func SupportsTLS13KDF() bool {
 	switch major() {
 	case 1:
 		return false
-	case 3:
+	case 3, 4:
 		// TLS13-KDF is available in OpenSSL 3.0.0 and later.
 		_, err := fetchTLS13_KDF()
 		return err == nil
@@ -169,7 +169,7 @@ func ExtractHKDF(h func() hash.Hash, secret, salt []byte) ([]byte, error) {
 			return nil, err
 		}
 		return out[:keylen], nil
-	case 3:
+	case 3, 4:
 		ctx, err := newHKDFCtx3(md, ossl.EVP_KDF_HKDF_MODE_EXTRACT_ONLY, secret, salt, nil, nil)
 		if err != nil {
 			return nil, err
@@ -218,7 +218,7 @@ func ExpandHKDFOneShot(h func() hash.Hash, pseudorandomKey, info []byte, keyLeng
 		if _, err := ossl.EVP_PKEY_derive(ctx, out, &keylen); err != nil {
 			return nil, err
 		}
-	case 3:
+	case 3, 4:
 		ctx, err := newHKDFCtx3(md, ossl.EVP_KDF_HKDF_MODE_EXPAND_ONLY, nil, nil, pseudorandomKey, info)
 		if err != nil {
 			return nil, err
@@ -285,7 +285,7 @@ func ExpandHKDF(h func() hash.Hash, pseudorandomKey, info []byte) (io.Reader, er
 		c := &hkdf1{ctx: ctx, hashLen: size}
 		runtime.SetFinalizer(c, (*hkdf1).finalize)
 		return c, nil
-	case 3:
+	case 3, 4:
 		ctx, err := newHKDFCtx3(md, ossl.EVP_KDF_HKDF_MODE_EXPAND_ONLY, nil, nil, pseudorandomKey, info)
 		if err != nil {
 			return nil, err

@@ -73,10 +73,17 @@ func errUnsupportedVersion() error {
 }
 
 // checkMajorVersion panics if the current major version is not expected.
+// For expected >= 3, any major version >= expected is accepted, since OpenSSL
+// maintains API and ABI compatibility within a major version series,
+// and newer major versions (e.g. 4.x) retain compatibility with 3.x APIs.
 func checkMajorVersion(expected int) {
-	if major() != expected {
-		panic("openssl: incorrect major version (" + strconv.Itoa(major()) + "), expected " + strconv.Itoa(expected))
+	if major() == expected {
+		return
 	}
+	if expected >= 3 && major() >= expected {
+		return
+	}
+	panic("openssl: incorrect major version (" + strconv.Itoa(major()) + "), expected " + strconv.Itoa(expected))
 }
 
 type fail string

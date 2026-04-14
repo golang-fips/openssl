@@ -91,7 +91,7 @@ func GenerateKeyECDSA(curve string) (x, y, d BigInt, err error) {
 		}
 		// Get Z. We don't need to free it, get0 does not increase the reference count.
 		bd = ossl.EC_KEY_get0_private_key(key)
-	case 3:
+	case 3, 4:
 		if _, err := ossl.EVP_PKEY_get_bn_param(pkey, _OSSL_PKEY_PARAM_EC_PUB_X.ptr(), &bx); err != nil {
 			return nil, nil, nil, err
 		}
@@ -149,7 +149,7 @@ func newECDSAKey(curve string, x, y, d BigInt) (ossl.EVP_PKEY_PTR, error) {
 	switch major() {
 	case 1:
 		return newECDSAKey1(nid, bx, by, bd)
-	case 3:
+	case 3, 4:
 		return newECDSAKey3(nid, bx, by, bd)
 	default:
 		panic(errUnsupportedVersion())

@@ -33,7 +33,7 @@ var supportsEd25519 = sync.OnceValue(func() bool {
 			ossl.EVP_PKEY_CTX_free(ctx)
 			return true
 		}
-	case 3:
+	case 3, 4:
 		sig, _ := ossl.EVP_SIGNATURE_fetch(nil, _KeyTypeED25519.ptr(), nil)
 		if sig != nil {
 			ossl.EVP_SIGNATURE_free(sig)

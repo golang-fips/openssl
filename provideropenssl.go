@@ -183,6 +183,16 @@ func getOSSLDigetsContext(ctx ossl.EVP_MD_CTX_PTR) unsafe.Pointer {
 			algctx unsafe.Pointer
 		}
 		return (*mdCtx)(unsafe.Pointer(ctx)).algctx
+	case 4:
+		// OpenSSL 4 removed the ENGINE, md_data, and update fields from EVP_MD_CTX.
+		// https://github.com/openssl/openssl/blob/openssl-4.0.0-alpha1/crypto/evp/evp_local.h
+		type mdCtx struct {
+			_      [2]unsafe.Pointer // reqdigest, digest
+			_      uint32            // flags
+			_      unsafe.Pointer    // pctx
+			algctx unsafe.Pointer
+		}
+		return (*mdCtx)(unsafe.Pointer(ctx)).algctx
 	default:
 		panic(errUnsupportedVersion())
 	}

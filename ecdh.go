@@ -106,7 +106,7 @@ func (k *PrivateKeyECDH) PublicKey() (*PublicKeyECDH, error) {
 			if bytes, err = encodeEcPoint(group, pt); err != nil {
 				return nil, err
 			}
-		case 3:
+		case 3, 4:
 			pkey = k._pkey
 			if _, err := ossl.EVP_PKEY_up_ref(pkey); err != nil {
 				return nil, err
@@ -140,7 +140,7 @@ func newECDHPkey(curve string, bytes []byte, isPrivate bool) (ossl.EVP_PKEY_PTR,
 	switch major() {
 	case 1:
 		return newECDHPkey1(nid, bytes, isPrivate)
-	case 3:
+	case 3, 4:
 		return newECDHPkey3(nid, bytes, isPrivate)
 	default:
 		panic(errUnsupportedVersion())
@@ -312,7 +312,7 @@ func GenerateKeyECDH(curve string) (*PrivateKeyECDH, []byte, error) {
 			if priv == nil {
 				return nil, nil, fail("missing ECDH private key")
 			}
-		case 3:
+		case 3, 4:
 			if _, err := ossl.EVP_PKEY_get_bn_param(pkey, _OSSL_PKEY_PARAM_PRIV_KEY.ptr(), &priv); err != nil {
 				return nil, nil, err
 			}

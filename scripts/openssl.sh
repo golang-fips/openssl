@@ -86,6 +86,13 @@ case "$version" in
         make="build_libs"
         install="install_fips"
         ;;
+    "4.0.0-alpha1")
+        tag="openssl-4.0.0-alpha1";
+        sha256="fab77ba96a03f7d4c98d6c885396b1ff0a06cae0070bdcd84977f7deb212bc11"
+        config="enable-fips"
+        make="build_libs"
+        install="install_fips"
+        ;;
     *)
         echo >&2 "error: unsupported OpenSSL version '$version'"
         exit 1 ;;

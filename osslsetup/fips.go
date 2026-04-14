@@ -51,7 +51,7 @@ func FIPS() bool {
 	switch vMajor {
 	case 1:
 		return ossl.FIPS_mode() == 1
-	case 3:
+	case 3, 4:
 		// Check if the default properties contain `fips=1`.
 		if ossl.EVP_default_properties_is_fips_enabled(nil) != 1 {
 			// Note that it is still possible that the provider used by default is FIPS-compliant,
@@ -89,7 +89,7 @@ func FIPSCapable() bool {
 	if FIPS() {
 		return true
 	}
-	if vMajor == 3 {
+	if vMajor >= 3 {
 		// Load the provider with and without the `fips=yes` query.
 		// If the providers are the same, then the default provider is FIPS-capable.
 		provFIPS := sha256Provider(_ProviderNameFips)
@@ -123,7 +123,7 @@ func SetFIPS(enable bool) error {
 			return err
 		}
 		return nil
-	case 3:
+	case 3, 4:
 		var shaProps, provName cString
 		if enable {
 			shaProps = _PropFIPSYes

@@ -16,7 +16,7 @@ func SupportsTLS1PRF() bool {
 	switch major() {
 	case 1:
 		return minor() >= 1
-	case 3:
+	case 3, 4:
 		_, err := fetchTLS1PRF3()
 		return err == nil
 	default:
@@ -50,7 +50,7 @@ func TLS1PRF(result, secret, label, seed []byte, fh func() hash.Hash) error {
 	switch major() {
 	case 1:
 		return tls1PRF1(result, secret, label, seed, md)
-	case 3:
+	case 3, 4:
 		return tls1PRF3(result, secret, label, seed, md)
 	default:
 		return errUnsupportedVersion()

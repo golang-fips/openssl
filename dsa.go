@@ -92,7 +92,7 @@ func GenerateParametersDSA(l, n int) (DSAParameters, error) {
 	case 1:
 		dsa := getDSA(pkey)
 		ossl.DSA_get0_pqg(dsa, &p, &q, &g)
-	case 3:
+	case 3, 4:
 		defer func() {
 			ossl.BN_free(p)
 			ossl.BN_free(q)
@@ -158,7 +158,7 @@ func GenerateKeyDSA(params DSAParameters) (x, y BigInt, err error) {
 	case 1:
 		dsa := getDSA(pkey)
 		ossl.DSA_get0_key(dsa, &by, &bx)
-	case 3:
+	case 3, 4:
 		defer func() {
 			ossl.BN_clear_free(bx)
 			ossl.BN_free(by)
@@ -189,7 +189,7 @@ func newDSA(params DSAParameters, x, y BigInt) (ossl.EVP_PKEY_PTR, error) {
 	switch major() {
 	case 1:
 		return newDSA1(params, x, y)
-	case 3:
+	case 3, 4:
 		return newDSA3(params, x, y)
 	default:
 		panic(errUnsupportedVersion())

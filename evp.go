@@ -158,7 +158,7 @@ func loadHash(ch crypto.Hash, must bool) (h *hashAlgorithm) {
 	hash.ch = ch
 	hash.size = int(ossl.EVP_MD_get_size(hash.md))
 	hash.blockSize = int(ossl.EVP_MD_get_block_size(hash.md))
-	if major() == 3 {
+	if major() >= 3 {
 		// On OpenSSL 3, directly operating on a EVP_MD object
 		// not created by EVP_MD_fetch has negative performance
 		// implications, as digest operations will have
@@ -179,7 +179,7 @@ func loadHash(ch crypto.Hash, must bool) (h *hashAlgorithm) {
 	switch major() {
 	case 1:
 		hash.provider = providerOSSLDefault
-	case 3:
+	case 3, 4:
 		if prov := ossl.EVP_MD_get0_provider(hash.md); prov != nil {
 			cname := ossl.OSSL_PROVIDER_get0_name(prov)
 			switch goString(cname) {
@@ -231,7 +231,7 @@ func generateEVPPKey(id, bits int32, curve string) (ossl.EVP_PKEY_PTR, error) {
 		if _, err := ossl.EVP_PKEY_keygen(ctx, &pkey); err != nil {
 			return nil, err
 		}
-	case 3:
+	case 3, 4:
 		var err error
 		switch id {
 		case ossl.EVP_PKEY_RSA:
@@ -377,7 +377,7 @@ func setOAEPPadding(ctx ossl.EVP_PKEY_CTX_PTR, h, mgfHash hash.Hash, label []byt
 		clabel = (*byte)(cryptoMalloc(len(label)))
 		copy((*[1 << 30]byte)(unsafe.Pointer(clabel))[:len(label)], label)
 		var err error
-		if major() == 3 {
+		if major() >= 3 {
 			_, err = ossl.EVP_PKEY_CTX_set0_rsa_oaep_label(ctx, unsafe.Slice(clabel, len(label)))
 		} else {
 			_, err = ossl.EVP_PKEY_CTX_ctrl(ctx, ossl.EVP_PKEY_RSA, -1, ossl.EVP_PKEY_CTRL_RSA_OAEP_LABEL, int32(len(label)), unsafe.Pointer(clabel))
