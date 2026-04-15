@@ -32,7 +32,7 @@ const (
 
 // SupportsMLKEM768 returns true if ML-KEM-768 is supported on this platform.
 func SupportsMLKEM768() bool {
-	if major() >= 3 && minor() >= 5 {
+	if versionAtOrAbove(3, 5, 0) {
 		return supportsMLKEM768()
 	}
 	return false
@@ -40,7 +40,7 @@ func SupportsMLKEM768() bool {
 
 // SupportsMLKEM1024 returns true if ML-KEM-1024 is supported on this platform.
 func SupportsMLKEM1024() bool {
-	if major() >= 3 && minor() >= 5 {
+	if versionAtOrAbove(3, 5, 0) {
 		return supportsMLKEM1024()
 	}
 	return false

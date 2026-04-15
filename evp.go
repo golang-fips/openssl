@@ -158,7 +158,8 @@ func loadHash(ch crypto.Hash, must bool) (h *hashAlgorithm) {
 	hash.ch = ch
 	hash.size = int(ossl.EVP_MD_get_size(hash.md))
 	hash.blockSize = int(ossl.EVP_MD_get_block_size(hash.md))
-	if major() >= 3 {
+	switch major() {
+	case 3, 4:
 		// On OpenSSL 3, directly operating on a EVP_MD object
 		// not created by EVP_MD_fetch has negative performance
 		// implications, as digest operations will have
@@ -377,9 +378,10 @@ func setOAEPPadding(ctx ossl.EVP_PKEY_CTX_PTR, h, mgfHash hash.Hash, label []byt
 		clabel = (*byte)(cryptoMalloc(len(label)))
 		copy((*[1 << 30]byte)(unsafe.Pointer(clabel))[:len(label)], label)
 		var err error
-		if major() >= 3 {
+		switch major() {
+		case 3, 4:
 			_, err = ossl.EVP_PKEY_CTX_set0_rsa_oaep_label(ctx, unsafe.Slice(clabel, len(label)))
-		} else {
+		default:
 			_, err = ossl.EVP_PKEY_CTX_ctrl(ctx, ossl.EVP_PKEY_RSA, -1, ossl.EVP_PKEY_CTRL_RSA_OAEP_LABEL, int32(len(label)), unsafe.Pointer(clabel))
 		}
 		if err != nil {

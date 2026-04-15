@@ -82,12 +82,15 @@ func loadCipher(k cipherKind, mode cipherMode) (cipher ossl.EVP_CIPHER_PTR) {
 		return v.(ossl.EVP_CIPHER_PTR)
 	}
 	defer func() {
-		if cipher != nil && major() >= 3 {
-			// On OpenSSL 3, directly operating on a EVP_CIPHER object
-			// not created by EVP_CIPHER has negative performance
-			// implications, as cipher operations will have
-			// to fetch it on every call. Better to just fetch it once here.
-			cipher, _ = ossl.EVP_CIPHER_fetch(nil, ossl.EVP_CIPHER_get0_name(cipher), nil)
+		if cipher != nil {
+			switch major() {
+			case 3, 4:
+				// On OpenSSL 3, directly operating on a EVP_CIPHER object
+				// not created by EVP_CIPHER has negative performance
+				// implications, as cipher operations will have
+				// to fetch it on every call. Better to just fetch it once here.
+				cipher, _ = ossl.EVP_CIPHER_fetch(nil, ossl.EVP_CIPHER_get0_name(cipher), nil)
+			}
 		}
 		cacheCipher.Store(cacheCipherKey{k, mode}, cipher)
 	}()

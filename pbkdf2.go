@@ -27,7 +27,7 @@ func SupportsPBKDF2() bool {
 // It is safe to call this function concurrently.
 // The returned EVP_KDF_PTR shouldn't be freed.
 var fetchPBKDF2 = sync.OnceValues(func() (ossl.EVP_KDF_PTR, error) {
-	checkMajorVersion(3)
+	checkMajorVersion(3, 4)
 
 	kdf, err := ossl.EVP_KDF_fetch(nil, _OSSL_KDF_NAME_PBKDF2.ptr(), nil)
 	if err != nil {

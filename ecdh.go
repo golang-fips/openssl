@@ -202,7 +202,7 @@ func newECDHPkey1(nid int32, bytes []byte, isPrivate bool) (pkey ossl.EVP_PKEY_P
 }
 
 func newECDHPkey3(nid int32, bytes []byte, isPrivate bool) (ossl.EVP_PKEY_PTR, error) {
-	checkMajorVersion(3)
+	checkMajorVersion(3, 4)
 
 	bld := newParamBuilder()
 	defer bld.finalize()

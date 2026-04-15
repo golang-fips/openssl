@@ -181,7 +181,7 @@ func newECDSAKey1(nid int32, bx, by, bd ossl.BIGNUM_PTR) (pkey ossl.EVP_PKEY_PTR
 }
 
 func newECDSAKey3(nid int32, bx, by, bd ossl.BIGNUM_PTR) (ossl.EVP_PKEY_PTR, error) {
-	checkMajorVersion(3)
+	checkMajorVersion(3, 4)
 
 	// Create the encoded public key public key from bx and by.
 	pubBytes, err := generateAndEncodeEcPublicKey(nid, func(group ossl.EC_GROUP_PTR) (ossl.EC_POINT_PTR, error) {

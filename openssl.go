@@ -72,18 +72,14 @@ func errUnsupportedVersion() error {
 	return errors.New("openssl: unsupported OpenSSL version: " + utoa(major()) + "." + utoa(minor()) + "." + utoa(patch()) + " (minimum supported version is 1.1.1)")
 }
 
-// checkMajorVersion panics if the current major version is not expected.
-// For expected >= 3, any major version >= expected is accepted, since OpenSSL
-// maintains API and ABI compatibility within a major version series,
-// and newer major versions (e.g. 4.x) retain compatibility with 3.x APIs.
-func checkMajorVersion(expected int) {
-	if major() == expected {
-		return
+// checkMajorVersion panics if the current major version is not one of the expected versions.
+func checkMajorVersion(expected ...int) {
+	for _, v := range expected {
+		if major() == v {
+			return
+		}
 	}
-	if expected >= 3 && major() >= expected {
-		return
-	}
-	panic("openssl: incorrect major version (" + strconv.Itoa(major()) + "), expected " + strconv.Itoa(expected))
+	panic("openssl: incorrect major version (" + strconv.Itoa(major()) + ")")
 }
 
 type fail string

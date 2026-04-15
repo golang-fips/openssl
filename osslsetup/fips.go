@@ -89,7 +89,8 @@ func FIPSCapable() bool {
 	if FIPS() {
 		return true
 	}
-	if vMajor >= 3 {
+	switch vMajor {
+	case 3, 4:
 		// Load the provider with and without the `fips=yes` query.
 		// If the providers are the same, then the default provider is FIPS-capable.
 		provFIPS := sha256Provider(_ProviderNameFips)

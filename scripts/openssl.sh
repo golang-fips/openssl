@@ -86,9 +86,9 @@ case "$version" in
         make="build_libs"
         install="install_fips"
         ;;
-    "4.0.0-alpha1")
-        tag="openssl-4.0.0-alpha1";
-        sha256="fab77ba96a03f7d4c98d6c885396b1ff0a06cae0070bdcd84977f7deb212bc11"
+    "4.0.0")
+        tag="openssl-4.0.0";
+        sha256="e4c424870178d6346c123725567422c7131816f41d3b716713700b84cede0eef"
         config="enable-fips"
         make="build_libs"
         install="install_fips"
