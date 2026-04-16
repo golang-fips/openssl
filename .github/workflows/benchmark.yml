@@ -28,7 +28,7 @@ jobs:
     steps:
       - name: Resolve refs
         id: resolve
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             if (context.eventName === 'pull_request') {
@@ -176,7 +176,7 @@ jobs:
 
       - name: Post PR comment
         if: needs.setup.outputs.pr-number != ''
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         env:
           PR_NUMBER: ${{ needs.setup.outputs.pr-number }}
         with:
