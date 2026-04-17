@@ -56,7 +56,7 @@ jobs:
       fail-fast: false
       matrix:
         go-version: [1.22.x, 1.23.x]
-        openssl-version: [libcrypto-1_1-x64.dll, libcrypto-3-x64.dll]
+        openssl-version: [libcrypto-3-x64.dll]
     steps:
     - name: Install Go
       uses: actions/setup-go@v5
