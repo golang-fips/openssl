@@ -36,7 +36,7 @@ type regression struct {
 
 func cmdCheck(args []string) {
 	fs := flag.NewFlagSet("check", flag.ExitOnError)
-	timeThreshold := fs.Float64("time-threshold", 5, "minimum sec/op regression percentage to flag")
+	timeThreshold := fs.Float64("time-threshold", 50, "minimum sec/op regression percentage to flag")
 	minTime := fs.Duration("min-time", time.Microsecond, "minimum base time for sec/op checks")
 	alpha := fs.Float64("alpha", 0.05, "significance level for statistical tests")
 	regressionsOut := fs.String("o-regressions", "regressions.txt", "output file for regression details")

@@ -2,6 +2,8 @@ name: Benchmark
 
 on:
   pull_request:
+    paths-ignore:
+      - '.github/**'
   workflow_dispatch:
     inputs:
       base-ref:
