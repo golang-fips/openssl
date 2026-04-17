@@ -1,5 +1,6 @@
 package openssl
 
+
 // This file does not have build constraints to
 // facilitate using BigInt in Go crypto.
 // Go crypto references BigInt unconditionally,
