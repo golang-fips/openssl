@@ -127,7 +127,7 @@ func (b *paramBuilder) addOctetString(name cString, value []byte) {
 	if len(value) != 0 {
 		b.pinner.Pin(&value[0])
 	}
-	if _, err := ossl.OSSL_PARAM_BLD_push_octet_string(b.bld, name.ptr(), pbase(value), len(value)); err != nil {
+	if _, err := ossl.OSSL_PARAM_BLD_push_octet_string(b.bld, name.ptr(), pbaseNeverEmpty(value), len(value)); err != nil {
 		b.err = addParamError{name.str(), err}
 	}
 }
