@@ -3,10 +3,12 @@ package main
 import (
 	"bufio"
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"sort"
 	"strings"
 	"time"
@@ -39,20 +41,20 @@ func cmdCheck(args []string) {
 	timeThreshold := fs.Float64("time-threshold", 50, "minimum sec/op regression percentage to flag")
 	minTime := fs.Duration("min-time", time.Microsecond, "minimum base time for sec/op checks")
 	alpha := fs.Float64("alpha", 0.05, "significance level for statistical tests")
-	regressionsOut := fs.String("o-regressions", "regressions.txt", "output file for regression details")
-	failuresOut := fs.String("o-failures", "failures.txt", "output file for test failure details")
-	statusOut := fs.String("o-status", "status.json", "output file for machine-readable status (JSON)")
+	regressionsOut := fs.String("o-regressions", "", "output file for regression details (skipped if empty)")
+	failuresOut := fs.String("o-failures", "", "output file for test failure details (skipped if empty)")
+	statusOut := fs.String("o-status", "", "output file for machine-readable status JSON (skipped if empty)")
 	fs.Usage = func() {
 		fmt.Fprintf(os.Stderr, `usage: benchcheck check [flags] base.txt head.txt
 
 Compare base and head benchmark results, detect regressions and test failures.
 
-Writes the following output files (paths configurable via flags):
-  regressions.txt  One-line summary per detected regression.
-  failures.txt     Extracted build errors, test failures, and crash traces.
-  status.json      Machine-readable JSON status for the report subcommand.
+Writes the following output files (only if the corresponding flag is set):
+  -o-regressions  One-line summary per detected regression.
+  -o-failures     Extracted build errors, test failures, and crash traces.
+  -o-status       Machine-readable JSON status for the report subcommand.
 
-Exits 0 if no issues are found, 1 if regressions or failures are detected.
+Exits 0 if no issues are found, 1 if regressions, failures, or write errors occur.
 
 Flags:
 `)
@@ -104,11 +106,14 @@ Flags:
 			regressionLines = append(regressionLines, fmt.Sprintf("time regression: %s +%.2f%% (p=%.3f, base=%.2g sec)", r.Name, r.PctChange, r.PValue, r.BaseVal))
 		}
 	}
-	writeLines(*regressionsOut, regressionLines)
-	writeLines(*failuresOut, failureLines)
-
-	// Write status.json.
-	writeStatus(*statusOut, hasRegressions, hasFailures)
+	writeErr := errors.Join(
+		writeLines(*regressionsOut, regressionLines),
+		writeLines(*failuresOut, failureLines),
+		writeStatus(*statusOut, hasRegressions, hasFailures),
+	)
+	if writeErr != nil {
+		fmt.Fprintln(os.Stderr, writeErr)
+	}
 
 	// Print summary with GitHub Actions annotations.
 	if hasRegressions {
@@ -130,7 +135,7 @@ Flags:
 	if !hasRegressions && !hasFailures {
 		fmt.Println("No benchmark regressions or test failures detected.")
 	}
-	if hasRegressions || hasFailures {
+	if hasRegressions || hasFailures || writeErr != nil {
 		os.Exit(1)
 	}
 }
@@ -284,14 +289,15 @@ func isAllocUnit(unit string) bool {
 	return unit == "B/op" || unit == "allocs/op"
 }
 
-func writeLines(path string, lines []string) {
-	data := []byte(strings.Join(lines, "\n") + "\n")
-	if len(lines) == 0 {
-		data = nil
+func writeLines(path string, lines []string) error {
+	if path == "" {
+		return nil
 	}
-	if err := os.WriteFile(path, data, 0o644); err != nil {
-		fmt.Fprintf(os.Stderr, "writing %s: %v\n", path, err)
+	var data []byte
+	if len(lines) > 0 {
+		data = []byte(strings.Join(lines, "\n") + "\n")
 	}
+	return writeFile(path, data)
 }
 
 // Status is the machine-readable status written by check and read by report.
@@ -301,14 +307,31 @@ type Status struct {
 	BenchmarkError bool `json:"benchmark_error"`
 }
 
-func writeStatus(path string, regression, failures bool) {
+// Failed reports whether any failure flag is set.
+func (s Status) Failed() bool {
+	return s.Regression || s.TestFailures || s.BenchmarkError
+}
+
+func writeStatus(path string, regression, failures bool) error {
+	if path == "" {
+		return nil
+	}
 	s := Status{Regression: regression, TestFailures: failures}
 	data, err := json.Marshal(s)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "marshaling status: %v\n", err)
-		return
+		return fmt.Errorf("marshaling status: %w", err)
+	}
+	return writeFile(path, data)
+}
+
+func writeFile(path string, data []byte) error {
+	if dir := filepath.Dir(path); dir != "" && dir != "." {
+		if err := os.MkdirAll(dir, 0o755); err != nil {
+			return fmt.Errorf("creating directory for %s: %w", path, err)
+		}
 	}
 	if err := os.WriteFile(path, data, 0o644); err != nil {
-		fmt.Fprintf(os.Stderr, "writing %s: %v\n", path, err)
+		return fmt.Errorf("writing %s: %w", path, err)
 	}
+	return nil
 }

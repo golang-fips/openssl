@@ -115,7 +115,11 @@ jobs:
       run: |
         benchstat base.txt head.txt | tee benchstat.txt || true
         go build -C head/.github/benchcheck -o "$PWD/benchcheck" .
-        ./benchcheck check base.txt head.txt
+        ./benchcheck check \
+          -o-regressions=regressions.txt \
+          -o-failures=failures.txt \
+          -o-status=status.json \
+          base.txt head.txt
 
     - name: Upload results
       if: always()
