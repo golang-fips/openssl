@@ -100,9 +100,7 @@ func cmdReport(args []string) {
 	fmt.Print(output)
 }
 
-type jobStatus = Status
-
-func readJobStatus(path string) jobStatus {
+func readJobStatus(path string) Status {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		if !errors.Is(err, os.ErrNotExist) {

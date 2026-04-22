@@ -87,8 +87,14 @@ Flags:
 	hasFailures := len(failureLines) > 0
 
 	// Parse benchmarks and check regressions.
-	baseValues := parseBenchmarksFromFile(basePath)
-	headValues := parseBenchmarksFromFile(headPath)
+	baseValues, err := parseBenchmarksFromFile(basePath)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "reading %s: %v\n", basePath, err)
+	}
+	headValues, err := parseBenchmarksFromFile(headPath)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "reading %s: %v\n", headPath, err)
+	}
 	regressions := checkRegressions(baseValues, headValues, cfg)
 	hasRegressions := len(regressions) > 0
 
@@ -194,13 +200,13 @@ func isCrashLine(line string) bool {
 	return i > 3 && i < len(line) && line[i] == ':'
 }
 
-func parseBenchmarksFromFile(path string) map[benchKey][]float64 {
+func parseBenchmarksFromFile(path string) (map[benchKey][]float64, error) {
 	f, err := os.Open(path)
 	if err != nil {
-		return nil
+		return nil, err
 	}
 	defer f.Close()
-	return parseBenchmarks(f, path)
+	return parseBenchmarks(f, path), nil
 }
 
 func parseBenchmarks(r io.Reader, name string) map[benchKey][]float64 {
