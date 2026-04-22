@@ -2,6 +2,8 @@ module github.com/golang-fips/openssl/benchcheck
 
 go 1.25.0
 
-require golang.org/x/perf v0.0.0-20260211190930-8161c38c6cdc
+require golang.org/x/perf v0.0.0-20260409210113-8e83ce0f7b1c
 
 require github.com/aclements/go-moremath v0.0.0-20210112150236-f10218a38794 // indirect
+
+tool golang.org/x/perf/cmd/benchstat

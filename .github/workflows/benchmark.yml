@@ -94,9 +94,6 @@ jobs:
         go-version: ${{ matrix.go-version }}
         cache-dependency-path: head/go.mod
 
-    - name: Install benchstat
-      run: go install golang.org/x/perf/cmd/benchstat@latest
-
     - name: Run benchmarks (base)
       working-directory: base
       run: |
@@ -113,7 +110,7 @@ jobs:
 
     - name: "📊 Compare and check"
       run: |
-        benchstat base.txt head.txt | tee benchstat.txt || true
+        go -C head/.github/benchcheck tool benchstat ../../../base.txt ../../../head.txt | tee benchstat.txt || true
         go build -C head/.github/benchcheck -o "$PWD/benchcheck" .
         ./benchcheck check \
           -o-regressions=regressions.txt \
