@@ -87,13 +87,16 @@ Flags:
 	hasFailures := len(failureLines) > 0
 
 	// Parse benchmarks and check regressions.
+	var benchError bool
 	baseValues, err := parseBenchmarksFromFile(basePath)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "reading %s: %v\n", basePath, err)
+		benchError = true
 	}
 	headValues, err := parseBenchmarksFromFile(headPath)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "reading %s: %v\n", headPath, err)
+		benchError = true
 	}
 	regressions := checkRegressions(baseValues, headValues, cfg)
 	hasRegressions := len(regressions) > 0
@@ -115,7 +118,11 @@ Flags:
 	writeErr := errors.Join(
 		writeLines(*regressionsOut, regressionLines),
 		writeLines(*failuresOut, failureLines),
-		writeStatus(*statusOut, hasRegressions, hasFailures),
+		writeStatus(*statusOut, Status{
+			Regression:     hasRegressions,
+			TestFailures:   hasFailures,
+			BenchmarkError: benchError,
+		}),
 	)
 	if writeErr != nil {
 		fmt.Fprintln(os.Stderr, writeErr)
@@ -138,10 +145,13 @@ Flags:
 			fmt.Println(line)
 		}
 	}
-	if !hasRegressions && !hasFailures {
+	if !hasRegressions && !hasFailures && !benchError {
 		fmt.Println("No benchmark regressions or test failures detected.")
 	}
-	if hasRegressions || hasFailures || writeErr != nil {
+	if benchError {
+		fmt.Println("::error::Failed to read benchmark results — see logs above.")
+	}
+	if hasRegressions || hasFailures || benchError || writeErr != nil {
 		os.Exit(1)
 	}
 }
@@ -318,11 +328,10 @@ func (s Status) Failed() bool {
 	return s.Regression || s.TestFailures || s.BenchmarkError
 }
 
-func writeStatus(path string, regression, failures bool) error {
+func writeStatus(path string, s Status) error {
 	if path == "" {
 		return nil
 	}
-	s := Status{Regression: regression, TestFailures: failures}
 	data, err := json.Marshal(s)
 	if err != nil {
 		return fmt.Errorf("marshaling status: %w", err)
