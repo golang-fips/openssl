@@ -91,6 +91,13 @@ jobs:
         $ok
       env:
         GO_OPENSSL_VERSION_OVERRIDE: ${{ matrix.openssl-version }}
+    - name: Run Test fips140=only
+      # Note most tests currently do not support fips140=only mode
+      run: go test -run TestHMACNonApprovedKey -v ./...
+      env:
+        GO_OPENSSL_VERSION_OVERRIDE: ${{ matrix.openssl-version }}
+        CGO_ENABLED: 1
+        GODEBUG: fips140=only
 
   ossltest:
     strategy:
