@@ -125,7 +125,7 @@ Flags:
 		}),
 	)
 	if writeErr != nil {
-		fmt.Fprintln(os.Stderr, writeErr)
+		fmt.Printf("::error::Failed to write benchcheck output: %v\n", writeErr)
 	}
 
 	// Print summary with GitHub Actions annotations.
@@ -145,11 +145,11 @@ Flags:
 			fmt.Println(line)
 		}
 	}
-	if !hasRegressions && !hasFailures && !benchError {
-		fmt.Println("No benchmark regressions or test failures detected.")
-	}
 	if benchError {
 		fmt.Println("::error::Failed to read benchmark results — see logs above.")
+	}
+	if !hasRegressions && !hasFailures && !benchError && writeErr == nil {
+		fmt.Println("No benchmark regressions or test failures detected.")
 	}
 	if hasRegressions || hasFailures || benchError || writeErr != nil {
 		os.Exit(1)
