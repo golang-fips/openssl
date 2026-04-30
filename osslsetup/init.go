@@ -72,12 +72,15 @@ func initForCheckVersion(file string) (func(), error) {
 		case 1:
 			loadX = ossl.MkcgoLoad_init_1
 			unloadX = ossl.MkcgoUnload_init_1
-		case 3, 4:
+		default:
+			if vMajor < 3 {
+				// openLibrary should have already rejected this.
+				panic(errUnsupportedVersion())
+			}
+			// Any 3+ major uses the OpenSSL 3 init shim: 3+ guarantees
+			// ABI/API compatibility within the same major.
 			loadX = ossl.MkcgoLoad_init_3
 			unloadX = ossl.MkcgoUnload_init_3
-		default:
-			// We shouldn't get here: openLibrary should have already returned an error.
-			panic(errUnsupportedVersion())
 		}
 		return
 	}
@@ -145,9 +148,19 @@ func openLibrary(file string) (handle unsafe.Pointer, close func(), err error) {
 	switch vMajor {
 	case 1:
 		supported = vMinor == 1 && vPatch >= 1
-	case 3, 4:
-		// OpenSSL guarantees API and ABI compatibility within the same major version since OpenSSL 3.
-		supported = true
+	default:
+		// 3+ guarantees ABI/API compatibility within the same major,
+		// so any tested major is supported. Untested 3+ majors require
+		// GODEBUG=ms_opensslallowuntested=1.
+		for _, m := range testedMajors {
+			if vMajor == m {
+				supported = true
+				break
+			}
+		}
+		if !supported && vMajor >= 3 && allowUntestedMajor() {
+			supported = true
+		}
 	}
 	if !supported {
 		return handle, nil, errUnsupportedVersion()

@@ -4,7 +4,9 @@ package osslsetup
 
 import (
 	"errors"
+	"os"
 	"strconv"
+	"strings"
 	"sync"
 
 	"github.com/golang-fips/openssl/v2/internal/ossl"
@@ -13,6 +15,32 @@ import (
 var (
 	vMajor, vMinor, vPatch int
 )
+
+// testedMajors lists the OpenSSL major versions this backend has been
+// tested against. [openLibrary] rejects majors not in this list unless
+// GODEBUG=ms_opensslallowuntested=1 is set. OpenSSL 1 is supported only
+// at 1.1.1+; that minor/patch constraint is enforced separately in
+// [openLibrary].
+var testedMajors = [...]int{1, 3, 4}
+
+// allowUntestedMajor reports whether the user has set
+// GODEBUG=ms_opensslallowuntested=1. The "ms_" prefix marks this as a
+// Microsoft-defined GODEBUG so it will not collide with upstream Go.
+var allowUntestedMajor = sync.OnceValue(func() bool {
+	return godebugAllowUntested(os.Getenv("GODEBUG"))
+})
+
+// godebugAllowUntested reports whether the comma-separated GODEBUG string
+// contains ms_opensslallowuntested=1. Matches internal/godebug parsing:
+// no whitespace trimming.
+func godebugAllowUntested(godebug string) bool {
+	for _, kv := range strings.Split(godebug, ",") {
+		if kv == "ms_opensslallowuntested=1" {
+			return true
+		}
+	}
+	return false
+}
 
 func VersionMajor() int {
 	return vMajor
