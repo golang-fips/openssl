@@ -6,7 +6,7 @@
 // inside the OpenSSL 3+ branch of a `switch major()` statement, unless the
 // call is annotated with a marker comment of the form:
 //
-//	//openssl:versionguard <reason>
+//	//versionguardcheck:ignore <reason>
 //
 // placed on the line immediately above the call. The marker comment is the
 // source of truth for *why* the check exists and *what versions it covers*;
@@ -38,10 +38,10 @@ import (
 	"strings"
 )
 
-const markerPrefix = "//openssl:versionguard"
+const markerPrefix = "//versionguardcheck:ignore"
 
 // gatedFns are the unqualified function names whose calls inside the
-// OpenSSL 3+ branch must be justified by a //openssl:versionguard marker.
+// OpenSSL 3+ branch must be justified by a //versionguardcheck:ignore marker.
 //
 // major() is intentionally excluded: the outer `switch major()` between
 // the 1.x and 3+ branches is the top-level dispatch and is exempt.
@@ -79,7 +79,7 @@ func main() {
 }
 
 // checkDir analyzes every Go package directory rooted at dir (recursively).
-// Test files are skipped: the //openssl:versionguard convention applies to
+// Test files are skipped: the //versionguardcheck:ignore convention applies to
 // production code only.
 func checkDir(dir string) (int, error) {
 	var bad int
@@ -171,7 +171,7 @@ func checkFile(fset *token.FileSet, file *ast.File) int {
 					if !marked[pos.Line-1] {
 						bad++
 						fmt.Fprintf(os.Stderr,
-							"%s:%d:%d: unjustified version check %s(...): add a //openssl:versionguard <reason> comment on the line above\n",
+							"%s:%d:%d: unjustified version check %s(...): add a //versionguardcheck:ignore <reason> comment on the line above\n",
 							pos.Filename, pos.Line, pos.Column, id.Name)
 					}
 				}
@@ -189,7 +189,7 @@ func checkFile(fset *token.FileSet, file *ast.File) int {
 }
 
 // markedLines returns the set of source-line numbers that bear a
-// well-formed //openssl:versionguard comment.
+// well-formed //versionguardcheck:ignore comment.
 func markedLines(fset *token.FileSet, file *ast.File) map[int]bool {
 	out := make(map[int]bool)
 	for _, cg := range file.Comments {
@@ -203,7 +203,7 @@ func markedLines(fset *token.FileSet, file *ast.File) map[int]bool {
 	return out
 }
 
-// isMarker reports whether text is //openssl:versionguard followed by
+// isMarker reports whether text is //versionguardcheck:ignore followed by
 // whitespace and a non-empty reason.
 func isMarker(text string) bool {
 	rest, ok := strings.CutPrefix(text, markerPrefix)

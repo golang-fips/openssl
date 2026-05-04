@@ -11,7 +11,7 @@ concurrency:
 name: Test
 jobs:
   versionguardcheck:
-    # Lint pass: enforce the //openssl:versionguard convention. Runs once
+    # Lint pass: enforce the //versionguardcheck:ignore convention. Runs once
     # (no OpenSSL matrix), since it's a pure-Go static analysis of the
     # backend source.
     runs-on: ubuntu-24.04
