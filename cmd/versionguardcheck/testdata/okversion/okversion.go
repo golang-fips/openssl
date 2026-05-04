@@ -1,5 +1,5 @@
 // Package okversion contains positive fixtures: every gated call in a 3+
-// branch is justified by a //openssl:versioncheck marker on the line
+// branch is justified by a //openssl:versionguard marker on the line
 // above, or is in a 1.x branch (and therefore exempt), or is outside any
 // `switch major()` (and therefore not analyzed).
 package okversion
@@ -24,11 +24,11 @@ func oneBranchOnly() {
 func markedThreePlus() {
 	switch major() {
 	case 3, 4:
-		//openssl:versioncheck workaround for openssl/openssl#17811
+		//openssl:versionguard workaround for openssl/openssl#17811
 		if minor() == 0 && patch() <= 2 {
 			_ = 1
 		}
-		//openssl:versioncheck require 3.2+ for foo
+		//openssl:versionguard require 3.2+ for foo
 		if versionAtOrAbove(3, 2, 0) {
 			_ = 2
 		}
@@ -36,7 +36,7 @@ func markedThreePlus() {
 }
 
 func outsideAnySwitchIsExempt() {
-	// Calls outside `switch major()` are not analyzed by checkversioncheck.
+	// Calls outside `switch major()` are not analyzed by versionguardcheck.
 	// The migration PRs are responsible for either moving these into a
 	// proper switch or replacing them with capability/algorithm probes.
 	if versionAtOrAbove(3, 5, 0) {

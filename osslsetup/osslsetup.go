@@ -4,10 +4,10 @@ package osslsetup
 
 import (
 	"errors"
-	"os"
 	"strconv"
 	"strings"
 	"sync"
+	"syscall"
 
 	"github.com/golang-fips/openssl/v2/internal/ossl"
 )
@@ -27,7 +27,8 @@ var testedMajors = [...]int{1, 3, 4}
 // GODEBUG=ms_opensslallowuntested=1. The "ms_" prefix marks this as a
 // Microsoft-defined GODEBUG so it will not collide with upstream Go.
 var allowUntestedMajor = sync.OnceValue(func() bool {
-	return godebugAllowUntested(os.Getenv("GODEBUG"))
+	godebug, _ := syscall.Getenv("GODEBUG")
+	return godebugAllowUntested(godebug)
 })
 
 // godebugAllowUntested reports whether the comma-separated GODEBUG string

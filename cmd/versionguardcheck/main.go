@@ -1,4 +1,4 @@
-// checkversioncheck is a small static analyzer that enforces the
+// versionguardcheck is a small static analyzer that enforces the
 // "version checks must be justified" rule.
 //
 // It walks the OpenSSL backend's package ASTs and flags any call to
@@ -6,7 +6,7 @@
 // inside the OpenSSL 3+ branch of a `switch major()` statement, unless the
 // call is annotated with a marker comment of the form:
 //
-//	//openssl:versioncheck <reason>
+//	//openssl:versionguard <reason>
 //
 // placed on the line immediately above the call. The marker comment is the
 // source of truth for *why* the check exists and *what versions it covers*;
@@ -16,7 +16,7 @@
 //
 // Usage:
 //
-//	go run ./cmd/checkversioncheck [packages...]
+//	go run ./cmd/versionguardcheck [packages...]
 //
 // With no arguments, the current directory is analyzed. Package arguments
 // are interpreted as filesystem paths (one per Go package directory).
@@ -38,10 +38,10 @@ import (
 	"strings"
 )
 
-const markerPrefix = "//openssl:versioncheck"
+const markerPrefix = "//openssl:versionguard"
 
 // gatedFns are the unqualified function names whose calls inside the
-// OpenSSL 3+ branch must be justified by a //openssl:versioncheck marker.
+// OpenSSL 3+ branch must be justified by a //openssl:versionguard marker.
 //
 // major() is intentionally excluded: the outer `switch major()` between
 // the 1.x and 3+ branches is the top-level dispatch and is exempt.
@@ -54,7 +54,7 @@ var gatedFns = map[string]bool{
 
 func main() {
 	flag.Usage = func() {
-		fmt.Fprintln(os.Stderr, "usage: checkversioncheck [packages...]")
+		fmt.Fprintln(os.Stderr, "usage: versionguardcheck [packages...]")
 		flag.PrintDefaults()
 	}
 	flag.Parse()
@@ -67,19 +67,19 @@ func main() {
 	for _, dir := range dirs {
 		n, err := checkDir(dir)
 		if err != nil {
-			fmt.Fprintln(os.Stderr, "checkversioncheck:", err)
+			fmt.Fprintln(os.Stderr, "versionguardcheck:", err)
 			os.Exit(2)
 		}
 		bad += n
 	}
 	if bad > 0 {
-		fmt.Fprintf(os.Stderr, "checkversioncheck: %d unjustified version check(s)\n", bad)
+		fmt.Fprintf(os.Stderr, "versionguardcheck: %d unjustified version check(s)\n", bad)
 		os.Exit(1)
 	}
 }
 
 // checkDir analyzes every Go package directory rooted at dir (recursively).
-// Test files are skipped: the //openssl:versioncheck convention applies to
+// Test files are skipped: the //openssl:versionguard convention applies to
 // production code only.
 func checkDir(dir string) (int, error) {
 	var bad int
@@ -171,7 +171,7 @@ func checkFile(fset *token.FileSet, file *ast.File) int {
 					if !marked[pos.Line-1] {
 						bad++
 						fmt.Fprintf(os.Stderr,
-							"%s:%d:%d: unjustified version check %s(...): add a //openssl:versioncheck <reason> comment on the line above\n",
+							"%s:%d:%d: unjustified version check %s(...): add a //openssl:versionguard <reason> comment on the line above\n",
 							pos.Filename, pos.Line, pos.Column, id.Name)
 					}
 				}
@@ -189,7 +189,7 @@ func checkFile(fset *token.FileSet, file *ast.File) int {
 }
 
 // markedLines returns the set of source-line numbers that bear a
-// well-formed //openssl:versioncheck comment.
+// well-formed //openssl:versionguard comment.
 func markedLines(fset *token.FileSet, file *ast.File) map[int]bool {
 	out := make(map[int]bool)
 	for _, cg := range file.Comments {
@@ -203,7 +203,7 @@ func markedLines(fset *token.FileSet, file *ast.File) map[int]bool {
 	return out
 }
 
-// isMarker reports whether text is //openssl:versioncheck followed by
+// isMarker reports whether text is //openssl:versionguard followed by
 // whitespace and a non-empty reason.
 func isMarker(text string) bool {
 	rest, ok := strings.CutPrefix(text, markerPrefix)

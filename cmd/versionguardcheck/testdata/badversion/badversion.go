@@ -1,8 +1,8 @@
 // Package badversion contains negative fixtures: every gated call inside
-// a 3+ branch lacks a //openssl:versioncheck marker and must be flagged.
+// a 3+ branch lacks a //openssl:versionguard marker and must be flagged.
 //
 // Each "// want:" comment documents the violation expected on the
-// following line; checkversioncheck_test.go uses these to assert that the
+// following line; versionguardcheck_test.go uses these to assert that the
 // analyzer's output matches exactly.
 package badversion
 
@@ -41,29 +41,29 @@ func inlineMarker() {
 	switch major() {
 	case 3, 4:
 		// want: minor
-		_ = minor() //openssl:versioncheck inline marker is not accepted
+		_ = minor() //openssl:versionguard inline marker is not accepted
 	}
 }
 
-// emptyReasonMarker: //openssl:versioncheck with no reason is rejected.
+// emptyReasonMarker: //openssl:versionguard with no reason is rejected.
 func emptyReasonMarker() {
 	switch major() {
 	case 3, 4:
-		//openssl:versioncheck
+		//openssl:versionguard
 		// want: minor
 		_ = minor()
-		//openssl:versioncheck
+		//openssl:versionguard
 		// want: patch
 		_ = patch()
 	}
 }
 
 // noWordBoundaryMarker: the prefix must end at a word boundary;
-// //openssl:versionchecksomething is not a marker.
+// //openssl:versionguardsomething is not a marker.
 func noWordBoundaryMarker() {
 	switch major() {
 	case 3, 4:
-		//openssl:versioncheckMissingSpace this is not a valid marker
+		//openssl:versionguardMissingSpace this is not a valid marker
 		// want: minor
 		_ = minor()
 	}
