@@ -53,13 +53,15 @@ func SumSHAKE256(data []byte, length int) []byte {
 
 var shakeSupported sync.Map
 
+var hasDigestSqueeze = sync.OnceValue(ossl.EVP_DigestSqueeze_Available)
+
 // SupportsSHAKE returns true if the SHAKE extendable output functions
 // with the given securityBits are supported.
 func SupportsSHAKE(securityBits int) bool {
-	if !versionAtOrAbove(3, 3, 0) {
-		// SHAKE MD's are supported since OpenSSL 1.1.1,
-		// but EVP_DigestSqueeze is only supported since 3.3,
-		// and we need it to implement [sha3.SHAKE].
+	if !hasDigestSqueeze() {
+		// SHAKE MD's are supported since OpenSSL 1.1.1, but
+		// EVP_DigestSqueeze (added in OpenSSL 3.3) is required to
+		// implement [sha3.SHAKE]'s streaming Read API.
 		return false
 	}
 	if v, ok := shakeSupported.Load(securityBits); ok {

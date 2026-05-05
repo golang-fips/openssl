@@ -32,36 +32,39 @@ const (
 
 // SupportsMLKEM768 returns true if ML-KEM-768 is supported on this platform.
 func SupportsMLKEM768() bool {
-	if versionAtOrAbove(3, 5, 0) {
-		return supportsMLKEM768()
-	}
-	return false
+	return supportsMLKEM768()
 }
 
 // SupportsMLKEM1024 returns true if ML-KEM-1024 is supported on this platform.
 func SupportsMLKEM1024() bool {
-	if versionAtOrAbove(3, 5, 0) {
-		return supportsMLKEM1024()
-	}
-	return false
+	return supportsMLKEM1024()
 }
 
 var supportsMLKEM768 = sync.OnceValue(func() bool {
-	sig, _ := ossl.EVP_KEYMGMT_fetch(nil, _KeyTypeMLKEM768.ptr(), nil)
-	if sig != nil {
-		ossl.EVP_KEYMGMT_free(sig)
-		return true
+	// EVP_KEYMGMT_fetch was added in OpenSSL 3.0; if it is not available we
+	// are on 1.x and ML-KEM is not supported. On 3.0–3.4 the fetch returns
+	// nil for the ML-KEM algorithm name, which the probe reports as false.
+	if !ossl.EVP_KEYMGMT_fetch_Available() {
+		return false
 	}
-	return false
+	sig, _ := ossl.EVP_KEYMGMT_fetch(nil, _KeyTypeMLKEM768.ptr(), nil)
+	if sig == nil {
+		return false
+	}
+	ossl.EVP_KEYMGMT_free(sig)
+	return true
 })
 
 var supportsMLKEM1024 = sync.OnceValue(func() bool {
-	sig, _ := ossl.EVP_KEYMGMT_fetch(nil, _KeyTypeMLKEM1024.ptr(), nil)
-	if sig != nil {
-		ossl.EVP_KEYMGMT_free(sig)
-		return true
+	if !ossl.EVP_KEYMGMT_fetch_Available() {
+		return false
 	}
-	return false
+	sig, _ := ossl.EVP_KEYMGMT_fetch(nil, _KeyTypeMLKEM1024.ptr(), nil)
+	if sig == nil {
+		return false
+	}
+	ossl.EVP_KEYMGMT_free(sig)
+	return true
 })
 
 // DecapsulationKeyMLKEM768 is the secret key used to decapsulate a shared key
