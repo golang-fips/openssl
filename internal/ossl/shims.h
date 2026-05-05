@@ -224,7 +224,7 @@ int EVP_DigestInit(_EVP_MD_CTX_PTR ctx, const _EVP_MD_PTR type);
 int EVP_DigestUpdate(_EVP_MD_CTX_PTR ctx, const void *d, size_t cnt) __attribute__((noescape,nocallback,slice("d","cnt")));
 int EVP_DigestFinal_ex(_EVP_MD_CTX_PTR ctx, unsigned char *md, unsigned int *s) __attribute__((noescape,nocallback,slice("md","s")));
 int EVP_DigestFinalXOF(_EVP_MD_CTX_PTR ctx, unsigned char *md, size_t mdlen) __attribute__((tag("33"),noescape,nocallback,slice("md","mdlen")));
-int EVP_DigestSqueeze(_EVP_MD_CTX_PTR ctx, unsigned char *out, size_t outlen) __attribute__((tag("33"),noescape,nocallback,slice("out","outlen")));
+int EVP_DigestSqueeze(_EVP_MD_CTX_PTR ctx, unsigned char *out, size_t outlen) __attribute__((tag("33"),optional,noescape,nocallback,slice("out","outlen")));
 int EVP_DigestSign(_EVP_MD_CTX_PTR ctx, unsigned char *sigret, size_t *siglen, const unsigned char *tbs, size_t tbslen) __attribute__((noescape,nocallback,slice("sigret","siglen"),slice("tbs","tbslen")));
 int EVP_DigestSignInit(_EVP_MD_CTX_PTR ctx, _EVP_PKEY_CTX_PTR *pctx, const _EVP_MD_PTR type, _ENGINE_PTR e, _EVP_PKEY_PTR pkey);
 int EVP_DigestSignFinal(_EVP_MD_CTX_PTR ctx, unsigned char *sig, size_t *siglen) __attribute__((slice("sig","siglen")));
@@ -424,7 +424,7 @@ int PKCS5_PBKDF2_HMAC(const char *pass, int passlen, const unsigned char *salt, 
 const char *OBJ_nid2sn(int n) __attribute__((noerror));
 
 // EVP KEM API for ML-KEM (OpenSSL 3.x)
-_EVP_KEYMGMT_PTR EVP_KEYMGMT_fetch(_OSSL_LIB_CTX_PTR libctx, const char *algorithm, const char *properties) __attribute__((tag("3")));
+_EVP_KEYMGMT_PTR EVP_KEYMGMT_fetch(_OSSL_LIB_CTX_PTR libctx, const char *algorithm, const char *properties) __attribute__((tag("3"),optional));
 void EVP_KEYMGMT_free(_EVP_KEYMGMT_PTR keymgmt) __attribute__((tag("3")));
 int EVP_PKEY_encapsulate_init(_EVP_PKEY_CTX_PTR ctx, const _OSSL_PARAM_PTR params) __attribute__((tag("3")));
 int EVP_PKEY_encapsulate(_EVP_PKEY_CTX_PTR ctx, unsigned char *wrappedkey, size_t *wrappedkeylen, unsigned char *genkey, size_t *genkeylen) __attribute__((tag("3")));
