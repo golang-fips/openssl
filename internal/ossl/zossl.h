@@ -116,6 +116,8 @@ void __mkcgo_unload_legacy_1();
 void __mkcgo_load_version(void* handle);
 void __mkcgo_unload_version();
 
+int _mkcgo_available_EVP_DigestSqueeze();
+int _mkcgo_available_EVP_KEYMGMT_fetch();
 int _mkcgo_available_EVP_chacha20_poly1305();
 int _mkcgo_available_OPENSSL_version_major();
 int _mkcgo_available_OPENSSL_version_minor();

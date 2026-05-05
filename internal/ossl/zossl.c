@@ -508,7 +508,7 @@ void __mkcgo_load_3(void* handle) {
 	__mkcgo__dlsym(EVP_KDF_derive)
 	__mkcgo__dlsym(EVP_KDF_fetch)
 	__mkcgo__dlsym(EVP_KDF_free)
-	__mkcgo__dlsym(EVP_KEYMGMT_fetch)
+	__mkcgo__dlsym_nocheck(EVP_KEYMGMT_fetch, EVP_KEYMGMT_fetch)
 	__mkcgo__dlsym(EVP_KEYMGMT_free)
 	__mkcgo__dlsym(EVP_MAC_CTX_dup)
 	__mkcgo__dlsym(EVP_MAC_CTX_free)
@@ -644,7 +644,7 @@ void __mkcgo_unload_3() {
 
 void __mkcgo_load_33(void* handle) {
 	__mkcgo__dlsym(EVP_DigestFinalXOF)
-	__mkcgo__dlsym(EVP_DigestSqueeze)
+	__mkcgo__dlsym_nocheck(EVP_DigestSqueeze, EVP_DigestSqueeze)
 }
 
 void __mkcgo_unload_33() {
@@ -1126,6 +1126,10 @@ int _mkcgo_EVP_DigestSignInit(_EVP_MD_CTX_PTR _arg0, _EVP_PKEY_CTX_PTR* _arg1, c
 	return _ret;
 }
 
+int _mkcgo_available_EVP_DigestSqueeze() {
+	return _g_EVP_DigestSqueeze != NULL;
+}
+
 int _mkcgo_EVP_DigestSqueeze(_EVP_MD_CTX_PTR _arg0, unsigned char* _arg1, size_t _arg2, uintptr_t *_err_state) {
 	int _ret = _g_EVP_DigestSqueeze(_arg0, _arg1, _arg2);
 	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
@@ -1210,6 +1214,10 @@ _EVP_KDF_PTR _mkcgo_EVP_KDF_fetch(_OSSL_LIB_CTX_PTR _arg0, const char* _arg1, co
 
 void _mkcgo_EVP_KDF_free(_EVP_KDF_PTR _arg0) {
 	_g_EVP_KDF_free(_arg0);
+}
+
+int _mkcgo_available_EVP_KEYMGMT_fetch() {
+	return _g_EVP_KEYMGMT_fetch != NULL;
 }
 
 _EVP_KEYMGMT_PTR _mkcgo_EVP_KEYMGMT_fetch(_OSSL_LIB_CTX_PTR _arg0, const char* _arg1, const char* _arg2, uintptr_t *_err_state) {

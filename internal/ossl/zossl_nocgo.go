@@ -545,6 +545,10 @@ func EVP_DigestSignInit(ctx EVP_MD_CTX_PTR, pctx *EVP_PKEY_CTX_PTR, __type EVP_M
 	return int32(r0), newMkcgoErr("EVP_DigestSignInit", _err)
 }
 
+func EVP_DigestSqueeze_Available() bool {
+	return _mkcgo_EVP_DigestSqueeze != 0
+}
+
 var _mkcgo_EVP_DigestSqueeze uintptr
 
 func EVP_DigestSqueeze(ctx EVP_MD_CTX_PTR, out []byte) (int32, error) {
@@ -665,6 +669,10 @@ var _mkcgo_EVP_KDF_free uintptr
 
 func EVP_KDF_free(kdf EVP_KDF_PTR) {
 	syscallN(0, _mkcgo_EVP_KDF_free, uintptr(kdf))
+}
+
+func EVP_KEYMGMT_fetch_Available() bool {
+	return _mkcgo_EVP_KEYMGMT_fetch != 0
 }
 
 var _mkcgo_EVP_KEYMGMT_fetch uintptr
@@ -2159,7 +2167,7 @@ func MkcgoLoad_3(handle unsafe.Pointer) {
 	_mkcgo_EVP_KDF_derive = dlsym(handle, "EVP_KDF_derive\x00", false)
 	_mkcgo_EVP_KDF_fetch = dlsym(handle, "EVP_KDF_fetch\x00", false)
 	_mkcgo_EVP_KDF_free = dlsym(handle, "EVP_KDF_free\x00", false)
-	_mkcgo_EVP_KEYMGMT_fetch = dlsym(handle, "EVP_KEYMGMT_fetch\x00", false)
+	_mkcgo_EVP_KEYMGMT_fetch = dlsym(handle, "EVP_KEYMGMT_fetch\x00", true)
 	_mkcgo_EVP_KEYMGMT_free = dlsym(handle, "EVP_KEYMGMT_free\x00", false)
 	_mkcgo_EVP_MAC_CTX_dup = dlsym(handle, "EVP_MAC_CTX_dup\x00", false)
 	_mkcgo_EVP_MAC_CTX_free = dlsym(handle, "EVP_MAC_CTX_free\x00", false)
@@ -2295,7 +2303,7 @@ func MkcgoUnload_3() {
 
 func MkcgoLoad_33(handle unsafe.Pointer) {
 	_mkcgo_EVP_DigestFinalXOF = dlsym(handle, "EVP_DigestFinalXOF\x00", false)
-	_mkcgo_EVP_DigestSqueeze = dlsym(handle, "EVP_DigestSqueeze\x00", false)
+	_mkcgo_EVP_DigestSqueeze = dlsym(handle, "EVP_DigestSqueeze\x00", true)
 }
 
 func MkcgoUnload_33() {

@@ -530,6 +530,10 @@ func EVP_DigestSignInit(ctx EVP_MD_CTX_PTR, pctx *EVP_PKEY_CTX_PTR, __type EVP_M
 	return int32(_ret), newMkcgoErr("EVP_DigestSignInit", uintptr(_err))
 }
 
+func EVP_DigestSqueeze_Available() bool {
+	return C._mkcgo_available_EVP_DigestSqueeze() != 0
+}
+
 func EVP_DigestSqueeze(ctx EVP_MD_CTX_PTR, out []byte) (int32, error) {
 	var _err C.uintptr_t
 	_ret := C._mkcgo_EVP_DigestSqueeze(ctx, (*C.uchar)(unsafe.Pointer(unsafe.SliceData(out))), C.size_t(len(out)), mkcgoNoEscape(&_err))
@@ -620,6 +624,10 @@ func EVP_KDF_fetch(libctx OSSL_LIB_CTX_PTR, algorithm *byte, properties *byte) (
 
 func EVP_KDF_free(kdf EVP_KDF_PTR) {
 	C._mkcgo_EVP_KDF_free(kdf)
+}
+
+func EVP_KEYMGMT_fetch_Available() bool {
+	return C._mkcgo_available_EVP_KEYMGMT_fetch() != 0
 }
 
 func EVP_KEYMGMT_fetch(libctx OSSL_LIB_CTX_PTR, algorithm *byte, properties *byte) (EVP_KEYMGMT_PTR, error) {
