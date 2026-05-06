@@ -149,12 +149,12 @@ func newHMAC3(key []byte, md ossl.EVP_MD_PTR) hmacCtx3 {
 		panic(err)
 	}
 	var hkey []byte
-	if minor() == 0 && patch() <= 2 {
+	//versionguardcheck:ignore OpenSSL 3.0.0–3.0.2 EVP_MAC_init does not reset without a key: https://github.com/openssl/openssl/issues/17811.
+	if major() == 3 && minor() == 0 && patch() <= 2 {
 		// EVP_MAC_init only resets the ctx internal state if a key is passed
 		// when using OpenSSL 3.0.0, 3.0.1, and 3.0.2. Save a copy of the key
 		// in the context so Reset can use it later. New OpenSSL versions
 		// do not have this issue so it isn't necessary to save the key.
-		// See https://github.com/openssl/openssl/issues/17811.
 		hkey = make([]byte, len(key))
 		copy(hkey, key)
 	}
