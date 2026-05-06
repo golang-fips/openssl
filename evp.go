@@ -577,10 +577,8 @@ func newEvpFromParams(id int32, selection int32, params ossl.OSSL_PARAM_PTR) (os
 	}
 	var pkey ossl.EVP_PKEY_PTR
 	if _, err := ossl.EVP_PKEY_fromdata(ctx, &pkey, selection, params); err != nil {
-		if major() == 3 && minor() <= 2 {
-			// OpenSSL 3.0.1 and 3.0.2 have a bug where EVP_PKEY_fromdata
-			// does not free the internally allocated EVP_PKEY on error.
-			// See https://github.com/openssl/openssl/issues/17407.
+		//versionguardcheck:ignore OpenSSL 3.0.0–3.0.2 leak EVP_PKEY on error: https://github.com/openssl/openssl/issues/17407.
+		if major() == 3 && minor() == 0 && patch() <= 2 {
 			ossl.EVP_PKEY_free(pkey)
 		}
 		return nil, err

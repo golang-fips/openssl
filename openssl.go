@@ -233,13 +233,6 @@ func bnToBinPad(bn ossl.BIGNUM_PTR, to []byte) error {
 	return err
 }
 
-// versionAtOrAbove returns true when
-// (major(), minor(), patch()) >= (vmajor, vminor, vpatch),
-// compared lexicographically.
-func versionAtOrAbove(vmajor, vminor, vpatch int) bool {
-	return major() > vmajor || (major() == vmajor && minor() > vminor) || (major() == vmajor && minor() == vminor && patch() >= vpatch)
-}
-
 func bigEndianUint64(b []byte) uint64 {
 	_ = b[7] // bounds check hint to compiler; see golang.org/issue/14808
 	return uint64(b[7]) | uint64(b[6])<<8 | uint64(b[5])<<16 | uint64(b[4])<<24 |
