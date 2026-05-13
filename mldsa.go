@@ -40,25 +40,43 @@ const (
 	maxContextSizeMLDSA = 255
 )
 
-// SupportsMLDSA returns true if ML-DSA is supported on this platform.
-func SupportsMLDSA() bool {
-	return supportsMLDSA()
+// SupportsMLDSA returns true if the given ML-DSA parameter set is supported
+// on this platform. Providers may not implement every security level, so
+// callers must probe each parameter set they intend to use.
+func SupportsMLDSA(params MLDSAParameters) bool {
+	switch params.keyType {
+	case ossl.EVP_PKEY_ML_DSA_44:
+		return supportsMLDSA44()
+	case ossl.EVP_PKEY_ML_DSA_65:
+		return supportsMLDSA65()
+	case ossl.EVP_PKEY_ML_DSA_87:
+		return supportsMLDSA87()
+	default:
+		return false
+	}
 }
 
-var supportsMLDSA = sync.OnceValue(func() bool {
-	// ML-DSA was added in OpenSSL 3.5. Probe the algorithm via the keymgmt
-	// fetch interface, which was introduced in OpenSSL 3.0 and returns nil
-	// for unknown algorithms on older 3.x releases.
+// probeMLDSA reports whether the OpenSSL provider exposes the given ML-DSA
+// algorithm via the keymgmt fetch interface. ML-DSA was added in OpenSSL 3.5;
+// older 3.x releases return nil for unknown algorithm names, and 1.x lacks
+// the fetch interface entirely.
+func probeMLDSA(name cString) bool {
 	if !ossl.EVP_KEYMGMT_fetch_Available() {
 		return false
 	}
-	mgmt, _ := ossl.EVP_KEYMGMT_fetch(nil, _KeyTypeMLDSA44.ptr(), nil)
+	mgmt, _ := ossl.EVP_KEYMGMT_fetch(nil, name.ptr(), nil)
 	if mgmt == nil {
 		return false
 	}
 	ossl.EVP_KEYMGMT_free(mgmt)
 	return true
-})
+}
+
+var (
+	supportsMLDSA44 = sync.OnceValue(func() bool { return probeMLDSA(_KeyTypeMLDSA44) })
+	supportsMLDSA65 = sync.OnceValue(func() bool { return probeMLDSA(_KeyTypeMLDSA65) })
+	supportsMLDSA87 = sync.OnceValue(func() bool { return probeMLDSA(_KeyTypeMLDSA87) })
+)
 
 // MLDSAParameters represents one of the fixed ML-DSA parameter sets.
 type MLDSAParameters struct {

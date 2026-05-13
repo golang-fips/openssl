@@ -68,9 +68,6 @@ var mldsaExternalMuTestCases = []mldsaExternalMuTestCase{
 }
 
 func TestMLDSARoundTrip(t *testing.T) {
-	if !openssl.SupportsMLDSA() {
-		t.Skip("ML-DSA not supported on this platform")
-	}
 	t.Parallel()
 	for _, test := range mldsaParameterTests {
 		t.Run(test.name, func(t *testing.T) {
@@ -80,6 +77,9 @@ func TestMLDSARoundTrip(t *testing.T) {
 }
 
 func testMLDSARoundTrip(t *testing.T, params openssl.MLDSAParameters) {
+	if !openssl.SupportsMLDSA(params) {
+		t.Skipf("%s not supported on this platform", params)
+	}
 	t.Parallel()
 
 	generated1, err := openssl.GenerateKeyMLDSA(params)
@@ -170,9 +170,6 @@ func testMLDSARoundTrip(t *testing.T, params openssl.MLDSAParameters) {
 }
 
 func TestMLDSABadLengths(t *testing.T) {
-	if !openssl.SupportsMLDSA() {
-		t.Skip("ML-DSA not supported on this platform")
-	}
 	t.Parallel()
 	for _, test := range mldsaParameterTests {
 		t.Run(test.name, func(t *testing.T) {
@@ -182,12 +179,12 @@ func TestMLDSABadLengths(t *testing.T) {
 }
 
 func TestMLDSAExternalMuCASTVectors(t *testing.T) {
-	if !openssl.SupportsMLDSA() {
-		t.Skip("ML-DSA not supported on this platform")
-	}
 	t.Parallel()
 	for _, test := range mldsaExternalMuTestCases {
 		t.Run(test.name, func(t *testing.T) {
+			if !openssl.SupportsMLDSA(test.params) {
+				t.Skipf("%s not supported on this platform", test.params)
+			}
 			t.Parallel()
 			privateKey, err := openssl.NewPrivateKeyMLDSA(test.params, fromHexBytes(test.seed))
 			if err != nil {
@@ -216,6 +213,9 @@ func TestMLDSAExternalMuCASTVectors(t *testing.T) {
 }
 
 func testMLDSABadLengths(t *testing.T, params openssl.MLDSAParameters) {
+	if !openssl.SupportsMLDSA(params) {
+		t.Skipf("%s not supported on this platform", params)
+	}
 	t.Parallel()
 	privateKey, err := openssl.GenerateKeyMLDSA(params)
 	if err != nil {
@@ -289,11 +289,11 @@ func TestMLDSAConstantSizes(t *testing.T) {
 }
 
 func BenchmarkMLDSAKeyGen(b *testing.B) {
-	if !openssl.SupportsMLDSA() {
-		b.Skip("ML-DSA not supported on this platform")
-	}
 	for _, test := range mldsaParameterTests {
 		b.Run(test.name, func(b *testing.B) {
+			if !openssl.SupportsMLDSA(test.params) {
+				b.Skipf("%s not supported on this platform", test.params)
+			}
 			b.ReportAllocs()
 			for b.Loop() {
 				privateKey, err := openssl.GenerateKeyMLDSA(test.params)
@@ -307,11 +307,11 @@ func BenchmarkMLDSAKeyGen(b *testing.B) {
 }
 
 func BenchmarkMLDSAPublicKey(b *testing.B) {
-	if !openssl.SupportsMLDSA() {
-		b.Skip("ML-DSA not supported on this platform")
-	}
 	for _, test := range mldsaParameterTests {
 		b.Run(test.name, func(b *testing.B) {
+			if !openssl.SupportsMLDSA(test.params) {
+				b.Skipf("%s not supported on this platform", test.params)
+			}
 			privateKey := newBenchmarkMLDSAPrivateKey(b, test.params)
 			b.ReportAllocs()
 			b.ResetTimer()
@@ -324,11 +324,11 @@ func BenchmarkMLDSAPublicKey(b *testing.B) {
 }
 
 func BenchmarkMLDSASign(b *testing.B) {
-	if !openssl.SupportsMLDSA() {
-		b.Skip("ML-DSA not supported on this platform")
-	}
 	for _, test := range mldsaParameterTests {
 		b.Run(test.name, func(b *testing.B) {
+			if !openssl.SupportsMLDSA(test.params) {
+				b.Skipf("%s not supported on this platform", test.params)
+			}
 			privateKey := newBenchmarkMLDSAPrivateKey(b, test.params)
 			message := []byte("testing")
 			b.ReportAllocs()
@@ -345,11 +345,11 @@ func BenchmarkMLDSASign(b *testing.B) {
 }
 
 func BenchmarkMLDSASignExternalMu(b *testing.B) {
-	if !openssl.SupportsMLDSA() {
-		b.Skip("ML-DSA not supported on this platform")
-	}
 	for _, test := range mldsaParameterTests {
 		b.Run(test.name, func(b *testing.B) {
+			if !openssl.SupportsMLDSA(test.params) {
+				b.Skipf("%s not supported on this platform", test.params)
+			}
 			privateKey := newBenchmarkMLDSAPrivateKey(b, test.params)
 			mu := make([]byte, 64)
 			b.ReportAllocs()
@@ -366,11 +366,11 @@ func BenchmarkMLDSASignExternalMu(b *testing.B) {
 }
 
 func BenchmarkMLDSAVerify(b *testing.B) {
-	if !openssl.SupportsMLDSA() {
-		b.Skip("ML-DSA not supported on this platform")
-	}
 	for _, test := range mldsaParameterTests {
 		b.Run(test.name, func(b *testing.B) {
+			if !openssl.SupportsMLDSA(test.params) {
+				b.Skipf("%s not supported on this platform", test.params)
+			}
 			privateKey := newBenchmarkMLDSAPrivateKey(b, test.params)
 			publicKey := privateKey.PublicKey()
 			message := []byte("testing")
@@ -390,11 +390,11 @@ func BenchmarkMLDSAVerify(b *testing.B) {
 }
 
 func BenchmarkMLDSAVerifyExternalMu(b *testing.B) {
-	if !openssl.SupportsMLDSA() {
-		b.Skip("ML-DSA not supported on this platform")
-	}
 	for _, test := range mldsaParameterTests {
 		b.Run(test.name, func(b *testing.B) {
+			if !openssl.SupportsMLDSA(test.params) {
+				b.Skipf("%s not supported on this platform", test.params)
+			}
 			privateKey := newBenchmarkMLDSAPrivateKey(b, test.params)
 			publicKey := privateKey.PublicKey()
 			mu := make([]byte, 64)
