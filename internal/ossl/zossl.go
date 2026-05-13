@@ -23,6 +23,9 @@ const (
 	EVP_PKEY_DSA                        = 116
 	EVP_PKEY_MLKEM_768                  = 1455
 	EVP_PKEY_MLKEM_1024                 = 1456
+	EVP_PKEY_ML_DSA_44                  = 1457
+	EVP_PKEY_ML_DSA_65                  = 1458
+	EVP_PKEY_ML_DSA_87                  = 1459
 	EVP_PKEY_OP_DERIVE                  = (1 << 10)
 	EVP_MAX_MD_SIZE                     = 64
 	EVP_PKEY_PUBLIC_KEY                 = 0x86
@@ -45,6 +48,9 @@ const (
 	NID_secp521r1                       = 716
 	NID_ML_KEM_768                      = 1455
 	NID_ML_KEM_1024                     = 1456
+	NID_ML_DSA_44                       = 1457
+	NID_ML_DSA_65                       = 1458
+	NID_ML_DSA_87                       = 1459
 	RSA_PKCS1_PADDING                   = 1
 	RSA_NO_PADDING                      = 3
 	RSA_PKCS1_OAEP_PADDING              = 4

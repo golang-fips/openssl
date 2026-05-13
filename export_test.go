@@ -12,4 +12,15 @@ var (
 	EncapsulationKeySizeMLKEM1024 = encapsulationKeySizeMLKEM1024
 )
 
+// MLDSA constants for testing against the stdlib
+var (
+	PrivateKeySizeMLDSA  = privateKeySizeMLDSA
+	PublicKeySizeMLDSA44 = publicKeySizeMLDSA44
+	PublicKeySizeMLDSA65 = publicKeySizeMLDSA65
+	PublicKeySizeMLDSA87 = publicKeySizeMLDSA87
+	SignatureSizeMLDSA44 = signatureSizeMLDSA44
+	SignatureSizeMLDSA65 = signatureSizeMLDSA65
+	SignatureSizeMLDSA87 = signatureSizeMLDSA87
+)
+
 var HashBufSize = hashBufSize

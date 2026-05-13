@@ -37,6 +37,9 @@ const ( //checkheader:ignore
 	_KeyTypeX25519           cString = "X25519\x00"
 	_KeyTypeMLKEM768         cString = "ML-KEM-768\x00"
 	_KeyTypeMLKEM1024        cString = "ML-KEM-1024\x00"
+	_KeyTypeMLDSA44          cString = "ML-DSA-44\x00"
+	_KeyTypeMLDSA65          cString = "ML-DSA-65\x00"
+	_KeyTypeMLDSA87          cString = "ML-DSA-87\x00"
 	_KeyTypeChacha20Poly1305 cString = "CHACHA20-POLY1305\x00"
 
 	// Digest names
@@ -85,6 +88,11 @@ const ( //checkheader:ignore
 	_OSSL_PKEY_PARAM_RSA_EXPONENT2      cString = "rsa-exponent2\x00"
 	_OSSL_PKEY_PARAM_RSA_COEFFICIENT1   cString = "rsa-coefficient1\x00"
 	_OSSL_PKEY_PARAM_ML_KEM_SEED        cString = "seed\x00"
+	_OSSL_PKEY_PARAM_ML_DSA_SEED        cString = "seed\x00"
+
+	// Signature parameters
+	_OSSL_SIGNATURE_PARAM_CONTEXT_STRING cString = "context-string\x00"
+	_OSSL_SIGNATURE_PARAM_MU             cString = "mu\x00"
 
 	// MAC parameters
 	_OSSL_MAC_PARAM_DIGEST cString = "digest\x00"

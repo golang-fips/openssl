@@ -948,6 +948,14 @@ func EVP_PKEY_CTX_set_hkdf_mode(arg0 EVP_PKEY_CTX_PTR, arg1 int32) (int32, error
 	return int32(r0), newMkcgoErr("EVP_PKEY_CTX_set_hkdf_mode", _err)
 }
 
+var _mkcgo_EVP_PKEY_CTX_set_params uintptr
+
+func EVP_PKEY_CTX_set_params(ctx EVP_PKEY_CTX_PTR, params OSSL_PARAM_PTR) (int32, error) {
+	var _err uintptr
+	r0, _ := syscallN(3, _mkcgo_EVP_PKEY_CTX_set_params, uintptr(ctx), uintptr(params), uintptr(unsafe.Pointer(&_err)))
+	return int32(r0), newMkcgoErr("EVP_PKEY_CTX_set_params", _err)
+}
+
 var _mkcgo_EVP_PKEY_Q_keygen uintptr
 
 func EVP_PKEY_Q_keygen_EC(ctx OSSL_LIB_CTX_PTR, propq *byte, __type *byte, arg1 *byte) (EVP_PKEY_PTR, error) {
@@ -965,6 +973,12 @@ func EVP_PKEY_Q_keygen_ED25519(ctx OSSL_LIB_CTX_PTR, propq *byte, __type *byte) 
 	var _err uintptr
 	r0, _ := syscallN(1, _mkcgo_EVP_PKEY_Q_keygen, uintptr(ctx), uintptr(unsafe.Pointer(propq)), uintptr(unsafe.Pointer(__type)), uintptr(unsafe.Pointer(&_err)))
 	return EVP_PKEY_PTR(r0), newMkcgoErr("EVP_PKEY_Q_keygen_ED25519", _err)
+}
+
+func EVP_PKEY_Q_keygen_MLDSA(ctx OSSL_LIB_CTX_PTR, propq *byte, __type *byte) (EVP_PKEY_PTR, error) {
+	var _err uintptr
+	r0, _ := syscallN(1, _mkcgo_EVP_PKEY_Q_keygen, uintptr(ctx), uintptr(unsafe.Pointer(propq)), uintptr(unsafe.Pointer(__type)), uintptr(unsafe.Pointer(&_err)))
+	return EVP_PKEY_PTR(r0), newMkcgoErr("EVP_PKEY_Q_keygen_MLDSA", _err)
 }
 
 func EVP_PKEY_Q_keygen_MLKEM(ctx OSSL_LIB_CTX_PTR, propq *byte, __type *byte) (EVP_PKEY_PTR, error) {
@@ -2195,6 +2209,7 @@ func MkcgoLoad_3(handle unsafe.Pointer) {
 	_mkcgo_EVP_PKEY_CTX_set1_hkdf_salt = dlsym(handle, "EVP_PKEY_CTX_set1_hkdf_salt\x00", false)
 	_mkcgo_EVP_PKEY_CTX_set_hkdf_md = dlsym(handle, "EVP_PKEY_CTX_set_hkdf_md\x00", false)
 	_mkcgo_EVP_PKEY_CTX_set_hkdf_mode = dlsym(handle, "EVP_PKEY_CTX_set_hkdf_mode\x00", false)
+	_mkcgo_EVP_PKEY_CTX_set_params = dlsym(handle, "EVP_PKEY_CTX_set_params\x00", false)
 	_mkcgo_EVP_PKEY_Q_keygen = dlsym(handle, "EVP_PKEY_Q_keygen\x00", false)
 	_mkcgo_EVP_PKEY_decapsulate = dlsym(handle, "EVP_PKEY_decapsulate\x00", false)
 	_mkcgo_EVP_PKEY_decapsulate_init = dlsym(handle, "EVP_PKEY_decapsulate_init\x00", false)
@@ -2268,6 +2283,7 @@ func MkcgoUnload_3() {
 	_mkcgo_EVP_PKEY_CTX_set1_hkdf_salt = 0
 	_mkcgo_EVP_PKEY_CTX_set_hkdf_md = 0
 	_mkcgo_EVP_PKEY_CTX_set_hkdf_mode = 0
+	_mkcgo_EVP_PKEY_CTX_set_params = 0
 	_mkcgo_EVP_PKEY_Q_keygen = 0
 	_mkcgo_EVP_PKEY_decapsulate = 0
 	_mkcgo_EVP_PKEY_decapsulate_init = 0

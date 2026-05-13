@@ -53,6 +53,9 @@ enum {
 	_EVP_PKEY_DSA         = 116,
     _EVP_PKEY_MLKEM_768  = 1455,
     _EVP_PKEY_MLKEM_1024 = 1456,
+    _EVP_PKEY_ML_DSA_44  = 1457,
+    _EVP_PKEY_ML_DSA_65  = 1458,
+    _EVP_PKEY_ML_DSA_87  = 1459,
 	_EVP_PKEY_OP_DERIVE = (1 << 10), // this value differs between OpenSSL 1 and 3, but we only use it in 1
 	_EVP_MAX_MD_SIZE    = 64,
 
@@ -82,6 +85,9 @@ enum {
 
 	_NID_ML_KEM_768 = 1455,
 	_NID_ML_KEM_1024 = 1456,
+	_NID_ML_DSA_44 = 1457,
+	_NID_ML_DSA_65 = 1458,
+	_NID_ML_DSA_87 = 1459,
 
 	_RSA_PKCS1_PADDING                 = 1,
 	_RSA_NO_PADDING                    = 3,
@@ -323,12 +329,14 @@ _EVP_PKEY_PTR EVP_PKEY_Q_keygen_EC(_OSSL_LIB_CTX_PTR ctx, const char *propq, con
 _EVP_PKEY_PTR EVP_PKEY_Q_keygen_ED25519(_OSSL_LIB_CTX_PTR ctx, const char *propq, const char *type) __attribute__((tag("3"),variadic("EVP_PKEY_Q_keygen"),noescape,nocallback));
 _EVP_PKEY_PTR EVP_PKEY_Q_keygen_X25519(_OSSL_LIB_CTX_PTR ctx, const char *propq, const char *type) __attribute__((tag("3"),variadic("EVP_PKEY_Q_keygen"),noescape,nocallback));
 _EVP_PKEY_PTR EVP_PKEY_Q_keygen_MLKEM(_OSSL_LIB_CTX_PTR ctx, const char *propq, const char *type) __attribute__((tag("3"),variadic("EVP_PKEY_Q_keygen"),noescape,nocallback));
+_EVP_PKEY_PTR EVP_PKEY_Q_keygen_MLDSA(_OSSL_LIB_CTX_PTR ctx, const char *propq, const char *type) __attribute__((tag("3"),variadic("EVP_PKEY_Q_keygen"),noescape,nocallback));
 
 _EVP_PKEY_CTX_PTR EVP_PKEY_CTX_new(_EVP_PKEY_PTR arg0, _ENGINE_PTR arg1);
 _EVP_PKEY_CTX_PTR EVP_PKEY_CTX_new_id(int id, _ENGINE_PTR e);
 _EVP_PKEY_CTX_PTR EVP_PKEY_CTX_new_from_pkey(_OSSL_LIB_CTX_PTR libctx, _EVP_PKEY_PTR pkey, const char *propquery) __attribute__((tag("3")));
 void EVP_PKEY_CTX_free(_EVP_PKEY_CTX_PTR arg0);
 int EVP_PKEY_CTX_ctrl(_EVP_PKEY_CTX_PTR ctx, int keytype, int optype, int cmd, int p1, void *p2);
+int EVP_PKEY_CTX_set_params(_EVP_PKEY_CTX_PTR ctx, const _OSSL_PARAM_PTR params) __attribute__((tag("3"),noescape,nocallback));
 int EVP_PKEY_CTX_set_hkdf_mode(_EVP_PKEY_CTX_PTR arg0, int arg1) __attribute__((tag("3")));
 int EVP_PKEY_CTX_set_hkdf_md(_EVP_PKEY_CTX_PTR arg0, const _EVP_MD_PTR arg1) __attribute__((tag("3")));
 int EVP_PKEY_CTX_set1_hkdf_salt(_EVP_PKEY_CTX_PTR arg0, const unsigned char *arg1, int arg2) __attribute__((tag("3"),slice("arg1","arg2")));
