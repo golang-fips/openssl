@@ -5,7 +5,6 @@ package osslsetup
 import (
 	"errors"
 	"strconv"
-	"strings"
 	"sync"
 	"syscall"
 
@@ -35,10 +34,16 @@ var allowUntestedMajor = sync.OnceValue(func() bool {
 // contains ms_opensslallowuntested=1. Matches internal/godebug parsing:
 // no whitespace trimming.
 func godebugAllowUntested(godebug string) bool {
-	for _, kv := range strings.Split(godebug, ",") {
-		if kv == "ms_opensslallowuntested=1" {
+	const key = "ms_opensslallowuntested=1"
+	var start int = 0
+	for i := 0; i <= len(godebug); i++ {
+		if i < len(godebug) && godebug[i] != ',' {
+			continue
+		}
+		if godebug[start:i] == key {
 			return true
 		}
+		start = i + 1
 	}
 	return false
 }
