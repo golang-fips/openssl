@@ -397,9 +397,7 @@ func newHKDFCtx3(md ossl.EVP_MD_PTR, mode int32, secret, salt, pseudorandomKey, 
 
 	bld := newParamBuilder()
 	defer bld.finalize()
-	if !fips140Enforced() {
-		bld.addInt32(_OSSL_KDF_PARAM_FIPS_KEY_CHECK, 0)
-	}
+	bld.addInt32(_OSSL_KDF_PARAM_FIPS_KEY_CHECK, 0)
 	bld.addUTF8String(_OSSL_KDF_PARAM_DIGEST, ossl.EVP_MD_get0_name(md), 0)
 	bld.addInt32(_OSSL_KDF_PARAM_MODE, int32(mode))
 	bld.addOctetString(_OSSL_KDF_PARAM_KEY, secret)
