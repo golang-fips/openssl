@@ -1847,10 +1847,18 @@ func PKCS5_PBKDF2_HMAC(pass []byte, salt []byte, iter int32, digest EVP_MD_PTR, 
 
 var _mkcgo_RAND_bytes uintptr
 
-func RAND_bytes(arg0 []byte) (int32, error) {
+func RAND_bytes(buf []byte) (int32, error) {
 	var _err uintptr
-	r0, _ := syscallN(3, _mkcgo_RAND_bytes, uintptr(unsafe.Pointer(unsafe.SliceData(arg0))), uintptr(len(arg0)), uintptr(unsafe.Pointer(&_err)))
+	r0, _ := syscallN(3, _mkcgo_RAND_bytes, uintptr(unsafe.Pointer(unsafe.SliceData(buf))), uintptr(len(buf)), uintptr(unsafe.Pointer(&_err)))
 	return int32(r0), newMkcgoErr("RAND_bytes", _err)
+}
+
+var _mkcgo_RAND_bytes_ex uintptr
+
+func RAND_bytes_ex(ctx OSSL_LIB_CTX_PTR, buf []byte, strength uint32) (int32, error) {
+	var _err uintptr
+	r0, _ := syscallN(3, _mkcgo_RAND_bytes_ex, uintptr(ctx), uintptr(unsafe.Pointer(unsafe.SliceData(buf))), uintptr(len(buf)), uintptr(strength), uintptr(unsafe.Pointer(&_err)))
+	return int32(r0), newMkcgoErr("RAND_bytes_ex", _err)
 }
 
 var _mkcgo_RSA_free uintptr
@@ -2046,7 +2054,6 @@ func MkcgoLoad_(handle unsafe.Pointer) {
 	_mkcgo_OPENSSL_init_crypto = dlsym(handle, "OPENSSL_init_crypto\x00", false)
 	_mkcgo_OpenSSL_version = dlsym(handle, "OpenSSL_version\x00", false)
 	_mkcgo_PKCS5_PBKDF2_HMAC = dlsym(handle, "PKCS5_PBKDF2_HMAC\x00", false)
-	_mkcgo_RAND_bytes = dlsym(handle, "RAND_bytes\x00", false)
 }
 
 func MkcgoUnload_() {
@@ -2166,7 +2173,6 @@ func MkcgoUnload_() {
 	_mkcgo_OPENSSL_init_crypto = 0
 	_mkcgo_OpenSSL_version = 0
 	_mkcgo_PKCS5_PBKDF2_HMAC = 0
-	_mkcgo_RAND_bytes = 0
 }
 
 func MkcgoLoad_3(handle unsafe.Pointer) {
@@ -2241,6 +2247,7 @@ func MkcgoLoad_3(handle unsafe.Pointer) {
 	_mkcgo_OSSL_PROVIDER_available = dlsym(handle, "OSSL_PROVIDER_available\x00", false)
 	_mkcgo_OSSL_PROVIDER_get0_name = dlsym(handle, "OSSL_PROVIDER_get0_name\x00", false)
 	_mkcgo_OSSL_PROVIDER_try_load = dlsym(handle, "OSSL_PROVIDER_try_load\x00", false)
+	_mkcgo_RAND_bytes_ex = dlsym(handle, "RAND_bytes_ex\x00", false)
 }
 
 func MkcgoUnload_3() {
@@ -2315,6 +2322,7 @@ func MkcgoUnload_3() {
 	_mkcgo_OSSL_PROVIDER_available = 0
 	_mkcgo_OSSL_PROVIDER_get0_name = 0
 	_mkcgo_OSSL_PROVIDER_try_load = 0
+	_mkcgo_RAND_bytes_ex = 0
 }
 
 func MkcgoLoad_33(handle unsafe.Pointer) {
@@ -2397,6 +2405,7 @@ func MkcgoLoad_legacy_1(handle unsafe.Pointer) {
 	_mkcgo_HMAC_Final = dlsym(handle, "HMAC_Final\x00", false)
 	_mkcgo_HMAC_Init_ex = dlsym(handle, "HMAC_Init_ex\x00", false)
 	_mkcgo_HMAC_Update = dlsym(handle, "HMAC_Update\x00", false)
+	_mkcgo_RAND_bytes = dlsym(handle, "RAND_bytes\x00", false)
 	_mkcgo_RSA_free = dlsym(handle, "RSA_free\x00", false)
 	_mkcgo_RSA_get0_crt_params = dlsym(handle, "RSA_get0_crt_params\x00", false)
 	_mkcgo_RSA_get0_factors = dlsym(handle, "RSA_get0_factors\x00", false)
@@ -2443,6 +2452,7 @@ func MkcgoUnload_legacy_1() {
 	_mkcgo_HMAC_Final = 0
 	_mkcgo_HMAC_Init_ex = 0
 	_mkcgo_HMAC_Update = 0
+	_mkcgo_RAND_bytes = 0
 	_mkcgo_RSA_free = 0
 	_mkcgo_RSA_get0_crt_params = 0
 	_mkcgo_RSA_get0_factors = 0

@@ -359,6 +359,7 @@ const char* _mkcgo_OpenSSL_version(int);
 unsigned long _mkcgo_OpenSSL_version_num(void);
 int _mkcgo_PKCS5_PBKDF2_HMAC(const char*, int, const unsigned char*, int, int, const _EVP_MD_PTR, int, unsigned char*, uintptr_t *);
 int _mkcgo_RAND_bytes(unsigned char*, int, uintptr_t *);
+int _mkcgo_RAND_bytes_ex(_OSSL_LIB_CTX_PTR, unsigned char*, size_t, unsigned int, uintptr_t *);
 void _mkcgo_RSA_free(_RSA_PTR);
 void _mkcgo_RSA_get0_crt_params(const _RSA_PTR, const _BIGNUM_PTR*, const _BIGNUM_PTR*, const _BIGNUM_PTR*);
 void _mkcgo_RSA_get0_factors(const _RSA_PTR, const _BIGNUM_PTR*, const _BIGNUM_PTR*);
