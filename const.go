@@ -54,13 +54,16 @@ const ( //checkheader:ignore
 	_OSSL_MAC_NAME_HMAC      cString = "HMAC\x00"
 
 	// KDF parameters
-	_OSSL_KDF_PARAM_DIGEST cString = "digest\x00"
-	_OSSL_KDF_PARAM_SECRET cString = "secret\x00"
-	_OSSL_KDF_PARAM_SEED   cString = "seed\x00"
-	_OSSL_KDF_PARAM_KEY    cString = "key\x00"
-	_OSSL_KDF_PARAM_INFO   cString = "info\x00"
-	_OSSL_KDF_PARAM_SALT   cString = "salt\x00"
-	_OSSL_KDF_PARAM_MODE   cString = "mode\x00"
+	_OSSL_KDF_PARAM_DIGEST   cString = "digest\x00"
+	_OSSL_KDF_PARAM_SECRET   cString = "secret\x00"
+	_OSSL_KDF_PARAM_SEED     cString = "seed\x00"
+	_OSSL_KDF_PARAM_KEY      cString = "key\x00"
+	_OSSL_KDF_PARAM_PASSWORD cString = "pass\x00"
+	_OSSL_KDF_PARAM_ITER     cString = "iter\x00"
+	_OSSL_KDF_PARAM_PKCS5    cString = "pkcs5\x00"
+	_OSSL_KDF_PARAM_INFO     cString = "info\x00"
+	_OSSL_KDF_PARAM_SALT     cString = "salt\x00"
+	_OSSL_KDF_PARAM_MODE     cString = "mode\x00"
 
 	// KDF FIPS parameters
 	_OSSL_KDF_PARAM_FIPS_KEY_CHECK cString = "key-check\x00"

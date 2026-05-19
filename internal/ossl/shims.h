@@ -427,7 +427,7 @@ int EVP_KDF_CTX_set_params(_EVP_KDF_CTX_PTR ctx, const _OSSL_PARAM_PTR params) _
 void EVP_KDF_CTX_free(_EVP_KDF_CTX_PTR ctx) __attribute__((tag("3")));
 size_t EVP_KDF_CTX_get_kdf_size(_EVP_KDF_CTX_PTR ctx) __attribute__((tag("3")));
 int EVP_KDF_derive(_EVP_KDF_CTX_PTR ctx, unsigned char *key, size_t keylen, const _OSSL_PARAM_PTR params) __attribute__((tag("3"),slice("key","keylen")));
-int PKCS5_PBKDF2_HMAC(const char *pass, int passlen, const unsigned char *salt, int saltlen, int iter, const _EVP_MD_PTR digest, int keylen, unsigned char *out) __attribute__((slice("pass","passlen"),slice("salt","saltlen"),slice("out","keylen")));
+int PKCS5_PBKDF2_HMAC(const char *pass, int passlen, const unsigned char *salt, int saltlen, int iter, const _EVP_MD_PTR digest, int keylen, unsigned char *out) __attribute__((tag("legacy_1"),slice("pass","passlen"),slice("salt","saltlen"),slice("out","keylen")));
 
 // OBJ API
 const char *OBJ_nid2sn(int n) __attribute__((noerror));
