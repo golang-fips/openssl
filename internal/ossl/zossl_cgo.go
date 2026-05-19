@@ -83,6 +83,8 @@ package ossl
 #cgo nocallback _mkcgo_HMAC_Update
 #cgo noescape _mkcgo_RAND_bytes
 #cgo nocallback _mkcgo_RAND_bytes
+#cgo noescape _mkcgo_RAND_bytes_ex
+#cgo nocallback _mkcgo_RAND_bytes_ex
 */
 import "C"
 import "unsafe"
@@ -1455,10 +1457,16 @@ func PKCS5_PBKDF2_HMAC(pass []byte, salt []byte, iter int32, digest EVP_MD_PTR, 
 	return int32(_ret), newMkcgoErr("PKCS5_PBKDF2_HMAC", uintptr(_err))
 }
 
-func RAND_bytes(arg0 []byte) (int32, error) {
+func RAND_bytes(buf []byte) (int32, error) {
 	var _err C.uintptr_t
-	_ret := C._mkcgo_RAND_bytes((*C.uchar)(unsafe.Pointer(unsafe.SliceData(arg0))), C.int(len(arg0)), mkcgoNoEscape(&_err))
+	_ret := C._mkcgo_RAND_bytes((*C.uchar)(unsafe.Pointer(unsafe.SliceData(buf))), C.int(len(buf)), mkcgoNoEscape(&_err))
 	return int32(_ret), newMkcgoErr("RAND_bytes", uintptr(_err))
+}
+
+func RAND_bytes_ex(ctx OSSL_LIB_CTX_PTR, buf []byte, strength uint32) (int32, error) {
+	var _err C.uintptr_t
+	_ret := C._mkcgo_RAND_bytes_ex(ctx, (*C.uchar)(unsafe.Pointer(unsafe.SliceData(buf))), C.size_t(len(buf)), C.uint(strength), mkcgoNoEscape(&_err))
+	return int32(_ret), newMkcgoErr("RAND_bytes_ex", uintptr(_err))
 }
 
 func RSA_free(arg0 RSA_PTR) {

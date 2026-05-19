@@ -237,6 +237,7 @@ const char* (*_g_OpenSSL_version)(int);
 unsigned long (*_g_OpenSSL_version_num)(void);
 int (*_g_PKCS5_PBKDF2_HMAC)(const char*, int, const unsigned char*, int, int, const _EVP_MD_PTR, int, unsigned char*);
 int (*_g_RAND_bytes)(unsigned char*, int);
+int (*_g_RAND_bytes_ex)(_OSSL_LIB_CTX_PTR, unsigned char*, size_t, unsigned int);
 void (*_g_RSA_free)(_RSA_PTR);
 void (*_g_RSA_get0_crt_params)(const _RSA_PTR, const _BIGNUM_PTR*, const _BIGNUM_PTR*, const _BIGNUM_PTR*);
 void (*_g_RSA_get0_factors)(const _RSA_PTR, const _BIGNUM_PTR*, const _BIGNUM_PTR*);
@@ -374,7 +375,6 @@ void __mkcgo_load_(void* handle) {
 	__mkcgo__dlsym(OPENSSL_init_crypto)
 	__mkcgo__dlsym(OpenSSL_version)
 	__mkcgo__dlsym(PKCS5_PBKDF2_HMAC)
-	__mkcgo__dlsym(RAND_bytes)
 }
 
 void __mkcgo_unload_() {
@@ -494,7 +494,6 @@ void __mkcgo_unload_() {
 	_g_OPENSSL_init_crypto = NULL;
 	_g_OpenSSL_version = NULL;
 	_g_PKCS5_PBKDF2_HMAC = NULL;
-	_g_RAND_bytes = NULL;
 }
 
 void __mkcgo_load_3(void* handle) {
@@ -569,6 +568,7 @@ void __mkcgo_load_3(void* handle) {
 	__mkcgo__dlsym(OSSL_PROVIDER_available)
 	__mkcgo__dlsym(OSSL_PROVIDER_get0_name)
 	__mkcgo__dlsym(OSSL_PROVIDER_try_load)
+	__mkcgo__dlsym(RAND_bytes_ex)
 }
 
 void __mkcgo_unload_3() {
@@ -643,6 +643,7 @@ void __mkcgo_unload_3() {
 	_g_OSSL_PROVIDER_available = NULL;
 	_g_OSSL_PROVIDER_get0_name = NULL;
 	_g_OSSL_PROVIDER_try_load = NULL;
+	_g_RAND_bytes_ex = NULL;
 }
 
 void __mkcgo_load_33(void* handle) {
@@ -725,6 +726,7 @@ void __mkcgo_load_legacy_1(void* handle) {
 	__mkcgo__dlsym(HMAC_Final)
 	__mkcgo__dlsym(HMAC_Init_ex)
 	__mkcgo__dlsym(HMAC_Update)
+	__mkcgo__dlsym(RAND_bytes)
 	__mkcgo__dlsym(RSA_free)
 	__mkcgo__dlsym(RSA_get0_crt_params)
 	__mkcgo__dlsym(RSA_get0_factors)
@@ -771,6 +773,7 @@ void __mkcgo_unload_legacy_1() {
 	_g_HMAC_Final = NULL;
 	_g_HMAC_Init_ex = NULL;
 	_g_HMAC_Update = NULL;
+	_g_RAND_bytes = NULL;
 	_g_RSA_free = NULL;
 	_g_RSA_get0_crt_params = NULL;
 	_g_RSA_get0_factors = NULL;
@@ -2025,6 +2028,12 @@ int _mkcgo_PKCS5_PBKDF2_HMAC(const char* _arg0, int _arg1, const unsigned char* 
 
 int _mkcgo_RAND_bytes(unsigned char* _arg0, int _arg1, uintptr_t *_err_state) {
 	int _ret = _g_RAND_bytes(_arg0, _arg1);
+	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
+	return _ret;
+}
+
+int _mkcgo_RAND_bytes_ex(_OSSL_LIB_CTX_PTR _arg0, unsigned char* _arg1, size_t _arg2, unsigned int _arg3, uintptr_t *_err_state) {
+	int _ret = _g_RAND_bytes_ex(_arg0, _arg1, _arg2, _arg3);
 	if (_ret <= 0) *_err_state = mkcgo_err_retrieve();
 	return _ret;
 }
