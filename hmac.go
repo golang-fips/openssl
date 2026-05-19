@@ -43,14 +43,12 @@ func NewHMAC(fh func() hash.Hash, key []byte) hash.Hash {
 			return nil
 		}
 		hmac.ctx1 = ctx
-	case 3, 4:
+	default:
 		ctx := newHMAC3(key, md)
 		if ctx.ctx == nil {
 			return nil
 		}
 		hmac.ctx3 = ctx
-	default:
-		panic(errUnsupportedVersion())
 	}
 	runtime.SetFinalizer(hmac, (*opensslHMAC).finalize)
 	return hmac
@@ -168,12 +166,10 @@ func (h *opensslHMAC) Reset() {
 		if _, err := ossl.HMAC_Init_ex(h.ctx1.ctx, nil, nil, nil); err != nil {
 			panic(err)
 		}
-	case 3, 4:
+	default:
 		if _, err := ossl.EVP_MAC_init(h.ctx3.ctx, h.ctx3.key, nil); err != nil {
 			panic(err)
 		}
-	default:
-		panic(errUnsupportedVersion())
 	}
 
 	runtime.KeepAlive(h) // Next line will keep h alive too; just making doubly sure.
@@ -193,10 +189,8 @@ func (h *opensslHMAC) Write(p []byte) (int, error) {
 		switch major() {
 		case 1:
 			ossl.HMAC_Update(h.ctx1.ctx, p)
-		case 3, 4:
-			ossl.EVP_MAC_update(h.ctx3.ctx, p)
 		default:
-			panic(errUnsupportedVersion())
+			ossl.EVP_MAC_update(h.ctx3.ctx, p)
 		}
 	}
 	runtime.KeepAlive(h)
@@ -227,15 +221,13 @@ func (h *opensslHMAC) Sum(in []byte) []byte {
 			panic(err)
 		}
 		ossl.HMAC_Final(ctx2, h.sum[:h.size], nil)
-	case 3, 4:
+	default:
 		ctx2, err := ossl.EVP_MAC_CTX_dup(h.ctx3.ctx)
 		if err != nil {
 			panic(err)
 		}
 		defer ossl.EVP_MAC_CTX_free(ctx2)
 		ossl.EVP_MAC_final(ctx2, h.sum[:h.size], nil)
-	default:
-		panic(errUnsupportedVersion())
 	}
 	return append(in, h.sum[:h.size]...)
 }
@@ -259,7 +251,7 @@ func (h *opensslHMAC) Clone() (HashCloner, error) {
 		runtime.SetFinalizer(cl, (*opensslHMAC).finalize)
 		return cl, nil
 
-	case 3, 4:
+	default:
 		ctx2, err := ossl.EVP_MAC_CTX_dup(h.ctx3.ctx)
 		if err != nil {
 			panic(err)
@@ -272,8 +264,5 @@ func (h *opensslHMAC) Clone() (HashCloner, error) {
 		}
 		runtime.SetFinalizer(cl, (*opensslHMAC).finalize)
 		return cl, nil
-
-	default:
-		panic(errUnsupportedVersion())
 	}
 }

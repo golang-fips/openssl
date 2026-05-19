@@ -15,11 +15,9 @@ func SupportsPBKDF2() bool {
 	switch major() {
 	case 1:
 		return true
-	case 3, 4:
+	default:
 		_, err := fetchPBKDF2()
 		return err == nil
-	default:
-		panic(errUnsupportedVersion())
 	}
 }
 

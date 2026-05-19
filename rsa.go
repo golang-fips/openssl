@@ -37,7 +37,7 @@ func GenerateKeyRSA(bits int) (N, E, D, P, Q, Dp, Dq, Qinv BigInt, err error) {
 		N, E, D = bnToBig(n), bnToBig(e), bnToBig(d)
 		P, Q = bnToBig(p), bnToBig(q)
 		Dp, Dq, Qinv = bnToBig(dmp1), bnToBig(dmq1), bnToBig(iqmp)
-	case 3, 4:
+	default:
 		tmp, err := ossl.BN_new()
 		if err != nil {
 			return bad(err)
@@ -66,8 +66,6 @@ func GenerateKeyRSA(bits int) (N, E, D, P, Q, Dp, Dq, Qinv BigInt, err error) {
 			setBigInt(&Qinv, _OSSL_PKEY_PARAM_RSA_COEFFICIENT1)) {
 			return bad(err)
 		}
-	default:
-		panic(errUnsupportedVersion())
 	}
 	return
 }
@@ -105,13 +103,11 @@ func NewPublicKeyRSA(n, e BigInt) (*PublicKeyRSA, error) {
 			ossl.EVP_PKEY_free(pkey)
 			return nil, err
 		}
-	case 3, 4:
+	default:
 		var err error
 		if pkey, err = newRSAKey3(false, n, e, nil, nil, nil, nil, nil, nil); err != nil {
 			return nil, err
 		}
-	default:
-		panic(errUnsupportedVersion())
 	}
 	k := &PublicKeyRSA{_pkey: pkey}
 	runtime.SetFinalizer(k, (*PublicKeyRSA).finalize)
@@ -184,13 +180,11 @@ func NewPrivateKeyRSA(n, e, d, p, q, dp, dq, qinv BigInt) (*PrivateKeyRSA, error
 			ossl.EVP_PKEY_free(pkey)
 			return nil, err
 		}
-	case 3, 4:
+	default:
 		var err error
 		if pkey, err = newRSAKey3(true, n, e, d, p, q, dp, dq, qinv); err != nil {
 			return nil, err
 		}
-	default:
-		panic(errUnsupportedVersion())
 	}
 	k := &PrivateKeyRSA{_pkey: pkey}
 	runtime.SetFinalizer(k, (*PrivateKeyRSA).finalize)
