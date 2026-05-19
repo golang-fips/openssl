@@ -2053,7 +2053,6 @@ func MkcgoLoad_(handle unsafe.Pointer) {
 	_mkcgo_OPENSSL_init = dlsym(handle, "OPENSSL_init\x00", false)
 	_mkcgo_OPENSSL_init_crypto = dlsym(handle, "OPENSSL_init_crypto\x00", false)
 	_mkcgo_OpenSSL_version = dlsym(handle, "OpenSSL_version\x00", false)
-	_mkcgo_PKCS5_PBKDF2_HMAC = dlsym(handle, "PKCS5_PBKDF2_HMAC\x00", false)
 }
 
 func MkcgoUnload_() {
@@ -2172,7 +2171,6 @@ func MkcgoUnload_() {
 	_mkcgo_OPENSSL_init = 0
 	_mkcgo_OPENSSL_init_crypto = 0
 	_mkcgo_OpenSSL_version = 0
-	_mkcgo_PKCS5_PBKDF2_HMAC = 0
 }
 
 func MkcgoLoad_3(handle unsafe.Pointer) {
@@ -2405,6 +2403,7 @@ func MkcgoLoad_legacy_1(handle unsafe.Pointer) {
 	_mkcgo_HMAC_Final = dlsym(handle, "HMAC_Final\x00", false)
 	_mkcgo_HMAC_Init_ex = dlsym(handle, "HMAC_Init_ex\x00", false)
 	_mkcgo_HMAC_Update = dlsym(handle, "HMAC_Update\x00", false)
+	_mkcgo_PKCS5_PBKDF2_HMAC = dlsym(handle, "PKCS5_PBKDF2_HMAC\x00", false)
 	_mkcgo_RAND_bytes = dlsym(handle, "RAND_bytes\x00", false)
 	_mkcgo_RSA_free = dlsym(handle, "RSA_free\x00", false)
 	_mkcgo_RSA_get0_crt_params = dlsym(handle, "RSA_get0_crt_params\x00", false)
@@ -2452,6 +2451,7 @@ func MkcgoUnload_legacy_1() {
 	_mkcgo_HMAC_Final = 0
 	_mkcgo_HMAC_Init_ex = 0
 	_mkcgo_HMAC_Update = 0
+	_mkcgo_PKCS5_PBKDF2_HMAC = 0
 	_mkcgo_RAND_bytes = 0
 	_mkcgo_RSA_free = 0
 	_mkcgo_RSA_get0_crt_params = 0

@@ -374,7 +374,6 @@ void __mkcgo_load_(void* handle) {
 	__mkcgo__dlsym(OPENSSL_init)
 	__mkcgo__dlsym(OPENSSL_init_crypto)
 	__mkcgo__dlsym(OpenSSL_version)
-	__mkcgo__dlsym(PKCS5_PBKDF2_HMAC)
 }
 
 void __mkcgo_unload_() {
@@ -493,7 +492,6 @@ void __mkcgo_unload_() {
 	_g_OPENSSL_init = NULL;
 	_g_OPENSSL_init_crypto = NULL;
 	_g_OpenSSL_version = NULL;
-	_g_PKCS5_PBKDF2_HMAC = NULL;
 }
 
 void __mkcgo_load_3(void* handle) {
@@ -726,6 +724,7 @@ void __mkcgo_load_legacy_1(void* handle) {
 	__mkcgo__dlsym(HMAC_Final)
 	__mkcgo__dlsym(HMAC_Init_ex)
 	__mkcgo__dlsym(HMAC_Update)
+	__mkcgo__dlsym(PKCS5_PBKDF2_HMAC)
 	__mkcgo__dlsym(RAND_bytes)
 	__mkcgo__dlsym(RSA_free)
 	__mkcgo__dlsym(RSA_get0_crt_params)
@@ -773,6 +772,7 @@ void __mkcgo_unload_legacy_1() {
 	_g_HMAC_Final = NULL;
 	_g_HMAC_Init_ex = NULL;
 	_g_HMAC_Update = NULL;
+	_g_PKCS5_PBKDF2_HMAC = NULL;
 	_g_RAND_bytes = NULL;
 	_g_RSA_free = NULL;
 	_g_RSA_get0_crt_params = NULL;

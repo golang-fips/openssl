@@ -46,9 +46,40 @@ func PBKDF2(password, salt []byte, iter, keyLen int, fh func() hash.Hash) ([]byt
 		return nil, errors.New("unsupported hash function")
 	}
 	out := make([]byte, keyLen)
-	_, err = ossl.PKCS5_PBKDF2_HMAC(password, salt, int32(iter), md, out)
-	if err != nil {
-		return nil, err
+	switch major() {
+	case 1:
+		if _, err = ossl.PKCS5_PBKDF2_HMAC(password, salt, int32(iter), md, out); err != nil {
+			return nil, err
+		}
+	default:
+		kdf, err := fetchPBKDF2()
+		if err != nil {
+			return nil, err
+		}
+		ctx, err := ossl.EVP_KDF_CTX_new(kdf)
+		if err != nil {
+			return nil, err
+		}
+		defer ossl.EVP_KDF_CTX_free(ctx)
+
+		bld := newParamBuilder()
+		defer bld.finalize()
+		bld.addOctetString(_OSSL_KDF_PARAM_PASSWORD, password)
+		bld.addOctetString(_OSSL_KDF_PARAM_SALT, salt)
+		bld.addInt32(_OSSL_KDF_PARAM_ITER, int32(iter))
+		bld.addInt32(_OSSL_KDF_PARAM_PKCS5, 1) // disable SP800-132 compliance checks, they are done at the crypto/pbkdf2 level
+		bld.addUTF8String(_OSSL_KDF_PARAM_DIGEST, ossl.EVP_MD_get0_name(md), 0)
+		params, err := bld.build()
+		if err != nil {
+			return nil, err
+		}
+		defer ossl.OSSL_PARAM_free(params)
+
+		_, err = ossl.EVP_KDF_derive(ctx, out, params)
+		if err != nil {
+			return nil, err
+		}
 	}
+
 	return out, nil
 }
