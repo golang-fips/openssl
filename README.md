@@ -1,10 +1,21 @@
 # Go OpenSSL bindings for FIPS compliance
 
+> [!IMPORTANT]
+> **This repository has been archived.** Active development continues at [github.com/microsoft/go-crypto-openssl](https://github.com/microsoft/go-crypto-openssl).
+
 [![Go Reference](https://pkg.go.dev/badge/github.com/golang-fips/openssl/v2.svg)](https://pkg.go.dev/github.com/golang-fips/openssl/v2)
 
 The `openssl` package implements Go crypto primitives using OpenSSL shared libraries and cgo. When configured correctly, OpenSSL can be executed in FIPS mode, making the `openssl` package FIPS compliant.
 
 The `openssl` package is designed to be used as a drop-in replacement for the [boring](https://pkg.go.dev/crypto/internal/boring) package in order to facilitate integrating `openssl` inside a forked Go toolchain.
+
+## A Note on This Archive
+
+Red Hat and Microsoft have decided to take a different strategy for FIPS-compliant cryptography in Go going forward. As a result, this repository is now archived, and active development continues at [microsoft/go-crypto-openssl](https://github.com/microsoft/go-crypto-openssl).
+
+We want to take a moment to celebrate the collaboration between Microsoft and Red Hat over the past several years. What started as separate efforts to bring FIPS-compliant cryptography to Go grew into a genuine cross-team partnership — sharing patches, incorporating each other's improvements, and pushing the ecosystem forward together. Many of the contributions from both teams found their way into this shared codebase and benefitted the broader Go community.
+
+Thank you to everyone at both organizations — and in the community — who contributed, filed issues, and helped make this project what it was.
 
 ## Disclaimer
 
