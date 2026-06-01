@@ -1,7 +1,7 @@
 # Go OpenSSL bindings for FIPS compliance
 
 > [!IMPORTANT]
-> **This repository has been archived.** Active development continues at [github.com/microsoft/go-crypto-openssl](https://github.com/microsoft/go-crypto-openssl).
+> **This repository is no longer active.** Active development continues at [github.com/microsoft/go-crypto-openssl](https://github.com/microsoft/go-crypto-openssl).
 
 [![Go Reference](https://pkg.go.dev/badge/github.com/golang-fips/openssl/v2.svg)](https://pkg.go.dev/github.com/golang-fips/openssl/v2)
 
@@ -11,7 +11,7 @@ The `openssl` package is designed to be used as a drop-in replacement for the [b
 
 ## A Note on This Archive
 
-Red Hat and Microsoft have decided to take a different strategy for FIPS-compliant cryptography in Go going forward. As a result, this repository is now archived, and active development continues at [microsoft/go-crypto-openssl](https://github.com/microsoft/go-crypto-openssl).
+[As of May 2026, upstream Go cryptography has a CMVP certificate, and Red Hat has decided to use upstream cryptography rather than continue to integrate this module in a Go fork](https://github.com/golang-fips/go#migration-to-upstream-fips-certified-cryptography). However, Microsoft will continue to use OpenSSL as a cryptography backend for Go FIPS compliance. As a result, active development continues at [microsoft/go-crypto-openssl](https://github.com/microsoft/go-crypto-openssl).
 
 We want to take a moment to celebrate the collaboration between Microsoft and Red Hat over the past several years. What started as separate efforts to bring FIPS-compliant cryptography to Go grew into a genuine cross-team partnership — sharing patches, incorporating each other's improvements, and pushing the ecosystem forward together. Many of the contributions from both teams found their way into this shared codebase and benefitted the broader Go community.
 
