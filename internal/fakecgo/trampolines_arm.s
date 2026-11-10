@@ -70,6 +70,10 @@ TEXT threadentry_trampoline(SB), NOSPLIT, $104-0
 	MOVW g, 32(R13)   // R10
 	MOVW R11, 36(R13)
 
+	// Skip floating point registers if runtime.goarmsoftfp!=0.
+	MOVB    runtime·goarmsoftfp(SB), R11
+	CMP     $0, R11
+	BNE     skipfpsave
 	MOVD F8, 40(R13)
 	MOVD F9, 48(R13)
 	MOVD F10, 56(R13)
@@ -79,10 +83,14 @@ TEXT threadentry_trampoline(SB), NOSPLIT, $104-0
 	MOVD F14, 88(R13)
 	MOVD F15, 96(R13)
 
+skipfpsave:
 	MOVW ·threadentry_call(SB), R12
 	MOVW (R12), R12
 	CALL (R12)
 
+	MOVB    runtime·goarmsoftfp(SB), R11
+	CMP     $0, R11
+	BNE     skipfprest
 	MOVD 40(R13), F8
 	MOVD 48(R13), F9
 	MOVD 56(R13), F10
@@ -92,6 +100,7 @@ TEXT threadentry_trampoline(SB), NOSPLIT, $104-0
 	MOVD 88(R13), F14
 	MOVD 96(R13), F15
 
+skipfprest:
 	MOVW 8(R13), R4
 	MOVW 12(R13), R5
 	MOVW 16(R13), R6
@@ -103,20 +112,22 @@ TEXT threadentry_trampoline(SB), NOSPLIT, $104-0
 
 	RET
 
-TEXT ·call5(SB), NOSPLIT, $8-28
+TEXT ·call5(SB), NOSPLIT, $0-28
 	MOVW fn+0(FP), R12
 	MOVW a1+4(FP), R0
 	MOVW a2+8(FP), R1
 	MOVW a3+12(FP), R2
 	MOVW a4+16(FP), R3
-	MOVW a5+20(FP), R4
+	MOVW a5+20(FP), R5
 
-	// Store 5th arg below SP (in local frame area)
-	MOVW R4, arg5-8(SP)
+	MOVW R13, R4    // save SP inside R4 bc R4 is callee-saved
+	SUB  $8, R13    // allocate space for the 5th argument
+	BIC  $7, R13    // align on 8 bytes as the ARM AAPCS requires
+	MOVW R5, 0(R13) // the 5th argument is passed on the stack
 
-	// Align SP to 8 bytes for call (required by ARM AAPCS)
-	SUB  $8, R13
 	CALL (R12)
-	ADD  $8, R13
-	MOVW R0, r1+24(FP)
+
+	MOVW R4, R13 // get SP back
+
+	MOVW R0, ret+24(FP)
 	RET
