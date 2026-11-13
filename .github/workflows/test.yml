@@ -139,7 +139,7 @@ jobs:
     - name: Install required packages
       if: startsWith(matrix.image, 'fedora')
       run: |
-          dnf install -y golang
+          dnf install -y golang openssl-devel
     - name: Run Test
       run: go test -shuffle=on -v ./...
       env:
