@@ -159,7 +159,7 @@ type evpCipher struct {
 }
 
 func newEVPCipher(key []byte, kind cipherKind) (*evpCipher, error) {
-	cipher := loadCipher(kind, cipherModeECB)
+	cipher := loadCipher(kind, cipherModeCBC)
 	if cipher == nil {
 		return nil, errors.New("crypto/cipher: unsupported cipher: " + kind.String())
 	}
