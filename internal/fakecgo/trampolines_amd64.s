@@ -78,6 +78,28 @@ TEXT threadentry_trampoline(SB), NOSPLIT, $0
 	MOVQ DI, AX
 	MOVQ ·threadentry_call(SB), R11
 	MOVQ (R11), R11
+	// threadentry is ABIInternal, so the caller reserves the spill slot for
+	// its register argument, as runtime·sigtramp does. The slot must not
+	// overlap the registers saved by PUSH_REGS_HOST_TO_ABI0.
+	ADJSP $8
+	CALL R11
+	ADJSP $-8
+
+	POP_REGS_HOST_TO_ABI0()
+	RET
+
+// func callThreadEntryFn(fn uintptr)
+// Calls fn (runtime.mstart) with the frame pointer and other callee-saved
+// registers saved on the stack across the call. mstart returns with BP
+// clobbered (BP==0); saving/restoring BP here (as real cgo's crosscall does)
+// keeps the caller's frame-pointer LEAVE epilogue valid on return.
+TEXT ·callThreadEntryFn(SB), NOSPLIT, $0-8
+	MOVQ fn+0(FP), R11
+	PUSH_REGS_HOST_TO_ABI0()
+
+	// X15 is designated by Go as a fixed zero register.
+	PXOR X15, X15
+
 	CALL R11
 
 	POP_REGS_HOST_TO_ABI0()
